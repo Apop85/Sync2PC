@@ -1,0 +1,39 @@
+# --- Build-Ausgaben -----------------------------------------------------------
+build/
+app/build/
+.gradle/
+.kotlin/
+.build/
+releases/*.apk
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# --- Lokale Umgebung ----------------------------------------------------------
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+captures/
+.externalNativeBuild/
+.cxx/
+
+# --- Geheimnisse (NIE committen!) --------------------------------------------
+keystore/
+keystore.properties
+*.jks
+*.keystore
+
+# --- Temporaer ----------------------------------------------------------------
+*.log
+*.tmp
+*.download
+
+# --- Claude Code: lokale Einstellungen privat, README/Icon sind Teil des Projekts
+.claude/settings.local.json
+
+# Hinweis: gradle/wrapper/gradle-wrapper.jar und app/src/main/assets/geo/countries.geojson
+# duerfen committet werden (reproduzierbarer Build).

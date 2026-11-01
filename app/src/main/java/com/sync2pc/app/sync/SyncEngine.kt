@@ -1,0 +1,530 @@
+package com.sync2pc.app.sync
+
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
+import androidx.core.content.ContextCompat
+import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.DeleteMode
+import com.sync2pc.app.data.DeleteState
+import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.data.LogEntry
+import com.sync2pc.app.data.MediaInfo
+import com.sync2pc.app.data.PendingDecision
+import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.SyncRun
+import com.sync2pc.app.data.SyncedFile
+import com.sync2pc.app.geo.CountryLookup
+import com.sync2pc.app.media.MediaAnalyzer
+import com.sync2pc.app.media.MediaItem
+import com.sync2pc.app.media.MediaScanner
+import com.sync2pc.app.smb.RemoteEntry
+import com.sync2pc.app.smb.SmbSession
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+
+/** Fortschritt eines Laufs (für Benachrichtigung und UI). */
+data class SyncProgress(
+    val profileName: String,
+    val phase: String,
+    val doneFiles: Int,
+    val totalFiles: Int,
+    val doneBytes: Long,
+    val totalBytes: Long,
+    val currentFile: String?,
+)
+
+/** Ein Eintrag der Vorschau (Trockenlauf). */
+data class PreviewEntry(val targetFolder: String, val fileName: String, val needsDecision: Boolean)
+
+/**
+ * Führt einen Sync-Lauf für EIN Profil aus.
+ *
+ * Ablauf: Scan → bekannte Dateien per DB aussortieren → Analyse + Zielordner (sequenziell, "Produzent")
+ *         → Übertragung durch mehrere parallele Worker mit je eigener SMB-Verbindung.
+ * dryRun = true: nichts wird übertragen/angelegt, nur Zielordner ermittelt (Vorschau).
+ */
+class SyncEngine(
+    private val context: Context,
+    private val profile: Profile,
+    private val trigger: String,
+    private val dryRun: Boolean = false,
+    /** false zurückgeben, um den Lauf sauber zu beenden (z. B. WLAN getrennt) */
+    private val shouldContinue: () -> Boolean = { true },
+    private val onProgress: (SyncProgress) -> Unit = {},
+) {
+    private val db = AppDatabase.get(context)
+    private val dao = db.dao()
+    private val settings = GlobalSettings(context)
+    private val canReadLocation = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_MEDIA_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val preview = ArrayList<PreviewEntry>()
+    /** true, wenn der Lauf wegen fehlender Netzwerkverbindung zum Share scheiterte */
+    var connectionFailed: Boolean = false
+        private set
+
+    /** Frühester Zeitpunkt (ms), zu dem zu junge Dateien übertragen werden dürfen; 0 = keine */
+    var nextYoungFileAt: Long = 0
+        private set
+
+    private var run = SyncRun(
+        profileId = profile.id, profileName = profile.name, trigger = trigger,
+        dryRun = dryRun, startedAt = System.currentTimeMillis()
+    )
+
+    private suspend fun log(level: String, msg: String) {
+        if (dryRun) return
+        dao.insertLog(LogEntry(runId = run.id, time = System.currentTimeMillis(), level = level, message = msg))
+    }
+
+    private class DecisionAcc(
+        val year: Int, val month: Int, val countryIso: String?, val countryName: String?,
+        val defaultName: String, val candidates: List<String>,
+    ) {
+        var count = 0
+        var bytes = 0L
+        val samples = ArrayList<String>()
+    }
+
+    /** Ein Übertragungsauftrag: Datei → Jahr\Monatsordner */
+    private class Job(val item: MediaItem, val year: Int, val folderName: String)
+
+    /** Zwischen den parallelen Workern geteilter Zustand */
+    private class Shared(val totalFiles: Int, val totalBytes: Long) {
+        val uploaded = AtomicInteger()
+        val skipped = AtomicInteger()
+        val failed = AtomicInteger()
+        val done = AtomicInteger()
+        /** Bytes vollständig verarbeiteter Dateien */
+        val bytesDone = AtomicLong()
+        /** Bytes der gerade laufenden Uploads (MediaStore-ID -> Bytes) */
+        val inflight = ConcurrentHashMap<Long, Long>()
+        val stop = AtomicBoolean(false)
+        /** Schützt Ordnerlisten und reservierte Namen (Namensvergabe bild_2, bild_3 …) */
+        val nameLock = Mutex()
+        val listings = HashMap<String, HashMap<String, RemoteEntry>>()
+        val reserved = HashSet<String>()
+        @Volatile var lastEmit = 0L
+    }
+
+    suspend fun run(): SyncRun {
+        run = run.copy(id = dao.insertRun(run))
+        var smb: SmbSession? = null
+        var skippedKnown = 0
+        var waiting = 0
+        var shared: Shared? = null
+        var status = "OK"
+        var message = ""
+        fun up() = shared?.uploaded?.get() ?: 0
+        fun sk() = skippedKnown + (shared?.skipped?.get() ?: 0)
+        fun fl() = shared?.failed?.get() ?: 0
+        fun by() = shared?.bytesDone?.get() ?: 0L
+        try {
+            if (!dryRun) {
+                val monthAgo = System.currentTimeMillis() - 30L * 24 * 3600 * 1000
+                dao.pruneLogs(monthAgo); dao.pruneRuns(monthAgo * 3)
+            }
+            log("I", "Start ($trigger) – Profil '${profile.name}' → ${profile.smbPath}")
+
+            // --- 1. Quellen scannen und bekannte Dateien ohne I/O aussortieren --------
+            emit("Suche Dateien…", 0, 0, 0, 0, null)
+            val items = MediaScanner.scan(
+                context, profile.folders(), profile.includeSubfolders,
+                profile.includeImages, profile.includeVideos
+            )
+            val known = dao.syncedLite(profile.id).associateBy { it.sourceKey }
+            val nowSec = System.currentTimeMillis() / 1000
+            val minAge = settings.minFileAgeMinutes * 60L
+            val todo = ArrayList<MediaItem>()
+            var young = 0
+            for (m in items) {
+                val k = known[m.sourceKey]
+                if (k != null && k.size == m.size && k.dateModified == m.dateModifiedSec) { skippedKnown++; continue }
+                val age = nowSec - maxOf(m.dateAddedSec, m.dateModifiedSec)
+                if (!dryRun && age < minAge) {
+                    young++
+                    val readyAt = (maxOf(m.dateAddedSec, m.dateModifiedSec) + minAge) * 1000
+                    if (nextYoungFileAt == 0L || readyAt < nextYoungFileAt) nextYoungFileAt = readyAt
+                    continue
+                }
+                todo += m
+            }
+            log("I", "${items.size} Dateien gefunden, ${todo.size} neu, $skippedKnown bereits gesichert" +
+                (if (young > 0) ", $young noch zu jung (< ${settings.minFileAgeMinutes} min)" else ""))
+            if (todo.isEmpty()) {
+                return finish("OK", "Nichts zu tun", 0, skippedKnown, 0, 0, 0)
+            }
+
+            // Live-Fotos/Bewegtbilder: Video mit gleichem Basisnamen wie ein Bild -> gleicher Ordner wie Bild
+            val imageByBase = items.filter { !it.isVideo }
+                .associateBy { (it.relativePath + it.baseName).lowercase() }
+
+            // --- 2. Verbinden -------------------------------------------------------
+            val totalBytes = todo.sumOf { it.size }
+            emit("Verbinde…", 0, todo.size, 0, totalBytes, null)
+            smb = try {
+                SmbSession.open(profile)
+            } catch (e: Exception) {
+                if (dryRun) { message = "Offline-Vorschau (Share nicht erreichbar): ${e.message}"; null }
+                else throw e
+            }
+            val countries = CountryLookup.get(context)
+            if (!countries.isAvailable) log("W", "Länderdaten fehlen – Ordner ohne Länderzusatz")
+            val resolver = TargetResolver(smb, dao, profile.id, countries.allCountryNames, dryRun)
+            val analyzer = MediaAnalyzer(context, canReadLocation)
+            if (!canReadLocation) log("W", "Berechtigung 'Medien-Standort' fehlt – GPS wird nicht ausgewertet")
+            val home = settings.homeCountryIso
+            val decisions = LinkedHashMap<String, DecisionAcc>()
+            if (!dryRun) dao.deleteDecisionsOfProfile(profile.id)
+
+            /** Analyse + Zielordner. Liefert einen Auftrag oder null (Entscheidung nötig / Vorschau). */
+            suspend fun plan(item: MediaItem): Job? {
+                val partner = if (item.isVideo) imageByBase[(item.relativePath + item.baseName).lowercase()] else null
+                val info = mediaInfo(partner ?: item, analyzer, countries)
+                val isHome = info.countryIso != null && info.countryIso.equals(home, ignoreCase = true)
+                val cName = if (isHome) null else info.countryName
+                val cKey = if (isHome || cName == null) null else (info.countryIso?.ifBlank { null } ?: cName)
+                return when (val res = resolver.resolve(info.year, info.month, cKey, cName)) {
+                    is TargetResolver.Resolution.Ask -> {
+                        val acc = decisions.getOrPut(res.groupKey) {
+                            DecisionAcc(info.year, info.month, cKey, cName, res.defaultName, res.candidates)
+                        }
+                        acc.count++; acc.bytes += item.size
+                        if (acc.samples.size < 8) acc.samples += item.uri.toString()
+                        waiting++
+                        if (dryRun) preview += PreviewEntry("${info.year}\\? (${res.defaultName})", item.displayName, true)
+                        null
+                    }
+                    is TargetResolver.Resolution.Folder -> {
+                        // Ordner gilt ab jetzt als vorhanden (wird vom Worker angelegt)
+                        resolver.folderCreated(info.year, res.name)
+                        if (dryRun || smb == null) {
+                            preview += PreviewEntry("${info.year}\\${res.name}", item.displayName, false)
+                            null
+                        } else Job(item, info.year, res.name)
+                    }
+                }
+            }
+
+            // --- 3. Dateien verarbeiten ---------------------------------------------
+            if (dryRun || smb == null) {
+                for ((index, item) in todo.withIndex()) {
+                    currentCoroutineContext().ensureActive()
+                    try { plan(item) } catch (e: CancellationException) { throw e } catch (ignored: Exception) {}
+                    if (index % 25 == 0) emit("Analysiere…", index, todo.size, 0, totalBytes, null)
+                }
+            } else {
+                val sh = Shared(todo.size, totalBytes).also { shared = it }
+                val parallel = settings.parallelUploads
+                log("I", "Übertrage mit $parallel parallelen Verbindungen")
+                coroutineScope {
+                    val channel = Channel<Job>(capacity = 32)
+                    val workers = List(parallel) { launch { worker(channel, sh) } }
+                    try {
+                        for ((index, item) in todo.withIndex()) {
+                            currentCoroutineContext().ensureActive()
+                            if (index % 20 == 0 && !shouldContinue()) {
+                                sh.stop.set(true)
+                                status = "PARTIAL"; message = "Abgebrochen: WLAN nicht mehr verbunden"
+                                log("W", message); break
+                            }
+                            val job = try {
+                                plan(item)
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                sh.failed.incrementAndGet()
+                                log("E", "✗ ${item.displayName}: Analyse fehlgeschlagen: ${e.message}")
+                                null
+                            }
+                            if (job != null) channel.send(job) else countDone(sh, item.size)
+                        }
+                    } finally {
+                        channel.close()
+                    }
+                    workers.joinAll()
+                }
+            }
+
+            // --- 4. Offene Ordner-Entscheidungen speichern ---------------------------
+            if (!dryRun) {
+                for ((key, d) in decisions) {
+                    dao.upsertDecision(
+                        PendingDecision(
+                            profileId = profile.id, groupKey = key, year = d.year, month = d.month,
+                            countryIso = d.countryIso, countryName = d.countryName,
+                            defaultName = d.defaultName, candidates = d.candidates.joinToString("\n"),
+                            fileCount = d.count, totalBytes = d.bytes,
+                            sampleUris = d.samples.joinToString("\n"), updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+                if (decisions.isNotEmpty()) log("W", "$waiting Dateien warten auf Ordnerauswahl (${decisions.size} Gruppen)")
+                DeletionManager.sweep(context) { log("I", it) }
+            }
+
+            if (status == "OK" && fl() > 0) status = "PARTIAL"
+            if (message.isEmpty()) message = "${up()} übertragen, ${sk()} übersprungen" +
+                (if (fl() > 0) ", ${fl()} Fehler" else "") +
+                (if (waiting > 0) ", $waiting warten auf Ordnerauswahl" else "")
+            return finish(status, message, up(), sk(), fl(), waiting, by())
+        } catch (e: CancellationException) {
+            withContext(NonCancellable) {
+                log("W", "Lauf abgebrochen")
+                finish("CANCELLED", "Abgebrochen", up(), sk(), fl(), waiting, by())
+            }
+            throw e
+        } catch (e: Exception) {
+            if (isConnectionError(e)) connectionFailed = true
+            log("E", "Lauf fehlgeschlagen: ${e.javaClass.simpleName}: ${e.message}")
+            return finish("FAILED", e.message ?: e.javaClass.simpleName, up(), sk(), fl(), waiting, by())
+        } finally {
+            smb?.close()
+        }
+    }
+
+    // ---- Paralleler Worker -----------------------------------------------------------
+    private suspend fun worker(channel: ReceiveChannel<Job>, sh: Shared) {
+        var session: SmbSession? = null
+        try {
+            for (job in channel) {
+                if (sh.stop.get()) continue // Rest der Warteschlange verwerfen
+                currentCoroutineContext().ensureActive()
+                val item = job.item
+                try {
+                    val s = session ?: SmbSession.open(profile).also { session = it }
+                    val uploaded = transfer(s, job, sh)
+                    val folderRel = "${job.year}\\${job.folderName}"
+                    if (uploaded) {
+                        sh.uploaded.incrementAndGet()
+                        log("I", "↑ ${item.displayName} → $folderRel")
+                    } else {
+                        sh.skipped.incrementAndGet()
+                        log("I", "= ${item.displayName} war bereits in $folderRel")
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    sh.failed.incrementAndGet()
+                    log("E", "✗ ${item.displayName}: ${e.javaClass.simpleName}: ${e.message}")
+                    if (isConnectionError(e)) throw e
+                } finally {
+                    sh.inflight.remove(item.id)
+                }
+                countDone(sh, item.size)
+            }
+        } finally {
+            session?.close()
+        }
+    }
+
+    private fun countDone(sh: Shared, bytes: Long) {
+        sh.bytesDone.addAndGet(bytes)
+        val done = sh.done.incrementAndGet()
+        emitShared(sh, null, force = done == sh.totalFiles)
+    }
+
+    private fun emitShared(sh: Shared, file: String?, force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - sh.lastEmit < 700) return
+        sh.lastEmit = now
+        val bytes = sh.bytesDone.get() + sh.inflight.values.sum()
+        emit("Übertrage…", sh.done.get(), sh.totalFiles, bytes.coerceAtMost(sh.totalBytes), sh.totalBytes, file)
+    }
+
+    private suspend fun finish(
+        status: String, message: String, uploaded: Int, skipped: Int, failed: Int, waiting: Int, bytes: Long,
+    ): SyncRun {
+        run = run.copy(
+            finishedAt = System.currentTimeMillis(), status = status, message = message,
+            uploaded = uploaded, skipped = skipped, failed = failed, waiting = waiting, bytes = bytes
+        )
+        dao.updateRun(run)
+        if (!dryRun) log("I", "Ende: $message")
+        return run
+    }
+
+    private fun emit(phase: String, done: Int, total: Int, doneBytes: Long, totalBytes: Long, file: String?) =
+        onProgress(SyncProgress(profile.name, phase, done, total, doneBytes, totalBytes, file))
+
+    private fun isConnectionError(e: Throwable): Boolean {
+        var t: Throwable? = e
+        var depth = 0
+        while (t != null && depth < 6) {
+            if (t is java.net.SocketException || t is java.net.SocketTimeoutException ||
+                t is java.net.UnknownHostException || t.javaClass.name.contains("TransportException")
+            ) return true
+            t = t.cause; depth++
+        }
+        return false
+    }
+
+    // ---- Analyse mit Cache ------------------------------------------------------
+    private suspend fun mediaInfo(item: MediaItem, analyzer: MediaAnalyzer, countries: CountryLookup): MediaInfo {
+        dao.mediaInfo(item.sourceKey)?.let { c ->
+            if (c.size == item.size && c.dateModified == item.dateModifiedSec) {
+                // Länderdaten erst nachträglich verfügbar? -> nur Land neu bestimmen
+                if (c.latitude != null && c.longitude != null && c.countryName == null && countries.isAvailable) {
+                    val country = countries.lookup(c.latitude, c.longitude)
+                    val upd = c.copy(countryIso = country?.iso, countryName = country?.nameDe)
+                    if (!dryRun) dao.upsertMediaInfo(upd)
+                    return upd
+                }
+                return c
+            }
+        }
+        val r = analyzer.analyze(item)
+        val country = if (r.latitude != null && r.longitude != null) countries.lookup(r.latitude, r.longitude) else null
+        val info = MediaInfo(
+            sourceKey = item.sourceKey, size = item.size, dateModified = item.dateModifiedSec,
+            year = r.yearMonth.year, month = r.yearMonth.monthValue, dateSource = r.dateSource,
+            latitude = r.latitude, longitude = r.longitude,
+            countryIso = country?.iso?.ifBlank { null }, countryName = country?.nameDe,
+        )
+        dao.upsertMediaInfo(info)
+        return info
+    }
+
+    // ---- Übertragung einer Datei ---------------------------------------------------
+    /** Original-URI (inkl. GPS-Daten), sonst würde Android die Standortdaten aus der Kopie entfernen. */
+    private fun readUri(item: MediaItem): Uri =
+        if (canReadLocation) try { MediaStore.setRequireOriginal(item.uri) } catch (e: Exception) { item.uri }
+        else item.uri
+
+    private fun openLocal(item: MediaItem): ParcelFileDescriptor.AutoCloseInputStream {
+        val pfd = context.contentResolver.openFileDescriptor(readUri(item), "r")
+            ?: throw java.io.IOException("Datei nicht lesbar: ${item.displayName}")
+        return ParcelFileDescriptor.AutoCloseInputStream(pfd)
+    }
+
+    private fun localHash(item: MediaItem): String = openLocal(item).use { ins ->
+        val ch: FileChannel = ins.channel
+        PartialHash.compute(item.size) { off, len ->
+            val bb = ByteBuffer.allocate(len)
+            var pos = off
+            while (bb.hasRemaining()) {
+                val n = ch.read(bb, pos)
+                if (n < 0) break
+                pos += n
+            }
+            if (bb.position() == len) bb.array() else bb.array().copyOf(bb.position())
+        }
+    }
+
+    /**
+     * Überträgt eine Datei in den Zielordner.
+     * @return true = hochgeladen, false = identische Datei war schon vorhanden
+     */
+    private suspend fun transfer(smb: SmbSession, job: Job, sh: Shared): Boolean {
+        val item = job.item
+        val folderPath = smb.path(job.year.toString(), job.folderName)
+        val folderKey = folderPath.lowercase()
+        val name = FolderNames.sanitize(item.displayName)
+        var lHash: String? = null
+        fun lh(): String = lHash ?: localHash(item).also { lHash = it }
+
+        // Namensvergabe unter Sperre: bild.jpg, bild_2.jpg, bild_3.jpg, …
+        // (andere Worker könnten gleichzeitig eine gleichnamige Datei in denselben Ordner laden)
+        val candidate: String
+        sh.nameLock.withLock {
+            val listing = sh.listings.getOrPut(folderKey) {
+                HashMap<String, RemoteEntry>().apply {
+                    smb.listDir(folderPath).filter { !it.isDirectory }.forEach { put(it.name.lowercase(), it) }
+                }
+            }
+            var n = 1
+            var c = name
+            while (true) {
+                val key = c.lowercase()
+                if ("$folderKey\\$key" !in sh.reserved) {
+                    val e = listing[key] ?: break
+                    if (e.size == item.size && smb.partialHash("$folderPath\\${e.name}", e.size) == lh()) {
+                        record(item, "$folderPath\\${e.name}", lh(), verified = true)
+                        return false
+                    }
+                }
+                n++
+                c = FolderNames.conflictName(name, n)
+            }
+            sh.reserved += "$folderKey\\${c.lowercase()}"
+            smb.ensureDir(folderPath)
+            candidate = c
+        }
+
+        val finalPath = "$folderPath\\$candidate"
+        val reservedKey = "$folderKey\\${candidate.lowercase()}"
+        var ok = false
+        try {
+            val ctx = currentCoroutineContext()
+            smb.upload(
+                finalPath = finalPath,
+                size = item.size,
+                openInput = { offset -> openAt(item, offset) },
+                onProgress = { b -> sh.inflight[item.id] = b; emitShared(sh, item.displayName) },
+                checkCancel = { ctx.ensureActive() },
+                modifiedMillis = item.dateModifiedSec * 1000,
+            )
+
+            // Prüfung: Grösse + Teil-Hash der Zieldatei (Pflicht, wenn gelöscht werden soll)
+            var verified = false
+            if (profile.mustVerify()) {
+                val remoteSize = smb.fileSize(finalPath)
+                if (remoteSize != item.size || smb.partialHash(finalPath, item.size) != lh()) {
+                    try { smb.delete(finalPath) } catch (ignored: Exception) {}
+                    throw java.io.IOException("Prüfung nach Upload fehlgeschlagen – Datei wird beim nächsten Lauf erneut übertragen")
+                }
+                verified = true
+            }
+            record(item, finalPath, lHash, verified)
+            ok = true
+            return true
+        } finally {
+            withContext(NonCancellable) {
+                sh.nameLock.withLock {
+                    sh.reserved -= reservedKey
+                    if (ok) sh.listings[folderKey]?.put(candidate.lowercase(), RemoteEntry(candidate, item.size, false))
+                }
+            }
+        }
+    }
+
+    private fun openAt(item: MediaItem, offset: Long): InputStream {
+        val ins = openLocal(item)
+        if (offset > 0) ins.channel.position(offset)
+        return ins
+    }
+
+    private suspend fun record(item: MediaItem, remotePath: String, hash: String?, verified: Boolean) {
+        val wantDelete = verified && profile.delete() != DeleteMode.KEEP
+        dao.upsertSynced(
+            SyncedFile(
+                profileId = profile.id, sourceKey = item.sourceKey, mediaUri = item.uri.toString(),
+                size = item.size, dateModified = item.dateModifiedSec, partialHash = hash,
+                remotePath = remotePath, syncedAt = System.currentTimeMillis(), verified = verified,
+                deleteState = if (wantDelete) DeleteState.WANTED else DeleteState.NONE,
+            )
+        )
+    }
+}
