@@ -68,6 +68,24 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     private val isResumeRun: Boolean get() = inputData.getBoolean(SyncScheduler.KEY_RESUME, false)
 
     /**
+     * Warum Android den Lauf gestoppt hat (für den Verlauf). null = nicht von Android gestoppt bzw.
+     * "Abbrechen" durch den Benutzer – das gilt als echter Abbruch.
+     */
+    private fun interruptReason(): String? {
+        if (!isStopped) return null
+        return when (val r = stopReason) {
+            WorkInfo.STOP_REASON_CANCELLED_BY_APP -> null
+            WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> "WLAN getrennt"
+            WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> "nicht mehr am Ladegerät"
+            WorkInfo.STOP_REASON_TIMEOUT -> "Zeitlimit von Android"
+            WorkInfo.STOP_REASON_QUOTA, WorkInfo.STOP_REASON_APP_STANDBY,
+            WorkInfo.STOP_REASON_BACKGROUND_RESTRICTION, WorkInfo.STOP_REASON_DEVICE_STATE,
+            WorkInfo.STOP_REASON_SYSTEM_PROCESSING -> "vom System gestoppt ($r)"
+            else -> "von Android gestoppt ($r)"
+        }
+    }
+
+    /**
      * Sync wurde durch WLAN-Verlust unterbrochen: Fortsetzen auf zwei Wegen sicherstellen
      *  1. WLAN-Broadcast (WifiNetworkReceiver, ohne Drosselung)
      *  2. Auftrag beim Android-Aufgabenplaner (startet die App auch, wenn sie beendet wurde)
@@ -208,9 +226,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 }
                 // Bildordner -> sortierte Sicherung, normaler Ordner -> Spiegelung
                 val engine: SyncRunner = if (p.type() == ProfileType.MIRROR)
-                    MirrorEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress)
+                    MirrorEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress,
+                        interruptReason = ::interruptReason)
                 else
-                    SyncEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress)
+                    SyncEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress,
+                        interruptReason = ::interruptReason)
                 val r = engine.run()
                 uploaded += r.uploaded; failed += r.failed; bytes += r.bytes
                 if (p.type() == ProfileType.PHOTOS) waiting += r.waiting

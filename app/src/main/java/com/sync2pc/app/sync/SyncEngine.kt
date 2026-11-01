@@ -73,6 +73,8 @@ class SyncEngine(
     /** false zurückgeben, um den Lauf sauber zu beenden (z. B. WLAN getrennt) */
     private val shouldContinue: () -> Boolean = { true },
     private val onProgress: (SyncProgress) -> Unit = {},
+    /** Bei einem Stopp: Grund, wenn Android unterbrochen hat (z. B. "WLAN getrennt"); null = vom Benutzer abgebrochen */
+    private val interruptReason: () -> String? = { null },
 ) : SyncRunner {
     private val db = AppDatabase.get(context)
     private val dao = db.dao()
@@ -343,8 +345,15 @@ class SyncEngine(
         } catch (e: CancellationException) {
             withContext(NonCancellable) {
                 flushAlready(shared)
-                log("W", "Lauf abgebrochen")
-                finish("CANCELLED", "Abgebrochen", up(), sk(), fl(), waiting, by())
+                val reason = interruptReason()
+                if (reason != null) {
+                    log("W", "Unterbrochen ($reason) – wird automatisch fortgesetzt")
+                    finish("INTERRUPTED", "Unterbrochen ($reason) – ${up()} übertragen, Rest folgt automatisch",
+                        up(), sk(), fl(), waiting, by())
+                } else {
+                    log("W", "Lauf abgebrochen")
+                    finish("CANCELLED", "Abgebrochen", up(), sk(), fl(), waiting, by())
+                }
             }
             throw e
         } catch (e: Exception) {

@@ -47,6 +47,8 @@ class MirrorEngine(
     private val dryRun: Boolean = false,
     private val shouldContinue: () -> Boolean = { true },
     private val onProgress: (SyncProgress) -> Unit = {},
+    /** Bei einem Stopp: Grund, wenn Android unterbrochen hat (z. B. "WLAN getrennt"); null = vom Benutzer abgebrochen */
+    private val interruptReason: () -> String? = { null },
 ) : SyncRunner {
 
     companion object {
@@ -208,7 +210,15 @@ class MirrorEngine(
             }
             return finish(status, message)
         } catch (e: CancellationException) {
-            withContext(NonCancellable) { log("W", "Lauf abgebrochen"); finish("CANCELLED", "Abgebrochen") }
+            withContext(NonCancellable) {
+                val reason = interruptReason()
+                if (reason != null) {
+                    log("W", "Unterbrochen ($reason) – wird automatisch fortgesetzt")
+                    finish("INTERRUPTED", "Unterbrochen ($reason) – ↑ $up / ↓ $down übertragen, Rest folgt automatisch")
+                } else {
+                    log("W", "Lauf abgebrochen"); finish("CANCELLED", "Abgebrochen")
+                }
+            }
             throw e
         } catch (e: Exception) {
             if (isNetworkError(e)) {

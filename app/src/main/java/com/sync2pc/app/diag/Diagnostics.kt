@@ -190,7 +190,9 @@ object Diagnostics {
                 val vendorKills = exits.filter { it.reason == 13 || it.description?.contains("kill", ignoreCase = true) == true }
                 if (vendorKills.isNotEmpty()) {
                     val active = vendorKills.count { it.importance <= 125 } // 100 Vordergrund, 125 Vordergrunddienst
-                    appendLine("⚠ Hersteller-Killer erkannt: ${vendorKills.size}× beendet, davon $active× während die App aktiv war (z. B. Sync)")
+                    val last = vendorKills.maxOf { it.timestamp }
+                    appendLine("⚠ Hersteller-Killer: ${vendorKills.size}×, zuletzt ${t(last)} " +
+                        "($active× während die App aktiv war, z. B. Sync)")
                 }
                 exits.forEach {
                     appendLine("${t(it.timestamp)}: ${exitReason(it.reason)}, Wichtigkeit ${it.importance}" +
@@ -271,6 +273,7 @@ object Diagnostics {
     // ---- Hilfen -------------------------------------------------------------------
     /** Ordner aus "… war bereits in 2019\02" bzw. "… bereits in 2026\10 - Ägypten vorhanden" */
     private val ALREADY_FOLDER = Regex("""bereits in (.+?)(?: vorhanden)?$""")
+    private val ALREADY_COUNT = Regex("""^= (\d+) Dateie?n? bereits""")
 
     private fun logLine(e: LogEntry): String =
         "${fmt.format(Date(e.time)).substringAfter(' ')} ${e.level} ${e.message}"
@@ -282,19 +285,22 @@ object Diagnostics {
     internal fun compress(entries: List<LogEntry>): List<String> {
         val out = ArrayList<String>()
         var count = 0
+        var files = 0
         val folders = LinkedHashSet<String>()
         var first: LogEntry? = null
         fun flush() {
             val f = first ?: return
             out += if (count == 1) logLine(f)
-            else "${fmt.format(Date(f.time)).substringAfter(' ')} I = $count Zeilen „bereits vorhanden“ zusammengefasst" +
-                (if (folders.isNotEmpty()) " (${folders.take(6).joinToString(", ")}${if (folders.size > 6) ", …" else ""})" else "")
-            count = 0; folders.clear(); first = null
+            else "${fmt.format(Date(f.time)).substringAfter(' ')} I = $files Dateien bereits vorhanden ($count Einträge" +
+                (if (folders.isNotEmpty()) ": ${folders.take(6).joinToString(", ")}${if (folders.size > 6) ", …" else ""}" else "") + ")"
+            count = 0; files = 0; folders.clear(); first = null
         }
         for (e in entries) {
             if (e.level == "I" && e.message.startsWith("= ")) {
                 if (first == null) first = e
                 count++
+                // Ab 0.1.1 "= 37 Dateien bereits in …", davor eine Zeile pro Datei
+                files += ALREADY_COUNT.find(e.message)?.groupValues?.get(1)?.toIntOrNull() ?: 1
                 ALREADY_FOLDER.find(e.message)?.groupValues?.get(1)?.let { folders += it }
             } else {
                 flush()

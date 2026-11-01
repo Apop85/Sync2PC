@@ -2,6 +2,13 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.1.2 (2026-11-01)
+
+### Behoben
+- **„Unterbrochen“ statt „Abgebrochen“:** Stoppt Android einen Lauf, weil das WLAN getrennt wurde oder aus einem anderen Systemgrund, steht im Verlauf jetzt „Unterbrochen (WLAN getrennt) – wird automatisch fortgesetzt“. „Abgebrochen“ erscheint nur noch, wenn du selbst auf *Abbrechen* tippst.
+- **Diagnose:** Die Zusammenfassung zählt jetzt Dateien statt Log-Zeilen („= 775 Dateien bereits vorhanden (76 Einträge: …)“).
+- **Diagnose:** Die Warnung vor Hersteller-Killern nennt den Zeitpunkt des letzten Vorfalls. So sieht man, ob alte Fälle noch nachwirken oder ob es wieder passiert.
+
 ## 0.1.1 (2026-11-01)
 
 ### Verbessert
