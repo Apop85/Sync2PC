@@ -1,6 +1,7 @@
-# Bereitet die Zustandsbilder auf: .claude\wait_cleaned.png (wartet/pausiert) und .claude\idle_cleaned.png (alles aktuell).
+# Bereitet die Zustandsbilder auf: .claude\wait_cleaned.png (wartet), .claude\idle_cleaned.png (alles aktuell)
+# und .claude\pause.png (vom Benutzer pausiert, seit 0.3.2).
 # Transparenten Rand wegschneiden, laengste Seite auf -Size skalieren.
-# Ausgabe: app\src\main\res\drawable-nodpi\dog_wait.png und dog_idle.png
+# Ausgabe: app\src\main\res\drawable-nodpi\dog_wait.png, dog_idle.png, dog_pause.png
 # Aufruf: powershell -ExecutionPolicy Bypass -File tools\make-state-images.ps1
 param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
@@ -23,7 +24,7 @@ public static class Sync2PcState {
 "@
 $outDir = Join-Path $Root "app\src\main\res\drawable-nodpi"
 New-Item -ItemType Directory -Force $outDir | Out-Null
-foreach ($pair in @(@("wait_cleaned.png", "dog_wait.png"), @("idle_cleaned.png", "dog_idle.png"))) {
+foreach ($pair in @(@("wait_cleaned.png", "dog_wait.png"), @("idle_cleaned.png", "dog_idle.png"), @("pause.png", "dog_pause.png"))) {
     $src = Join-Path $Root (".claude\" + $pair[0])
     if (-not (Test-Path $src)) { Write-Warning "Fehlt: $src"; continue }
     $img = New-Object System.Drawing.Bitmap -ArgumentList $src

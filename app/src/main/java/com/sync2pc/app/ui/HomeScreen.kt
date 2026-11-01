@@ -320,6 +320,7 @@ private fun StatusCard(
         val upToDate = !isRunning && !paused && !userPaused && shareWait == null && allUpToDate
         val dog = when {
             isRunning -> DogState.RUNNING
+            userPaused -> DogState.PAUSED
             upToDate -> DogState.SLEEPING
             else -> DogState.WAITING
         }

@@ -2,6 +2,11 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.2 (2026-11-01)
+
+### Verbessert
+- **Eigenes Bild für „Pausiert“:** Ist der Dienst vom Benutzer pausiert, zeigt die Startseite den Hund auf dem Rücken statt des sitzenden Hundes.
+
 ## 0.3.1 (2026-11-01)
 
 ### Neu

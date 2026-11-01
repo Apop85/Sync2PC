@@ -138,14 +138,15 @@ if ($animSrc) {
     } else { Write-Host "Animation aktuell" }
 }
 
-# Zustandsbilder (wartet / alles aktuell)
-$stateSrcs = @((Join-Path $Root ".claude\wait_cleaned.png"), (Join-Path $Root ".claude\idle_cleaned.png")) | Where-Object { Test-Path $_ }
+# Zustandsbilder (wartet / alles aktuell / pausiert)
+$stateSrcs = @((Join-Path $Root ".claude\wait_cleaned.png"), (Join-Path $Root ".claude\idle_cleaned.png"), (Join-Path $Root ".claude\pause.png")) | Where-Object { Test-Path $_ }
 if ($stateSrcs.Count -gt 0) {
     $sh = ($stateSrcs | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash }) -join ""
     $stateHashFile = Join-Path $StateDir "state-images.hash"
     $oldS = if (Test-Path $stateHashFile) { (Get-Content $stateHashFile -Raw).Trim() } else { "" }
     $waitOut = Join-Path $Root "app\src\main\res\drawable-nodpi\dog_wait.png"
-    if ($sh -ne $oldS -or -not (Test-Path $waitOut)) {
+    $pauseOut = Join-Path $Root "app\src\main\res\drawable-nodpi\dog_pause.png"
+    if ($sh -ne $oldS -or -not (Test-Path $waitOut) -or -not (Test-Path $pauseOut)) {
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-state-images.ps1") -Root $Root
         [IO.File]::WriteAllText($stateHashFile, $sh, $Utf8)
     } else { Write-Host "Zustandsbilder aktuell" }
