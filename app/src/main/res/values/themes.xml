@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LeoSync" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Hell/Dunkel automatisch: auch der kurze System-Startbildschirm (Android 12+) passt sich an -->
+    <style name="Theme.LeoSync" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
     <color name="ic_launcher_background">#3B6EA8</color>

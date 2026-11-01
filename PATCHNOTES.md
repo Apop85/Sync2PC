@@ -2,6 +2,17 @@
 
 Versionierung: `0.0.x` bis zur Freigabe von `1.0.0`. Neueste Version oben.
 
+## 0.0.13 (2026-11-01)
+
+### Neu
+- **Keine Duplikate nach Umsortieren:** Vor jedem Upload sucht die App in **allen Ordnern desselben Monats** (z. B. `10`, `10 - Ägypten`, `10 - Ferien`) nach derselben Datei: gleicher Name (auch `bild_2.jpg` …), gleiche Grösse und gleiche Prüfsumme. Wird sie fündig, gilt die Datei als gesichert und wird nicht nochmals übertragen. Das gilt auch nach „Sync-Status zurücksetzen“ oder einer Neuinstallation.
+- **PC-Import-Werkzeug** `tools\LeoSync-Import.bat`: sortiert Fotos und Videos aus einem Ordner auf dem PC nach denselben Regeln wie die App in den Share ein.
+  - Gleiche Regeln: Jahr\Monat - Land, Heimatland ohne Land, Rückfrage bei umbenannten Ordnern, gleiche Duplikatprüfung, `_2`-Namen.
+  - Ablauf: Quellordner wählen, Vorschau ansehen, bestätigen. Kopiert wird nur nach ausdrücklichem „j“.
+  - Der Quellordner bleibt unverändert. Das Änderungsdatum bleibt erhalten. Jede Kopie wird geprüft. Ein Protokoll liegt unter `%LOCALAPPDATA%\LeoSync\import-logs`.
+- **Startbildschirm:** Beim Öffnen der App erscheinen der sitzende Hund und der Schriftzug „LeoSync“ (ca. 1,3 Sekunden, dann weiche Überblendung).
+- Das App-Grundthema folgt jetzt dem hellen bzw. dunklen Modus des Systems, ohne weisses Aufblitzen beim Start im Dunkelmodus.
+
 ## 0.0.12 (2026-11-01)
 
 ### Geändert

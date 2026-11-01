@@ -40,6 +40,16 @@ class FolderNamesTest {
         assertEquals("README_2", FolderNames.conflictName("README", 2))
     }
 
+    @Test fun sameBaseName() {
+        assertTrue(FolderNames.sameBaseName("bild.jpg", "bild.jpg"))
+        assertTrue(FolderNames.sameBaseName("BILD.JPG", "bild.jpg"))
+        assertTrue(FolderNames.sameBaseName("bild_2.jpg", "bild.jpg"))
+        assertTrue(FolderNames.sameBaseName("bild_17.jpg", "bild.jpg"))
+        assertFalse(FolderNames.sameBaseName("bild_x.jpg", "bild.jpg"))
+        assertFalse(FolderNames.sameBaseName("bild2.jpg", "bild.jpg"))
+        assertFalse(FolderNames.sameBaseName("bild.png", "bild.jpg"))
+    }
+
     @Test fun sanitize() {
         assertEquals("a_b_c", FolderNames.sanitize("a:b?c"))
         assertEquals("Ordner", FolderNames.sanitize("Ordner. "))

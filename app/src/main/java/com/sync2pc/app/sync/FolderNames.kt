@@ -35,6 +35,18 @@ object FolderNames {
         else fileName.substring(0, dot) + "_" + n + fileName.substring(dot)
     }
 
+    /**
+     * Gleicher Dateiname, auch mit Konflikt-Zusatz: "bild.jpg" passt zu "bild.jpg", "BILD.JPG", "bild_2.jpg", "bild_17.jpg".
+     */
+    fun sameBaseName(existing: String, original: String): Boolean {
+        if (existing.equals(original, ignoreCase = true)) return true
+        val dot = original.lastIndexOf('.')
+        val base = if (dot > 0) original.substring(0, dot) else original
+        val ext = if (dot > 0) original.substring(dot) else ""
+        val rx = Regex("^" + Regex.escape(base) + "_\\d+" + Regex.escape(ext) + "$", RegexOption.IGNORE_CASE)
+        return rx.matches(existing)
+    }
+
     /** Gruppenschlüssel für Ordner-Zuordnungen: "2026/06/EG" oder "2026/06/-" */
     fun groupKey(year: Int, month: Int, countryKey: String?): String =
         "%04d/%02d/%s".format(year, month, countryKey?.ifBlank { null } ?: "-")

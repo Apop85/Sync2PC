@@ -114,7 +114,11 @@ class SyncEngine(
     }
 
     /** Ein Übertragungsauftrag: Datei → Jahr\Monatsordner */
-    private class Job(val item: MediaItem, val year: Int, val folderName: String)
+    private class Job(
+        val item: MediaItem, val year: Int, val folderName: String,
+        /** Andere Ordner desselben Monats (z. B. "10" neben "10 - Ägypten") – für die Duplikatsuche */
+        val siblingFolders: List<String> = emptyList(),
+    )
 
     /** Zwischen den parallelen Workern geteilter Zustand */
     private class Shared(val totalFiles: Int, val totalBytes: Long) {
@@ -248,7 +252,10 @@ class SyncEngine(
                         if (dryRun || offline) {
                             preview += PreviewEntry("${info.year}\\${res.name}", item.displayName, false)
                             null
-                        } else Job(item, info.year, res.name)
+                        } else Job(
+                            item, info.year, res.name,
+                            resolver.monthFolders(info.year, info.month).filter { !it.equals(res.name, ignoreCase = true) },
+                        )
                     }
                 }
             }
@@ -510,6 +517,23 @@ class SyncEngine(
                 }
                 n++
                 c = FolderNames.conflictName(name, n)
+            }
+            // Duplikatsuche in den anderen Ordnern desselben Monats (z. B. von Hand von "10" nach
+            // "10 - Ägypten" verschoben): gleicher Name (auch bild_2 …), gleiche Grösse, gleiche Prüfsumme
+            for (sibling in job.siblingFolders) {
+                val sPath = smb.path(job.year.toString(), sibling)
+                val sListing = sh.listings.getOrPut(sPath.lowercase()) {
+                    HashMap<String, RemoteEntry>().apply {
+                        smb.listDir(sPath).filter { !it.isDirectory }.forEach { put(it.name.lowercase(), it) }
+                    }
+                }
+                for (e in sListing.values) {
+                    if (e.size != item.size || !FolderNames.sameBaseName(e.name, name)) continue
+                    if (smb.partialHash("$sPath\\${e.name}", e.size) == lh()) {
+                        record(item, "$sPath\\${e.name}", lh(), verified = true)
+                        return false
+                    }
+                }
             }
             sh.reserved += "$folderKey\\${c.lowercase()}"
             smb.ensureDir(folderPath)

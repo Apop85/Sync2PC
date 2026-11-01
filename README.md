@@ -55,6 +55,19 @@ Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/re
 3. Profil anlegen: Freigabe (`\\server\freigabe`), Benutzer und Passwort, WLAN und Quellordner. Die Quellordner wählst du über die Android-Dateiauswahl, z. B. `DCIM › Camera`.
 4. Mit **Verbindung testen** und **Vorschau** prüfen und dann **Jetzt synchronisieren**.
 
+## Bestehende Fotos vom PC einsortieren
+
+`tools\LeoSync-Import.bat` per Doppelklick starten. Das Werkzeug sortiert einen Ordner auf dem PC nach denselben Regeln wie die App in den Share ein:
+
+1. Quellordner wählen und Ziel-Share angeben (z. B. `\\192.168.1.20\Fotos`; wird gemerkt).
+2. Bei umbenannten Monatsordnern fragt es einmal pro Monat bzw. Land nach.
+3. Eine Vorschau zeigt, was in welchen Ordner kommt und was schon vorhanden ist.
+4. Kopiert wird erst nach Bestätigung mit „j“. Der Quellordner bleibt unverändert.
+
+Voraussetzungen: Windows mit PowerShell 5.1 (vorinstalliert), für Videodaten `ffprobe` (Teil von ffmpeg). Ohne ffprobe gelten Dateiname bzw. Änderungsdatum. Die Ländererkennung nutzt `app\src\main\assets\geo\countries.geojson`; das Werkzeug muss deshalb im Projektordner liegen.
+
+Einschränkung: Bei HEIC-Fotos kann Windows ohne Zusatz das EXIF-Datum und GPS nicht lesen. Dann gelten Dateiname bzw. Änderungsdatum, und es gibt keinen Länderordner.
+
 ## Projektstruktur
 
 ```
@@ -67,7 +80,7 @@ app/src/main/java/com/sync2pc/app/
   mirror/  Ordner-Spiegelung (Handy-Ordner via Android-Ordnerfreigabe, 3-Wege-Abgleich, Filter)
   update/  Selbst-Update (GitHub Releases, PackageInstaller)
   ui/      Jetpack Compose Oberfläche
-tools/     Build-Skripte (One-Click-Builder, Icons, Länderdaten)
+tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten) und LeoSync-Import (PC → Share)
 ```
 
 ## Bauen

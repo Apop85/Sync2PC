@@ -12,7 +12,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,14 +54,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handleIntent(intent)
+        // Startbildschirm nur beim echten Start (nicht nach Drehen des Bildschirms o. Ä.)
+        val showSplashInitially = savedInstanceState == null
         setContent {
             LeoSyncTheme {
-                AppRoot(
-                    screen = screen,
-                    navigate = { screen = it },
-                    startDeleteFlow = startDeleteFlow,
-                    onDeleteFlowStarted = { startDeleteFlow = false },
-                )
+                var splash by remember { mutableStateOf(showSplashInitially) }
+                LaunchedEffect(Unit) {
+                    if (splash) { delay(1_300); splash = false }
+                }
+                Crossfade(targetState = splash, animationSpec = tween(400), label = "splash") { showSplash ->
+                    if (showSplash) SplashScreen()
+                    else AppRoot(
+                        screen = screen,
+                        navigate = { screen = it },
+                        startDeleteFlow = startDeleteFlow,
+                        onDeleteFlowStarted = { startDeleteFlow = false },
+                    )
+                }
             }
         }
     }

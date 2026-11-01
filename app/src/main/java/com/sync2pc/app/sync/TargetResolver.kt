@@ -42,6 +42,10 @@ class TargetResolver(
     private fun findExisting(year: Int, name: String): String? =
         foldersOf(year).firstOrNull { it.equals(name, ignoreCase = true) }
 
+    /** Alle Ordner im Jahresordner mit dieser Monatszahl (für die Duplikatsuche) */
+    fun monthFolders(year: Int, month: Int): List<String> =
+        foldersOf(year).filter { FolderNames.monthOf(it) == month }
+
     fun folderCreated(year: Int, name: String) {
         if (findExisting(year, name) == null) foldersOf(year).add(name)
     }
