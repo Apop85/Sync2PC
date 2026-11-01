@@ -78,7 +78,7 @@ fun RemoteFolderPicker(
         val result = withContext(Dispatchers.IO) {
             try {
                 SmbSession.open(profile().copy(remoteSubfolder = "")).use { s ->
-                    Result.success(s.listDir(s.path(path)).filter { it.isDirectory && !it.name.startsWith(".Sync2PC") }
+                    Result.success(s.listDir(s.path(path)).filter { it.isDirectory && !it.name.startsWith(".LeoSync") && !it.name.startsWith(".Sync2PC") }
                         .map { it.name }.sortedBy { it.lowercase() })
                 }
             } catch (e: Exception) {

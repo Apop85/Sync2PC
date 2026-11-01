@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         handleIntent(intent)
         setContent {
-            Sync2PCTheme {
+            LeoSyncTheme {
                 AppRoot(
                     screen = screen,
                     navigate = { screen = it },

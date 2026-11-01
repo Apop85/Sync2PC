@@ -110,6 +110,9 @@ class SmbSession private constructor(
         }
     }
 
+    /** Verbindung noch nutzbar? (Windows trennt unbenutzte Verbindungen nach ca. 15 Minuten) */
+    fun isAlive(): Boolean = try { share.isConnected && connection.isConnected } catch (e: Exception) { false }
+
     /** Pfad relativ zur Share-Wurzel, ausgehend vom Basisordner des Profils */
     fun path(vararg parts: String): String =
         (listOf(target.basePath) + parts).filter { it.isNotEmpty() }.joinToString("\\")

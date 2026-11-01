@@ -68,7 +68,7 @@ fun ConflictScreen(onBack: () -> Unit) {
             if (conflicts.isEmpty()) item { Text("Keine offenen Konflikte.") }
             else item {
                 Hint("Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. " +
-                    "Die andere Version wird in den Ordner „.Sync2PC-Papierkorb“ verschoben, nicht gelöscht. " +
+                    "Die andere Version wird in den Ordner „.LeoSync-Papierkorb“ verschoben, nicht gelöscht. " +
                     "Die Auswahl wird beim nächsten Sync im WLAN angewendet.")
             }
             items(conflicts, key = { "${it.profileId}|${it.relPath}" }) { c ->

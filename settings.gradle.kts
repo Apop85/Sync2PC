@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Sync2PC"
+rootProject.name = "LeoSync"
 include(":app")

@@ -101,7 +101,7 @@ fun UpdateScreen(onBack: () -> Unit) {
                     if (u.size > 0) Hint("Grösse: ${Notifications.formatBytes(u.size)}")
                     if (u.notes.isNotBlank()) Text(u.notes.take(3000), style = MaterialTheme.typography.bodySmall)
                     if (!canInstall) {
-                        Hint("Android muss Sync2PC einmalig erlauben, Apps zu installieren.")
+                        Hint("Android muss LeoSync einmalig erlauben, Apps zu installieren.")
                         OutlinedButton(onClick = {
                             ctx.startActivity(
                                 Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${ctx.packageName}"))
@@ -109,7 +109,7 @@ fun UpdateScreen(onBack: () -> Unit) {
                         }) { Text("Erlaubnis erteilen") }
                     }
                     Button(onClick = { install(u) }, enabled = !busy && canInstall) { Text("Herunterladen und installieren") }
-                    Hint("Android fragt zur Bestätigung. Nach dem Update startet Sync2PC neu.")
+                    Hint("Android fragt zur Bestätigung. Nach dem Update startet LeoSync neu.")
                 }
             }
             if (progress != null) item { LinearProgressIndicator(progress = { progress ?: 0f }, modifier = Modifier.fillMaxWidth()) }

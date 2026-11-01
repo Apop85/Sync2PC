@@ -1,8 +1,8 @@
 # ============================================================================
-#  Sync2PC One-Click-Builder
+#  LeoSync One-Click-Builder
 #  - baut nur, wenn sich der Quellcode seit dem letzten Build geaendert hat
 #  - erhoeht die Patch-Version automatisch, falls die aktuelle Version schon gebaut wurde
-#  - legt die signierte APK unter releases\Sync2PC-<version>.apk ab
+#  - legt die signierte APK unter releases\LeoSync-<version>.apk ab
 #
 #  Aufruf:  build.bat                (normal)
 #           build.bat -Force         (immer bauen)
@@ -114,16 +114,40 @@ if (Test-Path $iconSrc) {
     } else { Write-Host "Icons aktuell" }
 }
 
-$animSrc = Join-Path $Root ".claude\gif_frames.png"
+# Animation: bevorzugt aus dem Video (.claude\new_animation.mp4, braucht ffmpeg),
+# sonst aus der Bildvorlage (.claude\gif_frames.png). Nur neu erzeugen, wenn sich die Quelle geaendert hat.
+$animVideo = Join-Path $Root ".claude\new_animation.mp4"
+$animSheet = Join-Path $Root ".claude\gif_frames.png"
 $animHashFile = Join-Path $StateDir "anim.hash"
-if (Test-Path $animSrc) {
+$animSrc = if (Test-Path $animVideo) { $animVideo } elseif (Test-Path $animSheet) { $animSheet } else { $null }
+if ($animSrc) {
     $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash
     $oldA = if (Test-Path $animHashFile) { (Get-Content $animHashFile -Raw).Trim() } else { "" }
     $firstFrame = Join-Path $Root "app\src\main\res\drawable-nodpi\anim_dog_01.png"
     if ($ah -ne $oldA -or -not (Test-Path $firstFrame)) {
-        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-anim.ps1") -Root $Root
-        [IO.File]::WriteAllText($animHashFile, $ah, $Utf8)
+        if ($animSrc -eq $animVideo) {
+            if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
+                & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-anim-video.ps1") -Root $Root
+                if ($LASTEXITCODE -eq 0) { [IO.File]::WriteAllText($animHashFile, $ah, $Utf8) }
+            } else { Write-Warning "ffmpeg nicht gefunden - Animation bleibt unveraendert" }
+        } else {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-anim.ps1") -Root $Root
+            [IO.File]::WriteAllText($animHashFile, $ah, $Utf8)
+        }
     } else { Write-Host "Animation aktuell" }
+}
+
+# Zustandsbilder (wartet / alles aktuell)
+$stateSrcs = @((Join-Path $Root ".claude\wait_cleaned.png"), (Join-Path $Root ".claude\idle_cleaned.png")) | Where-Object { Test-Path $_ }
+if ($stateSrcs.Count -gt 0) {
+    $sh = ($stateSrcs | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash }) -join ""
+    $stateHashFile = Join-Path $StateDir "state-images.hash"
+    $oldS = if (Test-Path $stateHashFile) { (Get-Content $stateHashFile -Raw).Trim() } else { "" }
+    $waitOut = Join-Path $Root "app\src\main\res\drawable-nodpi\dog_wait.png"
+    if ($sh -ne $oldS -or -not (Test-Path $waitOut)) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-state-images.ps1") -Root $Root
+        [IO.File]::WriteAllText($stateHashFile, $sh, $Utf8)
+    } else { Write-Host "Zustandsbilder aktuell" }
 }
 
 # ---------------------------------------------------------------------------
@@ -153,7 +177,7 @@ function Read-Version {
 $v = Read-Version
 $version = "$($v[0]).$($v[1]).$($v[2])"
 $suffix = if ($Debug) { "-debug" } else { "" }
-$apkOut = Join-Path $Root "releases\Sync2PC-$version$suffix.apk"
+$apkOut = Join-Path $Root "releases\LeoSync-$version$suffix.apk"
 
 if (-not $Force -and $srcHash -eq $lastHash -and (Test-Path $apkOut)) {
     Write-Host "Keine Aenderungen seit dem letzten Build ($version). Nichts zu tun." -ForegroundColor Green
@@ -169,7 +193,7 @@ if (Test-Path $apkOut) {
     $t = [IO.File]::ReadAllText($verFile, $Utf8)
     $t = [regex]::Replace($t, "(?m)^VERSION_PATCH=\d+", "VERSION_PATCH=$($v[2])")
     [IO.File]::WriteAllText($verFile, $t, $Utf8)
-    $apkOut = Join-Path $Root "releases\Sync2PC-$version$suffix.apk"
+    $apkOut = Join-Path $Root "releases\LeoSync-$version$suffix.apk"
 
     $pn = Join-Path $Root "PATCHNOTES.md"
     if (Test-Path $pn) {
@@ -196,7 +220,7 @@ if (-not $Debug) {
         $pw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 32 | ForEach-Object { [char]$_ })
         $keytool = Join-Path $javaHome "bin\keytool.exe"
         & $keytool -genkeypair -v -keystore $ks -storetype PKCS12 -alias sync2pc -keyalg RSA -keysize 4096 `
-            -validity 36500 -storepass $pw -keypass $pw -dname "CN=Sync2PC, O=Sync2PC" | Out-Null
+            -validity 36500 -storepass $pw -keypass $pw -dname "CN=LeoSync, O=Leo" | Out-Null
         if ($LASTEXITCODE -ne 0) { Fail "Keystore konnte nicht erstellt werden" }
         $content = "storeFile=keystore/sync2pc-release.jks`nstorePassword=$pw`nkeyAlias=sync2pc`nkeyPassword=$pw`n"
         [IO.File]::WriteAllText($ksProps, $content, $Utf8)
@@ -213,7 +237,7 @@ Step ("Gradle: " + ($tasks -join " "))
 # Ausgabe zusaetzlich in .build\last-build.log schreiben (zum Weitergeben an den Agent)
 $logFile = Join-Path $StateDir "last-build.log"
 $writer = New-Object System.IO.StreamWriter($logFile, $false, $Utf8)
-$writer.WriteLine("Sync2PC Build $version - " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss") + " - Tasks: " + ($tasks -join " "))
+$writer.WriteLine("LeoSync Build $version - " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss") + " - Tasks: " + ($tasks -join " "))
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'   # stderr von Gradle darf das Skript nicht abbrechen
 try {

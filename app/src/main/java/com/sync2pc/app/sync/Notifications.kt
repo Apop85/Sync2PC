@@ -84,7 +84,7 @@ object Notifications {
         val pct: Int
         val indeterminate: Boolean
         if (p == null || p.totalFiles == 0) {
-            title = p?.profileName ?: "Sync2PC"
+            title = p?.profileName ?: "LeoSync"
             text = p?.phase ?: "Starte…"
             pct = 0; indeterminate = true
         } else {
@@ -122,9 +122,12 @@ object Notifications {
 
     fun cancelProgress(context: Context) = NotificationManagerCompat.from(context).cancel(ID_PROGRESS)
 
-    private fun post(context: Context, id: Int, channel: String, title: String, text: String, open: String?) {
+    private fun post(
+        context: Context, id: Int, channel: String, title: String, text: String, open: String?,
+        largeImage: Int? = null,
+    ) {
         if (!canPost(context)) return
-        val n = NotificationCompat.Builder(context, channel)
+        val b = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
@@ -132,13 +135,17 @@ object Notifications {
             .setAutoCancel(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(openApp(context, open, id))
-            .build()
-        try { NotificationManagerCompat.from(context).notify(id, n) } catch (ignored: SecurityException) {}
+        if (largeImage != null) {
+            try { b.setLargeIcon(android.graphics.BitmapFactory.decodeResource(context.resources, largeImage)) } catch (ignored: Exception) {}
+        }
+        try { NotificationManagerCompat.from(context).notify(id, b.build()) } catch (ignored: SecurityException) {}
     }
 
+    /** Abschlussmeldung; bei Erfolg mit dem schlafenden Hund ("alles aktuell") */
     fun summary(context: Context, text: String, error: Boolean) =
         post(context, ID_SUMMARY, if (error) CH_ALERTS else CH_PROGRESS,
-            if (error) "Sync2PC – Problem" else "Sync2PC – fertig", text, OPEN_LOG)
+            if (error) "LeoSync – Problem" else "LeoSync – fertig", text, OPEN_LOG,
+            largeImage = if (error) null else R.drawable.dog_idle)
 
     fun decisionNeeded(context: Context, groups: Int, files: Int) =
         post(context, ID_DECISION, CH_ALERTS, "Ordnerauswahl nötig",
@@ -154,10 +161,10 @@ object Notifications {
      * Fortschrittsanzeige im Zustand "Pausiert" (WLAN weg). Bleibt stehen, bis der Sync weiterläuft.
      * Reine Anzeige – Wegwischen hat keinen Einfluss auf das automatische Fortsetzen.
      */
-    fun pausedNotification(context: Context, last: SyncProgress?, wifiNames: String): Notification {
+    fun pausedNotification(context: Context, last: SyncProgress?, wifiNames: String, reason: String? = null): Notification {
         val pct = if (last != null && last.totalBytes > 0) ((last.doneBytes * 100) / last.totalBytes).toInt().coerceIn(0, 100) else 0
         val title = "Pausiert" + (last?.let { " – ${it.profileName}" } ?: "")
-        val text = "Wartet auf WLAN" + (if (wifiNames.isNotBlank()) " „$wifiNames“" else "") +
+        val text = (reason ?: ("Wartet auf WLAN" + (if (wifiNames.isNotBlank()) " „$wifiNames“" else ""))) +
             (if (last != null && last.totalFiles > 0) " · ${last.doneFiles} / ${last.totalFiles} Dateien" else "")
         val view = RemoteViews(context.packageName, R.layout.notification_paused).apply {
             setTextViewText(R.id.notif_title, title)
@@ -180,10 +187,10 @@ object Notifications {
     }
 
     /** Fallback ohne Vordergrunddienst (falls Android den Start gerade nicht erlaubt) */
-    fun showPaused(context: Context, last: SyncProgress?, wifiNames: String) {
+    fun showPaused(context: Context, last: SyncProgress?, wifiNames: String, reason: String? = null) {
         if (!canPost(context)) return
         try {
-            NotificationManagerCompat.from(context).notify(ID_PAUSED, pausedNotification(context, last, wifiNames))
+            NotificationManagerCompat.from(context).notify(ID_PAUSED, pausedNotification(context, last, wifiNames, reason))
         } catch (ignored: SecurityException) {}
     }
 
@@ -199,10 +206,10 @@ object Notifications {
 
     fun updateAvailable(context: Context, version: String) =
         post(context, ID_UPDATE, CH_ALERTS, "Update verfügbar",
-            "Sync2PC $version ist verfügbar. Tippen zum Installieren.", OPEN_UPDATE)
+            "LeoSync $version ist verfügbar. Tippen zum Installieren.", OPEN_UPDATE)
 
     /** Nach einem Selbst-Update, falls Android den automatischen Neustart der App nicht erlaubt */
     fun updateInstalled(context: Context, version: String) =
         post(context, ID_UPDATE, CH_ALERTS, "Update installiert",
-            "Sync2PC wurde auf Version $version aktualisiert. Tippen zum Öffnen.", null)
+            "LeoSync wurde auf Version $version aktualisiert. Tippen zum Öffnen.", null)
 }

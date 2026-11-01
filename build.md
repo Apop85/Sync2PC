@@ -1,10 +1,10 @@
-# Build-Anleitung – Sync2PC
+# Build-Anleitung – LeoSync
 
 ## Kurzfassung
 
 1. Einmalig **Android Studio** installieren und einmal starten. Damit sind JDK 17 und das Android SDK installiert.
 2. **`build.bat`** doppelklicken.
-3. Die fertige APK liegt unter `releases\Sync2PC-<version>.apk`.
+3. Die fertige APK liegt unter `releases\LeoSync-<version>.apk`.
 
 ## Voraussetzungen
 
@@ -77,13 +77,13 @@ Die App holt Updates aus dem **neuesten Release** des eingestellten GitHub-Repos
 
 1. Das Repository ist als Vorgabe in `version.properties` eingetragen (`UPDATE_REPO=Apop85/Sync2PC`) und in der App unter *Einstellungen → Updates* änderbar. Nach einer Änderung in `version.properties` mit `build.bat -Force` bauen, weil die Datei nicht zum Änderungs-Hash zählt.
 2. Version bauen (`build.bat`).
-3. Auf GitHub ein Release mit dem Tag `v<version>` anlegen (z. B. `v0.0.3`) und die Datei `releases\Sync2PC-<version>.apk` anhängen. Der Dateiname muss auf `.apk` enden und darf nicht „debug“ enthalten. Markiere es nicht als „Pre-release“.
+3. Auf GitHub ein Release mit dem Tag `v<version>` anlegen (z. B. `v0.0.3`) und die Datei `releases\LeoSync-<version>.apk` anhängen. Der Dateiname muss auf `.apk` enden und darf nicht „debug“ enthalten. Markiere es nicht als „Pre-release“.
 4. Der Release-Text erscheint in der App als Änderungsbeschreibung. Am einfachsten kopierst du den Abschnitt aus `PATCHNOTES.md`.
 
 Mit der GitHub-CLI geht es in einem Schritt:
 
 ```bash
-gh release create v0.0.3 releases\Sync2PC-0.0.3.apk --title "Sync2PC 0.0.3" --notes "Siehe PATCHNOTES.md"
+gh release create v0.0.12 releases\LeoSync-0.0.12.apk --title "LeoSync 0.0.12" --notes "Siehe PATCHNOTES.md"
 ```
 
 **Wichtig:** Alle Versionen müssen mit demselben Schlüssel (`keystore\`) signiert sein, sonst lehnt Android das Update ab.
@@ -94,7 +94,7 @@ gh release create v0.0.3 releases\Sync2PC-0.0.3.apk --title "Sync2PC 0.0.3" --no
 - per USB-Debugging:
 
 ```bash
-adb install -r releases\Sync2PC-0.0.1.apk
+adb install -r releases\LeoSync-0.0.12.apk
 ```
 
 ## Fehlerbehebung

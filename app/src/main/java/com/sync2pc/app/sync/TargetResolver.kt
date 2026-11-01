@@ -15,11 +15,13 @@ import com.sync2pc.app.smb.SmbSession
  *  4. Sonst Standardname neu anlegen
  */
 class TargetResolver(
-    private val smb: SmbSession?,
+    /** Liefert eine lebende Verbindung (baut sie bei Bedarf neu auf) oder null = offline (Vorschau) */
+    private val smbProvider: () -> SmbSession?,
     private val dao: SyncDao,
     private val profileId: Long,
     private val countryNames: Set<String>,
     private val dryRun: Boolean,
+    private val offline: Boolean,
 ) {
     sealed class Resolution {
         data class Folder(val name: String) : Resolution()
@@ -31,7 +33,8 @@ class TargetResolver(
 
     private fun foldersOf(year: Int): MutableList<String> =
         yearFolders.getOrPut(year) {
-            smb?.listDir(smb.path(year.toString()))
+            val s = if (offline) null else smbProvider()
+            s?.listDir(s.path(year.toString()))
                 ?.filter { it.isDirectory }?.map { it.name }?.toMutableList()
                 ?: mutableListOf()
         }
@@ -53,7 +56,7 @@ class TargetResolver(
                 if (!m.seen && !dryRun) dao.upsertMapping(m.copy(seen = true))
                 return Resolution.Folder(existing)
             }
-            if (!m.seen || smb == null) {
+            if (!m.seen || offline) {
                 // Neu gewählter Name, existiert noch nicht -> wird angelegt
                 if (!dryRun) dao.upsertMapping(m.copy(seen = true))
                 return Resolution.Folder(m.folderName)

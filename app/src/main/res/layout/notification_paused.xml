@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fortschrittsanzeige im Zustand "Pausiert" (WLAN weg): stehender Hund, letzter Fortschritt -->
+<!-- Fortschrittsanzeige im Zustand "Pausiert" (WLAN weg): wartender (sitzender) Hund, letzter Fortschritt -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -9,9 +9,8 @@
     <ImageView
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:alpha="0.6"
         android:scaleType="fitCenter"
-        android:src="@drawable/anim_dog_01" />
+        android:src="@drawable/dog_wait" />
 
     <LinearLayout
         android:layout_width="0dp"

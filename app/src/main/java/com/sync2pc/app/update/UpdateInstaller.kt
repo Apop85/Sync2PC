@@ -22,12 +22,12 @@ object UpdateInstaller {
     fun download(context: Context, info: UpdateInfo, onProgress: (Long, Long) -> Unit): File {
         val dir = File(context.cacheDir, "update").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() } // alte Downloads entfernen
-        val target = File(dir, "Sync2PC-${info.version}.apk")
+        val target = File(dir, "LeoSync-${info.version}.apk")
         val conn = URL(info.apkUrl).openConnection() as HttpURLConnection
         conn.connectTimeout = 15_000
         conn.readTimeout = 30_000
         conn.instanceFollowRedirects = true
-        conn.setRequestProperty("User-Agent", "Sync2PC/${BuildConfig.VERSION_NAME}")
+        conn.setRequestProperty("User-Agent", "LeoSync/${BuildConfig.VERSION_NAME}")
         try {
             if (conn.responseCode != 200) throw IOException("Download fehlgeschlagen (HTTP ${conn.responseCode})")
             val total = conn.contentLengthLong.takeIf { it > 0 } ?: info.size

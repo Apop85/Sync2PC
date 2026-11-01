@@ -48,7 +48,7 @@ object UpdateChecker {
         conn.connectTimeout = 15_000
         conn.readTimeout = 15_000
         conn.setRequestProperty("Accept", "application/vnd.github+json")
-        conn.setRequestProperty("User-Agent", "Sync2PC/${BuildConfig.VERSION_NAME}")
+        conn.setRequestProperty("User-Agent", "LeoSync/${BuildConfig.VERSION_NAME}")
         try {
             when (conn.responseCode) {
                 200 -> {}

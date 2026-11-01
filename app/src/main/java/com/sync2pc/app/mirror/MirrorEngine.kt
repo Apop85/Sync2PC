@@ -37,7 +37,7 @@ import java.util.Locale
  *  - nur auf einer Seite geändert/neu   -> in Sync-Richtung kopieren
  *  - auf beiden Seiten geändert         -> gleich? merken : Konflikt (fragen bzw. neuere gewinnt)
  *  - auf einer Seite gelöscht           -> optional übernehmen (Papierkorb der Gegenseite), sonst wiederherstellen
- * Ersetzte oder gelöschte Dateien landen immer in ".Sync2PC-Papierkorb/<Datum>/…" – nie endgültig weg.
+ * Ersetzte oder gelöschte Dateien landen immer in ".LeoSync-Papierkorb/<Datum>/…" – nie endgültig weg.
  */
 class MirrorEngine(
     private val context: Context,
@@ -49,7 +49,9 @@ class MirrorEngine(
 ) : SyncRunner {
 
     companion object {
-        const val TRASH_DIR = ".Sync2PC-Papierkorb"
+        const val TRASH_DIR = ".LeoSync-Papierkorb"
+        /** Papierkorb-Name bis 0.0.11 – wird weiterhin nie synchronisiert */
+        const val OLD_TRASH_DIR = ".Sync2PC-Papierkorb"
         /** Mindestens so viel Speicher frei lassen */
         private const val RESERVE_BYTES = 300L * 1024 * 1024
     }
@@ -109,7 +111,7 @@ class MirrorEngine(
                 throw IOException("Kein Zugriff mehr auf den Handy-Ordner – bitte im Profil neu auswählen")
             tree = LocalTree(context, treeUri)
             val filter = FileFilter(profile.includePatterns, profile.excludePatterns)
-            val skipTrash: (String) -> Boolean = { it.equals(TRASH_DIR, ignoreCase = true) }
+            val skipTrash: (String) -> Boolean = { it.equals(TRASH_DIR, ignoreCase = true) || it.equals(OLD_TRASH_DIR, ignoreCase = true) }
             local = tree.listRecursive(skipTrash).filterKeys { filter.accepts(it) }
                 .entries.associate { it.key.lowercase() to (it.key to it.value) }
 
@@ -186,9 +188,10 @@ class MirrorEngine(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    failed++
-                    log("E", "✗ ${a.rel}: ${e.javaClass.simpleName}: ${e.message}")
+                    // Verbindungsabbruch ist erwartbar -> Lauf unterbrechen, kein Datei-Fehler
                     if (isNetworkError(e)) { connectionFailed = true; throw e }
+                    failed++
+                    log("E", "✗ ${a.rel}: ${com.sync2pc.app.sync.shortError(e)}")
                 }
                 if (a in transfers) { done++; emit("Synchronisiere…", done, transfers.size, bytes, totalBytes, null) }
             }
@@ -206,9 +209,13 @@ class MirrorEngine(
             withContext(NonCancellable) { log("W", "Lauf abgebrochen"); finish("CANCELLED", "Abgebrochen") }
             throw e
         } catch (e: Exception) {
-            if (isNetworkError(e)) connectionFailed = true
-            log("E", "Lauf fehlgeschlagen: ${e.javaClass.simpleName}: ${e.message}")
-            return finish("FAILED", e.message ?: e.javaClass.simpleName)
+            if (isNetworkError(e)) {
+                connectionFailed = true
+                log("W", "Verbindung unterbrochen (${com.sync2pc.app.sync.shortError(e)}) – wird beim nächsten Sync fortgesetzt")
+                return finish("INTERRUPTED", "Verbindung unterbrochen – ↑ $up / ↓ $down übertragen, Rest folgt beim nächsten Sync")
+            }
+            log("E", "Lauf fehlgeschlagen: ${com.sync2pc.app.sync.shortError(e)}")
+            return finish("FAILED", com.sync2pc.app.sync.shortError(e))
         } finally {
             smb?.close()
         }
@@ -354,7 +361,7 @@ class MirrorEngine(
         log("I", "↓ $rel")
     }
 
-    /** PC-Datei nach "<Basis>\.Sync2PC-Papierkorb\<Datum>\<Pfad>" verschieben */
+    /** PC-Datei nach "<Basis>\.LeoSync-Papierkorb\<Datum>\<Pfad>" verschieben */
     private fun trashRemote(rel: String) {
         val s = smb!!
         val parent = rel.substringBeforeLast('/', "").replace('/', '\\')
@@ -405,15 +412,5 @@ class MirrorEngine(
     private fun emit(phase: String, done: Int, total: Int, doneBytes: Long, totalBytes: Long, file: String?) =
         onProgress(SyncProgress(profile.name, phase, done, total, doneBytes, totalBytes, file))
 
-    private fun isNetworkError(e: Throwable): Boolean {
-        var t: Throwable? = e
-        var depth = 0
-        while (t != null && depth < 6) {
-            if (t is java.net.SocketException || t is java.net.SocketTimeoutException ||
-                t is java.net.UnknownHostException || t.javaClass.name.contains("TransportException")
-            ) return true
-            t = t.cause; depth++
-        }
-        return false
-    }
+    private fun isNetworkError(e: Throwable): Boolean = com.sync2pc.app.sync.isNetworkError(e)
 }

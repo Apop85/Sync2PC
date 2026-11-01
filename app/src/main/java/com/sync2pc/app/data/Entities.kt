@@ -77,7 +77,7 @@ data class Profile(
     val localTreeUri: String = "",
     /** Optionaler Unterordner auf dem Share, relativ zum Freigabe-Pfad (z. B. "Dokumente\Handy") */
     val remoteSubfolder: String = "",
-    /** Löschungen auf die Gegenseite übernehmen (in deren .Sync2PC-Papierkorb) */
+    /** Löschungen auf die Gegenseite übernehmen (in deren .LeoSync-Papierkorb) */
     val propagateDeletes: Boolean = false,
     val conflictMode: String = ConflictMode.ASK.name,
     /** Whitelist (Muster wie *.pdf), zeilen-/kommagetrennt; leer = alles */

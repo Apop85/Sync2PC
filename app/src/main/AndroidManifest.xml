@@ -38,7 +38,7 @@
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Sync2PC"
+        android:theme="@style/Theme.LeoSync"
         tools:targetApi="35">
 
         <activity

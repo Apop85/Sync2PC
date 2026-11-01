@@ -1,6 +1,34 @@
-# Patchnotes – Sync2PC
+# Patchnotes – LeoSync
 
 Versionierung: `0.0.x` bis zur Freigabe von `1.0.0`. Neueste Version oben.
+
+## 0.0.12 (2026-11-01)
+
+### Geändert
+- **Neuer Name: LeoSync** (Teil der „Leo“-Tool-Familie). Startbildschirm, Benachrichtigungen, Texte und APK-Dateiname (`LeoSync-<version>.apk`) sind umbenannt.
+- Unverändert bleiben die interne App-ID (`com.sync2pc.app`), Profile, Verlauf, gespeicherte Passwörter, der Signatur-Schlüssel und die Update-Quelle (`Apop85/Sync2PC`). Das Update läuft also normal über die installierte App.
+- Der Papierkorb beim Ordner-Sync heisst jetzt `.LeoSync-Papierkorb`. Ein vorhandener `.Sync2PC-Papierkorb` wird weiterhin nie synchronisiert.
+
+## 0.0.11 (2026-11-01)
+
+### Behoben
+- **Tausende Fehler „DiskShare has already been closed“:** Die Verbindung, über die die App Zielordner nachschlägt, blieb während langer Uploads ungenutzt. Windows trennt solche Verbindungen nach etwa 15 Minuten, danach scheiterte jede weitere Datei. Jetzt prüft die App jede Verbindung vor der Nutzung und baut sie bei Bedarf neu auf.
+- **Verbindungsabbrüche sind keine Fehler mehr:**
+  - Bricht die Verbindung während einer Datei ab, baut die App sie neu auf und setzt den Upload an der Abbruchstelle fort.
+  - Klappt das nicht, endet der Lauf als „Unterbrochen“, ohne Fehlerzähler und ohne Benachrichtigung. Die offenen Dateien folgen beim nächsten Sync.
+  - Bleibt das WLAN dabei verbunden, folgt der nächste Versuch nach 2 Minuten statt nach 30.
+- Fehlermeldungen im Verlauf sind kurz (nur die eigentliche Ursache statt der ganzen Fehlerkette).
+
+### Neu
+- **WLAN-Sperre während der Übertragung:** Das Handy hält das WLAN im Standby bzw. bei gesperrtem Bildschirm wach, solange ein Sync läuft.
+- **Neue Animation** aus `new_animation.mp4`: 32 Bilder eines gehenden Hundes, Hintergrund und Wasserzeichen entfernt, nahtlose Schleife.
+- **Zustandsbilder:**
+  - Sitzender Hund = wartet auf Fortsetzung („Pausiert“-Anzeige und Startseite).
+  - Schlafender Hund = alles gesichert und aktuell (Startseite und „fertig“-Meldung).
+
+### Build
+- `tools/make-anim-video.ps1`: Video → Animationsbilder (ffmpeg); der Builder nimmt das Video bevorzugt vor `gif_frames.png`.
+- `tools/make-state-images.ps1`: bereitet `wait_cleaned.png` und `idle_cleaned.png` auf. Beide Skripte laufen automatisch, wenn sich die Vorlagen ändern.
 
 ## 0.0.10 (2026-11-01)
 

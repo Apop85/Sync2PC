@@ -118,7 +118,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
             }
             item {
                 SectionCard("Hintergrund") {
-                    Hint("Damit Android den Sync nicht verzögert oder abbricht, sollte die Akku-Optimierung für Sync2PC aus sein.")
+                    Hint("Damit Android den Sync nicht verzögert oder abbricht, sollte die Akku-Optimierung für LeoSync aus sein.")
                     OutlinedButton(onClick = {
                         ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")))
                     }) { Text("Akku-Optimierung") }
@@ -137,7 +137,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
                             apply()
                         },
                         label = { Text("GitHub-Repository") },
-                        placeholder = { Text("benutzer/Sync2PC") },
+                        placeholder = { Text("benutzer/LeoSync") },
                         isError = repo.isNotBlank() && UpdateChecker.normalizeRepo(repo) == null,
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
@@ -148,7 +148,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
                     OutlinedButton(onClick = onOpenUpdate) { Text("Nach Updates suchen…") }
                 }
             }
-            item { Hint("Sync2PC ${BuildConfig.VERSION_NAME} – Open Source (MIT)") }
+            item { Hint("LeoSync ${BuildConfig.VERSION_NAME} – Open Source (MIT)") }
         }
     }
 }

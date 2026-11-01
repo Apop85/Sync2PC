@@ -175,7 +175,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         DocumentsContract.deleteDocument(resolver, docUri(docId))
     }
 
-    /** Verschiebt eine Datei in "<Ordner>/.Sync2PC-Papierkorb/<Datum>/<relPath>" */
+    /** Verschiebt eine Datei in "<Ordner>/.LeoSync-Papierkorb/<Datum>/<relPath>" */
     fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String) {
         val parentRel = relPath.substringBeforeLast('/', "")
         val sourceParent = ensureDir(parentRel)

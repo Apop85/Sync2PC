@@ -183,6 +183,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         var youngAt = 0L
         var conflicts = 0
         var spaceShortage = false
+        var interruptedMidRun = false
+        // WLAN während der Übertragung wach halten (sonst schaltet Android es im Standby in den Stromsparmodus)
+        val locks = TransferLocks.acquire(ctx)
         try {
             for (p in runnable) {
                 val shouldContinue: () -> Boolean = {
@@ -214,17 +217,21 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 conflicts += engine.newConflicts
                 if (engine.spaceShortage) spaceShortage = true
                 if (engine.wifiLost && !manual) markInterrupted()
-                if (engine.connectionFailed) unreachable += p
+                if (engine.connectionFailed) { unreachable += p; interruptedMidRun = true }
                 else if (r.status == "FAILED") hardFailure = "${p.name}: ${r.message}"
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
             }
         } finally {
+            locks.release()
             Notifications.cancelProgress(ctx)
         }
 
         // --- Abschluss-Benachrichtigungen ----------------------------------------
+        // Verbindungsabbrüche sind erwartbar: keine Meldung, der Rest folgt automatisch
         if (hardFailure != null) {
             Notifications.summary(ctx, "Sync fehlgeschlagen – $hardFailure", error = true)
+        } else if (interruptedMidRun) {
+            // still – Anzeige "Pausiert" bzw. erneuter Versuch übernimmt
         } else if (uploaded > 0 || failed > 0) {
             Notifications.summary(
                 ctx,
@@ -249,7 +256,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         if (youngAt > 0) SyncScheduler.enqueueFollowUp(ctx, youngAt)
 
-        handleUnreachable(unreachable, manual, isRetry)
+        handleUnreachable(unreachable, manual, isRetry, midRun = interruptedMidRun)
         return Result.success()
     }
 
@@ -257,7 +264,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
      * Nicht erreichbare Shares: automatisch -> in 30 Minuten erneut prüfen (solange im WLAN),
      * manuell -> Hinweis. Alles erreichbar -> Wartezustand aufheben.
      */
-    private fun handleUnreachable(unreachable: List<Profile>, manual: Boolean, isRetry: Boolean) {
+    private fun handleUnreachable(unreachable: List<Profile>, manual: Boolean, isRetry: Boolean, midRun: Boolean = false) {
         val ctx = applicationContext
         val s = GlobalSettings(ctx)
         if (unreachable.isEmpty()) {
@@ -267,7 +274,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             return
         }
         val names = unreachable.joinToString(", ") { it.name }
-        if (manual) {
+        // Abbruch mitten in der Übertragung behandeln wie automatisch (auch bei manuellem Start): still fortsetzen
+        if (manual && !midRun) {
             Notifications.summary(ctx, "PC nicht erreichbar ($names). Ist er eingeschaltet und die Freigabe aktiv?", error = true)
             return
         }
@@ -276,9 +284,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val ssid = WifiHelper.currentSsid(ctx)
         val stillOnTargetWifi = if (ssid != null) unreachable.any { it.ssids().contains(ssid) } else WifiHelper.isOnWifi(ctx)
         if (stillOnTargetWifi) {
-            s.shareRetryAt = System.currentTimeMillis() + SyncScheduler.SHARE_RETRY_MINUTES * 60_000
+            // Abbruch mitten in der Übertragung bei bestehendem WLAN = meist kurzer Aussetzer -> bald erneut
+            val minutes = if (midRun) 2L else SyncScheduler.SHARE_RETRY_MINUTES
+            s.shareRetryAt = System.currentTimeMillis() + minutes * 60_000
             s.shareUnreachable = names
-            SyncScheduler.enqueueShareRetry(ctx)
+            SyncScheduler.enqueueShareRetry(ctx, minutes)
+            if (midRun) Notifications.showPaused(ctx, lastProgress, targetWifi, "Verbindung unterbrochen – neuer Versuch in $minutes Minuten")
         } else {
             s.shareRetryAt = 0; s.shareUnreachable = ""
             if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)

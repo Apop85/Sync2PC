@@ -1,5 +1,6 @@
-# Sync2PC
+# LeoSync
 
+Teil der 
 Android-App, die Fotos und Videos vom Telefon automatisch auf eine Windows-Freigabe (SMB) überträgt und dort nach **Jahr, Monat und Reiseland** sortiert. Ausserdem synchronisiert sie beliebige Ordner in beide Richtungen.
 
 ```
@@ -32,7 +33,7 @@ Es gibt zwei Profiltypen:
 - **Fortschritt** erscheint in der Benachrichtigung und auf dem Sperrbildschirm.
 - **Profile** für mehrere Ziele, eine **Vorschau** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
-- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.Sync2PC-Papierkorb`, nicht im Nirgendwo.
+- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo.
 - **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
 
 ## Download

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Laufender Hund (16 Einzelbilder aus .claude/gif_frames.png, erzeugt von tools/make-anim.ps1).
-     Benachrichtigungen koennen keine GIFs abspielen; ein ViewFlipper blaettert die Bilder durch
+<!-- Laufender Hund - automatisch erzeugt von tools/make-anim-video.ps1 aus .claude/new_animation.mp4
+     (32 Bilder, 48 ms je Bild). Nicht von Hand bearbeiten.
+     Benachrichtigungen koennen keine Videos/GIFs abspielen; ein ViewFlipper blaettert die Bilder durch
      und pausiert automatisch bei ausgeschaltetem Bildschirm. -->
 <ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:autoStart="true"
-    android:flipInterval="70">
+    android:flipInterval="48">
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_01" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_02" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_03" />
@@ -23,4 +24,20 @@
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_14" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_15" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_16" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_17" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_18" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_19" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_20" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_21" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_22" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_23" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_24" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_25" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_26" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_27" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_28" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_29" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_30" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_31" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_32" />
 </ViewFlipper>

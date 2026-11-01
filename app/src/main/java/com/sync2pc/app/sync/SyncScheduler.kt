@@ -60,11 +60,11 @@ object SyncScheduler {
     const val KEY_RETRY = "retry"
 
     /** Share nicht erreichbar -> in 30 Minuten erneut prüfen (nur im WLAN) */
-    fun enqueueShareRetry(context: Context) {
+    fun enqueueShareRetry(context: Context, minutes: Long = SHARE_RETRY_MINUTES) {
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(workDataOf(KEY_TRIGGER to "Erneute Prüfung (PC war nicht erreichbar)", KEY_MANUAL to false, KEY_RETRY to true))
             .setConstraints(autoConstraints(context))
-            .setInitialDelay(SHARE_RETRY_MINUTES, TimeUnit.MINUTES)
+            .setInitialDelay(minutes, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_RETRY, ExistingWorkPolicy.REPLACE, req)
     }

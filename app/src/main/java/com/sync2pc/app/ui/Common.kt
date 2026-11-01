@@ -39,7 +39,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun Sync2PCTheme(content: @Composable () -> Unit) {
+fun LeoSyncTheme(content: @Composable () -> Unit) {
     val ctx = LocalContext.current
     val dark = isSystemInDarkTheme()
     val scheme = when {

@@ -29,6 +29,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -203,7 +204,20 @@ class SyncEngine(
             }
             val countries = CountryLookup.get(context)
             if (!countries.isAvailable) log("W", "Länderdaten fehlen – Ordner ohne Länderzusatz")
-            val resolver = TargetResolver(smb, dao, profile.id, countries.allCountryNames, dryRun)
+            val offline = smb == null
+            // Die Nachschlage-Verbindung bleibt während langer Uploads ungenutzt; Windows trennt sie nach
+            // ca. 15 Minuten. Deshalb vor jeder Nutzung prüfen und bei Bedarf neu aufbauen.
+            val producerSmb: () -> SmbSession? = {
+                if (offline) null else {
+                    val cur = smb
+                    if (cur != null && cur.isAlive()) cur
+                    else {
+                        try { cur?.close() } catch (ignored: Exception) {}
+                        SmbSession.open(profile).also { smb = it }
+                    }
+                }
+            }
+            val resolver = TargetResolver(producerSmb, dao, profile.id, countries.allCountryNames, dryRun, offline)
             val analyzer = MediaAnalyzer(context, canReadLocation)
             if (!canReadLocation) log("W", "Berechtigung 'Medien-Standort' fehlt – GPS wird nicht ausgewertet")
             val home = settings.homeCountryIso
@@ -231,7 +245,7 @@ class SyncEngine(
                     is TargetResolver.Resolution.Folder -> {
                         // Ordner gilt ab jetzt als vorhanden (wird vom Worker angelegt)
                         resolver.folderCreated(info.year, res.name)
-                        if (dryRun || smb == null) {
+                        if (dryRun || offline) {
                             preview += PreviewEntry("${info.year}\\${res.name}", item.displayName, false)
                             null
                         } else Job(item, info.year, res.name)
@@ -240,7 +254,7 @@ class SyncEngine(
             }
 
             // --- 3. Dateien verarbeiten ---------------------------------------------
-            if (dryRun || smb == null) {
+            if (dryRun || offline) {
                 for ((index, item) in todo.withIndex()) {
                     currentCoroutineContext().ensureActive()
                     try { plan(item) } catch (e: CancellationException) { throw e } catch (ignored: Exception) {}
@@ -267,6 +281,9 @@ class SyncEngine(
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
+                                // Verbindungsfehler: Lauf unterbrechen (kein Datei-Fehler). Die Verbindung wird
+                                // bei jeder Nutzung ohnehin geprüft und neu aufgebaut – scheitert das, ist das Netz weg.
+                                if (isConnectionError(e)) throw e
                                 sh.failed.incrementAndGet()
                                 log("E", "✗ ${item.displayName}: Analyse fehlgeschlagen: ${e.message}")
                                 null
@@ -309,9 +326,18 @@ class SyncEngine(
             }
             throw e
         } catch (e: Exception) {
-            if (isConnectionError(e)) connectionFailed = true
-            log("E", "Lauf fehlgeschlagen: ${e.javaClass.simpleName}: ${e.message}")
-            return finish("FAILED", e.message ?: e.javaClass.simpleName, up(), sk(), fl(), waiting, by())
+            if (isConnectionError(e)) {
+                // Erwartbar (WLAN weg, PC im Ruhezustand …): kein Fehler, offene Dateien folgen beim nächsten Sync.
+                // Abgebrochene Uploads werden dort an der Abbruchstelle fortgesetzt (.s2ptmp).
+                connectionFailed = true
+                log("W", "Verbindung unterbrochen (${shortError(e)}) – offene Dateien werden beim nächsten Sync übertragen")
+                return finish(
+                    "INTERRUPTED", "Verbindung unterbrochen – ${up()} übertragen, Rest folgt beim nächsten Sync",
+                    up(), sk(), fl(), waiting, by()
+                )
+            }
+            log("E", "Lauf fehlgeschlagen: ${shortError(e)}")
+            return finish("FAILED", shortError(e), up(), sk(), fl(), waiting, by())
         } finally {
             smb?.close()
         }
@@ -326,22 +352,37 @@ class SyncEngine(
                 currentCoroutineContext().ensureActive()
                 val item = job.item
                 try {
-                    val s = session ?: SmbSession.open(profile).also { session = it }
-                    val uploaded = transfer(s, job, sh)
-                    val folderRel = "${job.year}\\${job.folderName}"
-                    if (uploaded) {
-                        sh.uploaded.incrementAndGet()
-                        log("I", "↑ ${item.displayName} → $folderRel")
-                    } else {
-                        sh.skipped.incrementAndGet()
-                        log("I", "= ${item.displayName} war bereits in $folderRel")
+                    var attempt = 0
+                    while (true) {
+                        try {
+                            // Tote Verbindung (Leerlauf-Trennung, kurzer WLAN-Aussetzer) -> neu aufbauen
+                            val s = session?.takeIf { it.isAlive() }
+                                ?: SmbSession.open(profile).also { try { session?.close() } catch (ignored: Exception) {}; session = it }
+                            val uploaded = transfer(s, job, sh)
+                            val folderRel = "${job.year}\\${job.folderName}"
+                            if (uploaded) {
+                                sh.uploaded.incrementAndGet()
+                                log("I", "↑ ${item.displayName} → $folderRel")
+                            } else {
+                                sh.skipped.incrementAndGet()
+                                log("I", "= ${item.displayName} war bereits in $folderRel")
+                            }
+                            break
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            if (isConnectionError(e)) {
+                                try { session?.close() } catch (ignored: Exception) {}
+                                session = null
+                                // Einmal mit neuer Verbindung wiederholen (Upload setzt an der Abbruchstelle fort)
+                                if (attempt++ == 0) { delay(2_000); continue }
+                                throw e // Netz wirklich weg -> Lauf unterbrechen, Datei folgt beim nächsten Sync
+                            }
+                            sh.failed.incrementAndGet()
+                            log("E", "✗ ${item.displayName}: ${shortError(e)}")
+                            break
+                        }
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    sh.failed.incrementAndGet()
-                    log("E", "✗ ${item.displayName}: ${e.javaClass.simpleName}: ${e.message}")
-                    if (isConnectionError(e)) throw e
                 } finally {
                     sh.inflight.remove(item.id)
                 }
@@ -381,17 +422,7 @@ class SyncEngine(
     private fun emit(phase: String, done: Int, total: Int, doneBytes: Long, totalBytes: Long, file: String?) =
         onProgress(SyncProgress(profile.name, phase, done, total, doneBytes, totalBytes, file))
 
-    private fun isConnectionError(e: Throwable): Boolean {
-        var t: Throwable? = e
-        var depth = 0
-        while (t != null && depth < 6) {
-            if (t is java.net.SocketException || t is java.net.SocketTimeoutException ||
-                t is java.net.UnknownHostException || t.javaClass.name.contains("TransportException")
-            ) return true
-            t = t.cause; depth++
-        }
-        return false
-    }
+    private fun isConnectionError(e: Throwable): Boolean = isNetworkError(e)
 
     // ---- Analyse mit Cache ------------------------------------------------------
     private suspend fun mediaInfo(item: MediaItem, analyzer: MediaAnalyzer, countries: CountryLookup): MediaInfo {

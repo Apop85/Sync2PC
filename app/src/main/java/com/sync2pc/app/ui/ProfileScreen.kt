@@ -288,7 +288,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                     OutlinedButton(onClick = { treePicker.launch(null) }) {
                         Text(if (treeUri == null) "Ordner wählen…" else "Anderen Ordner wählen…")
                     }
-                    Hint("Android fragt einmalig, ob Sync2PC auf diesen Ordner zugreifen darf (für alle Dateitypen).")
+                    Hint("Android fragt einmalig, ob LeoSync auf diesen Ordner zugreifen darf (für alle Dateitypen).")
                 }
             }
 
@@ -306,7 +306,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                     SwitchRow(
                         "Löschungen übernehmen", p.propagateDeletes,
                         subtitle = "Wird eine Datei auf einer Seite gelöscht, kommt sie auf der anderen Seite in den " +
-                            "Ordner „.Sync2PC-Papierkorb“. Aus: gelöschte Dateien werden wiederhergestellt.",
+                            "Ordner „.LeoSync-Papierkorb“. Aus: gelöschte Dateien werden wiederhergestellt.",
                     ) { p = p.copy(propagateDeletes = it) }
                     if (p.dir() == SyncDirection.BOTH) {
                         Text("Wenn eine Datei auf beiden Seiten geändert wurde:", style = MaterialTheme.typography.bodyMedium)

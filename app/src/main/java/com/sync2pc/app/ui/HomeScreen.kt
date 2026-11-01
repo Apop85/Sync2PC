@@ -8,7 +8,11 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.res.painterResource
+import com.sync2pc.app.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -121,7 +125,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     }
 
     ScreenScaffold(
-        title = "Sync2PC",
+        title = "LeoSync",
         onBack = null,
         actions = {
             IconButton(onClick = { navigate(Screen.Stats) }) { Icon(Icons.Filled.DateRange, "Statistik") }
@@ -146,6 +150,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     shareWait = shareWait,
                     skipInfo = skipInfo,
                     paused = paused,
+                    // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
+                    allUpToDate = lastRun?.status == "OK" && !queued && skipInfo == null &&
+                        decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0,
                     onSync = { SyncScheduler.enqueueManual(ctx) },
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onPreview = { navigate(Screen.Preview) },
@@ -225,12 +232,25 @@ private fun StatusCard(
     shareWait: String?,
     skipInfo: String?,
     paused: Boolean,
+    allUpToDate: Boolean,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onPreview: () -> Unit,
     hasProfiles: Boolean,
 ) {
     SectionCard(title = "Status") {
+        // Zustandsbild: sitzender Hund = wartet auf Fortsetzung, schlafender Hund = alles aktuell
+        val waiting = !isRunning && (paused || shareWait != null)
+        val upToDate = !isRunning && !waiting && allUpToDate
+        if (waiting || upToDate) {
+            Image(
+                painter = painterResource(if (waiting) R.drawable.dog_wait else R.drawable.dog_idle),
+                contentDescription = if (waiting) "Wartet" else "Alles aktuell",
+                modifier = Modifier.height(96.dp).align(Alignment.CenterHorizontally),
+            )
+            if (upToDate) Text("✓ Alles gesichert und aktuell", style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
         Text("WLAN: " + (ssid ?: "nicht verbunden / nicht lesbar"))
         when {
             isRunning -> {

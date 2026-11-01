@@ -75,6 +75,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
         "PARTIAL" -> "Teilweise" to Color(0xFFB26A00)
         "FAILED" -> "Fehler" to MaterialTheme.colorScheme.error
         "CANCELLED" -> "Abgebrochen" to MaterialTheme.colorScheme.onSurfaceVariant
+        "INTERRUPTED" -> "Unterbrochen" to MaterialTheme.colorScheme.onSurfaceVariant
         else -> "Läuft" to MaterialTheme.colorScheme.tertiary
     }
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
