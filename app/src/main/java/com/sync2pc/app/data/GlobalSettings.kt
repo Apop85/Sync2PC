@@ -87,7 +87,12 @@ class GlobalSettings(context: Context) {
     /** Sync wurde durch WLAN-Verlust unterbrochen -> beim nächsten Verbinden sofort fortsetzen (ohne Drosselung) */
     var resumeOnWifi: Boolean
         get() = prefs.getBoolean("resumeOnWifi", false)
-        set(v) = prefs.edit().putBoolean("resumeOnWifi", v).apply()
+        set(v) = prefs.edit().putBoolean("resumeOnWifi", v)
+            .putLong("resumeSince", if (v) (prefs.getLong("resumeSince", 0).takeIf { it > 0 } ?: System.currentTimeMillis()) else 0)
+            .apply()
+
+    /** Seit wann ein unterbrochener Sync auf das WLAN wartet (0 = nicht) */
+    val resumeSince: Long get() = prefs.getLong("resumeSince", 0)
 
     /** Kürzestes Prüfintervall aller aktiven Ordner-Profile (Minuten), 0 = keine Ordner-Profile */
     var remotePollMinutes: Int

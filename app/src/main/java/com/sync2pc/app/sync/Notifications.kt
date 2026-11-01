@@ -34,6 +34,7 @@ object Notifications {
     const val OPEN_UPDATE = "update"
     const val OPEN_CONFLICTS = "conflicts"
     const val ID_CONFLICT = 1006
+    const val ID_INTERRUPTED = 1007
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -147,6 +148,14 @@ object Notifications {
         post(context, ID_DELETE, CH_ALERTS, "Gesicherte Dateien entfernen",
             "$files Dateien sind verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.",
             OPEN_DELETE)
+
+    /** Reiner Hinweis – Wegwischen hat keinen Einfluss auf das automatische Fortsetzen */
+    fun interrupted(context: Context) =
+        post(context, ID_INTERRUPTED, CH_PROGRESS, "Sync unterbrochen",
+            "Das WLAN wurde getrennt. Der Sync wird automatisch fortgesetzt, sobald das Heim-WLAN wieder verbunden ist.",
+            null)
+
+    fun cancelInterrupted(context: Context) = NotificationManagerCompat.from(context).cancel(ID_INTERRUPTED)
 
     fun conflictsNeeded(context: Context, count: Int) =
         post(context, ID_CONFLICT, CH_ALERTS, "Konflikt beim Ordner-Sync",

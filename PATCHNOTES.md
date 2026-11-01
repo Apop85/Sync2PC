@@ -2,6 +2,17 @@
 
 Versionierung: `0.0.x` bis zur Freigabe von `1.0.0`. Neueste Version oben.
 
+## 0.0.9 (2026-11-01)
+
+### Behoben
+- **Kein Fortsetzen nach WLAN-Unterbruch, wenn die Benachrichtigung entfernt wurde:** Nach einem Abbruch blieb die Fortschrittsanzeige stehen und hielt die App am Leben. Wurde sie weggewischt oder angetippt, beendete Android die App. Das Wecken beim Wiederverbinden war dann auf manchen Geräten blockiert.
+  - Neu hinterlegt die App nach einem Unterbruch zusätzlich einen Auftrag beim Android-Aufgabenplaner („fortsetzen, sobald WLAN da ist“). Dieser startet die App auch, wenn sie beendet wurde. Ist es das falsche WLAN, schaut er alle 15 Minuten erneut nach, höchstens 24 Stunden lang.
+  - Die Fortschrittsanzeige wird nach jedem Lauf zuverlässig entfernt und nach einem Stopp nicht mehr neu erzeugt.
+- „Abbrechen“ durch dich gilt nicht als Unterbruch; der Sync wird dann nicht automatisch fortgesetzt.
+
+### Neu
+- Hinweis-Benachrichtigung „Sync unterbrochen – wird automatisch fortgesetzt …“. Sie darf weggewischt werden und verschwindet von selbst, sobald der Sync weiterläuft.
+
 ## 0.0.8 (2026-11-01)
 
 ### Behoben

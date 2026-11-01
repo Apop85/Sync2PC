@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ForegroundInfo
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -52,11 +53,30 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         try {
             work()
         } finally {
-            // Von Android gestoppt (z. B. WLAN weg -> Netzwerk-Bedingung verletzt): beim Wiederverbinden sofort fortsetzen
-            if (isStopped) GlobalSettings(applicationContext).resumeOnWifi = true
+            // Fortschrittsanzeige nie stehen lassen (sie würde sonst nach einem Abbruch "hängen")
+            Notifications.cancelProgress(applicationContext)
+            // Von Android gestoppt (z. B. WLAN weg -> Netzwerk-Bedingung verletzt): beim Wiederverbinden fortsetzen
+            // ("Abbrechen" durch den Benutzer ist kein Unterbruch -> nicht fortsetzen)
+            if (isStopped && stopReason != WorkInfo.STOP_REASON_CANCELLED_BY_APP &&
+                !inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)
+            ) markInterrupted()
             mutex.unlock()
             SyncScheduler.armContentTrigger(applicationContext)
         }
+    }
+
+    private val isResumeRun: Boolean get() = inputData.getBoolean(SyncScheduler.KEY_RESUME, false)
+
+    /**
+     * Sync wurde durch WLAN-Verlust unterbrochen: Fortsetzen auf zwei Wegen sicherstellen
+     *  1. WLAN-Broadcast (WifiNetworkReceiver, ohne Drosselung)
+     *  2. Auftrag beim Android-Aufgabenplaner (startet die App auch, wenn sie beendet wurde)
+     */
+    private fun markInterrupted() {
+        val ctx = applicationContext
+        GlobalSettings(ctx).resumeOnWifi = true
+        SyncScheduler.enqueueResume(ctx, 0, appendToCurrent = isResumeRun)
+        Notifications.interrupted(ctx)
     }
 
     private suspend fun work(): Result {
@@ -87,6 +107,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 if (currentSsid == null) "WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen"
                 else "WLAN „$currentSsid“ ist in keinem Profil eingetragen"
             )
+            // Fortsetzen-Auftrag, aber falsches WLAN: in 15 Minuten erneut schauen (max. 24 Stunden lang)
+            if (isResumeRun && settings.resumeOnWifi) {
+                if (System.currentTimeMillis() - settings.resumeSince < 24 * 3600_000L)
+                    SyncScheduler.enqueueResume(ctx, 15, appendToCurrent = true)
+                else settings.resumeOnWifi = false
+            }
             return Result.success()
         }
 
@@ -128,7 +154,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             handleUnreachable(unreachable, manual, isRetry)
             return Result.success()
         }
-        settings.resumeOnWifi = false // ein unterbrochener Sync wird jetzt fortgesetzt
+        // Ein unterbrochener Sync wird jetzt fortgesetzt -> Merker, Hinweis und Fortsetzen-Auftrag aufräumen
+        if (settings.resumeOnWifi) {
+            settings.resumeOnWifi = false
+            if (!isResumeRun) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RESUME)
+        }
+        Notifications.cancelInterrupted(ctx)
         if (unreachable.isEmpty()) settings.noteSkip("")
 
         val cancel = WorkManager.getInstance(ctx).createCancelPendingIntent(id)
@@ -152,7 +183,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                         if (s != null) p.ssids().contains(s) else WifiHelper.isOnWifi(ctx)
                     }
                 }
-                val onProgress: (SyncProgress) -> Unit = { pr ->
+                val onProgress: (SyncProgress) -> Unit = progress@{ pr ->
+                    if (isStopped) return@progress // nach dem Stopp keine Anzeige mehr neu erzeugen
                     Notifications.updateProgress(ctx, pr, cancel)
                     setProgressAsync(
                         workDataOf(
@@ -172,7 +204,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 if (p.type() == ProfileType.PHOTOS) waiting += r.waiting
                 conflicts += engine.newConflicts
                 if (engine.spaceShortage) spaceShortage = true
-                if (engine.wifiLost && !manual) settings.resumeOnWifi = true
+                if (engine.wifiLost && !manual) markInterrupted()
                 if (engine.connectionFailed) unreachable += p
                 else if (r.status == "FAILED") hardFailure = "${p.name}: ${r.message}"
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
@@ -240,8 +272,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             SyncScheduler.enqueueShareRetry(ctx)
         } else {
             s.shareRetryAt = 0; s.shareUnreachable = ""
-            s.resumeOnWifi = true
             if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
+            markInterrupted()
         }
     }
 }

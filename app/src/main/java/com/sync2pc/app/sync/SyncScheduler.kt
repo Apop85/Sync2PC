@@ -32,7 +32,25 @@ object SyncScheduler {
     const val WORK_PERIODIC = "trigger-periodic"
     const val WORK_RETRY = "sync-share-retry"
     const val WORK_REMOTE_POLL = "trigger-remote-poll"
-    val ALL_SYNC_WORK = listOf(WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY)
+    const val WORK_RESUME = "sync-resume"
+    val ALL_SYNC_WORK = listOf(WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY, WORK_RESUME)
+    const val KEY_RESUME = "resume"
+
+    /**
+     * Nach einem WLAN-Unterbruch: Auftrag beim Android-Aufgabenplaner hinterlegen, der startet,
+     * sobald wieder ein WLAN da ist – unabhängig davon, ob die App noch läuft
+     * (zweiter Weg neben dem WLAN-Broadcast, den manche Hersteller blockieren).
+     * Ist es das falsche WLAN, plant der Worker sich mit [delayMinutes] erneut ein.
+     */
+    fun enqueueResume(context: Context, delayMinutes: Long = 0, appendToCurrent: Boolean = false) {
+        val b = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setInputData(workDataOf(KEY_TRIGGER to "Fortsetzen nach WLAN-Unterbruch", KEY_MANUAL to false, KEY_RESUME to true))
+            .setConstraints(autoConstraints(context))
+        if (delayMinutes > 0) b.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+        // Aus dem laufenden Fortsetzen-Auftrag heraus anhängen statt ersetzen (sonst bricht er sich selbst ab)
+        val policy = if (appendToCurrent) ExistingWorkPolicy.APPEND_OR_REPLACE else ExistingWorkPolicy.REPLACE
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_RESUME, policy, b.build())
+    }
 
     /** Wartezeit, wenn der Share im Ziel-WLAN nicht erreichbar ist */
     const val SHARE_RETRY_MINUTES = 30L
@@ -163,5 +181,8 @@ object SyncScheduler {
     fun cancelAll(context: Context) {
         val wm = WorkManager.getInstance(context)
         ALL_SYNC_WORK.forEach { wm.cancelUniqueWork(it) }
+        // Abbrechen durch den Benutzer: kein automatisches Fortsetzen
+        GlobalSettings(context).resumeOnWifi = false
+        Notifications.cancelInterrupted(context)
     }
 }
