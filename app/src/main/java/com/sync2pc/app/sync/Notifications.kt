@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -76,15 +77,35 @@ object Notifications {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setContentIntent(openApp(context, null, 1))
+        val title: String
+        val text: String
+        val pct: Int
+        val indeterminate: Boolean
         if (p == null || p.totalFiles == 0) {
-            b.setContentTitle("Sync2PC").setContentText(p?.phase ?: "Starte…").setProgress(0, 0, true)
+            title = p?.profileName ?: "Sync2PC"
+            text = p?.phase ?: "Starte…"
+            pct = 0; indeterminate = true
         } else {
-            val pct = if (p.totalBytes > 0) ((p.doneBytes * 100) / p.totalBytes).toInt() else 0
-            b.setContentTitle("${p.profileName}: ${p.doneFiles} / ${p.totalFiles} Dateien")
-                .setContentText("${formatBytes(p.doneBytes)} von ${formatBytes(p.totalBytes)} ($pct %)")
-                .setSubText(p.currentFile)
-                .setProgress(100, pct, false)
+            pct = if (p.totalBytes > 0) ((p.doneBytes * 100) / p.totalBytes).toInt().coerceIn(0, 100) else 0
+            title = "${p.profileName}: ${p.doneFiles} / ${p.totalFiles} Dateien"
+            text = "${formatBytes(p.doneBytes)} von ${formatBytes(p.totalBytes)} ($pct %)"
+            indeterminate = false
         }
+        // Standardtexte (Barrierefreiheit, Fallback) + eigenes Layout mit laufendem Hund
+        b.setContentTitle(title).setContentText(text)
+        val small = RemoteViews(context.packageName, R.layout.notification_progress_small).apply {
+            setTextViewText(R.id.notif_title, if (indeterminate) "$title – $text" else "$title · $pct %")
+            setProgressBar(R.id.notif_progress, 100, pct, indeterminate)
+        }
+        val big = RemoteViews(context.packageName, R.layout.notification_progress_big).apply {
+            setTextViewText(R.id.notif_title, title)
+            setTextViewText(R.id.notif_text, text)
+            setTextViewText(R.id.notif_file, p?.currentFile ?: "")
+            setProgressBar(R.id.notif_progress, 100, pct, indeterminate)
+        }
+        b.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(small)
+            .setCustomBigContentView(big)
         if (cancel != null) b.addAction(0, "Abbrechen", cancel)
         return b.build()
     }

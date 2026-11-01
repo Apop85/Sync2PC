@@ -16,6 +16,7 @@ import com.sync2pc.app.media.MediaScanner
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
@@ -66,32 +67,69 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val dao = AppDatabase.get(ctx).dao()
         dao.closeDanglingRuns(System.currentTimeMillis())
 
+        val settings = GlobalSettings(ctx)
         val all = dao.profiles().filter { it.enabled && it.isConfigured() }
         if (all.isEmpty()) return Result.success()
-        val ssid = WifiHelper.currentSsid(ctx)
-        val eligible = if (manual) all else all.filter { p -> ssid != null && p.ssids().contains(ssid) }
-        if (eligible.isEmpty()) return Result.success()
+
+        // --- Ziel-WLAN? Direkt nach dem Verbinden liefert Android den Namen evtl. noch nicht -> kurz nachlesen
+        var ssid = WifiHelper.currentSsid(ctx)
+        if (!manual && ssid == null && WifiHelper.isOnWifi(ctx)) {
+            for (i in 1..3) {
+                delay(5_000)
+                ssid = WifiHelper.currentSsid(ctx)
+                if (ssid != null) break
+            }
+        }
+        val currentSsid = ssid
+        val eligible = if (manual) all else all.filter { p -> currentSsid != null && p.ssids().contains(currentSsid) }
+        if (eligible.isEmpty()) {
+            if (!manual && WifiHelper.isOnWifi(ctx)) settings.noteSkip(
+                if (currentSsid == null) "WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen"
+                else "WLAN „$currentSsid“ ist in keinem Profil eingetragen"
+            )
+            return Result.success()
+        }
 
         // --- Ist der PC erreichbar? (kurzer TCP-Test, bevor irgendetwas Teures passiert) -----
-        val settings = GlobalSettings(ctx)
         val isRetry = inputData.getBoolean(SyncScheduler.KEY_RETRY, false)
         if (!manual && !isRetry && settings.shareRetryAt > System.currentTimeMillis()) {
             // PC war vor Kurzem nicht erreichbar -> Wartezeit einhalten, die erneute Prüfung ist eingeplant
             return Result.success()
         }
+        // Direkt nach dem WLAN-Verbinden ist das Netz oft noch nicht bereit (IP, Routing, PC-Firewall).
+        // Deshalb mehrere Versuche über ca. 1 Minute, bevor "nicht erreichbar" gilt.
+        val waits = if (manual) listOf(0L, 3_000L) else listOf(0L, 5_000L, 10_000L, 15_000L, 30_000L)
         val reach = HashMap<String, Boolean>()
         val unreachable = ArrayList<Profile>()
-        val runnable = eligible.filter { p ->
-            val host = SmbTarget.parse(p.smbPath)?.host ?: return@filter true // ungültiger Pfad -> Engine meldet den Fehler
-            val ok = reach.getOrPut(host.lowercase()) { SmbSession.isReachable(host) }
-            if (!ok) unreachable += p
-            ok
+        val runnable = ArrayList<Profile>()
+        for (p in eligible) {
+            val host = SmbTarget.parse(p.smbPath)?.host
+            if (host == null) { runnable += p; continue } // ungültiger Pfad -> Engine meldet den Fehler
+            val ok = reach[host.lowercase()] ?: run {
+                var r = false
+                for ((n, w) in waits.withIndex()) {
+                    if (w > 0) {
+                        if (!manual && !WifiHelper.isOnWifi(ctx)) break // WLAN wieder weg -> aufgeben
+                        Notifications.updateProgress(
+                            ctx, SyncProgress(p.name, "Warte auf PC ($host) – Versuch ${n + 1}/${waits.size}…", 0, 0, 0, 0, null), null
+                        )
+                        delay(w)
+                    }
+                    if (SmbSession.isReachable(host)) { r = true; break }
+                }
+                Notifications.cancelProgress(ctx)
+                reach[host.lowercase()] = r
+                r
+            }
+            if (ok) runnable += p else unreachable += p
         }
+        if (unreachable.isNotEmpty()) settings.noteSkip("PC nicht erreichbar: " + unreachable.joinToString(", ") { it.name })
         if (runnable.isEmpty()) {
             handleUnreachable(unreachable, manual, isRetry)
             return Result.success()
         }
         settings.resumeOnWifi = false // ein unterbrochener Sync wird jetzt fortgesetzt
+        if (unreachable.isEmpty()) settings.noteSkip("")
 
         val cancel = WorkManager.getInstance(ctx).createCancelPendingIntent(id)
         try {

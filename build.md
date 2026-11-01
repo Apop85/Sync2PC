@@ -25,11 +25,12 @@ Das SDK sucht er unter `ANDROID_HOME`, `ANDROID_SDK_ROOT` und `%LOCALAPPDATA%\An
 2. Lädt `gradle\wrapper\gradle-wrapper.jar`, falls es fehlt.
 3. Lädt die Länderdaten (`tools\fetch-geodata.ps1`), falls sie fehlen.
 4. Erzeugt die App-Icons und das einfarbige Benachrichtigungs-Symbol aus `.claude\icon.png` neu, wenn sich das Bild geändert hat (`tools\make-icons.ps1`). Eine grosse Vorschau des Benachrichtigungs-Symbols liegt dann unter `.build\ic_notification_preview.png`.
-5. Berechnet einen Hash über alle Quelldateien. **Ohne Änderung wird nicht gebaut.**
-6. Existiert die APK der aktuellen Version schon, wird `VERSION_PATCH` in `version.properties` um 1 erhöht und in `PATCHNOTES.md` ein Platzhalter-Eintrag angelegt.
-7. Beim ersten Release-Build wird ein Signatur-Schlüssel erstellt (`keystore\`, `keystore.properties`).
-8. Führt die Unit-Tests aus und baut die APK (`gradlew testDebugUnitTest assembleRelease`).
-9. Kopiert die APK nach `releases\`.
+5. Zerlegt `.claude\gif_frames.png` in die Animationsbilder für die Benachrichtigung, wenn sich die Vorlage geändert hat (`tools\make-anim.ps1`).
+6. Berechnet einen Hash über alle Quelldateien. **Ohne Änderung wird nicht gebaut.**
+7. Existiert die APK der aktuellen Version schon, wird `VERSION_PATCH` in `version.properties` um 1 erhöht und in `PATCHNOTES.md` ein Platzhalter-Eintrag angelegt.
+8. Beim ersten Release-Build wird ein Signatur-Schlüssel erstellt (`keystore\`, `keystore.properties`).
+9. Führt die Unit-Tests aus und baut die APK (`gradlew testDebugUnitTest assembleRelease`).
+10. Kopiert die APK nach `releases\`.
 
 Die vollständige Gradle-Ausgabe jedes Builds steht zusätzlich in `.build\last-build.log`. Bei Fehlern genügt es, dem Agent zu sagen, dass der Build fehlgeschlagen ist; er liest das Protokoll selbst.
 

@@ -103,6 +103,13 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val running = works.firstOrNull { it.state == WorkInfo.State.RUNNING }
     val queued = works.any { it.state == WorkInfo.State.ENQUEUED }
     val progress = running?.let { SyncWorker.progressFrom(it.progress) }
+    // Grund, falls der letzte automatische Start nicht synchronisiert hat (max. 24 h alt)
+    val skipInfo = remember(tick, works) {
+        val s = GlobalSettings(ctx)
+        if (s.lastSkipInfo.isNotBlank() && System.currentTimeMillis() - s.lastSkipAt < 24 * 3600_000L)
+            "${formatTime(s.lastSkipAt).substringAfter(' ')}: ${s.lastSkipInfo}"
+        else null
+    }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
         val s = GlobalSettings(ctx)
@@ -135,6 +142,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     progress = progress,
                     lastRun = lastRun,
                     shareWait = shareWait,
+                    skipInfo = skipInfo,
                     onSync = { SyncScheduler.enqueueManual(ctx) },
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onPreview = { navigate(Screen.Preview) },
@@ -212,6 +220,7 @@ private fun StatusCard(
     progress: SyncProgress?,
     lastRun: SyncRun?,
     shareWait: String?,
+    skipInfo: String?,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onPreview: () -> Unit,
@@ -242,6 +251,10 @@ private fun StatusCard(
                 Hint(lastRun.message)
             }
             else -> Text("Noch kein Sync durchgeführt.")
+        }
+        if (!isRunning && shareWait == null && skipInfo != null) {
+            Text("⚠ Automatischer Start übersprungen – $skipInfo", color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (isRunning) OutlinedButton(onClick = onCancel) { Text("Abbrechen") }

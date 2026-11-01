@@ -2,6 +2,20 @@
 
 Versionierung: `0.0.x` bis zur Freigabe von `1.0.0`. Neueste Version oben.
 
+## 0.0.8 (2026-11-01)
+
+### Behoben
+- **Kein Sync nach dem WLAN-Verbinden:** Direkt nach dem Verbinden ist das Netz oft noch nicht bereit. Bisher galt der PC dann nach einem einzigen Versuch von 3 Sekunden als „nicht erreichbar“, und die App wartete 30 Minuten. Jetzt gilt:
+  - Die App versucht es etwa eine Minute lang mehrmals (nach 5, 10, 15 und 30 Sekunden). Die Benachrichtigung zeigt dabei „Warte auf PC…“.
+  - Liefert Android den WLAN-Namen noch nicht, liest die App ihn bis zu 15 Sekunden lang nach.
+
+### Neu
+- **Grund bei übersprungenem Auto-Start:** Die Startseite zeigt, warum ein automatischer Start nicht synchronisiert hat, z. B. „WLAN-Name nicht lesbar“, „WLAN ist in keinem Profil eingetragen“ oder „PC nicht erreichbar“.
+- **Laufender Hund** in der Fortschritts-Benachrichtigung, auch auf dem Sperrbildschirm. Er besteht aus 16 Einzelbildern (Benachrichtigungen können keine GIFs abspielen) und pausiert bei ausgeschaltetem Bildschirm.
+
+### Build
+- `tools/make-anim.ps1` zerlegt `.claude/gif_frames.png` (4×4) in Einzelbilder und entfernt den halbtransparenten Schleier. Der Builder ruft es automatisch auf, wenn sich die Vorlage ändert.
+
 ## 0.0.7 (2026-11-01)
 
 ### Neu

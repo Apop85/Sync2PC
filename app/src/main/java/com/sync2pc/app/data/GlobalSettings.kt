@@ -94,6 +94,14 @@ class GlobalSettings(context: Context) {
         get() = prefs.getInt("remotePollMinutes", 0)
         set(v) = prefs.edit().putInt("remotePollMinutes", v).apply()
 
+    /** Warum der letzte automatische Start nicht synchronisiert hat (leer = alles ok) */
+    val lastSkipInfo: String get() = prefs.getString("lastSkipInfo", "") ?: ""
+    val lastSkipAt: Long get() = prefs.getLong("lastSkipAt", 0)
+
+    fun noteSkip(info: String) {
+        prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
+    }
+
     var lastWifiTriggerAt: Long
         get() = prefs.getLong("lastWifiTriggerAt", 0)
         set(v) = prefs.edit().putLong("lastWifiTriggerAt", v).apply()

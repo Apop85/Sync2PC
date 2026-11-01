@@ -114,6 +114,18 @@ if (Test-Path $iconSrc) {
     } else { Write-Host "Icons aktuell" }
 }
 
+$animSrc = Join-Path $Root ".claude\gif_frames.png"
+$animHashFile = Join-Path $StateDir "anim.hash"
+if (Test-Path $animSrc) {
+    $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash
+    $oldA = if (Test-Path $animHashFile) { (Get-Content $animHashFile -Raw).Trim() } else { "" }
+    $firstFrame = Join-Path $Root "app\src\main\res\drawable-nodpi\anim_dog_01.png"
+    if ($ah -ne $oldA -or -not (Test-Path $firstFrame)) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-anim.ps1") -Root $Root
+        [IO.File]::WriteAllText($animHashFile, $ah, $Utf8)
+    } else { Write-Host "Animation aktuell" }
+}
+
 # ---------------------------------------------------------------------------
 Step "Pruefe auf Quellcode-Aenderungen"
 $inputs = @("app\src", "app\build.gradle.kts", "app\proguard-rules.pro", "build.gradle.kts",
