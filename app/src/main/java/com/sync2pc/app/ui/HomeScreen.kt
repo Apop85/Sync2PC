@@ -8,11 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.res.painterResource
-import com.sync2pc.app.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -239,18 +235,16 @@ private fun StatusCard(
     hasProfiles: Boolean,
 ) {
     SectionCard(title = "Status") {
-        // Zustandsbild: sitzender Hund = wartet auf Fortsetzung, schlafender Hund = alles aktuell
-        val waiting = !isRunning && (paused || shareWait != null)
-        val upToDate = !isRunning && !waiting && allUpToDate
-        if (waiting || upToDate) {
-            Image(
-                painter = painterResource(if (waiting) R.drawable.dog_wait else R.drawable.dog_idle),
-                contentDescription = if (waiting) "Wartet" else "Alles aktuell",
-                modifier = Modifier.height(96.dp).align(Alignment.CenterHorizontally),
-            )
-            if (upToDate) Text("✓ Alles gesichert und aktuell", style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.align(Alignment.CenterHorizontally))
+        // Zustandsbild: laufender Hund = Sync läuft, schlafender Hund = alles gesichert, sonst sitzender Hund
+        val upToDate = !isRunning && !paused && shareWait == null && allUpToDate
+        val dog = when {
+            isRunning -> DogState.RUNNING
+            upToDate -> DogState.SLEEPING
+            else -> DogState.WAITING
         }
+        DogStatus(dog, Modifier.align(Alignment.CenterHorizontally))
+        if (upToDate) Text("✓ Alles gesichert und aktuell", style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.align(Alignment.CenterHorizontally))
         Text("WLAN: " + (ssid ?: "nicht verbunden / nicht lesbar"))
         when {
             isRunning -> {

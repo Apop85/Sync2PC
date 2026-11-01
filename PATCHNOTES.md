@@ -2,6 +2,24 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.1.4 (2026-11-01)
+
+### Verbessert
+- **Hund auf der Startseite zeigt immer den Zustand:**
+  - Sync läuft → **laufender Hund** (dieselbe Animation wie in der Benachrichtigung)
+  - Alles gesichert → **schlafender Hund**
+  - Sonst (wartet auf WLAN oder PC, Ordnerauswahl offen, unterbrochen …) → **sitzender Hund**
+- Die Animation läuft nur, solange die App sichtbar ist, und braucht im Hintergrund keinen Akku. Sind Animationen in den Android-Einstellungen ausgeschaltet, bleibt das Bild stehen.
+
+## 0.1.3 (2026-11-01)
+
+### Verbessert
+- **Absturzberichte:** Stürzt die App ab, speichert sie den Fehlerbericht lokal auf dem Handy (die letzten 3). Die Diagnose zeigt ihn im neuen Abschnitt „Abstürze“. Übertragen wird nichts automatisch.
+
+### Technik
+- Build auf **Gradle 9.8.2** und **Android Gradle Plugin 9.5.0** umgestellt (Kotlin 2.4.21 eingebaut, KSP 2.3.13, Room 2.8.5). Der Builder funktioniert jetzt auch mit dem Java 25 von Android Studio, ein zusätzliches JDK 21 ist nicht mehr nötig.
+- Neue Unit-Tests für die Diagnose (Zusammenfassung der Log-Zeilen, Hersteller-Erkennung, Absturzberichte).
+
 ## 0.1.2 (2026-11-01)
 
 ### Behoben

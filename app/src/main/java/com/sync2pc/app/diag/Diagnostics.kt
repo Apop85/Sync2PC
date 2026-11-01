@@ -200,6 +200,14 @@ object Diagnostics {
                 }
             }
 
+            section("Abstürze (letzte ${CrashReporter.KEEP})")
+            val crashes = safe { CrashReporter.read(ctx) } ?: emptyList()
+            if (crashes.isEmpty()) appendLine("(keine)")
+            crashes.forEachIndexed { i, c ->
+                if (i > 0) appendLine("-----")
+                appendLine(c)
+            }
+
             section("Letzte Läufe")
             val runs = safe { dao.recentRuns(15) } ?: emptyList()
             if (runs.isEmpty()) appendLine("(keine)")

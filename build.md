@@ -10,13 +10,15 @@
 
 | Komponente | Version | Hinweis |
 |---|---|---|
-| JDK | 17 bis 24 | Java 8 reicht **nicht**, Java 25+ wird von Gradle 8.11 nicht unterstützt. Neue Android-Studio-Versionen bringen Java 25 mit. Dann lädt der Builder automatisch ein portables JDK 21 nach `.build\jdk21`. |
+| JDK | 17 bis 25 | Java 8 reicht **nicht**. Seit 0.1.3 (Gradle 9.8, AGP 9.5) funktioniert auch das Java 25 von Android Studio. Nur bei neueren Versionen lädt der Builder ein portables JDK 21 nach `.build\jdk21`. |
 | Android SDK | Platform 35, Build-Tools | Wird von Android Studio bzw. Gradle installiert. |
 | Internet | beim ersten Build | Gradle, Abhängigkeiten, Wrapper, Länderdaten |
 
-Der Builder sucht ein JDK 17–24 in dieser Reihenfolge: `JAVA_HOME`, `C:\Program Files\Android\Android Studio\jbr`, installierte JDKs unter `Program Files`, `.build\jdk21`. Findet er keines, lädt er Eclipse Temurin 21 herunter (einmalig, ca. 190 MB).
+Der Builder sucht ein JDK 17–25 in dieser Reihenfolge: `JAVA_HOME`, `C:\Program Files\Android\Android Studio\jbr`, installierte JDKs unter `Program Files`, `.build\jdk21`. Findet er keines, lädt er Eclipse Temurin 21 herunter (einmalig, ca. 190 MB).
 
-**Projekt in Android Studio öffnen:** Unter *Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK* ein JDK 17–24 wählen, z. B. `.build\jdk21\…`. Mit dem mitgelieferten Java 25 schlägt der Gradle-Sync fehl.
+**Projekt in Android Studio öffnen:** Das mitgelieferte JDK (JBR, Java 25) funktioniert seit 0.1.3. Android Studio muss AGP 9.5 unterstützen; sonst meldet der Gradle-Sync eine zu neue Plugin-Version. Dann Android Studio aktualisieren.
+
+**Werkzeug-Versionen (seit 0.1.3):** Gradle 9.8.2, Android Gradle Plugin 9.5.0 (Kotlin eingebaut, „built-in Kotlin“), Kotlin 2.4.21, KSP 2.3.13, Room 2.8.5.
 Das SDK sucht er unter `ANDROID_HOME`, `ANDROID_SDK_ROOT` und `%LOCALAPPDATA%\Android\Sdk`.
 
 ## Was `build.bat` macht
@@ -117,7 +119,8 @@ adb install -r releases\LeoSync-0.1.0.apk
 
 | Problem | Lösung |
 |---|---|
-| `What went wrong: 25.0.x` | Gradle läuft mit Java 25. Mit `build.bat` bauen (wählt das JDK selbst) bzw. in Android Studio das Gradle JDK auf 17–24 stellen |
+| `What went wrong: 2x.0.x` (Java-Version) | Gradle läuft mit einem zu neuen Java. Mit `build.bat` bauen (wählt das JDK selbst) bzw. in Android Studio das Gradle JDK auf 17–25 stellen |
+| `The 'org.jetbrains.kotlin.android' plugin is no longer required` | Seit AGP 9 ist Kotlin eingebaut. Das Plugin darf in keiner `build.gradle.kts` mehr stehen |
 | „Portables JDK konnte nicht eingerichtet werden“ | JDK 21 manuell installieren (z. B. Eclipse Temurin) und `JAVA_HOME` setzen |
 | „Android SDK nicht gefunden“ | Android Studio einmal starten, SDK-Setup abschliessen |
 | SDK-Lizenzen nicht akzeptiert | `"%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest\bin\sdkmanager.bat" --licenses` |

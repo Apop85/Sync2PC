@@ -2,7 +2,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    // Kotlin ist seit AGP 9 eingebaut (kein org.jetbrains.kotlin.android mehr)
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
@@ -64,10 +64,8 @@ android {
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
+        // Kotlin übernimmt jvmTarget automatisch von targetCompatibility (built-in Kotlin)
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -107,9 +105,10 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
 
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    // Room 2.7+: nötig für KSP2 (KSP 2.3 kennt nur noch KSP2)
+    implementation("androidx.room:room-runtime:2.8.5")
+    implementation("androidx.room:room-ktx:2.8.5")
+    ksp("androidx.room:room-compiler:2.8.5")
 
     // SMB2/SMB3 Client
     implementation("com.hierynomus:smbj:0.13.0")

@@ -26,11 +26,11 @@ function Step($t) { Write-Host ""; Write-Host "==> $t" -ForegroundColor Cyan }
 function Fail($t) { Write-Host ""; Write-Host "FEHLER: $t" -ForegroundColor Red; exit 1 }
 
 # ---------------------------------------------------------------------------
-Step "Pruefe Java (JDK 17 bis 24)"
-# Gradle 8.11 laeuft NICHT auf Java 25+ (Fehler "What went wrong: 25.0.x").
-# Neue Android-Studio-Versionen bringen Java 25 mit -> dann portables JDK 21 verwenden.
+Step "Pruefe Java (JDK 17 bis 25)"
+# Seit 0.1.3: Gradle 9.8 / AGP 9.5 laufen auch mit Java 25 (Android Studio JBR).
+# Neuere Java-Versionen -> portables JDK 21 verwenden.
 $MinJava = 17
-$MaxJava = 24
+$MaxJava = 25
 function Get-JavaMajor($javaExe) {
     if (-not (Test-Path $javaExe)) { return 0 }
     $out = cmd /c "`"$javaExe`" -version 2>&1"
@@ -91,7 +91,7 @@ Step "Pruefe Gradle Wrapper"
 $wrapperJar = Join-Path $Root "gradle\wrapper\gradle-wrapper.jar"
 if (-not (Test-Path $wrapperJar)) {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $u = "https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar"
+    $u = "https://raw.githubusercontent.com/gradle/gradle/v9.8.2/gradle/wrapper/gradle-wrapper.jar"
     Write-Host "Lade gradle-wrapper.jar ($u)"
     Invoke-WebRequest -Uri $u -OutFile $wrapperJar -UseBasicParsing
     Write-Host ("SHA-256: " + (Get-FileHash $wrapperJar -Algorithm SHA256).Hash)
