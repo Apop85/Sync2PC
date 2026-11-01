@@ -110,6 +110,8 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             "${formatTime(s.lastSkipAt).substringAfter(' ')}: ${s.lastSkipInfo}"
         else null
     }
+    // Durch WLAN-Unterbruch pausiert?
+    val paused = remember(tick, works) { GlobalSettings(ctx).resumeOnWifi }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
         val s = GlobalSettings(ctx)
@@ -143,6 +145,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     lastRun = lastRun,
                     shareWait = shareWait,
                     skipInfo = skipInfo,
+                    paused = paused,
                     onSync = { SyncScheduler.enqueueManual(ctx) },
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onPreview = { navigate(Screen.Preview) },
@@ -221,6 +224,7 @@ private fun StatusCard(
     lastRun: SyncRun?,
     shareWait: String?,
     skipInfo: String?,
+    paused: Boolean,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onPreview: () -> Unit,
@@ -240,6 +244,10 @@ private fun StatusCard(
                     Text(progress?.phase ?: "Synchronisierung läuft…")
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
+            }
+            paused -> {
+                Text("⏸ Pausiert – wartet auf das Heim-WLAN", style = MaterialTheme.typography.titleSmall)
+                Hint("Der Sync wurde durch einen WLAN-Unterbruch angehalten und läuft automatisch weiter, sobald das WLAN wieder verbunden ist.")
             }
             shareWait != null -> {
                 Text(shareWait, color = MaterialTheme.colorScheme.error)

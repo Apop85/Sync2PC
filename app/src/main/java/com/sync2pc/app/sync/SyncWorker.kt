@@ -76,8 +76,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val ctx = applicationContext
         GlobalSettings(ctx).resumeOnWifi = true
         SyncScheduler.enqueueResume(ctx, 0, appendToCurrent = isResumeRun)
-        Notifications.interrupted(ctx)
+        // "Pausiert" in der Statusleiste – als Vordergrunddienst, der die App bis zum WLAN wach hält
+        if (!PauseService.start(ctx, lastProgress, targetWifi)) Notifications.showPaused(ctx, lastProgress, targetWifi)
     }
+
+    /** Letzter Fortschritt (für die Pausiert-Anzeige) */
+    @Volatile private var lastProgress: SyncProgress? = null
+    /** Namen der Ziel-WLANs der betroffenen Profile */
+    @Volatile private var targetWifi: String = ""
 
     private suspend fun work(): Result {
         val ctx = applicationContext
@@ -90,6 +96,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val settings = GlobalSettings(ctx)
         val all = dao.profiles().filter { it.enabled && it.isConfigured() }
         if (all.isEmpty()) return Result.success()
+        targetWifi = all.flatMap { it.ssids() }.distinct().joinToString(", ")
 
         // --- Ziel-WLAN? Direkt nach dem Verbinden liefert Android den Namen evtl. noch nicht -> kurz nachlesen
         var ssid = WifiHelper.currentSsid(ctx)
@@ -111,7 +118,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (isResumeRun && settings.resumeOnWifi) {
                 if (System.currentTimeMillis() - settings.resumeSince < 24 * 3600_000L)
                     SyncScheduler.enqueueResume(ctx, 15, appendToCurrent = true)
-                else settings.resumeOnWifi = false
+                else { settings.resumeOnWifi = false; PauseService.stop(ctx) } // nach 24 h aufgeben
             }
             return Result.success()
         }
@@ -159,6 +166,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             settings.resumeOnWifi = false
             if (!isResumeRun) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RESUME)
         }
+        PauseService.stop(ctx) // "Pausiert" weg, ab jetzt normale Fortschrittsanzeige
         Notifications.cancelInterrupted(ctx)
         if (unreachable.isEmpty()) settings.noteSkip("")
 
@@ -185,6 +193,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 }
                 val onProgress: (SyncProgress) -> Unit = progress@{ pr ->
                     if (isStopped) return@progress // nach dem Stopp keine Anzeige mehr neu erzeugen
+                    if (pr.totalFiles > 0) lastProgress = pr
                     Notifications.updateProgress(ctx, pr, cancel)
                     setProgressAsync(
                         workDataOf(

@@ -184,5 +184,6 @@ object SyncScheduler {
         // Abbrechen durch den Benutzer: kein automatisches Fortsetzen
         GlobalSettings(context).resumeOnWifi = false
         Notifications.cancelInterrupted(context)
+        PauseService.stop(context)
     }
 }

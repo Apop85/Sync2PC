@@ -35,6 +35,7 @@ object Notifications {
     const val OPEN_CONFLICTS = "conflicts"
     const val ID_CONFLICT = 1006
     const val ID_INTERRUPTED = 1007
+    const val ID_PAUSED = 1008
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -149,12 +150,46 @@ object Notifications {
             "$files Dateien sind verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.",
             OPEN_DELETE)
 
-    /** Reiner Hinweis – Wegwischen hat keinen Einfluss auf das automatische Fortsetzen */
-    fun interrupted(context: Context) =
-        post(context, ID_INTERRUPTED, CH_PROGRESS, "Sync unterbrochen",
-            "Das WLAN wurde getrennt. Der Sync wird automatisch fortgesetzt, sobald das Heim-WLAN wieder verbunden ist.",
-            null)
+    /**
+     * Fortschrittsanzeige im Zustand "Pausiert" (WLAN weg). Bleibt stehen, bis der Sync weiterläuft.
+     * Reine Anzeige – Wegwischen hat keinen Einfluss auf das automatische Fortsetzen.
+     */
+    fun pausedNotification(context: Context, last: SyncProgress?, wifiNames: String): Notification {
+        val pct = if (last != null && last.totalBytes > 0) ((last.doneBytes * 100) / last.totalBytes).toInt().coerceIn(0, 100) else 0
+        val title = "Pausiert" + (last?.let { " – ${it.profileName}" } ?: "")
+        val text = "Wartet auf WLAN" + (if (wifiNames.isNotBlank()) " „$wifiNames“" else "") +
+            (if (last != null && last.totalFiles > 0) " · ${last.doneFiles} / ${last.totalFiles} Dateien" else "")
+        val view = RemoteViews(context.packageName, R.layout.notification_paused).apply {
+            setTextViewText(R.id.notif_title, title)
+            setTextViewText(R.id.notif_text, text)
+            setProgressBar(R.id.notif_progress, 100, pct, false)
+        }
+        return NotificationCompat.Builder(context, CH_PROGRESS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setContentIntent(openApp(context, null, 1))
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(view)
+            .build()
+    }
 
+    /** Fallback ohne Vordergrunddienst (falls Android den Start gerade nicht erlaubt) */
+    fun showPaused(context: Context, last: SyncProgress?, wifiNames: String) {
+        if (!canPost(context)) return
+        try {
+            NotificationManagerCompat.from(context).notify(ID_PAUSED, pausedNotification(context, last, wifiNames))
+        } catch (ignored: SecurityException) {}
+    }
+
+    fun cancelPaused(context: Context) = NotificationManagerCompat.from(context).cancel(ID_PAUSED)
+
+    /** Alte Hinweis-Benachrichtigung aus 0.0.9 entfernen */
     fun cancelInterrupted(context: Context) = NotificationManagerCompat.from(context).cancel(ID_INTERRUPTED)
 
     fun conflictsNeeded(context: Context, count: Int) =

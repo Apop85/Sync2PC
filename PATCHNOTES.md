@@ -2,6 +2,14 @@
 
 Versionierung: `0.0.x` bis zur Freigabe von `1.0.0`. Neueste Version oben.
 
+## 0.0.10 (2026-11-01)
+
+### Geändert
+- **„Pausiert“ statt Unterbruch-Hinweis:** Nach einem WLAN-Unterbruch erscheint keine eigene Benachrichtigung mehr. Die Statusleiste zeigt stattdessen **„Pausiert – wartet auf WLAN …“** mit dem bisherigen Fortschritt und einem stehenden Hund, bis das Heim-WLAN wieder verbunden ist. Danach wechselt die Anzeige direkt zum normalen Fortschritt.
+- Die Pausiert-Anzeige läuft als Vordergrunddienst. Er hält die App wach und lauscht selbst auf das WLAN. Grund: Im Feldtest von 0.0.9 wurde die App nach dem Wegwischen der Benachrichtigung so gründlich beendet, dass weder der WLAN-Broadcast noch der Aufgabenplaner sie weckten. Der Dienst wartet nur und braucht praktisch keinen Akku.
+  - Der Fortsetzen-Auftrag beim Aufgabenplaner bleibt als Rückfallebene, z. B. wenn Android den Dienst nicht erlaubt oder (ab Android 15) nach 6 Stunden beendet.
+- Die Startseite zeigt „⏸ Pausiert – wartet auf das Heim-WLAN“.
+
 ## 0.0.9 (2026-11-01)
 
 ### Behoben

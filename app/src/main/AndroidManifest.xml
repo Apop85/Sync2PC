@@ -66,6 +66,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- "Pausiert"-Anzeige nach WLAN-Unterbruch: hält die App wach, bis das Heim-WLAN zurück ist -->
+        <service
+            android:name=".sync.PauseService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <!-- WorkManager Vordergrund-Dienst fuer lange Uploads (Android 14: Typ erforderlich) -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
