@@ -21,7 +21,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -108,6 +110,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     var overlap by remember { mutableStateOf<ProfileOverlap.Hit?>(null) }
+    // Stand beim Öffnen -> ungespeicherte Änderungen erkennen (0.3.1)
+    var baseline by remember { mutableStateOf<Profile?>(null) }
+    var basePassword by remember { mutableStateOf("") }
+    var askLeave by remember { mutableStateOf(false) }
     val currentSsid = remember { WifiHelper.currentSsid(ctx) }
     // Andere Profile mit Zugangsdaten -> zum Übernehmen anbieten
     val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
@@ -119,6 +125,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 dao.profile(profileId)?.let {
                     p = it
                     password = CredentialCrypto.decrypt(it.smbPasswordEnc)
+                    baseline = it
+                    basePassword = password
                     pollText = it.remotePollMinutes.toString()
                     trashText = it.trashRetentionDays.toString()
                 }
@@ -148,10 +156,18 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
         }
     }
 
+    // Ungespeicherte Änderungen? Dann beim Verlassen nachfragen (Zurück-Pfeil, Zurück-Geste, "Abbrechen")
+    val dirty = typeChosen && baseline != null && (p != baseline || password != basePassword)
+    fun leave() { if (dirty) askLeave = true else onBack() }
+    BackHandler(enabled = dirty) { askLeave = true }
+
     ScreenScaffold(
         title = if (profileId == 0L) "Neues Profil" else "Profil bearbeiten",
-        onBack = onBack,
+        onBack = { leave() },
         actions = {
+            if (loaded && typeChosen) IconButton(onClick = { save() }, enabled = p.name.isNotBlank()) {
+                Icon(Icons.Filled.Check, "Speichern")
+            }
             if (profileId != 0L) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Profil löschen") }
         },
     ) { pad ->
@@ -168,6 +184,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 )
                 pollText = p.remotePollMinutes.toString()
                 trashText = p.trashRetentionDays.toString()
+                baseline = p
+                basePassword = password
                 typeChosen = true
             }
             return@ScreenScaffold
@@ -423,7 +441,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { save() }, enabled = p.name.isNotBlank()) { Text("Speichern") }
-                    OutlinedButton(onClick = onBack) { Text("Abbrechen") }
+                    OutlinedButton(onClick = { leave() }) { Text("Abbrechen") }
                 }
             }
 
@@ -462,6 +480,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
             }) { Text("Löschen") }
         },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") } },
+    )
+
+    if (askLeave) AlertDialog(
+        onDismissRequest = { askLeave = false },
+        title = { Text("Änderungen speichern?") },
+        text = { Text("Du hast Änderungen an diesem Profil noch nicht gespeichert.") },
+        confirmButton = { TextButton(onClick = { askLeave = false; save() }) { Text("Speichern") } },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { askLeave = false }) { Text("Abbrechen") }
+                TextButton(onClick = { askLeave = false; onBack() }) { Text("Verwerfen") }
+            }
+        },
     )
 
     overlap?.let { hit ->

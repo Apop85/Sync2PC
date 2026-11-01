@@ -109,7 +109,8 @@ object Notifications {
         b.setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(small)
             .setCustomBigContentView(big)
-        if (cancel != null) b.addAction(0, "Abbrechen", cancel)
+        // Hält nur den laufenden Sync an; beim nächsten automatischen Start geht es weiter
+        if (cancel != null) b.addAction(0, "Pausieren", cancel)
         return b.build()
     }
 

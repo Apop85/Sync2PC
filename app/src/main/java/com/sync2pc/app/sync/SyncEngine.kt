@@ -351,8 +351,9 @@ class SyncEngine(
                     finish("INTERRUPTED", "Unterbrochen ($reason) – ${up()} übertragen, Rest folgt automatisch",
                         up(), sk(), fl(), waiting, by())
                 } else {
-                    log("W", "Lauf abgebrochen")
-                    finish("CANCELLED", "Abgebrochen", up(), sk(), fl(), waiting, by())
+                    log("W", "Pausiert (von dir) – läuft beim nächsten automatischen Start weiter")
+                    finish("CANCELLED", "Pausiert (von dir) – ${up()} übertragen, Rest beim nächsten automatischen Start",
+                        up(), sk(), fl(), waiting, by())
                 }
             }
             throw e

@@ -2,6 +2,23 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.1 (2026-11-01)
+
+### Neu
+- **Dienst pausieren:** Oben rechts auf der Startseite zeigt ein Symbol den Zustand: **▶** = automatische Syncs laufen, **⏸** = pausiert.
+  - Antippen bei ▶ fragt „Wie lange pausieren?“ (1 / 4 / 24 Stunden oder eine eigene Anzahl bis 168). Ein laufender Sync wird angehalten, und bis zum Ende der Pause startet nichts automatisch. Danach läuft alles von selbst wieder an.
+  - Antippen bei ⏸ oder „Fortsetzen“ beendet die Pause sofort. „Jetzt synchronisieren“ beendet sie ebenfalls.
+  - Die Startseite zeigt „⏸ Pausiert bis …“. Die Erinnerung „lange nicht gesichert“ läuft auch während der Pause.
+- **Nachfrage bei ungespeicherten Änderungen:** Wer ein Profil mit Änderungen verlässt, wird gefragt: Speichern, Verwerfen oder Abbrechen.
+- **Speichern-Häkchen** oben in der Titelleiste des Profils, ohne nach unten scrollen zu müssen.
+
+### Geändert
+- Der Knopf „Abbrechen“ während eines Syncs heisst jetzt **„Pausieren“**, in der App und in der Benachrichtigung. Er hält nur den laufenden Sync an, beim nächsten automatischen Start geht es weiter. Im Verlauf steht „Pausiert“.
+
+### Behoben
+- Über *Downloads* gewählte Handy-Ordner erscheinen als „Download/Test“ statt „SD-Karte: /storage/emulated/0/…“.
+- Vier Build-Warnungen aufgeräumt.
+
 ## 0.3.0 (2026-11-01)
 
 ### Neu

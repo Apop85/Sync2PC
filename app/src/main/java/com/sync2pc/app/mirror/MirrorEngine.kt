@@ -231,7 +231,8 @@ class MirrorEngine(
                     log("W", "Unterbrochen ($reason) – wird automatisch fortgesetzt")
                     finish("INTERRUPTED", "Unterbrochen ($reason) – ↑ ${up.get()} / ↓ ${down.get()} übertragen, Rest folgt automatisch")
                 } else {
-                    log("W", "Lauf abgebrochen"); finish("CANCELLED", "Abgebrochen")
+                    log("W", "Pausiert (von dir) – läuft beim nächsten automatischen Start weiter")
+                    finish("CANCELLED", "Pausiert (von dir) – läuft beim nächsten automatischen Start weiter")
                 }
             }
             throw e

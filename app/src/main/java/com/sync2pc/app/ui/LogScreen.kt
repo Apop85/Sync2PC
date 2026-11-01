@@ -86,7 +86,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
         "OK" -> "OK" to MaterialTheme.colorScheme.primary
         "PARTIAL" -> "Teilweise" to Color(0xFFB26A00)
         "FAILED" -> "Fehler" to MaterialTheme.colorScheme.error
-        "CANCELLED" -> "Abgebrochen" to MaterialTheme.colorScheme.onSurfaceVariant
+        "CANCELLED" -> "Pausiert" to MaterialTheme.colorScheme.onSurfaceVariant
         "INTERRUPTED" -> "Unterbrochen" to MaterialTheme.colorScheme.onSurfaceVariant
         else -> "Läuft" to MaterialTheme.colorScheme.tertiary
     }

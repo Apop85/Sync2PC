@@ -107,6 +107,14 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
+    // ---- Pause durch den Benutzer (seit 0.3.1) ---------------------------------------
+    /** Bis zu diesem Zeitpunkt (ms) keine automatischen Syncs; 0 = nicht pausiert */
+    var pausedUntil: Long
+        get() = prefs.getLong("pausedUntil", 0)
+        set(v) = prefs.edit().putLong("pausedUntil", v).apply()
+
+    fun isPaused(now: Long = System.currentTimeMillis()): Boolean = pausedUntil > now
+
     // ---- Erinnerung "lange nicht gesichert" (seit 0.2.0) -------------------------
     var staleWarnEnabled: Boolean
         get() = prefs.getBoolean("staleWarnEnabled", true)

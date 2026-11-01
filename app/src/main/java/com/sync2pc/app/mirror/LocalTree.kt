@@ -38,13 +38,29 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         fun hasPermission(context: Context, uri: Uri): Boolean =
             context.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission && it.isWritePermission }
 
-        /** Anzeige: "primary:Documents/Scans" -> "Documents/Scans" (SD-Karte: "SD-Karte: …") */
+        /**
+         * Anzeige: "primary:Documents/Scans" -> "Documents/Scans" (SD-Karte: "SD-Karte: …").
+         * Über "Downloads" gewählte Ordner liefern "raw:/storage/emulated/0/Download/Test" -> "Download/Test".
+         */
         fun label(uri: Uri): String = try {
             val id = DocumentsContract.getTreeDocumentId(uri)
             val vol = id.substringBefore(':')
             val path = id.substringAfter(':', "")
-            (if (vol == "primary") "" else "SD-Karte: ") + path.ifEmpty { "(Hauptordner)" }
+            when {
+                vol == "primary" -> path.ifEmpty { "(Hauptordner)" }
+                vol == "raw" || path.startsWith("/storage/") -> rawPathLabel(path)
+                uri.authority == "com.android.providers.downloads.documents" -> "Download" + (if (path.isNotEmpty()) "/$path" else "")
+                else -> "SD-Karte: " + path.ifEmpty { "(Hauptordner)" }
+            }
         } catch (e: Exception) { uri.toString() }
+
+        /** "/storage/emulated/0/Download/Test" -> "Download/Test", "/storage/1234-ABCD/DCIM" -> "SD-Karte: DCIM" */
+        fun rawPathLabel(path: String): String {
+            val internal = Regex("""^/storage/emulated/\d+/?""")
+            if (internal.containsMatchIn(path)) return path.replace(internal, "").trimEnd('/').ifEmpty { "(Hauptordner)" }
+            val sd = Regex("""^/storage/[^/]+/?""")
+            return "SD-Karte: " + path.replace(sd, "").trimEnd('/').ifEmpty { "(Hauptordner)" }
+        }
 
         fun mimeOf(name: String): String =
             MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substringAfterLast('.', "").lowercase())
@@ -197,15 +213,15 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         var out: OutputStream? = null
         if (tmpUri != null) {
             // "wa" = anhängen; unterstützt der Anbieter das nicht, neu beginnen
-            out = try { resolver.openOutputStream(tmpUri!!, "wa") } catch (e: Exception) { null }
-            if (out == null) { try { DocumentsContract.deleteDocument(resolver, tmpUri!!) } catch (ignored: Exception) {}; tmpUri = null; offset = 0 }
+            out = try { resolver.openOutputStream(tmpUri, "wa") } catch (e: Exception) { null }
+            if (out == null) { try { DocumentsContract.deleteDocument(resolver, tmpUri) } catch (ignored: Exception) {}; tmpUri = null; offset = 0 }
         }
         if (tmpUri == null) {
             tmpUri = DocumentsContract.createDocument(resolver, docUri(parentId), "application/octet-stream", name + TEMP)
                 ?: throw IOException("Datei '$relPath' konnte nicht angelegt werden")
-            out = resolver.openOutputStream(tmpUri!!, "w") ?: throw IOException("Datei nicht beschreibbar")
+            out = resolver.openOutputStream(tmpUri, "w") ?: throw IOException("Datei nicht beschreibbar")
         }
-        val uri = tmpUri!!
+        val uri = tmpUri
         out!!.use { write(it, offset) }
         // Grösse prüfen: Hat der Anbieter "anhängen" ignoriert, stimmt sie nicht -> verwerfen, nächstes Mal neu
         val written = stat(DocumentsContract.getDocumentId(uri))?.size ?: -1

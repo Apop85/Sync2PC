@@ -24,6 +24,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.delay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -112,6 +120,16 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     }
     // Durch WLAN-Unterbruch pausiert?
     val paused = remember(tick, works) { GlobalSettings(ctx).resumeOnWifi }
+    // Vom Benutzer pausiert (Symbol oben rechts)? pauseVersion erzwingt das Neulesen nach Aktionen
+    var pauseVersion by remember { mutableIntStateOf(0) }
+    val userPausedUntil = remember(tick, works, pauseVersion) {
+        GlobalSettings(ctx).pausedUntil.takeIf { it > System.currentTimeMillis() } ?: 0L
+    }
+    LaunchedEffect(userPausedUntil) {
+        // Pause läuft ab, während die Startseite offen ist -> Anzeige aktualisieren
+        if (userPausedUntil > 0) { delay(userPausedUntil - System.currentTimeMillis() + 500); pauseVersion++ }
+    }
+    var showPauseDialog by remember { mutableStateOf(false) }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
         val s = GlobalSettings(ctx)
@@ -124,6 +142,12 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         title = "LeoSync",
         onBack = null,
         actions = {
+            // Zustand des Dienstes: ▶ läuft (tippen = pausieren), ⏸ pausiert (tippen = fortsetzen)
+            if (userPausedUntil > 0) IconButton(onClick = { SyncScheduler.resume(ctx); pauseVersion++ }) {
+                Icon(AppIcons.Pause, "Pausiert – tippen zum Fortsetzen")
+            } else IconButton(onClick = { showPauseDialog = true }) {
+                Icon(Icons.Filled.PlayArrow, "Läuft – tippen zum Pausieren")
+            }
             IconButton(onClick = { navigate(Screen.Stats) }) { Icon(Icons.Filled.DateRange, "Statistik") }
             IconButton(onClick = { navigate(Screen.Log) }) { Icon(Icons.AutoMirrored.Filled.List, "Verlauf") }
             IconButton(onClick = { navigate(Screen.Settings) }) { Icon(Icons.Filled.Settings, "Einstellungen") }
@@ -146,11 +170,13 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     shareWait = shareWait,
                     skipInfo = skipInfo,
                     paused = paused,
+                    userPausedUntil = userPausedUntil,
                     // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
                     allUpToDate = lastRun?.status == "OK" && !queued && skipInfo == null &&
                         decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0,
-                    onSync = { SyncScheduler.enqueueManual(ctx) },
+                    onSync = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
                     onCancel = { SyncScheduler.cancelAll(ctx) },
+                    onResume = { SyncScheduler.resume(ctx); pauseVersion++ },
                     onPreview = { navigate(Screen.Preview) },
                     hasProfiles = profiles.isNotEmpty(),
                 )
@@ -219,6 +245,55 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             }
         }
     }
+
+    if (showPauseDialog) PauseDialog(
+        onDismiss = { showPauseDialog = false },
+        onPause = { hours ->
+            SyncScheduler.pause(ctx, hours)
+            showPauseDialog = false
+            pauseVersion++
+        },
+    )
+}
+
+/** "14:30", "morgen 14:30" oder "05.11. 14:30" */
+private fun pauseEndText(until: Long): String {
+    val day = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.GERMANY)
+    val time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.GERMANY).format(java.util.Date(until))
+    val now = System.currentTimeMillis()
+    return when (day.format(java.util.Date(until))) {
+        day.format(java.util.Date(now)) -> time
+        day.format(java.util.Date(now + 24 * 3_600_000L)) -> "morgen $time"
+        else -> java.text.SimpleDateFormat("dd.MM.", java.util.Locale.GERMANY).format(java.util.Date(until)) + " $time"
+    }
+}
+
+/** Wie lange pausieren? Schnellwahl 1/4/24 Stunden oder eigene Anzahl (1–168) */
+@Composable
+private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit) {
+    var hoursText by remember { mutableStateOf("") }
+    val hours = hoursText.toIntOrNull()?.takeIf { it in 1..168 }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wie lange pausieren?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Hint("Ein laufender Sync wird angehalten. Bis zum Ende der Pause startet nichts automatisch.")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(1, 4, 24).forEach { h -> OutlinedButton(onClick = { onPause(h) }) { Text("$h h") } }
+                }
+                OutlinedTextField(
+                    hoursText, { v -> hoursText = v.filter { it.isDigit() }.take(3) },
+                    label = { Text("Eigene Anzahl Stunden (1–168)") },
+                    isError = hoursText.isNotEmpty() && hours == null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = { TextButton(enabled = hours != null, onClick = { hours?.let(onPause) }) { Text("Pausieren") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+    )
 }
 
 @Composable
@@ -231,15 +306,18 @@ private fun StatusCard(
     shareWait: String?,
     skipInfo: String?,
     paused: Boolean,
+    userPausedUntil: Long,
     allUpToDate: Boolean,
     onSync: () -> Unit,
     onCancel: () -> Unit,
+    onResume: () -> Unit,
     onPreview: () -> Unit,
     hasProfiles: Boolean,
 ) {
+    val userPaused = userPausedUntil > 0
     SectionCard(title = "Status") {
         // Zustandsbild: laufender Hund = Sync läuft, schlafender Hund = alles gesichert, sonst sitzender Hund
-        val upToDate = !isRunning && !paused && shareWait == null && allUpToDate
+        val upToDate = !isRunning && !paused && !userPaused && shareWait == null && allUpToDate
         val dog = when {
             isRunning -> DogState.RUNNING
             upToDate -> DogState.SLEEPING
@@ -262,6 +340,10 @@ private fun StatusCard(
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
+            userPaused -> {
+                Text("⏸ Pausiert bis ${pauseEndText(userPausedUntil)}", style = MaterialTheme.typography.titleSmall)
+                Hint("Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Jetzt synchronisieren“ beendet die Pause sofort.")
+            }
             paused -> {
                 Text("⏸ Pausiert – wartet auf das Heim-WLAN", style = MaterialTheme.typography.titleSmall)
                 Hint("Der Sync wurde durch einen WLAN-Unterbruch angehalten und läuft automatisch weiter, sobald das WLAN wieder verbunden ist.")
@@ -277,12 +359,14 @@ private fun StatusCard(
             }
             else -> Text("Noch kein Sync durchgeführt.")
         }
-        if (!isRunning && shareWait == null && skipInfo != null) {
+        if (!isRunning && !userPaused && shareWait == null && skipInfo != null) {
             Text("⚠ Automatischer Start übersprungen – $skipInfo", color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (isRunning) OutlinedButton(onClick = onCancel) { Text("Abbrechen") }
+            // "Pausieren" hält nur den laufenden Sync an; beim nächsten automatischen Start geht es weiter
+            if (isRunning) OutlinedButton(onClick = onCancel) { Text("Pausieren") }
+            else if (userPaused) Button(onClick = onResume) { Text("Fortsetzen") }
             else Button(onClick = onSync, enabled = hasProfiles) { Text("Jetzt synchronisieren") }
             OutlinedButton(onClick = onPreview, enabled = hasProfiles) { Text("Vorschau") }
         }

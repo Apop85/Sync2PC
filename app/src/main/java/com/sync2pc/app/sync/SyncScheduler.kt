@@ -93,7 +93,9 @@ object SyncScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_AUTO, ExistingWorkPolicy.KEEP, b.build())
     }
 
+    /** Manueller Start ("Jetzt synchronisieren") – hebt eine Pause auf, wer von Hand startet, will synchronisieren */
     fun enqueueManual(context: Context) {
+        clearPause(context)
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(workDataOf(KEY_TRIGGER to "Manuell", KEY_MANUAL to true))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
@@ -177,6 +179,37 @@ object SyncScheduler {
         scheduleRemotePoll(context)
         com.sync2pc.app.update.UpdateWorker.schedule(context)
         StaleCheck.schedule(context)
+    }
+
+    const val WORK_PAUSE_END = "pause-end"
+
+    /**
+     * Dienst für [hours] Stunden pausieren (0.3.1): laufenden Sync anhalten, automatische Starts unterdrücken.
+     * Am Ende der Pause startet ein Auftrag den Sync von selbst wieder.
+     */
+    fun pause(context: Context, hours: Int) {
+        val ms = hours.coerceIn(1, 168) * 3_600_000L
+        GlobalSettings(context).pausedUntil = System.currentTimeMillis() + ms
+        cancelAll(context)
+        val req = OneTimeWorkRequestBuilder<TriggerWorker>()
+            .setInputData(workDataOf(KEY_TRIGGER to "Pause beendet"))
+            .setInitialDelay(ms, TimeUnit.MILLISECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_PAUSE_END, ExistingWorkPolicy.REPLACE, req)
+    }
+
+    /** Pause aufheben (ohne selbst einen Sync zu starten). true = es war pausiert */
+    fun clearPause(context: Context): Boolean {
+        val s = GlobalSettings(context)
+        if (s.pausedUntil == 0L) return false
+        s.pausedUntil = 0
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_PAUSE_END)
+        return true
+    }
+
+    /** Pause sofort beenden und prüfen, ob es etwas zu tun gibt */
+    fun resume(context: Context) {
+        if (clearPause(context)) enqueueAuto(context, "Fortgesetzt")
     }
 
     fun cancelAll(context: Context) {

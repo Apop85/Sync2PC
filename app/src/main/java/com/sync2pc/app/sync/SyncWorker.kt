@@ -112,6 +112,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         dao.closeDanglingRuns()
 
         val settings = GlobalSettings(ctx)
+        // Vom Benutzer pausiert: keine automatischen Läufe (ein manueller Start hebt die Pause vorher auf)
+        if (!manual && settings.isPaused()) {
+            settings.noteSkip("Pausiert bis ${java.text.SimpleDateFormat("dd.MM. HH:mm", java.util.Locale.GERMANY).format(java.util.Date(settings.pausedUntil))}")
+            return Result.success()
+        }
         val all = dao.profiles().filter { it.enabled && it.isConfigured() }
         if (all.isEmpty()) return Result.success()
         targetWifi = all.flatMap { it.ssids() }.distinct().joinToString(", ")
