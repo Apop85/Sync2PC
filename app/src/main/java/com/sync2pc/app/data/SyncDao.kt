@@ -102,6 +102,40 @@ interface SyncDao {
     @Query("DELETE FROM pending_decisions WHERE profileId = :profileId")
     suspend fun deleteDecisionsOfProfile(profileId: Long)
 
+    // ---- Ordner-Spiegelung ---------------------------------------------------
+    @Query("SELECT * FROM mirror_state WHERE profileId = :profileId")
+    suspend fun mirrorStates(profileId: Long): List<MirrorState>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMirrorState(s: MirrorState)
+
+    @Query("DELETE FROM mirror_state WHERE profileId = :profileId AND relPath = :relPath")
+    suspend fun deleteMirrorState(profileId: Long, relPath: String)
+
+    @Query("DELETE FROM mirror_state WHERE profileId = :profileId")
+    suspend fun clearMirrorState(profileId: Long)
+
+    @Query("SELECT * FROM mirror_conflicts WHERE resolution IS NULL ORDER BY detectedAt DESC")
+    fun openConflictsFlow(): Flow<List<MirrorConflict>>
+
+    @Query("SELECT COUNT(*) FROM mirror_conflicts WHERE resolution IS NULL")
+    suspend fun openConflictCount(): Int
+
+    @Query("SELECT * FROM mirror_conflicts WHERE profileId = :profileId")
+    suspend fun conflicts(profileId: Long): List<MirrorConflict>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertConflict(c: MirrorConflict)
+
+    @Query("UPDATE mirror_conflicts SET resolution = :resolution WHERE profileId = :profileId AND relPath = :relPath")
+    suspend fun resolveConflict(profileId: Long, relPath: String, resolution: String)
+
+    @Query("DELETE FROM mirror_conflicts WHERE profileId = :profileId AND relPath = :relPath")
+    suspend fun deleteConflict(profileId: Long, relPath: String)
+
+    @Query("DELETE FROM mirror_conflicts WHERE profileId = :profileId")
+    suspend fun clearConflicts(profileId: Long)
+
     // ---- Analyse-Cache ------------------------------------------------------
     @Query("SELECT * FROM media_info WHERE sourceKey = :key")
     suspend fun mediaInfo(key: String): MediaInfo?

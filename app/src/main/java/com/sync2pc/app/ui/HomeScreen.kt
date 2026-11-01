@@ -55,7 +55,9 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.sync2pc.app.BuildConfig
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncRun
 import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.sync.SyncProgress
@@ -89,6 +91,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
 
     val profiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
     val decisions by remember { dao.decisionsFlow() }.collectAsState(initial = emptyList())
+    val conflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
     val deleteCount by remember { dao.queuedDeleteCount() }.collectAsState(initial = 0)
     val lastRun by remember { dao.lastRunFlow() }.collectAsState(initial = null)
 
@@ -100,6 +103,13 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val running = works.firstOrNull { it.state == WorkInfo.State.RUNNING }
     val queued = works.any { it.state == WorkInfo.State.ENQUEUED }
     val progress = running?.let { SyncWorker.progressFrom(it.progress) }
+    // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
+    val shareWait = remember(tick, works) {
+        val s = GlobalSettings(ctx)
+        if (s.shareRetryAt > System.currentTimeMillis())
+            "PC nicht erreichbar (${s.shareUnreachable}) – nächste Prüfung um ${formatTime(s.shareRetryAt).substringAfter(' ')}"
+        else null
+    }
 
     ScreenScaffold(
         title = "Sync2PC",
@@ -124,6 +134,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     isQueued = queued,
                     progress = progress,
                     lastRun = lastRun,
+                    shareWait = shareWait,
                     onSync = { SyncScheduler.enqueueManual(ctx) },
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onPreview = { navigate(Screen.Preview) },
@@ -137,6 +148,14 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     text = "Version ${update.version} ist verfügbar (installiert: ${UpdateChecker.currentVersion()}).",
                     button = "Ansehen",
                     onClick = { navigate(Screen.Update) },
+                )
+            }
+            if (conflicts.isNotEmpty()) item {
+                ActionCard(
+                    title = "Konflikte beim Ordner-Sync",
+                    text = "${conflicts.size} Datei(en) wurden auf Handy und PC geändert. Wähle, welche Version gilt.",
+                    button = "Entscheiden",
+                    onClick = { navigate(Screen.Conflicts) },
                 )
             }
             if (decisions.isNotEmpty()) item {
@@ -192,6 +211,7 @@ private fun StatusCard(
     isQueued: Boolean,
     progress: SyncProgress?,
     lastRun: SyncRun?,
+    shareWait: String?,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onPreview: () -> Unit,
@@ -211,6 +231,10 @@ private fun StatusCard(
                     Text(progress?.phase ?: "Synchronisierung läuft…")
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
+            }
+            shareWait != null -> {
+                Text(shareWait, color = MaterialTheme.colorScheme.error)
+                Hint("Ist der PC eingeschaltet und die Freigabe aktiv? „Jetzt synchronisieren“ prüft sofort.")
             }
             isQueued -> Text("Sync eingeplant – wartet auf passendes WLAN/Bedingungen.")
             lastRun != null -> {
@@ -250,8 +274,17 @@ private fun ProfileCard(p: Profile, ssid: String?, onClick: () -> Unit) {
                 if (!p.enabled) Text("deaktiviert", color = MaterialTheme.colorScheme.error)
                 else if (ssid != null && p.ssids().contains(ssid)) Text("im WLAN ✓", color = MaterialTheme.colorScheme.primary)
             }
-            Text(p.smbPath.ifBlank { "Kein Ziel festgelegt" })
-            Hint("Quellen: " + (p.folders().joinToString(", ").ifBlank { "keine" }))
+            val target = p.smbPath.ifBlank { "Kein Ziel festgelegt" } +
+                (if (p.remoteSubfolder.isNotBlank()) "\\" + p.remoteSubfolder.trim('\\', '/') else "")
+            if (p.type() == ProfileType.MIRROR) {
+                val localLabel = p.localTreeUri.takeIf { it.isNotBlank() }
+                    ?.let { com.sync2pc.app.mirror.LocalTree.label(android.net.Uri.parse(it)) } ?: "kein Handy-Ordner"
+                Text("📁 $localLabel  ${p.dir().short}  $target")
+                Hint(p.dir().label + if (p.propagateDeletes) " · Löschungen übernehmen" else "")
+            } else {
+                Text("📷 $target")
+                Hint("Quellen: " + (p.folders().joinToString(", ").ifBlank { "keine" }))
+            }
             Hint("WLAN: " + (p.ssids().joinToString(", ").ifBlank { "keines – nur manueller Sync" }))
         }
     }

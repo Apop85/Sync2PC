@@ -72,7 +72,7 @@ class SyncEngine(
     /** false zurückgeben, um den Lauf sauber zu beenden (z. B. WLAN getrennt) */
     private val shouldContinue: () -> Boolean = { true },
     private val onProgress: (SyncProgress) -> Unit = {},
-) {
+) : SyncRunner {
     private val db = AppDatabase.get(context)
     private val dao = db.dao()
     private val settings = GlobalSettings(context)
@@ -80,13 +80,17 @@ class SyncEngine(
         context, Manifest.permission.ACCESS_MEDIA_LOCATION
     ) == PackageManager.PERMISSION_GRANTED
 
-    val preview = ArrayList<PreviewEntry>()
+    override val preview = ArrayList<PreviewEntry>()
+    /** true, wenn der Lauf abgebrochen wurde, weil das Ziel-WLAN nicht mehr verbunden war */
+    override var wifiLost: Boolean = false
+        private set
+
     /** true, wenn der Lauf wegen fehlender Netzwerkverbindung zum Share scheiterte */
-    var connectionFailed: Boolean = false
+    override var connectionFailed: Boolean = false
         private set
 
     /** Frühester Zeitpunkt (ms), zu dem zu junge Dateien übertragen werden dürfen; 0 = keine */
-    var nextYoungFileAt: Long = 0
+    override var nextYoungFileAt: Long = 0
         private set
 
     private var run = SyncRun(
@@ -129,7 +133,7 @@ class SyncEngine(
         @Volatile var lastEmit = 0L
     }
 
-    suspend fun run(): SyncRun {
+    override suspend fun run(): SyncRun {
         run = run.copy(id = dao.insertRun(run))
         var smb: SmbSession? = null
         var skippedKnown = 0
@@ -143,8 +147,10 @@ class SyncEngine(
         fun by() = shared?.bytesDone?.get() ?: 0L
         try {
             if (!dryRun) {
-                val monthAgo = System.currentTimeMillis() - 30L * 24 * 3600 * 1000
-                dao.pruneLogs(monthAgo); dao.pruneRuns(monthAgo * 3)
+                val day = 24L * 3600 * 1000
+                val now = System.currentTimeMillis()
+                dao.pruneLogs(now - 30 * day)   // Detail-Logs 30 Tage
+                dao.pruneRuns(now - 90 * day)   // Verlaufseinträge 90 Tage
             }
             log("I", "Start ($trigger) – Profil '${profile.name}' → ${profile.smbPath}")
 
@@ -153,7 +159,12 @@ class SyncEngine(
             val items = MediaScanner.scan(
                 context, profile.folders(), profile.includeSubfolders,
                 profile.includeImages, profile.includeVideos
-            )
+            ).toMutableList()
+            // White-/Blacklist (Muster auf Dateiname bzw. relativen Pfad)
+            val filter = com.sync2pc.app.mirror.FileFilter(profile.includePatterns, profile.excludePatterns)
+            val filtered = items.size
+            items.retainAll { filter.accepts(it.relativePath + it.displayName) }
+            if (items.size < filtered) log("I", "${filtered - items.size} Dateien durch Filter ausgeschlossen")
             val known = dao.syncedLite(profile.id).associateBy { it.sourceKey }
             val nowSec = System.currentTimeMillis() / 1000
             val minAge = settings.minFileAgeMinutes * 60L
@@ -247,6 +258,7 @@ class SyncEngine(
                             currentCoroutineContext().ensureActive()
                             if (index % 20 == 0 && !shouldContinue()) {
                                 sh.stop.set(true)
+                                wifiLost = true
                                 status = "PARTIAL"; message = "Abgebrochen: WLAN nicht mehr verbunden"
                                 log("W", message); break
                             }

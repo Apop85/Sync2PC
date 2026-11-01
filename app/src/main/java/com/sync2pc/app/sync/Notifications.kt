@@ -31,6 +31,8 @@ object Notifications {
     const val OPEN_DELETE = "delete"
     const val OPEN_LOG = "log"
     const val OPEN_UPDATE = "update"
+    const val OPEN_CONFLICTS = "conflicts"
+    const val ID_CONFLICT = 1006
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -124,6 +126,11 @@ object Notifications {
         post(context, ID_DELETE, CH_ALERTS, "Gesicherte Dateien entfernen",
             "$files Dateien sind verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.",
             OPEN_DELETE)
+
+    fun conflictsNeeded(context: Context, count: Int) =
+        post(context, ID_CONFLICT, CH_ALERTS, "Konflikt beim Ordner-Sync",
+            "$count Datei(en) wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.",
+            OPEN_CONFLICTS)
 
     fun updateAvailable(context: Context, version: String) =
         post(context, ID_UPDATE, CH_ALERTS, "Update verfügbar",

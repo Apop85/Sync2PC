@@ -31,6 +31,8 @@ Das SDK sucht er unter `ANDROID_HOME`, `ANDROID_SDK_ROOT` und `%LOCALAPPDATA%\An
 8. Führt die Unit-Tests aus und baut die APK (`gradlew testDebugUnitTest assembleRelease`).
 9. Kopiert die APK nach `releases\`.
 
+Die vollständige Gradle-Ausgabe jedes Builds steht zusätzlich in `.build\last-build.log`. Bei Fehlern genügt es, dem Agent zu sagen, dass der Build fehlgeschlagen ist; er liest das Protokoll selbst.
+
 ### Optionen
 
 ```bash

@@ -17,7 +17,8 @@ class WifiNetworkReceiver : BroadcastReceiver() {
         val s = GlobalSettings(ctx)
         if (!s.autoSyncOnWifi) return
         val now = System.currentTimeMillis()
-        if (now - s.lastWifiTriggerAt < 60_000) return
+        // Drosselung gegen Mehrfach-Events – aber nie nach einem unterbrochenen Sync (sofort fortsetzen)
+        if (!s.resumeOnWifi && now - s.lastWifiTriggerAt < 60_000) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -28,7 +29,10 @@ class WifiNetworkReceiver : BroadcastReceiver() {
                 val match = ssid == null || profiles.any { it.ssids().contains(ssid) }
                 if (match) {
                     s.lastWifiTriggerAt = now
-                    SyncScheduler.enqueueAuto(ctx, "WLAN verbunden" + (ssid?.let { " ($it)" } ?: ""))
+                    // Neue WLAN-Verbindung -> PC sofort prüfen, eine laufende 30-Minuten-Wartezeit verfällt
+                    s.shareRetryAt = 0
+                    val label = if (s.resumeOnWifi) "Fortsetzen nach WLAN-Unterbruch" else "WLAN verbunden"
+                    SyncScheduler.enqueueAuto(ctx, label + (ssid?.let { " ($it)" } ?: ""))
                 }
             } finally {
                 pending.finish()

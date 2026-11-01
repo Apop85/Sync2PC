@@ -74,6 +74,26 @@ class GlobalSettings(context: Context) {
         get() = prefs.getString("updateInstalling", "") ?: ""
         set(v) = prefs.edit().putString("updateInstalling", v).commit().let { }
 
+    /** Share war nicht erreichbar: vor diesem Zeitpunkt (ms) keine automatische Prüfung; 0 = kein Warten */
+    var shareRetryAt: Long
+        get() = prefs.getLong("shareRetryAt", 0)
+        set(v) = prefs.edit().putLong("shareRetryAt", v).apply()
+
+    /** Namen der Profile, deren Share zuletzt nicht erreichbar war (für die Anzeige) */
+    var shareUnreachable: String
+        get() = prefs.getString("shareUnreachable", "") ?: ""
+        set(v) = prefs.edit().putString("shareUnreachable", v).apply()
+
+    /** Sync wurde durch WLAN-Verlust unterbrochen -> beim nächsten Verbinden sofort fortsetzen (ohne Drosselung) */
+    var resumeOnWifi: Boolean
+        get() = prefs.getBoolean("resumeOnWifi", false)
+        set(v) = prefs.edit().putBoolean("resumeOnWifi", v).apply()
+
+    /** Kürzestes Prüfintervall aller aktiven Ordner-Profile (Minuten), 0 = keine Ordner-Profile */
+    var remotePollMinutes: Int
+        get() = prefs.getInt("remotePollMinutes", 0)
+        set(v) = prefs.edit().putInt("remotePollMinutes", v).apply()
+
     var lastWifiTriggerAt: Long
         get() = prefs.getLong("lastWifiTriggerAt", 0)
         set(v) = prefs.edit().putLong("lastWifiTriggerAt", v).apply()

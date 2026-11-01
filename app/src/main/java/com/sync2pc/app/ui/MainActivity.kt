@@ -39,6 +39,7 @@ sealed class Screen {
     data object Log : Screen()
     data object Stats : Screen()
     data object Update : Screen()
+    data object Conflicts : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -78,6 +79,7 @@ class MainActivity : ComponentActivity() {
             Notifications.OPEN_LOG -> screen = Screen.Log
             Notifications.OPEN_DELETE -> { screen = Screen.Home; startDeleteFlow = true }
             Notifications.OPEN_UPDATE -> screen = Screen.Update
+            Notifications.OPEN_CONFLICTS -> screen = Screen.Conflicts
         }
         intent?.removeExtra(Notifications.EXTRA_OPEN)
     }
@@ -155,5 +157,6 @@ private fun AppRoot(
         Screen.Log -> LogScreen(onBack = back)
         Screen.Stats -> StatsScreen(onBack = back)
         Screen.Update -> UpdateScreen(onBack = back)
+        Screen.Conflicts -> ConflictScreen(onBack = back)
     }
 }

@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.sync2pc.app.ui
 
 import android.net.Uri
@@ -20,7 +22,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,7 +53,11 @@ import androidx.compose.ui.unit.dp
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.DeleteMode
+import com.sync2pc.app.data.ConflictMode
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.data.SyncDirection
+import com.sync2pc.app.mirror.LocalTree
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import com.sync2pc.app.sync.SyncScheduler
@@ -80,9 +89,26 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
             p = p.copy(sourceFolders = Profile.joinLines(p.folders() + rel))
         }
     }
+    // Ordner-Spiegelung: Handy-Ordner mit dauerhafter Lese-/Schreibberechtigung (für alle Dateitypen)
+    val treePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        try {
+            ctx.contentResolver.takePersistableUriPermission(uri, LocalTree.FLAGS)
+            p = p.copy(localTreeUri = uri.toString())
+        } catch (e: SecurityException) {
+            Toast.makeText(ctx, "Für diesen Ordner wurde kein dauerhafter Zugriff erteilt.", Toast.LENGTH_LONG).show()
+        }
+    }
+    /** Neues Profil: zuerst Typ wählen (Assistent) */
+    var typeChosen by remember { mutableStateOf(profileId != 0L) }
+    var showRemotePicker by remember { mutableStateOf(false) }
+    var pollText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     val currentSsid = remember { WifiHelper.currentSsid(ctx) }
+    // Andere Profile mit Zugangsdaten -> zum Übernehmen anbieten
+    val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
+    val credentialSources = allProfiles.filter { it.id != profileId && it.smbUser.isNotBlank() }
 
     LaunchedEffect(profileId) {
         if (profileId != 0L) {
@@ -90,6 +116,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 dao.profile(profileId)?.let {
                     p = it
                     password = CredentialCrypto.decrypt(it.smbPasswordEnc)
+                    pollText = it.remotePollMinutes.toString()
                 }
             }
             loaded = true
@@ -103,6 +130,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
             val toSave = withPassword()
             withContext(Dispatchers.IO) {
                 if (toSave.id == 0L) dao.insertProfile(toSave) else dao.updateProfile(toSave)
+                SyncScheduler.updateRemotePoll(ctx, dao.profiles())
             }
             SyncScheduler.setupAll(ctx)
             Toast.makeText(ctx, "Gespeichert", Toast.LENGTH_SHORT).show()
@@ -121,6 +149,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
             Row(Modifier.fillMaxSize().padding(pad), horizontalArrangement = Arrangement.Center) { CircularProgressIndicator() }
             return@ScreenScaffold
         }
+        if (!typeChosen) {
+            ProfileTypeChooser(Modifier.padding(pad)) { type ->
+                p = p.copy(
+                    profileType = type.name,
+                    name = if (type == ProfileType.MIRROR) "Ordner" else "Fotos",
+                    direction = if (type == ProfileType.MIRROR) SyncDirection.BOTH.name else SyncDirection.UPLOAD.name,
+                )
+                pollText = p.remotePollMinutes.toString()
+                typeChosen = true
+            }
+            return@ScreenScaffold
+        }
+        val isMirror = p.type() == ProfileType.MIRROR
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
@@ -131,19 +172,54 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                     OutlinedTextField(p.name, { p = p.copy(name = it) }, label = { Text("Profilname") },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
                     SwitchRow("Profil aktiv", p.enabled) { p = p.copy(enabled = it) }
+                    Hint("Typ: ${p.type().label}" +
+                        if (isMirror) " – 1:1-Spiegelung mit Unterordnern" else " – sortiert nach Jahr\\Monat - Land")
                 }
             }
 
             item {
                 SectionCard("Ziel (Windows-Freigabe)") {
+                    if (credentialSources.isNotEmpty()) {
+                        Hint("Zugangsdaten von einem anderen Profil übernehmen:")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(credentialSources, key = { it.id }) { src ->
+                                AssistChip(
+                                    onClick = {
+                                        p = p.copy(
+                                            smbUser = src.smbUser,
+                                            smbDomain = src.smbDomain,
+                                            // Server/Freigabe nur vorschlagen, wenn noch leer
+                                            smbPath = p.smbPath.ifBlank { src.smbPath },
+                                        )
+                                        password = CredentialCrypto.decrypt(src.smbPasswordEnc)
+                                        testResult = null
+                                        Toast.makeText(ctx, "Zugangsdaten von „${src.name}“ übernommen", Toast.LENGTH_SHORT).show()
+                                    },
+                                    label = { Text("${src.name} (${src.smbUser})") },
+                                )
+                            }
+                        }
+                    }
                     OutlinedTextField(
                         p.smbPath, { p = p.copy(smbPath = it) },
                         label = { Text("Freigabe-Pfad") },
-                        placeholder = { Text("\\\\fs01.local\\Fotos") },
+                        placeholder = { Text("\\\\192.168.1.20\\Fotos") },
                         isError = p.smbPath.isNotBlank() && SmbTarget.parse(p.smbPath) == null,
                         singleLine = true, modifier = Modifier.fillMaxWidth()
                     )
-                    Hint("Format: \\\\Server\\Freigabe oder \\\\Server\\Freigabe\\Unterordner")
+                    Hint("Format: \\\\Server\\Freigabe (IP-Adresse oder Name)")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            p.remoteSubfolder, { p = p.copy(remoteSubfolder = it) },
+                            label = { Text("Unterordner auf dem Share (optional)") },
+                            placeholder = { Text(if (isMirror) "Dokumente\\Handy" else "Handy\\Fotos") },
+                            singleLine = true, modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            enabled = SmbTarget.parse(p.smbPath) != null,
+                            onClick = { showRemotePicker = true },
+                        ) { Text("Durchsuchen") }
+                    }
                     OutlinedTextField(p.smbUser, { p = p.copy(smbUser = it) }, label = { Text("Benutzer") },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
@@ -200,7 +276,66 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 }
             }
 
-            item {
+            if (isMirror) item {
+                SectionCard("Ordner auf dem Handy") {
+                    val treeUri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
+                    if (treeUri == null) Hint("Noch kein Ordner gewählt.")
+                    else {
+                        Text(LocalTree.label(treeUri))
+                        if (!LocalTree.hasPermission(ctx, treeUri))
+                            Text("Zugriff verloren – bitte erneut wählen.", color = MaterialTheme.colorScheme.error)
+                    }
+                    OutlinedButton(onClick = { treePicker.launch(null) }) {
+                        Text(if (treeUri == null) "Ordner wählen…" else "Anderen Ordner wählen…")
+                    }
+                    Hint("Android fragt einmalig, ob Sync2PC auf diesen Ordner zugreifen darf (für alle Dateitypen).")
+                }
+            }
+
+            if (isMirror) item {
+                SectionCard("Richtung") {
+                    SyncDirection.entries.forEach { d ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { p = p.copy(direction = d.name) },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = p.dir() == d, onClick = { p = p.copy(direction = d.name) })
+                            Text(d.label)
+                        }
+                    }
+                    SwitchRow(
+                        "Löschungen übernehmen", p.propagateDeletes,
+                        subtitle = "Wird eine Datei auf einer Seite gelöscht, kommt sie auf der anderen Seite in den " +
+                            "Ordner „.Sync2PC-Papierkorb“. Aus: gelöschte Dateien werden wiederhergestellt.",
+                    ) { p = p.copy(propagateDeletes = it) }
+                    if (p.dir() == SyncDirection.BOTH) {
+                        Text("Wenn eine Datei auf beiden Seiten geändert wurde:", style = MaterialTheme.typography.bodyMedium)
+                        ConflictMode.entries.forEach { m ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { p = p.copy(conflictMode = m.name) },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(selected = p.conflict() == m, onClick = { p = p.copy(conflictMode = m.name) })
+                                Text(m.label)
+                            }
+                        }
+                        if (p.conflict() == ConflictMode.NEWER) Hint("Die ältere Version wird in den Papierkorb verschoben, nicht gelöscht.")
+                    }
+                    OutlinedTextField(
+                        pollText,
+                        { v ->
+                            pollText = v.filter { it.isDigit() }.take(4)
+                            pollText.toIntOrNull()?.let { p = p.copy(remotePollMinutes = it.coerceIn(15, 24 * 60)) }
+                        },
+                        label = { Text("Auf Änderungen prüfen alle … Minuten") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    )
+                    Hint("Nur solange das Telefon im Ziel-WLAN ist (mindestens 15). Zusätzlich sofort beim Verbinden mit dem WLAN.")
+                }
+            }
+
+            if (!isMirror) item {
                 SectionCard("Quellordner auf dem Telefon") {
                     if (p.folders().isEmpty()) Hint("Noch kein Ordner gewählt (z. B. DCIM/Camera).")
                     p.folders().forEach { f ->
@@ -220,6 +355,25 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
             }
 
             item {
+                SectionCard("Filter (optional)") {
+                    OutlinedTextField(
+                        p.includePatterns, { p = p.copy(includePatterns = it) },
+                        label = { Text("Nur diese Dateien (Whitelist)") },
+                        placeholder = { Text("*.pdf, *.docx") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        p.excludePatterns, { p = p.copy(excludePatterns = it) },
+                        label = { Text("Diese Dateien ausschliessen (Blacklist)") },
+                        placeholder = { Text("Thumbs.db, *.tmp, Temp/**") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Hint("Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, " +
+                        "Ordner/** = alles in diesem Ordner. Leere Whitelist = alles. Die Blacklist hat Vorrang.")
+                }
+            }
+
+            if (!isMirror) item {
                 SectionCard("Nach erfolgreicher Übertragung") {
                     DeleteMode.entries.forEach { m ->
                         Row(
@@ -261,6 +415,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
         }
     }
 
+    if (showRemotePicker) RemoteFolderPicker(
+        profile = { withPassword() },
+        initial = p.remoteSubfolder,
+        onDismiss = { showRemotePicker = false },
+        onPick = { p = p.copy(remoteSubfolder = it); showRemotePicker = false },
+    )
+
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
         title = { Text("Profil löschen?") },
@@ -270,7 +431,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 scope.launch {
                     withContext(Dispatchers.IO) {
                         dao.clearSynced(profileId); dao.clearMappings(profileId)
-                        dao.clearDecisions(profileId); dao.deleteProfileRow(profileId)
+                        dao.clearDecisions(profileId); dao.clearMirrorState(profileId)
+                        dao.clearConflicts(profileId); dao.deleteProfileRow(profileId)
+                        SyncScheduler.updateRemotePoll(ctx, dao.profiles())
                     }
                     confirmDelete = false; onBack()
                 }
@@ -286,7 +449,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
         confirmButton = {
             TextButton(onClick = {
                 scope.launch {
-                    withContext(Dispatchers.IO) { dao.clearSynced(profileId) }
+                    withContext(Dispatchers.IO) {
+                        dao.clearSynced(profileId); dao.clearMirrorState(profileId); dao.clearConflicts(profileId)
+                    }
                     confirmReset = false
                     Toast.makeText(ctx, "Zurückgesetzt", Toast.LENGTH_SHORT).show()
                 }

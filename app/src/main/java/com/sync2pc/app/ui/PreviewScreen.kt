@@ -59,9 +59,13 @@ fun PreviewScreen(onBack: () -> Unit) {
         val p = profiles.firstOrNull { it.id == selected } ?: return
         running = true; result = null; status = "Starte…"
         scope.launch {
-            val engine = SyncEngine(ctx, p, "Vorschau", dryRun = true, onProgress = { pr ->
+            val onProgress: (com.sync2pc.app.sync.SyncProgress) -> Unit = { pr ->
                 status = if (pr.totalFiles > 0) "${pr.phase} ${pr.doneFiles} / ${pr.totalFiles}" else pr.phase
-            })
+            }
+            val engine: com.sync2pc.app.sync.SyncRunner =
+                if (p.type() == com.sync2pc.app.data.ProfileType.MIRROR)
+                    com.sync2pc.app.mirror.MirrorEngine(ctx, p, "Vorschau", dryRun = true, onProgress = onProgress)
+                else SyncEngine(ctx, p, "Vorschau", dryRun = true, onProgress = onProgress)
             val run = withContext(Dispatchers.IO) { engine.run() }
             result = engine.preview.toList()
             status = run.message
@@ -77,7 +81,8 @@ fun PreviewScreen(onBack: () -> Unit) {
         ) {
             item {
                 SectionCard {
-                    Hint("Zeigt, wohin neue Dateien übertragen würden. Es wird nichts kopiert oder angelegt.")
+                    Hint("Zeigt, was beim nächsten Sync passieren würde (Bildordner: Zielordner; Ordner-Sync: Aktion je Datei). " +
+                        "Es wird nichts kopiert, angelegt oder gelöscht.")
                     if (profiles.size > 1) LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(profiles, key = { it.id }) { p ->
                             FilterChip(selected = p.id == selected, onClick = { selected = p.id }, label = { Text(p.name) })
@@ -105,7 +110,7 @@ fun PreviewScreen(onBack: () -> Unit) {
                                     )
                                     Text("${entries.size}")
                                 }
-                                if (entries.first().needsDecision) Hint("Ordnerauswahl nötig (umbenannter Monatsordner vorhanden)")
+                                if (entries.first().needsDecision) Hint("Entscheidung nötig (Ordnerauswahl bzw. Konflikt)")
                                 if (open) {
                                     entries.take(200).forEach { Text(it.fileName, style = MaterialTheme.typography.bodySmall) }
                                     if (entries.size > 200) Hint("… und ${entries.size - 200} weitere")

@@ -37,7 +37,8 @@ object DeletionManager {
     /** Prüft Dateien mit Status WANTED. Liefert Anzahl neu zur Bestätigung freigegebener Dateien. */
     suspend fun sweep(context: Context, log: suspend (String) -> Unit): Int {
         val dao = AppDatabase.get(context).dao()
-        val profiles = dao.profiles().filter { it.enabled }
+        // Nur Bildordner-Profile sichern über den MediaStore (Ordner-Profile löschen nie nach dem Sync)
+        val profiles = dao.profiles().filter { it.enabled && it.type() == com.sync2pc.app.data.ProfileType.PHOTOS }
         val wanted = dao.byDeleteState(DeleteState.WANTED).groupBy { it.sourceKey }
         var queued = 0
         for ((key, rows) in wanted) {

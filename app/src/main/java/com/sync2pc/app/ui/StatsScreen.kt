@@ -83,7 +83,9 @@ private fun compute(rows: List<StatRow>): Stats {
 fun StatsScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
-    val profiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
+    // Statistik nur für Bildordner-Profile (Jahr/Land)
+    val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
+    val profiles = allProfiles.filter { it.type() == com.sync2pc.app.data.ProfileType.PHOTOS }
     var selected by remember { mutableStateOf<Long?>(null) }
     var stats by remember { mutableStateOf<Stats?>(null) }
 

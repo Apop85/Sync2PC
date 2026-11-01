@@ -30,10 +30,31 @@ object SyncScheduler {
     const val WORK_FOLLOWUP = "sync-followup"
     const val WORK_CONTENT = "trigger-content"
     const val WORK_PERIODIC = "trigger-periodic"
-    val ALL_SYNC_WORK = listOf(WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP)
+    const val WORK_RETRY = "sync-share-retry"
+    const val WORK_REMOTE_POLL = "trigger-remote-poll"
+    val ALL_SYNC_WORK = listOf(WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY)
+
+    /** Wartezeit, wenn der Share im Ziel-WLAN nicht erreichbar ist */
+    const val SHARE_RETRY_MINUTES = 30L
 
     const val KEY_TRIGGER = "trigger"
     const val KEY_MANUAL = "manual"
+    const val KEY_RETRY = "retry"
+
+    /** Share nicht erreichbar -> in 30 Minuten erneut prüfen (nur im WLAN) */
+    fun enqueueShareRetry(context: Context) {
+        val req = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setInputData(workDataOf(KEY_TRIGGER to "Erneute Prüfung (PC war nicht erreichbar)", KEY_MANUAL to false, KEY_RETRY to true))
+            .setConstraints(autoConstraints(context))
+            .setInitialDelay(SHARE_RETRY_MINUTES, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_RETRY, ExistingWorkPolicy.REPLACE, req)
+    }
+
+    fun cancelShareRetry(context: Context) {
+        GlobalSettings(context).apply { shareRetryAt = 0; shareUnreachable = "" }
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_RETRY)
+    }
 
     private fun autoConstraints(context: Context): Constraints =
         Constraints.Builder()
@@ -97,6 +118,29 @@ object SyncScheduler {
         )
     }
 
+    /**
+     * Ordner-Profile: Änderungen auf dem PC melden sich nicht von selbst ->
+     * im eingestellten Intervall prüfen (nur WLAN; der Worker prüft zusätzlich das Ziel-WLAN).
+     */
+    fun scheduleRemotePoll(context: Context) {
+        val minutes = GlobalSettings(context).remotePollMinutes
+        val wm = WorkManager.getInstance(context)
+        if (minutes <= 0) { wm.cancelUniqueWork(WORK_REMOTE_POLL); return }
+        val req = PeriodicWorkRequestBuilder<TriggerWorker>(minutes.coerceAtLeast(15).toLong(), TimeUnit.MINUTES)
+            .setInputData(workDataOf(KEY_TRIGGER to "Ordner-Prüfung (Intervall)"))
+            .setConstraints(autoConstraints(context))
+            .build()
+        wm.enqueueUniquePeriodicWork(WORK_REMOTE_POLL, ExistingPeriodicWorkPolicy.UPDATE, req)
+    }
+
+    /** Nach Änderungen an Profilen aufrufen: kürzestes Intervall der aktiven Ordner-Profile übernehmen */
+    fun updateRemotePoll(context: Context, profiles: List<com.sync2pc.app.data.Profile>) {
+        val min = profiles.filter { it.enabled && it.type() == com.sync2pc.app.data.ProfileType.MIRROR }
+            .minOfOrNull { it.remotePollMinutes.coerceAtLeast(15) } ?: 0
+        GlobalSettings(context).remotePollMinutes = min
+        scheduleRemotePoll(context)
+    }
+
     fun schedulePeriodic(context: Context) {
         val req = PeriodicWorkRequestBuilder<TriggerWorker>(6, TimeUnit.HOURS)
             .setInputData(workDataOf(KEY_TRIGGER to "Periodisch"))
@@ -112,6 +156,7 @@ object SyncScheduler {
         if (s.autoSyncOnWifi) WifiHelper.registerWifiCallback(context) else WifiHelper.unregisterWifiCallback(context)
         armContentTrigger(context, replace = false)
         schedulePeriodic(context)
+        scheduleRemotePoll(context)
         com.sync2pc.app.update.UpdateWorker.schedule(context)
     }
 

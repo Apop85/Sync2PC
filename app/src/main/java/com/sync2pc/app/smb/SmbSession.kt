@@ -35,7 +35,7 @@ data class SmbTarget(val host: String, val share: String, val basePath: String) 
     }
 }
 
-data class RemoteEntry(val name: String, val size: Long, val isDirectory: Boolean)
+data class RemoteEntry(val name: String, val size: Long, val isDirectory: Boolean, val modified: Long = 0L)
 
 /** Eine offene Verbindung zu einem Windows-Share (SMB2/SMB3 via smbj). */
 class SmbSession private constructor(
@@ -50,8 +50,16 @@ class SmbSession private constructor(
         const val TEMP_SUFFIX = ".s2ptmp"
         private const val BUFFER = 1 shl 20 // 1 MB
 
+        /** Freigabe-Pfad + optionaler Unterordner des Profils */
+        fun targetOf(profile: Profile): SmbTarget? {
+            val t = SmbTarget.parse(profile.smbPath) ?: return null
+            val sub = profile.remoteSubfolder.replace('/', '\\').split('\\').map { it.trim() }.filter { it.isNotEmpty() }
+            return if (sub.isEmpty()) t
+            else t.copy(basePath = (listOf(t.basePath) + sub).filter { it.isNotEmpty() }.joinToString("\\"))
+        }
+
         fun open(profile: Profile): SmbSession {
-            val target = SmbTarget.parse(profile.smbPath)
+            val target = targetOf(profile)
                 ?: throw IllegalArgumentException("Ungültiger Share-Pfad: '${profile.smbPath}' (erwartet \\\\server\\freigabe)")
             val config = SmbConfig.builder()
                 .withTimeout(60, TimeUnit.SECONDS)
@@ -111,7 +119,67 @@ class SmbSession private constructor(
         val dirFlag = FileAttributes.FILE_ATTRIBUTE_DIRECTORY.value
         return share.list(path)
             .filter { it.fileName != "." && it.fileName != ".." }
-            .map { RemoteEntry(it.fileName, it.endOfFile, (it.fileAttributes and dirFlag) != 0L) }
+            .map {
+                RemoteEntry(
+                    it.fileName, it.endOfFile, (it.fileAttributes and dirFlag) != 0L,
+                    it.lastWriteTime?.toEpochMillis() ?: 0L
+                )
+            }
+    }
+
+    /**
+     * Alle Dateien unterhalb von [basePath] (rekursiv), Schlüssel = relativer Pfad mit "/".
+     * [skipDir] erhält den relativen Ordnerpfad und kann ganze Zweige auslassen.
+     */
+    fun listRecursive(basePath: String, skipDir: (String) -> Boolean = { false }): Map<String, RemoteEntry> {
+        val out = LinkedHashMap<String, RemoteEntry>()
+        fun walk(rel: String) {
+            val full = if (rel.isEmpty()) basePath else (if (basePath.isEmpty()) rel.replace('/', '\\') else basePath + "\\" + rel.replace('/', '\\'))
+            for (e in listDir(full)) {
+                val childRel = if (rel.isEmpty()) e.name else "$rel/${e.name}"
+                if (e.isDirectory) { if (!skipDir(childRel)) walk(childRel) }
+                else out[childRel] = e
+            }
+        }
+        walk("")
+        return out
+    }
+
+    /** Grösse und Änderungszeit einer Datei, null wenn nicht vorhanden */
+    fun stat(path: String): RemoteEntry? {
+        if (!share.fileExists(path)) return null
+        val info = share.getFileInformation(path)
+        return RemoteEntry(
+            path.substringAfterLast('\\'), info.standardInformation.endOfFile, false,
+            info.basicInformation.lastWriteTime?.toEpochMillis() ?: 0L
+        )
+    }
+
+    /** Lädt eine Datei herunter und schreibt sie in [out]. onProgress(bytes) */
+    fun download(path: String, out: java.io.OutputStream, onProgress: (Long) -> Unit, checkCancel: () -> Unit) {
+        share.openFile(
+            path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
+            SMB2CreateDisposition.FILE_OPEN, null
+        ).use { f ->
+            val buf = ByteArray(BUFFER)
+            var offset = 0L
+            while (true) {
+                checkCancel()
+                val n = f.read(buf, offset, 0, buf.size)
+                if (n <= 0) break
+                out.write(buf, 0, n)
+                offset += n
+                onProgress(offset)
+            }
+        }
+    }
+
+    /** Verschiebt/benennt eine Datei um (Zielordner muss existieren) */
+    fun move(from: String, to: String) {
+        share.openFile(
+            from, EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
+            SMB2CreateDisposition.FILE_OPEN, EnumSet.of(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE)
+        ).use { it.rename(to, false) }
     }
 
     /** Legt alle Ebenen an, falls nötig (verträgt parallele Aufrufe aus mehreren Verbindungen) */
@@ -169,6 +237,8 @@ class SmbSession private constructor(
         onProgress: (Long) -> Unit,
         checkCancel: () -> Unit,
         modifiedMillis: Long? = null,
+        /** Vorhandene Zieldatei ersetzen (Ordner-Spiegelung) */
+        replaceExisting: Boolean = false,
     ) {
         val tempPath = finalPath + TEMP_SUFFIX
         val existing = fileSize(tempPath) ?: 0L
@@ -213,7 +283,7 @@ class SmbSession private constructor(
                     // Zeitstempel ist "nice to have" – Upload deswegen nicht scheitern lassen
                 }
             }
-            f.rename(finalPath, false)
+            f.rename(finalPath, replaceExisting)
         }
     }
 

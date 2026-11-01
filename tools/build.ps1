@@ -198,8 +198,24 @@ $tasks = @()
 if (-not $SkipTests) { $tasks += "testDebugUnitTest" }
 if ($Debug) { $tasks += "assembleDebug" } else { $tasks += "assembleRelease" }
 Step ("Gradle: " + ($tasks -join " "))
-& (Join-Path $Root "gradlew.bat") @tasks --console=plain
-if ($LASTEXITCODE -ne 0) { Fail "Gradle-Build fehlgeschlagen (siehe Ausgabe oben)" }
+# Ausgabe zusaetzlich in .build\last-build.log schreiben (zum Weitergeben an den Agent)
+$logFile = Join-Path $StateDir "last-build.log"
+$writer = New-Object System.IO.StreamWriter($logFile, $false, $Utf8)
+$writer.WriteLine("Sync2PC Build $version - " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss") + " - Tasks: " + ($tasks -join " "))
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'   # stderr von Gradle darf das Skript nicht abbrechen
+try {
+    & (Join-Path $Root "gradlew.bat") @tasks --console=plain 2>&1 | ForEach-Object {
+        $line = "$_"
+        Write-Host $line
+        $writer.WriteLine($line)
+    }
+    $gradleExit = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $prevEap
+    $writer.Close()
+}
+if ($gradleExit -ne 0) { Fail "Gradle-Build fehlgeschlagen. Vollstaendiges Protokoll: $logFile" }
 
 $built = if ($Debug) { "app\build\outputs\apk\debug\app-debug.apk" } else { "app\build\outputs\apk\release\app-release.apk" }
 $built = Join-Path $Root $built

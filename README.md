@@ -1,6 +1,6 @@
 # Sync2PC
 
-Android-App, die Fotos und Videos vom Telefon automatisch auf eine Windows-Freigabe (SMB) überträgt und dort nach **Jahr, Monat und Reiseland** sortiert.
+Android-App, die Fotos und Videos vom Telefon automatisch auf eine Windows-Freigabe (SMB) überträgt und dort nach **Jahr, Monat und Reiseland** sortiert. Ausserdem synchronisiert sie beliebige Ordner in beide Richtungen.
 
 ```
 \\fs01.local\Fotos\2026\06\IMG_20260614_101530.jpg
@@ -10,7 +10,16 @@ Android-App, die Fotos und Videos vom Telefon automatisch auf eine Windows-Freig
 
 ## Funktionen
 
-- **Automatisch im Heim-WLAN.** Sobald das Telefon mit einem eingetragenen WLAN verbunden ist, startet der Sync. Neue Fotos werden direkt nachgeladen.
+Es gibt zwei Profiltypen:
+
+| | Fotos & Videos sichern | Ordner synchronisieren |
+|---|---|---|
+| Ablage auf dem PC | `Jahr\Monat - Land\` | 1:1 wie auf dem Handy |
+| Richtung | Handy → PC | Handy → PC, PC → Handy oder beidseitig |
+| Dateitypen | Fotos, Videos | alle |
+| Löschen | optional nach geprüftem Upload | optional Löschungen übernehmen (Papierkorb) |
+
+- **Automatisch im Heim-WLAN.** Sobald das Telefon mit einem eingetragenen WLAN verbunden ist, startet der Sync. Neue Fotos werden direkt nachgeladen. Ist der PC aus, prüft die App alle 30 Minuten erneut. Nach einem WLAN-Unterbruch setzt sie sofort beim Wiederverbinden fort.
 - **Sortierung nach Aufnahmedatum.** Die App liest EXIF bzw. Video-Metadaten, sonst das Datum im Dateinamen, sonst das Änderungsdatum.
 - **Länderordner aus GPS, offline.** Es gibt keine Online-Abfrage. Fotos aus dem Heimatland (Standard: Schweiz) bekommen keinen Länderzusatz.
 - **Eigene Ordnernamen.** Monatsordner dürfen umbenannt werden, solange die Monatszahl erhalten bleibt (`06 - Ägypten mit Familie`). Bei Mehrdeutigkeit fragt die App einmal pro Monat und Land, nicht pro Bild.
@@ -23,6 +32,8 @@ Android-App, die Fotos und Videos vom Telefon automatisch auf eine Windows-Freig
 - **Fortschritt** erscheint in der Benachrichtigung und auf dem Sperrbildschirm.
 - **Profile** für mehrere Ziele, eine **Vorschau** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
+- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.Sync2PC-Papierkorb`, nicht im Nirgendwo.
+- **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
 
 ## Download
 
@@ -52,6 +63,7 @@ app/src/main/java/com/sync2pc/app/
   geo/     Offline-Ländererkennung (Punkt-in-Polygon, Natural Earth)
   smb/     SMB-Verbindung (smbj), Upload mit Fortsetzung, Teil-Hash
   sync/    Sync-Engine, Zielordner-Logik, Worker, WLAN-Trigger, Benachrichtigungen, Löschen
+  mirror/  Ordner-Spiegelung (Handy-Ordner via Android-Ordnerfreigabe, 3-Wege-Abgleich, Filter)
   update/  Selbst-Update (GitHub Releases, PackageInstaller)
   ui/      Jetpack Compose Oberfläche
 tools/     Build-Skripte (One-Click-Builder, Icons, Länderdaten)

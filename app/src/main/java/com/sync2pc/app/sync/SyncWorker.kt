@@ -9,7 +9,12 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.mirror.MirrorEngine
 import com.sync2pc.app.media.MediaScanner
+import com.sync2pc.app.smb.SmbSession
+import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -46,6 +51,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         try {
             work()
         } finally {
+            // Von Android gestoppt (z. B. WLAN weg -> Netzwerk-Bedingung verletzt): beim Wiederverbinden sofort fortsetzen
+            if (isStopped) GlobalSettings(applicationContext).resumeOnWifi = true
             mutex.unlock()
             SyncScheduler.armContentTrigger(applicationContext)
         }
@@ -59,11 +66,32 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val dao = AppDatabase.get(ctx).dao()
         dao.closeDanglingRuns(System.currentTimeMillis())
 
-        val all = dao.profiles().filter { it.enabled && it.smbPath.isNotBlank() && it.folders().isNotEmpty() }
+        val all = dao.profiles().filter { it.enabled && it.isConfigured() }
         if (all.isEmpty()) return Result.success()
         val ssid = WifiHelper.currentSsid(ctx)
         val eligible = if (manual) all else all.filter { p -> ssid != null && p.ssids().contains(ssid) }
         if (eligible.isEmpty()) return Result.success()
+
+        // --- Ist der PC erreichbar? (kurzer TCP-Test, bevor irgendetwas Teures passiert) -----
+        val settings = GlobalSettings(ctx)
+        val isRetry = inputData.getBoolean(SyncScheduler.KEY_RETRY, false)
+        if (!manual && !isRetry && settings.shareRetryAt > System.currentTimeMillis()) {
+            // PC war vor Kurzem nicht erreichbar -> Wartezeit einhalten, die erneute Prüfung ist eingeplant
+            return Result.success()
+        }
+        val reach = HashMap<String, Boolean>()
+        val unreachable = ArrayList<Profile>()
+        val runnable = eligible.filter { p ->
+            val host = SmbTarget.parse(p.smbPath)?.host ?: return@filter true // ungültiger Pfad -> Engine meldet den Fehler
+            val ok = reach.getOrPut(host.lowercase()) { SmbSession.isReachable(host) }
+            if (!ok) unreachable += p
+            ok
+        }
+        if (runnable.isEmpty()) {
+            handleUnreachable(unreachable, manual, isRetry)
+            return Result.success()
+        }
+        settings.resumeOnWifi = false // ein unterbrochener Sync wird jetzt fortgesetzt
 
         val cancel = WorkManager.getInstance(ctx).createCancelPendingIntent(id)
         try {
@@ -76,30 +104,39 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         var uploaded = 0; var failed = 0; var waiting = 0; var bytes = 0L
         var hardFailure: String? = null
         var youngAt = 0L
+        var conflicts = 0
+        var spaceShortage = false
         try {
-            for (p in eligible) {
-                val engine = SyncEngine(
-                    context = ctx, profile = p, trigger = trigger,
-                    shouldContinue = {
-                        if (manual) true else {
-                            val s = WifiHelper.currentSsid(ctx)
-                            if (s != null) p.ssids().contains(s) else WifiHelper.isOnWifi(ctx)
-                        }
-                    },
-                    onProgress = { pr ->
-                        Notifications.updateProgress(ctx, pr, cancel)
-                        setProgressAsync(
-                            workDataOf(
-                                P_PROFILE to pr.profileName, P_PHASE to pr.phase, P_DONE to pr.doneFiles,
-                                P_TOTAL to pr.totalFiles, P_DONE_BYTES to pr.doneBytes,
-                                P_TOTAL_BYTES to pr.totalBytes, P_FILE to pr.currentFile
-                            )
+            for (p in runnable) {
+                val shouldContinue: () -> Boolean = {
+                    if (manual) true else {
+                        val s = WifiHelper.currentSsid(ctx)
+                        if (s != null) p.ssids().contains(s) else WifiHelper.isOnWifi(ctx)
+                    }
+                }
+                val onProgress: (SyncProgress) -> Unit = { pr ->
+                    Notifications.updateProgress(ctx, pr, cancel)
+                    setProgressAsync(
+                        workDataOf(
+                            P_PROFILE to pr.profileName, P_PHASE to pr.phase, P_DONE to pr.doneFiles,
+                            P_TOTAL to pr.totalFiles, P_DONE_BYTES to pr.doneBytes,
+                            P_TOTAL_BYTES to pr.totalBytes, P_FILE to pr.currentFile
                         )
-                    },
-                )
+                    )
+                }
+                // Bildordner -> sortierte Sicherung, normaler Ordner -> Spiegelung
+                val engine: SyncRunner = if (p.type() == ProfileType.MIRROR)
+                    MirrorEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress)
+                else
+                    SyncEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress)
                 val r = engine.run()
-                uploaded += r.uploaded; failed += r.failed; waiting += r.waiting; bytes += r.bytes
-                if (r.status == "FAILED") hardFailure = "${p.name}: ${r.message}"
+                uploaded += r.uploaded; failed += r.failed; bytes += r.bytes
+                if (p.type() == ProfileType.PHOTOS) waiting += r.waiting
+                conflicts += engine.newConflicts
+                if (engine.spaceShortage) spaceShortage = true
+                if (engine.wifiLost && !manual) settings.resumeOnWifi = true
+                if (engine.connectionFailed) unreachable += p
+                else if (r.status == "FAILED") hardFailure = "${p.name}: ${r.message}"
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
             }
         } finally {
@@ -121,6 +158,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             val groups = dao.decisions().size
             Notifications.decisionNeeded(ctx, groups, waiting)
         }
+        if (conflicts > 0) Notifications.conflictsNeeded(ctx, dao.openConflictCount())
+        if (spaceShortage) Notifications.summary(ctx, "Zu wenig Speicher auf dem Handy – einige Dateien wurden nicht heruntergeladen.", error = true)
         val toDelete = dao.queuedDeletes().map { it.sourceKey }.distinct().size
         if (toDelete > 0) Notifications.deleteReady(ctx, toDelete)
         // Während des Laufs neu entstandene Fotos/Videos -> nach Mindestalter nachholen
@@ -131,6 +170,40 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         if (youngAt > 0) SyncScheduler.enqueueFollowUp(ctx, youngAt)
 
-        return if (hardFailure != null && !manual && runAttemptCount < 3) Result.retry() else Result.success()
+        handleUnreachable(unreachable, manual, isRetry)
+        return Result.success()
+    }
+
+    /**
+     * Nicht erreichbare Shares: automatisch -> in 30 Minuten erneut prüfen (solange im WLAN),
+     * manuell -> Hinweis. Alles erreichbar -> Wartezustand aufheben.
+     */
+    private fun handleUnreachable(unreachable: List<Profile>, manual: Boolean, isRetry: Boolean) {
+        val ctx = applicationContext
+        val s = GlobalSettings(ctx)
+        if (unreachable.isEmpty()) {
+            s.shareRetryAt = 0; s.shareUnreachable = ""
+            // Die laufende Wiederholung nicht selbst abbrechen
+            if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
+            return
+        }
+        val names = unreachable.joinToString(", ") { it.name }
+        if (manual) {
+            Notifications.summary(ctx, "PC nicht erreichbar ($names). Ist er eingeschaltet und die Freigabe aktiv?", error = true)
+            return
+        }
+        // Noch im Ziel-WLAN? Dann ist der PC weg -> in 30 Minuten erneut prüfen.
+        // WLAN selbst verloren -> kein Timer, sondern sofort beim nächsten Verbinden (WifiNetworkReceiver).
+        val ssid = WifiHelper.currentSsid(ctx)
+        val stillOnTargetWifi = if (ssid != null) unreachable.any { it.ssids().contains(ssid) } else WifiHelper.isOnWifi(ctx)
+        if (stillOnTargetWifi) {
+            s.shareRetryAt = System.currentTimeMillis() + SyncScheduler.SHARE_RETRY_MINUTES * 60_000
+            s.shareUnreachable = names
+            SyncScheduler.enqueueShareRetry(ctx)
+        } else {
+            s.shareRetryAt = 0; s.shareUnreachable = ""
+            s.resumeOnWifi = true
+            if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
+        }
     }
 }

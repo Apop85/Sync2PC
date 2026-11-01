@@ -15,6 +15,40 @@ enum class DeleteMode(val label: String) {
     }
 }
 
+/** Profiltyp: Bildordner (sortiert nach Jahr/Monat/Land) oder normaler Ordner (1:1-Spiegelung). */
+enum class ProfileType(val label: String) {
+    PHOTOS("Fotos & Videos sichern"),
+    MIRROR("Ordner synchronisieren");
+
+    companion object {
+        fun of(name: String?): ProfileType = entries.firstOrNull { it.name == name } ?: PHOTOS
+    }
+}
+
+/** Sync-Richtung (nur für normale Ordner; Bildordner immer Handy → PC). */
+enum class SyncDirection(val label: String, val short: String) {
+    UPLOAD("Handy → PC", "→ PC"),
+    DOWNLOAD("PC → Handy", "→ Handy"),
+    BOTH("Beidseitig", "⇄");
+
+    val up: Boolean get() = this != DOWNLOAD
+    val down: Boolean get() = this != UPLOAD
+
+    companion object {
+        fun of(name: String?): SyncDirection = entries.firstOrNull { it.name == name } ?: UPLOAD
+    }
+}
+
+/** Verhalten bei Konflikt (Datei auf beiden Seiten geändert, nur beidseitig). */
+enum class ConflictMode(val label: String) {
+    ASK("Jedes Mal fragen"),
+    NEWER("Immer die neuere Datei übernehmen");
+
+    companion object {
+        fun of(name: String?): ConflictMode = entries.firstOrNull { it.name == name } ?: ASK
+    }
+}
+
 /** Ein Sync-Profil: Ziel-Share, Zugangsdaten, Quellordner, WLANs, Optionen. */
 @Entity(tableName = "profiles")
 data class Profile(
@@ -36,12 +70,35 @@ data class Profile(
     val includeSubfolders: Boolean = true,
     val deleteMode: String = DeleteMode.KEEP.name,
     val verifyUpload: Boolean = true,
+    // ---- seit DB v2 (0.0.7) ----
+    val profileType: String = ProfileType.PHOTOS.name,
+    val direction: String = SyncDirection.UPLOAD.name,
+    /** SAF-Ordner-URI auf dem Handy (nur MIRROR), mit dauerhafter Lese-/Schreibberechtigung */
+    val localTreeUri: String = "",
+    /** Optionaler Unterordner auf dem Share, relativ zum Freigabe-Pfad (z. B. "Dokumente\Handy") */
+    val remoteSubfolder: String = "",
+    /** Löschungen auf die Gegenseite übernehmen (in deren .Sync2PC-Papierkorb) */
+    val propagateDeletes: Boolean = false,
+    val conflictMode: String = ConflictMode.ASK.name,
+    /** Whitelist (Muster wie *.pdf), zeilen-/kommagetrennt; leer = alles */
+    val includePatterns: String = "",
+    /** Blacklist (Muster wie Thumbs.db, *.tmp) */
+    val excludePatterns: String = "",
+    /** Wie oft auf Änderungen geprüft wird, solange im WLAN (Minuten, nur MIRROR) */
+    val remotePollMinutes: Int = 60,
 ) {
     fun folders(): List<String> = splitLines(sourceFolders)
     fun ssids(): List<String> = splitLines(wifiSsids)
-    fun delete(): DeleteMode = DeleteMode.of(deleteMode)
+    fun delete(): DeleteMode = if (type() == ProfileType.PHOTOS) DeleteMode.of(deleteMode) else DeleteMode.KEEP
     /** Beim Löschen ist die Prüfung immer Pflicht. */
     fun mustVerify(): Boolean = verifyUpload || delete() != DeleteMode.KEEP
+    fun type(): ProfileType = ProfileType.of(profileType)
+    /** Bildordner sind immer Handy → PC */
+    fun dir(): SyncDirection = if (type() == ProfileType.PHOTOS) SyncDirection.UPLOAD else SyncDirection.of(direction)
+    fun conflict(): ConflictMode = ConflictMode.of(conflictMode)
+    /** Genug eingerichtet, um zu synchronisieren? */
+    fun isConfigured(): Boolean = smbPath.isNotBlank() &&
+        (if (type() == ProfileType.PHOTOS) folders().isNotEmpty() else localTreeUri.isNotBlank())
 
     companion object {
         fun splitLines(s: String): List<String> =
@@ -89,6 +146,42 @@ data class SyncedLite(
     val sourceKey: String,
     val size: Long,
     val dateModified: Long,
+)
+
+/**
+ * Stand einer Datei beim letzten erfolgreichen Abgleich (Ordner-Spiegelung).
+ * Grundlage des 3-Wege-Vergleichs: Was hat sich seitdem auf welcher Seite geändert / wurde gelöscht?
+ */
+@Entity(tableName = "mirror_state", primaryKeys = ["profileId", "relPath"])
+data class MirrorState(
+    val profileId: Long,
+    /** Relativer Pfad in Kleinbuchstaben mit "/" (Schlüssel) */
+    val relPath: String,
+    val localSize: Long,
+    val localModified: Long,
+    val remoteSize: Long,
+    val remoteModified: Long,
+    val syncedAt: Long,
+)
+
+object ConflictResolution {
+    const val KEEP_LOCAL = "LOCAL"
+    const val KEEP_REMOTE = "REMOTE"
+    const val KEEP_BOTH = "BOTH"
+}
+
+/** Konflikt, der auf eine Benutzerentscheidung wartet (resolution = null) oder entschieden ist. */
+@Entity(tableName = "mirror_conflicts", primaryKeys = ["profileId", "relPath"])
+data class MirrorConflict(
+    val profileId: Long,
+    /** Relativer Pfad wie angezeigt (Originalschreibweise) */
+    val relPath: String,
+    val localSize: Long,
+    val localModified: Long,
+    val remoteSize: Long,
+    val remoteModified: Long,
+    val detectedAt: Long,
+    val resolution: String? = null,
 )
 
 /** Zeile für die Statistik (synchronisierte Datei + Analyse-Infos, falls vorhanden). */
