@@ -23,6 +23,7 @@ import androidx.work.WorkManager
 import com.sync2pc.app.BuildConfig
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.data.LogEntry
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncRun
 import com.sync2pc.app.mirror.LocalTree
@@ -77,6 +78,7 @@ object Diagnostics {
             kv("Doze aktiv", safe { pm?.isDeviceIdleMode })
             kv("Hintergrund eingeschränkt", safe { am?.isBackgroundRestricted })
             kv("Standby-Bucket", safe { usm?.appStandbyBucket?.let { bucketName(it) } })
+            kv("Hersteller-Hinweis", VendorHints.forDevice()?.vendor ?: "keiner")
             kv("Lädt", safe { bm?.isCharging })
             kv("Akkustand", safe { bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)?.let { "$it %" } })
 
@@ -184,6 +186,12 @@ object Diagnostics {
                 section("Letzte Prozess-Enden (Android)")
                 val exits = safe { am?.getHistoricalProcessExitReasons(ctx.packageName, 0, 12) } ?: emptyList()
                 if (exits.isEmpty()) appendLine("(keine)")
+                // Hersteller-Killer (z. B. OnePlus/Oppo "o-kill"): Grund OTHER oder Kennung in der Beschreibung
+                val vendorKills = exits.filter { it.reason == 13 || it.description?.contains("kill", ignoreCase = true) == true }
+                if (vendorKills.isNotEmpty()) {
+                    val active = vendorKills.count { it.importance <= 125 } // 100 Vordergrund, 125 Vordergrunddienst
+                    appendLine("⚠ Hersteller-Killer erkannt: ${vendorKills.size}× beendet, davon $active× während die App aktiv war (z. B. Sync)")
+                }
                 exits.forEach {
                     appendLine("${t(it.timestamp)}: ${exitReason(it.reason)}, Wichtigkeit ${it.importance}" +
                         (it.description?.let { d -> " – $d" } ?: ""))
@@ -195,12 +203,24 @@ object Diagnostics {
             if (runs.isEmpty()) appendLine("(keine)")
             runs.forEach { appendLine(runLine(it)) }
 
-            section("Log der letzten 5 Läufe")
-            for (r in runs.take(5)) {
-                appendLine("--- Lauf ${r.id} (${t(r.startedAt)}, ${r.profileName})")
-                val entries = safe { dao.logs(r.id) } ?: emptyList()
-                if (entries.size > 120) appendLine("… ${entries.size - 120} ältere Zeilen ausgelassen")
-                entries.takeLast(120).forEach { appendLine("${fmt.format(Date(it.time)).substringAfter(' ')} ${it.level} ${it.message}") }
+            section("Warnungen und Fehler (letzte ${runs.size} Läufe)")
+            var anyIssue = false
+            for (r in runs) {
+                val issues = (safe { dao.logs(r.id) } ?: emptyList()).filter { it.level == "W" || it.level == "E" }
+                if (issues.isEmpty()) continue
+                anyIssue = true
+                appendLine("--- Lauf #${r.id} (${t(r.startedAt)}, ${r.profileName})")
+                if (issues.size > 30) appendLine("… ${issues.size - 30} ältere ausgelassen")
+                issues.takeLast(30).forEach { appendLine(logLine(it)) }
+            }
+            if (!anyIssue) appendLine("(keine)")
+
+            section("Log der letzten 3 Läufe (gekürzt)")
+            for (r in runs.take(3)) {
+                appendLine("--- Lauf #${r.id} (${t(r.startedAt)}, ${r.profileName})")
+                val lines = compress(safe { dao.logs(r.id) } ?: emptyList())
+                if (lines.size > 80) appendLine("… ${lines.size - 80} ältere Zeilen ausgelassen")
+                lines.takeLast(80).forEach { appendLine(it) }
             }
             appendLine()
             appendLine("=== Ende ===")
@@ -249,6 +269,42 @@ object Diagnostics {
     fun fileStamp(): String = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.GERMANY).format(Date())
 
     // ---- Hilfen -------------------------------------------------------------------
+    /** Ordner aus "… war bereits in 2019\02" bzw. "… bereits in 2026\10 - Ägypten vorhanden" */
+    private val ALREADY_FOLDER = Regex("""bereits in (.+?)(?: vorhanden)?$""")
+
+    private fun logLine(e: LogEntry): String =
+        "${fmt.format(Date(e.time)).substringAfter(' ')} ${e.level} ${e.message}"
+
+    /**
+     * Fasst aufeinanderfolgende "= …"-Zeilen (Datei bereits vorhanden) zu einer Zeile zusammen.
+     * Gilt auch für das alte Format bis 0.1.0 ("= bild.jpg war bereits in 2019\02").
+     */
+    internal fun compress(entries: List<LogEntry>): List<String> {
+        val out = ArrayList<String>()
+        var count = 0
+        val folders = LinkedHashSet<String>()
+        var first: LogEntry? = null
+        fun flush() {
+            val f = first ?: return
+            out += if (count == 1) logLine(f)
+            else "${fmt.format(Date(f.time)).substringAfter(' ')} I = $count Zeilen „bereits vorhanden“ zusammengefasst" +
+                (if (folders.isNotEmpty()) " (${folders.take(6).joinToString(", ")}${if (folders.size > 6) ", …" else ""})" else "")
+            count = 0; folders.clear(); first = null
+        }
+        for (e in entries) {
+            if (e.level == "I" && e.message.startsWith("= ")) {
+                if (first == null) first = e
+                count++
+                ALREADY_FOLDER.find(e.message)?.groupValues?.get(1)?.let { folders += it }
+            } else {
+                flush()
+                out += logLine(e)
+            }
+        }
+        flush()
+        return out
+    }
+
     private fun runLine(r: SyncRun): String =
         "#${r.id} ${t(r.startedAt)} → ${t(r.finishedAt ?: 0L)} [${r.status}] ${r.profileName} (${r.trigger})" +
             " ↑${r.uploaded} ⤼${r.skipped} ✗${r.failed} ⏸${r.waiting}: ${r.message}"

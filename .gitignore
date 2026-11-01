@@ -34,6 +34,9 @@ keystore.properties
 
 # --- Claude Code: lokale Einstellungen privat, README/Icon sind Teil des Projekts
 .claude/settings.local.json
+# Vom Inhaber abgelegte Verlauf-Exporte / Diagnosen (persoenliche Daten, IPs, Dateinamen)
+.claude/*.txt
+LeoSync-Verlauf_*.txt
 
 # Hinweis: gradle/wrapper/gradle-wrapper.jar und app/src/main/assets/geo/countries.geojson
 # duerfen committet werden (reproduzierbarer Build).

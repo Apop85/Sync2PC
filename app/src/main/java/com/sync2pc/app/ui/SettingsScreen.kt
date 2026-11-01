@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.sync2pc.app.BuildConfig
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.diag.Diagnostics
+import com.sync2pc.app.diag.VendorHints
 import com.sync2pc.app.geo.CountryLookup
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.update.UpdateChecker
@@ -130,6 +132,17 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
                     OutlinedButton(onClick = {
                         ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")))
                     }) { Text("App-Berechtigungen") }
+                    val vendor = remember { VendorHints.forDevice() }
+                    if (vendor != null) {
+                        Text("Zusätzlich bei ${vendor.vendor}:", style = MaterialTheme.typography.bodyMedium)
+                        vendor.steps.forEach { Hint("• $it") }
+                        Hint("Die Bezeichnungen können je nach Software-Stand leicht abweichen.")
+                    }
+                    OutlinedButton(onClick = {
+                        try {
+                            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(VendorHints.webUrl(vendor))))
+                        } catch (ignored: Exception) {}
+                    }) { Text("Anleitung im Browser (dontkillmyapp.com)") }
                 }
             }
             item {

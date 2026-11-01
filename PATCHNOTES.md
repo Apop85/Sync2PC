@@ -2,6 +2,17 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.1.1 (2026-11-01)
+
+### Verbessert
+- **Übersichtlicherer Verlauf:** Bereits vorhandene Dateien werden nicht mehr einzeln protokolliert, sondern pro Monatsordner zusammengefasst (z. B. „= 37 Dateien bereits in 2014\04 vorhanden“).
+- **Laufnummer im Verlauf:** Jede Karte zeigt die Nummer des Laufs (z. B. „#25“), passend zu Diagnose und Export.
+- **Diagnose:** Sie zeigt zuerst alle Warnungen und Fehler der letzten Läufe und danach ein gekürztes Log. Gleichartige „bereits vorhanden“-Zeilen werden dabei zusammengefasst. Beendet ein Hersteller-Stromsparer die App (z. B. „o-kill“ bei OnePlus), weist die Diagnose darauf hin.
+- **Hinweise je Hersteller** unter *Einstellungen → Hintergrund* für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor. Dazu gibt es einen Link zu dontkillmyapp.com.
+
+### Behoben
+- Nach dem erneuten Verbinden mit dem WLAN blieb intern „PC nicht erreichbar“ stehen, bis der nächste Lauf fertig war.
+
 ## 0.1.0 (2026-11-01) – Beta
 
 ### Neu

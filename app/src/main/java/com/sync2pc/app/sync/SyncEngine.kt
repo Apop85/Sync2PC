@@ -136,6 +136,19 @@ class SyncEngine(
         val listings = HashMap<String, HashMap<String, RemoteEntry>>()
         val reserved = HashSet<String>()
         @Volatile var lastEmit = 0L
+        /** Bereits vorhandene Dateien je Zielordner, noch nicht ins Log geschrieben */
+        val already = ConcurrentHashMap<String, AtomicInteger>()
+        val alreadyPending = AtomicInteger()
+    }
+
+    /** Schreibt die gesammelten "bereits vorhanden"-Zähler als eine Zeile pro Ordner ins Log */
+    private suspend fun flushAlready(sh: Shared?) {
+        sh ?: return
+        sh.alreadyPending.set(0)
+        for ((folder, counter) in sh.already.entries.sortedBy { it.key }) {
+            val n = counter.getAndSet(0)
+            if (n > 0) log("I", "= $n ${if (n == 1) "Datei" else "Dateien"} bereits in $folder vorhanden")
+        }
     }
 
     override suspend fun run(): SyncRun {
@@ -302,6 +315,7 @@ class SyncEngine(
                     }
                     workers.joinAll()
                 }
+                flushAlready(sh)
             }
 
             // --- 4. Offene Ordner-Entscheidungen speichern ---------------------------
@@ -328,11 +342,13 @@ class SyncEngine(
             return finish(status, message, up(), sk(), fl(), waiting, by())
         } catch (e: CancellationException) {
             withContext(NonCancellable) {
+                flushAlready(shared)
                 log("W", "Lauf abgebrochen")
                 finish("CANCELLED", "Abgebrochen", up(), sk(), fl(), waiting, by())
             }
             throw e
         } catch (e: Exception) {
+            flushAlready(shared)
             if (isConnectionError(e)) {
                 // Erwartbar (WLAN weg, PC im Ruhezustand …): kein Fehler, offene Dateien folgen beim nächsten Sync.
                 // Abgebrochene Uploads werden dort an der Abbruchstelle fortgesetzt (.s2ptmp).
@@ -372,7 +388,9 @@ class SyncEngine(
                                 log("I", "↑ ${item.displayName} → $folderRel")
                             } else {
                                 sh.skipped.incrementAndGet()
-                                log("I", "= ${item.displayName} war bereits in $folderRel")
+                                // Nicht jede Datei einzeln protokollieren: Zusammenfassung pro Ordner
+                                sh.already.getOrPut(folderRel) { AtomicInteger() }.incrementAndGet()
+                                if (sh.alreadyPending.incrementAndGet() >= 250) flushAlready(sh)
                             }
                             break
                         } catch (e: CancellationException) {

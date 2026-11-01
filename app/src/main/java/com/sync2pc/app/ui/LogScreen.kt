@@ -93,7 +93,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(formatTime(r.startedAt) + " · " + r.profileName, modifier = Modifier.weight(1f),
+                Text("#${r.id} · " + formatTime(r.startedAt) + " · " + r.profileName, modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall)
                 Text(label, color = color)
             }

@@ -30,7 +30,7 @@ class WifiNetworkReceiver : BroadcastReceiver() {
                 if (match) {
                     s.lastWifiTriggerAt = now
                     // Neue WLAN-Verbindung -> PC sofort prüfen, eine laufende 30-Minuten-Wartezeit verfällt
-                    s.shareRetryAt = 0
+                    s.shareRetryAt = 0; s.shareUnreachable = ""
                     val label = if (s.resumeOnWifi) "Fortsetzen nach WLAN-Unterbruch" else "WLAN verbunden"
                     SyncScheduler.enqueueAuto(ctx, label + (ssid?.let { " ($it)" } ?: ""))
                 }
