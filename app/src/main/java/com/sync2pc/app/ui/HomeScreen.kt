@@ -205,6 +205,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                 }
             }
             items(profiles, key = { it.id }) { p -> ProfileCard(p, ssid) { navigate(Screen.ProfileEdit(p.id)) } }
+            if (profiles.any { it.type() == ProfileType.PHOTOS }) item {
+                TextButton(onClick = { navigate(Screen.FreeSpace) }) { Text("Speicher freigeben…") }
+            }
 
             item {
                 Text(

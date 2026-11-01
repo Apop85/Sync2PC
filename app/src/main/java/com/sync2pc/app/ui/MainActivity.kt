@@ -43,6 +43,7 @@ sealed class Screen {
     data object Stats : Screen()
     data object Update : Screen()
     data object Conflicts : Screen()
+    data object FreeSpace : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -170,5 +171,6 @@ private fun AppRoot(
         Screen.Stats -> StatsScreen(onBack = back)
         Screen.Update -> UpdateScreen(onBack = back)
         Screen.Conflicts -> ConflictScreen(onBack = back)
+        Screen.FreeSpace -> FreeSpaceScreen(onBack = back)
     }
 }

@@ -194,6 +194,33 @@ interface SyncDao {
     @Query("DELETE FROM log_entries")
     suspend fun clearLogs()
 
+    // ---- Sicherung (Export/Import) ------------------------------------------------
+    @Query("SELECT * FROM folder_mappings")
+    suspend fun allMappings(): List<FolderMapping>
+
+    @Query("SELECT * FROM synced_files")
+    suspend fun allSynced(): List<SyncedFile>
+
+    @Query("SELECT * FROM mirror_state")
+    suspend fun allMirrorStates(): List<MirrorState>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMappings(list: List<FolderMapping>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSyncedAll(list: List<SyncedFile>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMirrorStates(list: List<MirrorState>)
+
+    // ---- Erinnerung / Speicher freigeben -------------------------------------------
+    /** Ende des letzten erfolgreichen (auch teilweise erfolgreichen) Laufs eines Profils */
+    @Query("SELECT MAX(finishedAt) FROM sync_runs WHERE profileId = :profileId AND dryRun = 0 AND status IN ('OK', 'PARTIAL')")
+    suspend fun lastSuccessAt(profileId: Long): Long?
+
+    @Query("SELECT * FROM synced_files WHERE verified = 1")
+    suspend fun verifiedSynced(): List<SyncedFile>
+
     // ---- Diagnose / Export ----------------------------------------------------
     @Query("SELECT * FROM sync_runs WHERE dryRun = 0 ORDER BY id DESC LIMIT :limit")
     suspend fun recentRuns(limit: Int): List<SyncRun>

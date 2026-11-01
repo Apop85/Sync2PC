@@ -78,8 +78,10 @@ Vor jedem GitHub-Release:
 5. Ordner-Profil: Je eine Datei auf dem Handy und auf dem PC ändern → beide werden abgeglichen.
 6. WLAN während eines Syncs trennen → „Pausiert“ erscheint. WLAN wieder verbinden → der Sync setzt fort.
 7. *Einstellungen → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
-8. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
-9. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
+8. *Einstellungen → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
+9. *Speicher freigeben* mit grosser Monatszahl (z. B. 120) und kleiner Auswahl: Die Prüfung auf dem PC läuft, der Android-Dialog erscheint, und im Papierkorb der Galerie sind die Dateien wiederherstellbar.
+10. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
+11. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
 
 ## Manuell bauen (ohne Builder)
 

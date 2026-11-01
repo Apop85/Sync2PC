@@ -275,6 +275,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (youngAt == 0L || at < youngAt) youngAt = at
         }
         if (youngAt > 0) SyncScheduler.enqueueFollowUp(ctx, youngAt)
+        // Erfolgreich gesichert -> eine offene Erinnerung "lange nicht gesichert" ist erledigt
+        if (hardFailure == null && !interruptedMidRun && unreachable.isEmpty()) {
+            Notifications.cancelStale(ctx)
+            GlobalSettings(ctx).lastStaleWarnAt = 0
+        }
 
         handleUnreachable(unreachable, manual, isRetry, midRun = interruptedMidRun)
         return Result.success()

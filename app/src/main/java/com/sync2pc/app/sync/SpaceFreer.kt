@@ -1,0 +1,236 @@
+package com.sync2pc.app.sync
+
+import android.app.PendingIntent
+import android.content.ContentUris
+import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.smb.RemoteEntry
+import com.sync2pc.app.smb.SmbSession
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import java.util.Calendar
+
+/**
+ * "Speicher freigeben" (0.2.0): alte Fotos/Videos, die nachweislich auf dem PC liegen, in den
+ * Android-Papierkorb verschieben.
+ *
+ * Sicherheit: Die Datenbank allein reicht nicht (der Benutzer kann auf dem PC löschen oder verschieben).
+ * Direkt vor dem Löschen wird jede Datei auf dem PC gesucht (Pfad aus der Datenbank, sonst andere Ordner
+ * desselben Monats) und die Grösse verglichen. Bild + Video mit gleichem Namen (Live-Fotos) werden nur
+ * gemeinsam entfernt.
+ */
+object SpaceFreer {
+
+    data class Candidate(
+        val uri: Uri,
+        val sourceKey: String,
+        val displayName: String,
+        val size: Long,
+        val profileId: Long,
+        val remotePath: String,
+        /** Gruppe für Live-Foto-Paare: Ordner + Name ohne Endung */
+        val group: String,
+    )
+
+    data class ScanResult(
+        val candidates: List<Candidate>,
+        val bytes: Long,
+        val favoritesKept: Int,
+        val notBackedUp: Int,
+    )
+
+    data class VerifyResult(
+        val confirmed: List<Candidate>,
+        /** Auf dem PC nicht (mehr) gefunden oder andere Grösse – bleiben auf dem Handy */
+        val missing: Int,
+        /** Profile, deren PC nicht erreichbar war */
+        val unreachable: List<String>,
+    )
+
+    private data class Media(
+        val id: Long, val uri: Uri, val name: String, val relPath: String, val size: Long,
+        val takenMs: Long, val favorite: Boolean,
+    ) {
+        val sourceKey get() = relPath + name
+        val group get() = (relPath + name.substringBeforeLast('.')).lowercase()
+    }
+
+    /** Stichtag: Aufnahmen vor diesem Zeitpunkt sind "älter als [months] Monate" */
+    fun cutoffMillis(months: Int, now: Long = System.currentTimeMillis()): Long =
+        Calendar.getInstance().apply { timeInMillis = now; add(Calendar.MONTH, -months) }.timeInMillis
+
+    /** Gruppen behalten, in denen ALLE Mitglieder geeignet sind (Live-Foto-Paare nie trennen) */
+    fun <T> wholeGroups(all: List<T>, group: (T) -> String, ok: (T) -> Boolean): List<T> =
+        all.groupBy(group).values.filter { members -> members.all(ok) }.flatten()
+
+    suspend fun scan(context: Context, months: Int, keepFavorites: Boolean): ScanResult = withContext(Dispatchers.IO) {
+        val dao = AppDatabase.get(context).dao()
+        val profiles = dao.profiles().filter { it.enabled && it.type() == ProfileType.PHOTOS && it.folders().isNotEmpty() }
+        val media = query(context, profiles)
+        val synced = dao.verifiedSynced().groupBy { it.sourceKey }
+        val cutoff = cutoffMillis(months)
+
+        var favoritesKept = 0
+        var notBackedUp = 0
+        val old = media.filter { it.takenMs in 1 until cutoff }
+        val byGroup = old.groupBy { it.group }
+        val result = ArrayList<Candidate>()
+        // Auch Gruppenmitglieder, die (noch) zu neu sind, verhindern das Löschen des Partners
+        val tooNewGroups = media.filter { it.takenMs >= cutoff }.map { it.group }.toSet()
+        for ((group, members) in byGroup) {
+            if (group in tooNewGroups) continue
+            if (keepFavorites && members.any { it.favorite }) { favoritesKept += members.size; continue }
+            val matches = members.map { m -> m to synced[m.sourceKey]?.firstOrNull { it.size == m.size } }
+            if (matches.any { it.second == null }) { notBackedUp += members.size; continue }
+            for ((m, s) in matches) {
+                result += Candidate(m.uri, m.sourceKey, m.name, m.size, s!!.profileId, s.remotePath, group)
+            }
+        }
+        ScanResult(result, result.sumOf { it.size }, favoritesKept, notBackedUp)
+    }
+
+    /** Prüft jede Datei auf dem PC. [onProgress](geprüft, gesamt) */
+    suspend fun verify(
+        context: Context,
+        candidates: List<Candidate>,
+        onProgress: (Int, Int) -> Unit,
+    ): VerifyResult = withContext(Dispatchers.IO) {
+        val dao = AppDatabase.get(context).dao()
+        val profiles = dao.profiles().associateBy { it.id }
+        val ok = HashSet<String>()
+        val unreachable = ArrayList<String>()
+        var done = 0
+        for ((profileId, list) in candidates.groupBy { it.profileId }) {
+            val profile = profiles[profileId]
+            val session = try { profile?.let { SmbSession.open(it) } } catch (e: Exception) { null }
+            if (session == null) {
+                unreachable += profile?.name ?: "Profil $profileId"
+                done += list.size; onProgress(done, candidates.size)
+                continue
+            }
+            session.use { s ->
+                val finder = RemoteFinder(s)
+                for (c in list) {
+                    currentCoroutineContext().ensureActive()
+                    if (finder.exists(c.remotePath, c.size)) ok += c.sourceKey
+                    done++
+                    if (done % 10 == 0 || done == candidates.size) onProgress(done, candidates.size)
+                }
+            }
+        }
+        // Fehlt ein Partner eines Live-Fotos auf dem PC, bleiben beide auf dem Handy
+        val confirmed = wholeGroups(candidates, { it.group }) { it.sourceKey in ok }
+        VerifyResult(confirmed, candidates.size - confirmed.size, unreachable)
+    }
+
+    /** Systemdialog-Anfragen "In den Papierkorb" (Android 11+), höchstens 500 Dateien je Anfrage */
+    fun trashRequests(context: Context, list: List<Candidate>): List<Pair<PendingIntent, Int>> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return emptyList()
+        return list.chunked(500).map { chunk ->
+            MediaStore.createTrashRequest(context.contentResolver, chunk.map { it.uri }, true) to chunk.size
+        }
+    }
+
+    /** Android 10 kennt keinen Papierkorb: direkt löschen (nach ausdrücklicher Bestätigung in der App) */
+    suspend fun deleteDirectly(context: Context, list: List<Candidate>): Int = withContext(Dispatchers.IO) {
+        var n = 0
+        for (c in list) try { if (context.contentResolver.delete(c.uri, null, null) > 0) n++ } catch (ignored: Exception) {}
+        n
+    }
+
+    /** Sucht eine Datei auf dem PC: zuerst am gespeicherten Pfad, dann in allen Ordnern desselben Monats */
+    private class RemoteFinder(private val s: SmbSession) {
+        private val yearListings = HashMap<String, List<RemoteEntry>>()
+        private val folderListings = HashMap<String, Map<String, RemoteEntry>>()
+
+        fun exists(remotePath: String, size: Long): Boolean {
+            if (remotePath.isBlank()) return false
+            s.stat(remotePath)?.let { if (it.size == size) return true }
+            // Vom Benutzer umsortiert (z. B. "10" -> "10 - Ägypten")?
+            val name = remotePath.substringAfterLast('\\')
+            val folder = remotePath.substringBeforeLast('\\', "")
+            val yearPath = folder.substringBeforeLast('\\', "")
+            val month = FolderNames.monthOf(folder.substringAfterLast('\\')) ?: return false
+            val siblings = yearListings.getOrPut(yearPath) { s.listDir(yearPath).filter { it.isDirectory } }
+            for (d in siblings) {
+                if (FolderNames.monthOf(d.name) != month) continue
+                val path = if (yearPath.isEmpty()) d.name else "$yearPath\\${d.name}"
+                if (path.equals(folder, ignoreCase = true)) continue
+                val files = folderListings.getOrPut(path) { s.listDir(path).associateBy { it.name.lowercase() } }
+                if (files[name.lowercase()]?.size == size) return true
+            }
+            return false
+        }
+    }
+
+    // ---- MediaStore --------------------------------------------------------------------
+    private fun query(context: Context, profiles: List<Profile>): List<Media> {
+        if (profiles.isEmpty()) return emptyList()
+        val args = ArrayList<String>()
+        val parts = ArrayList<String>()
+        for (p in profiles) {
+            val types = buildList {
+                if (p.includeImages) add(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE)
+                if (p.includeVideos) add(MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO)
+            }
+            if (types.isEmpty()) continue
+            for (f in p.folders()) {
+                val norm = if (f.endsWith("/")) f else "$f/"
+                val pathSel = if (p.includeSubfolders) {
+                    args += norm.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+                    "${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ? ESCAPE '\\'"
+                } else {
+                    args += norm
+                    "${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+                }
+                parts += "(${MediaStore.Files.FileColumns.MEDIA_TYPE} IN (${types.joinToString(",")}) AND $pathSel)"
+            }
+        }
+        if (parts.isEmpty()) return emptyList()
+        val hasFavorite = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+        val projection = buildList {
+            add(MediaStore.Files.FileColumns._ID); add(MediaStore.Files.FileColumns.MEDIA_TYPE)
+            add(MediaStore.MediaColumns.DISPLAY_NAME); add(MediaStore.MediaColumns.RELATIVE_PATH)
+            add(MediaStore.MediaColumns.SIZE); add(MediaStore.MediaColumns.DATE_TAKEN)
+            add(MediaStore.MediaColumns.DATE_MODIFIED); add(MediaStore.MediaColumns.VOLUME_NAME)
+            if (hasFavorite) add(MediaStore.MediaColumns.IS_FAVORITE)
+        }.toTypedArray()
+        val selection = "(${parts.joinToString(" OR ")}) AND ${MediaStore.MediaColumns.IS_PENDING} = 0"
+        val out = LinkedHashMap<Long, Media>()
+        context.contentResolver.query(
+            MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), projection, selection, args.toTypedArray(), null
+        )?.use { c ->
+            val iId = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
+            val iType = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
+            val iName = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+            val iPath = c.getColumnIndexOrThrow(MediaStore.MediaColumns.RELATIVE_PATH)
+            val iSize = c.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+            val iTaken = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)
+            val iMod = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
+            val iVol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.VOLUME_NAME)
+            val iFav = if (hasFavorite) c.getColumnIndexOrThrow(MediaStore.MediaColumns.IS_FAVORITE) else -1
+            while (c.moveToNext()) {
+                val name = c.getString(iName) ?: continue
+                val size = c.getLong(iSize)
+                if (size <= 0) continue
+                val id = c.getLong(iId)
+                val video = c.getInt(iType) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
+                val volume = c.getString(iVol) ?: MediaStore.VOLUME_EXTERNAL_PRIMARY
+                val base = if (video) MediaStore.Video.Media.getContentUri(volume) else MediaStore.Images.Media.getContentUri(volume)
+                val taken = if (!c.isNull(iTaken) && c.getLong(iTaken) > 0) c.getLong(iTaken) else c.getLong(iMod) * 1000
+                out[id] = Media(
+                    id, ContentUris.withAppendedId(base, id), name, c.getString(iPath) ?: "", size, taken,
+                    favorite = iFav >= 0 && c.getInt(iFav) == 1,
+                )
+            }
+        }
+        return out.values.toList()
+    }
+}

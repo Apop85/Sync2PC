@@ -36,6 +36,7 @@ object Notifications {
     const val ID_CONFLICT = 1006
     const val ID_INTERRUPTED = 1007
     const val ID_PAUSED = 1008
+    const val ID_STALE = 1009
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -203,6 +204,14 @@ object Notifications {
         post(context, ID_CONFLICT, CH_ALERTS, "Konflikt beim Ordner-Sync",
             "$count Datei(en) wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.",
             OPEN_CONFLICTS)
+
+    /** Erinnerung: seit [days] Tagen keine erfolgreiche Sicherung (0.2.0) */
+    fun staleWarning(context: Context, days: Int, lines: List<String>) =
+        post(context, ID_STALE, CH_ALERTS, "Seit $days Tagen nicht gesichert",
+            lines.joinToString("\n") + "\nIst das Heim-WLAN verbunden und der PC eingeschaltet? Tippen zum Öffnen.",
+            null, largeImage = R.drawable.dog_wait)
+
+    fun cancelStale(context: Context) = NotificationManagerCompat.from(context).cancel(ID_STALE)
 
     fun updateAvailable(context: Context, version: String) =
         post(context, ID_UPDATE, CH_ALERTS, "Update verfügbar",

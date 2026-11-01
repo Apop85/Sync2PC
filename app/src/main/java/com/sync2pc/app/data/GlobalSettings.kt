@@ -107,6 +107,63 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
+    // ---- Erinnerung "lange nicht gesichert" (seit 0.2.0) -------------------------
+    var staleWarnEnabled: Boolean
+        get() = prefs.getBoolean("staleWarnEnabled", true)
+        set(v) = prefs.edit().putBoolean("staleWarnEnabled", v).apply()
+
+    /** Nach so vielen Tagen ohne erfolgreiche Sicherung erinnern */
+    var staleWarnDays: Int
+        get() = prefs.getInt("staleWarnDays", 7).coerceIn(1, 365)
+        set(v) = prefs.edit().putInt("staleWarnDays", v.coerceIn(1, 365)).apply()
+
+    /** Zeitpunkt der letzten Erinnerung (0 = keine offen) */
+    var lastStaleWarnAt: Long
+        get() = prefs.getLong("lastStaleWarnAt", 0)
+        set(v) = prefs.edit().putLong("lastStaleWarnAt", v).apply()
+
+    /** Erste Prüfung überhaupt – Ersatz für "letzter Sync", wenn es noch keinen Lauf gibt */
+    fun staleBaseline(): Long {
+        val v = prefs.getLong("staleBaseline", 0)
+        if (v > 0) return v
+        val now = System.currentTimeMillis()
+        prefs.edit().putLong("staleBaseline", now).apply()
+        return now
+    }
+
+    // ---- Speicher freigeben (seit 0.2.0) -----------------------------------------
+    var freeSpaceMonths: Int
+        get() = prefs.getInt("freeSpaceMonths", 12).coerceIn(1, 240)
+        set(v) = prefs.edit().putInt("freeSpaceMonths", v.coerceIn(1, 240)).apply()
+
+    var freeSpaceKeepFavorites: Boolean
+        get() = prefs.getBoolean("freeSpaceKeepFavorites", true)
+        set(v) = prefs.edit().putBoolean("freeSpaceKeepFavorites", v).apply()
+
+    // ---- Sicherung: welche Einstellungen exportiert werden --------------------------
+    /** Exportierbare Einstellungen (Geräte-ID, Zeitstempel und Zwischenstände bewusst nicht) */
+    fun exportable(): Map<String, Any> = linkedMapOf(
+        "autoSyncOnWifi" to autoSyncOnWifi, "syncOnNewMedia" to syncOnNewMedia,
+        "onlyWhileCharging" to onlyWhileCharging, "minFileAgeMinutes" to minFileAgeMinutes,
+        "homeCountryIso" to homeCountryIso, "parallelUploads" to parallelUploads,
+        "updateRepo" to updateRepo, "autoUpdateCheck" to autoUpdateCheck,
+        "staleWarnEnabled" to staleWarnEnabled, "staleWarnDays" to staleWarnDays,
+        "freeSpaceMonths" to freeSpaceMonths, "freeSpaceKeepFavorites" to freeSpaceKeepFavorites,
+    )
+
+    /** Übernimmt Einstellungen aus einer Sicherung; unbekannte oder falsch typisierte Werte werden ignoriert */
+    fun importFrom(map: Map<String, Any>) {
+        fun b(k: String, set: (Boolean) -> Unit) { (map[k] as? Boolean)?.let(set) }
+        fun i(k: String, set: (Int) -> Unit) { (map[k] as? Number)?.toInt()?.let(set) }
+        fun s(k: String, set: (String) -> Unit) { (map[k] as? String)?.let(set) }
+        b("autoSyncOnWifi") { autoSyncOnWifi = it }; b("syncOnNewMedia") { syncOnNewMedia = it }
+        b("onlyWhileCharging") { onlyWhileCharging = it }; i("minFileAgeMinutes") { minFileAgeMinutes = it }
+        s("homeCountryIso") { homeCountryIso = it }; i("parallelUploads") { parallelUploads = it }
+        s("updateRepo") { updateRepo = it }; b("autoUpdateCheck") { autoUpdateCheck = it }
+        b("staleWarnEnabled") { staleWarnEnabled = it }; i("staleWarnDays") { staleWarnDays = it }
+        i("freeSpaceMonths") { freeSpaceMonths = it }; b("freeSpaceKeepFavorites") { freeSpaceKeepFavorites = it }
+    }
+
     /** Zufällige, dauerhafte Geräte-ID für Diagnose und Logs (keine Hardware-Kennung) */
     val deviceId: String
         get() = prefs.getString("deviceId", null) ?: java.util.UUID.randomUUID().toString()

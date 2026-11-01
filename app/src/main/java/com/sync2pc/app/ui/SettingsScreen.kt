@@ -54,6 +54,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
     var autoUpdate by remember { mutableStateOf(s.autoUpdateCheck) }
     var geoInfo by remember { mutableStateOf("Lade Länderdaten…") }
     var diagBusy by remember { mutableStateOf(false) }
+    var staleOn by remember { mutableStateOf(s.staleWarnEnabled) }
+    var staleDays by remember { mutableStateOf(s.staleWarnDays.toString()) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -97,6 +99,24 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                     Hint("Verhindert, dass Fotos übertragen werden, die gerade noch bearbeitet werden.")
+                }
+            }
+            item {
+                SectionCard("Erinnerung") {
+                    SwitchRow("Erinnern, wenn lange nicht gesichert", staleOn,
+                        subtitle = "Nur wenn neue Fotos/Videos warten. Wiederholt sich alle ${com.sync2pc.app.sync.StaleCheck.REPEAT_DAYS} Tage.") {
+                        staleOn = it; s.staleWarnEnabled = it; apply()
+                    }
+                    if (staleOn) OutlinedTextField(
+                        staleDays,
+                        { v ->
+                            staleDays = v.filter { it.isDigit() }.take(3)
+                            staleDays.toIntOrNull()?.takeIf { it > 0 }?.let { s.staleWarnDays = it }
+                        },
+                        label = { Text("Nach … Tagen ohne Sicherung") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
             item {
@@ -166,6 +186,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
                     OutlinedButton(onClick = onOpenUpdate) { Text("Nach Updates suchen…") }
                 }
             }
+            item { BackupSection() }
             item {
                 SectionCard("Beta / Diagnose") {
                     Hint("Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen " +

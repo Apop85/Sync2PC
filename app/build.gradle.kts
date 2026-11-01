@@ -114,4 +114,6 @@ dependencies {
     implementation("com.hierynomus:smbj:0.13.0")
 
     testImplementation("junit:junit:4.13.2")
+    // org.json gibt es auf Android eingebaut; für Unit-Tests auf dem PC die echte Bibliothek
+    testImplementation("org.json:json:20240303")
 }

@@ -35,6 +35,9 @@ Es gibt zwei Profiltypen:
 - **Profile** für mehrere Ziele, eine **Vorschau** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
 - **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo. Der Papierkorb leert sich nach einer pro Profil einstellbaren Frist (Standard 30 Tage, 0 = nie).
+- **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
+- **Erinnerung**, wenn seit 7 Tagen (einstellbar) nichts gesichert wurde, obwohl neue Fotos warten.
+- **Speicher freigeben:** Alte Fotos und Videos, die nachweislich auf dem PC liegen, kommen in den Android-Papierkorb. Vorher wird jede Datei auf dem PC geprüft.
 - **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Beta / Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
 - **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
 
@@ -81,7 +84,8 @@ app/src/main/java/com/sync2pc/app/
   sync/    Sync-Engine, Zielordner-Logik, Worker, WLAN-Trigger, Benachrichtigungen, Löschen
   mirror/  Ordner-Spiegelung (Handy-Ordner via Android-Ordnerfreigabe, 3-Wege-Abgleich, Filter)
   update/  Selbst-Update (GitHub Releases, PackageInstaller)
-  diag/    Diagnosedaten und Verlauf-Export (Beta)
+  diag/    Diagnosedaten, Verlauf-Export, Absturzberichte, Hersteller-Hinweise
+  backup/  Sicherung (Export/Import, Verschlüsselung mit Export-Passwort)
   ui/      Jetpack Compose Oberfläche
 tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten) und LeoSync-Import (PC → Share)
 ```

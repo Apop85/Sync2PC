@@ -2,6 +2,23 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.2.0 (2026-11-01)
+
+### Neu
+- **Sicherung** (*Einstellungen → Sicherung*): Profile, Einstellungen, Ordner-Zuordnungen und auf Wunsch der Sync-Status lassen sich in eine Datei exportieren und wieder importieren, z. B. vor einem Handywechsel.
+  - **Optionales Export-Passwort:** Ist eines gesetzt, sind die SMB-Passwörter in der Datei verschlüsselt (AES-256-GCM, Schlüssel per PBKDF2 aus dem Export-Passwort). Ohne Export-Passwort enthält die Datei keine Passwörter.
+  - Der Import zeigt zuerst eine Vorschau. Danach kannst du die bisherigen Profile **ersetzen** oder die neuen **hinzufügen**. Bei falschem oder fehlendem Export-Passwort werden die Profile trotzdem übernommen, nur ohne SMB-Passwort.
+  - Mit Sync-Status weiss die App nach dem Import sofort, welche Dateien schon auf dem PC sind.
+- **Erinnerung „lange nicht gesichert“:** Gibt es seit 7 Tagen (einstellbar) keine erfolgreiche Sicherung, obwohl neue Fotos oder Videos warten, erscheint eine Benachrichtigung. Sie wiederholt sich alle 3 Tage und verschwindet nach der nächsten erfolgreichen Sicherung. Abschaltbar unter *Einstellungen → Erinnerung*.
+- **Speicher freigeben** (Startseite, unter den Profilen): Fotos und Videos, die älter als eine selbst gewählte Anzahl Monate sind und nachweislich auf dem PC liegen, kommen in den Android-Papierkorb. Dort bleiben sie 30 Tage wiederherstellbar.
+  - Vor dem Verschieben prüft die App **jede Datei auf dem PC** (vorhanden und gleich gross, auch wenn sie in einen anderen Ordner desselben Monats verschoben wurde). Was fehlt oder abweicht, bleibt auf dem Handy.
+  - Optional bleiben Favoriten erhalten (ab Android 11).
+  - Live-Foto-Paare (Bild und Video) werden nur gemeinsam verschoben.
+
+### Technik
+- Neue Unit-Tests für das Sicherungsformat, die Verschlüsselung mit dem Export-Passwort, ältere Sicherungen, die Wiederholung der Erinnerung und die Live-Foto-Paare.
+- Keine Datenbank-Änderung.
+
 ## 0.1.6 (2026-11-01)
 
 ### Behoben

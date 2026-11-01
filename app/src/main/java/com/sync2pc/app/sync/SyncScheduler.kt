@@ -176,6 +176,7 @@ object SyncScheduler {
         schedulePeriodic(context)
         scheduleRemotePoll(context)
         com.sync2pc.app.update.UpdateWorker.schedule(context)
+        StaleCheck.schedule(context)
     }
 
     fun cancelAll(context: Context) {

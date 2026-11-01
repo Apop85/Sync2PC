@@ -48,7 +48,7 @@ object Diagnostics {
     private val WORK_NAMES = listOf(
         SyncScheduler.WORK_AUTO, SyncScheduler.WORK_MANUAL, SyncScheduler.WORK_FOLLOWUP,
         SyncScheduler.WORK_CONTENT, SyncScheduler.WORK_PERIODIC, SyncScheduler.WORK_RETRY,
-        SyncScheduler.WORK_REMOTE_POLL, SyncScheduler.WORK_RESUME, "update-check",
+        SyncScheduler.WORK_REMOTE_POLL, SyncScheduler.WORK_RESUME, "update-check", "stale-check",
     )
 
     /** Kopfzeilen, die jeder Export trägt (Zuordnung zum Gerät) */
@@ -130,6 +130,8 @@ object Diagnostics {
             kv("resumeOnWifi", s.resumeOnWifi)
             kv("resumeSince", t(s.resumeSince))
             kv("lastWifiTriggerAt", t(s.lastWifiTriggerAt))
+            kv("staleWarn", if (s.staleWarnEnabled) "an, ${s.staleWarnDays} Tage, zuletzt ${t(s.lastStaleWarnAt)}" else "aus")
+            kv("freeSpace", "${s.freeSpaceMonths} Monate, Favoriten behalten ${s.freeSpaceKeepFavorites}")
             kv("lastSkip", if (s.lastSkipAt > 0) "${t(s.lastSkipAt)} – ${s.lastSkipInfo}" else "-")
 
             section("Profile")
