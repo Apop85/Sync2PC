@@ -174,6 +174,25 @@ interface SyncDao {
     @Query("DELETE FROM log_entries")
     suspend fun clearLogs()
 
+    // ---- Diagnose / Export ----------------------------------------------------
+    @Query("SELECT * FROM sync_runs WHERE dryRun = 0 ORDER BY id DESC LIMIT :limit")
+    suspend fun recentRuns(limit: Int): List<SyncRun>
+
+    @Query("SELECT * FROM log_entries WHERE runId = :runId ORDER BY id")
+    suspend fun logs(runId: Long): List<LogEntry>
+
+    @Query("SELECT COUNT(*) FROM synced_files WHERE profileId = :profileId")
+    suspend fun syncedCountNow(profileId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM mirror_state WHERE profileId = :profileId")
+    suspend fun mirrorStateCount(profileId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM pending_decisions")
+    suspend fun decisionCount(): Int
+
+    @Query("SELECT deleteState AS state, COUNT(*) AS count FROM synced_files GROUP BY deleteState")
+    suspend fun deleteStateCounts(): List<StateCount>
+
     @Query("DELETE FROM sync_runs WHERE status != 'RUNNING'")
     suspend fun clearRuns()
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.SyncRun
+import com.sync2pc.app.diag.Diagnostics
 import com.sync2pc.app.sync.Notifications
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,6 +50,16 @@ fun LogScreen(onBack: () -> Unit) {
         title = "Verlauf",
         onBack = onBack,
         actions = {
+            IconButton(onClick = {
+                scope.launch {
+                    try {
+                        val text = Diagnostics.logExport(ctx)
+                        Diagnostics.shareAsFile(ctx, text, "LeoSync-Verlauf_${Diagnostics.fileStamp()}.txt")
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(ctx, "Export fehlgeschlagen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }) { Icon(Icons.Filled.Share, "Verlauf teilen") }
             IconButton(onClick = {
                 scope.launch { withContext(Dispatchers.IO) { dao.clearLogs(); dao.clearRuns() } }
             }) { Icon(Icons.Filled.Delete, "Verlauf löschen") }

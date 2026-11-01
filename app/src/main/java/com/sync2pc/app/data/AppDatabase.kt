@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Profile::class, SyncedFile::class, FolderMapping::class, PendingDecision::class,
         MediaInfo::class, SyncRun::class, LogEntry::class, MirrorState::class, MirrorConflict::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -25,8 +25,18 @@ abstract class AppDatabase : RoomDatabase() {
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "sync2pc.db"
-                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
             }
+
+        // Wichtig: Kein fallbackToDestructiveMigration() – fehlt eine Migration, soll die App
+        // lieber abstürzen, als still alle Daten zu löschen.
+
+        /** 0.1.0: Papierkorb-Frist pro Profil */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN trashRetentionDays INTEGER NOT NULL DEFAULT 30")
+            }
+        }
 
         /** 0.0.7: Profiltyp, Richtung, Filter, Unterordner + Tabellen für die Ordner-Spiegelung */
         val MIGRATION_1_2 = object : Migration(1, 2) {

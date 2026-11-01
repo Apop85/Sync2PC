@@ -37,7 +37,8 @@ import java.util.Locale
  *  - nur auf einer Seite geändert/neu   -> in Sync-Richtung kopieren
  *  - auf beiden Seiten geändert         -> gleich? merken : Konflikt (fragen bzw. neuere gewinnt)
  *  - auf einer Seite gelöscht           -> optional übernehmen (Papierkorb der Gegenseite), sonst wiederherstellen
- * Ersetzte oder gelöschte Dateien landen immer in ".LeoSync-Papierkorb/<Datum>/…" – nie endgültig weg.
+ * Ersetzte oder gelöschte Dateien landen immer in ".LeoSync-Papierkorb/<Datum>/…". Endgültig gelöscht
+ * werden sie erst nach Ablauf der Papierkorb-Frist des Profils (trashRetentionDays, 0 = nie).
  */
 class MirrorEngine(
     private val context: Context,
@@ -130,6 +131,7 @@ class MirrorEngine(
             val states = dao.mirrorStates(profile.id).associateBy { it.relPath }
             val conflicts = dao.conflicts(profile.id).associateBy { it.relPath.lowercase() }
             log("I", "Handy: ${local.size} Dateien, PC: ${remote.size} Dateien")
+            if (!dryRun) purgeTrash()
 
             // --- 2. Planen -------------------------------------------------------
             emit("Vergleiche…", 0, 0, 0, 0, null)
@@ -373,6 +375,34 @@ class MirrorEngine(
         while (s.stat("$trashDir\\$name") != null) name = FolderNames.conflictName(orig, n++)
         s.move(remotePath(rel), "$trashDir\\$name")
         trashed++
+    }
+
+    /** Abgelaufene Datumsordner im Papierkorb auf beiden Seiten endgültig löschen */
+    private suspend fun purgeTrash() {
+        val days = profile.trashRetentionDays
+        if (days <= 0) return
+        val cutoff = TrashPolicy.cutoff(days)
+        var n = 0
+        try {
+            n += tree.purgeTrash(cutoff)
+        } catch (e: Exception) {
+            log("W", "Papierkorb auf dem Handy nicht geleert: ${com.sync2pc.app.sync.shortError(e)}")
+        }
+        val s = smb
+        if (s != null) {
+            try {
+                for (t in listOf(TRASH_DIR, OLD_TRASH_DIR)) {
+                    val base = s.path(t)
+                    for (e in s.listDir(base)) {
+                        if (e.isDirectory && TrashPolicy.isExpired(e.name, cutoff)) { s.deleteDir("$base\\${e.name}"); n++ }
+                    }
+                }
+            } catch (e: Exception) {
+                if (isNetworkError(e)) throw e
+                log("W", "Papierkorb auf dem PC nicht geleert: ${com.sync2pc.app.sync.shortError(e)}")
+            }
+        }
+        if (n > 0) log("I", "🗑 Papierkorb: $n Ordner älter als $days Tage endgültig gelöscht")
     }
 
     private suspend fun record(key: String, l: LocalEntry, r: RemoteEntry) {

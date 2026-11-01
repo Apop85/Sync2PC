@@ -61,7 +61,23 @@ Geht der Schlüssel verloren, kann die installierte App nicht mehr aktualisiert 
 
 - `version.properties` enthält `MAJOR.MINOR.PATCH`.
 - `versionCode = MAJOR*1000000 + MINOR*1000 + PATCH`
-- Phase `0.0.x` bis zur Freigabe von `1.0.0` durch den Projektinhaber.
+- Bis 0.0.13: Phase `0.0.x`.
+- Seit 0.1.0: **Beta**. `0.1.x` enthält nur Fehlerbehebungen (PATCH +1 pro Änderung). Kommt eine neue Funktion dazu, folgt `0.2.0`, dann `0.3.0` usw.
+- `1.0.0` gibt nur der Projektinhaber frei.
+
+## Release-Checkliste (Beta)
+
+Vor jedem GitHub-Release:
+
+1. `build.bat` läuft ohne Fehler durch (Unit-Tests und R8 inklusive).
+2. Falls sich die Datenbank geändert hat: Es gibt eine neue Datei `app\schemas\…\<Version>.json` und eine passende Migration in `AppDatabase`. Die Schema-Datei wird committet.
+3. Update über die bestehende Version installieren, **nicht** neu installieren. Die App startet, Profile und Verlauf sind noch da (prüft die Migration).
+4. Bildordner-Profil: *Vorschau* und *Jetzt synchronisieren* klappen, neue Fotos landen im richtigen Monats- bzw. Länderordner, und es entstehen keine Duplikate.
+5. Ordner-Profil: Je eine Datei auf dem Handy und auf dem PC ändern → beide werden abgeglichen.
+6. WLAN während eines Syncs trennen → „Pausiert“ erscheint. WLAN wieder verbinden → der Sync setzt fort.
+7. *Einstellungen → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
+8. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
+9. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
 
 ## Manuell bauen (ohne Builder)
 
@@ -77,13 +93,13 @@ Die App holt Updates aus dem **neuesten Release** des eingestellten GitHub-Repos
 
 1. Das Repository ist als Vorgabe in `version.properties` eingetragen (`UPDATE_REPO=Apop85/Sync2PC`) und in der App unter *Einstellungen → Updates* änderbar. Nach einer Änderung in `version.properties` mit `build.bat -Force` bauen, weil die Datei nicht zum Änderungs-Hash zählt.
 2. Version bauen (`build.bat`).
-3. Auf GitHub ein Release mit dem Tag `v<version>` anlegen (z. B. `v0.0.3`) und die Datei `releases\LeoSync-<version>.apk` anhängen. Der Dateiname muss auf `.apk` enden und darf nicht „debug“ enthalten. Markiere es nicht als „Pre-release“.
+3. Auf GitHub ein Release mit dem Tag `v<version>` anlegen (z. B. `v0.0.3`) und die Datei `releases\LeoSync-<version>.apk` anhängen. Der Dateiname muss auf `.apk` enden und darf nicht „debug“ enthalten. Markiere es nicht als „Pre-release“, auch nicht in der Beta: Die App fragt nur `releases/latest` ab, und dort erscheinen Pre-releases nicht.
 4. Der Release-Text erscheint in der App als Änderungsbeschreibung. Am einfachsten kopierst du den Abschnitt aus `PATCHNOTES.md`.
 
 Mit der GitHub-CLI geht es in einem Schritt:
 
 ```bash
-gh release create v0.0.12 releases\LeoSync-0.0.12.apk --title "LeoSync 0.0.12" --notes "Siehe PATCHNOTES.md"
+gh release create v0.1.0 releases\LeoSync-0.1.0.apk --title "LeoSync 0.1.0" --notes "Siehe PATCHNOTES.md"
 ```
 
 **Wichtig:** Alle Versionen müssen mit demselben Schlüssel (`keystore\`) signiert sein, sonst lehnt Android das Update ab.
@@ -94,7 +110,7 @@ gh release create v0.0.12 releases\LeoSync-0.0.12.apk --title "LeoSync 0.0.12" -
 - per USB-Debugging:
 
 ```bash
-adb install -r releases\LeoSync-0.0.12.apk
+adb install -r releases\LeoSync-0.1.0.apk
 ```
 
 ## Fehlerbehebung

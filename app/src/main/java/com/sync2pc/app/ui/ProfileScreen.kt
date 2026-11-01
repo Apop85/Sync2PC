@@ -103,6 +103,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
     var typeChosen by remember { mutableStateOf(profileId != 0L) }
     var showRemotePicker by remember { mutableStateOf(false) }
     var pollText by remember { mutableStateOf("") }
+    var trashText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     val currentSsid = remember { WifiHelper.currentSsid(ctx) }
@@ -117,6 +118,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                     p = it
                     password = CredentialCrypto.decrypt(it.smbPasswordEnc)
                     pollText = it.remotePollMinutes.toString()
+                    trashText = it.trashRetentionDays.toString()
                 }
             }
             loaded = true
@@ -157,6 +159,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                     direction = if (type == ProfileType.MIRROR) SyncDirection.BOTH.name else SyncDirection.UPLOAD.name,
                 )
                 pollText = p.remotePollMinutes.toString()
+                trashText = p.trashRetentionDays.toString()
                 typeChosen = true
             }
             return@ScreenScaffold
@@ -308,6 +311,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                         subtitle = "Wird eine Datei auf einer Seite gelöscht, kommt sie auf der anderen Seite in den " +
                             "Ordner „.LeoSync-Papierkorb“. Aus: gelöschte Dateien werden wiederhergestellt.",
                     ) { p = p.copy(propagateDeletes = it) }
+                    OutlinedTextField(
+                        trashText,
+                        { v ->
+                            trashText = v.filter { it.isDigit() }.take(4)
+                            trashText.toIntOrNull()?.let { p = p.copy(trashRetentionDays = it.coerceIn(0, 3650)) }
+                        },
+                        label = { Text("Papierkorb leeren nach … Tagen") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    )
+                    Hint("Ältere Einträge im „.LeoSync-Papierkorb“ werden auf Handy und PC endgültig gelöscht. 0 = nie. Standard: 30")
                     if (p.dir() == SyncDirection.BOTH) {
                         Text("Wenn eine Datei auf beiden Seiten geändert wurde:", style = MaterialTheme.typography.bodyMedium)
                         ConflictMode.entries.forEach { m ->

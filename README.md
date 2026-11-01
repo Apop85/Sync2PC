@@ -1,6 +1,7 @@
 # LeoSync
 
-Teil der 
+Teil der Leo-Tool-Familie.
+
 Android-App, die Fotos und Videos vom Telefon automatisch auf eine Windows-Freigabe (SMB) überträgt und dort nach **Jahr, Monat und Reiseland** sortiert. Ausserdem synchronisiert sie beliebige Ordner in beide Richtungen.
 
 ```
@@ -33,12 +34,13 @@ Es gibt zwei Profiltypen:
 - **Fortschritt** erscheint in der Benachrichtigung und auf dem Sperrbildschirm.
 - **Profile** für mehrere Ziele, eine **Vorschau** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
-- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo.
+- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo. Der Papierkorb leert sich nach einer pro Profil einstellbaren Frist (Standard 30 Tage, 0 = nie).
+- **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Beta / Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage.
 - **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
 
 ## Download
 
-Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/releases/latest). Danach aktualisiert sich die App selbst.
+Status: **Beta (0.1.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/releases/latest). Danach aktualisiert sich die App selbst.
 
 ## Voraussetzungen
 
@@ -79,6 +81,7 @@ app/src/main/java/com/sync2pc/app/
   sync/    Sync-Engine, Zielordner-Logik, Worker, WLAN-Trigger, Benachrichtigungen, Löschen
   mirror/  Ordner-Spiegelung (Handy-Ordner via Android-Ordnerfreigabe, 3-Wege-Abgleich, Filter)
   update/  Selbst-Update (GitHub Releases, PackageInstaller)
+  diag/    Diagnosedaten und Verlauf-Export (Beta)
   ui/      Jetpack Compose Oberfläche
 tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten) und LeoSync-Import (PC → Share)
 ```

@@ -107,6 +107,12 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
+    /** Zufällige, dauerhafte Geräte-ID für Diagnose und Logs (keine Hardware-Kennung) */
+    val deviceId: String
+        get() = prefs.getString("deviceId", null) ?: java.util.UUID.randomUUID().toString()
+            .replace("-", "").take(12).uppercase()
+            .also { prefs.edit().putString("deviceId", it).apply() }
+
     var lastWifiTriggerAt: Long
         get() = prefs.getLong("lastWifiTriggerAt", 0)
         set(v) = prefs.edit().putLong("lastWifiTriggerAt", v).apply()

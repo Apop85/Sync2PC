@@ -208,6 +208,11 @@ class SmbSession private constructor(
         if (share.fileExists(path)) share.rm(path)
     }
 
+    /** Ordner samt Inhalt endgültig löschen */
+    fun deleteDir(path: String) {
+        if (path.isNotEmpty() && share.folderExists(path)) share.rmdir(path, true)
+    }
+
     fun partialHash(path: String, size: Long): String =
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,

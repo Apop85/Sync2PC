@@ -1,6 +1,19 @@
 # Patchnotes – LeoSync
 
-Versionierung: `0.0.x` bis zur Freigabe von `1.0.0`. Neueste Version oben.
+Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
+
+## 0.1.0 (2026-11-01) – Beta
+
+### Neu
+- **Beta-Phase:** Ab hier gibt es nur noch Fehlerbehebungen (0.1.x). Kommen neue Funktionen dazu, geht es mit 0.2.x weiter.
+- **Diagnosedaten kopieren** (*Einstellungen → Beta / Diagnose*): kopiert Angaben zu Gerät, Akku- und Hintergrund-Einschränkungen, Berechtigungen, WLAN, Einstellungen, Profilen, geplanten Aufträgen, den letzten Prozess-Enden und den letzten Läufen in die Zwischenablage. Passwörter sind nie enthalten.
+- **Geräte-ID:** Eine zufällige ID (keine Hardware-Kennung) steht in jeder Diagnose und jedem Verlauf-Export, damit sich Logs einem Gerät zuordnen lassen.
+- **Verlauf teilen:** Im Verlauf exportiert ein neuer Knopf alle Läufe samt Log als Textdatei über das Android-Teilen-Menü.
+- **Papierkorb leert sich selbst** (Ordner-Sync): Datumsordner im `.LeoSync-Papierkorb` (und im alten `.Sync2PC-Papierkorb`), die älter als die Frist sind, werden auf Handy und PC endgültig gelöscht. Die Frist ist pro Profil einstellbar, Standard 30 Tage, 0 = nie.
+
+### Technik
+- Datenbank-Version 3 (neue Spalte `trashRetentionDays`, Migration 2→3). Die bisherigen Daten bleiben erhalten.
+- Release-Checkliste in `build.md`.
 
 ## 0.0.13 (2026-11-01)
 

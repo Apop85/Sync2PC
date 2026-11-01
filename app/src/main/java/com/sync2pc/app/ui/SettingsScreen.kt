@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,10 +28,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.sync2pc.app.BuildConfig
 import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.diag.Diagnostics
 import com.sync2pc.app.geo.CountryLookup
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.update.UpdateChecker
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
@@ -48,6 +51,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
     var repo by remember { mutableStateOf(s.updateRepo) }
     var autoUpdate by remember { mutableStateOf(s.autoUpdateCheck) }
     var geoInfo by remember { mutableStateOf("Lade Länderdaten…") }
+    var diagBusy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         geoInfo = withContext(Dispatchers.IO) {
@@ -146,6 +151,24 @@ fun SettingsScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit) {
                         autoUpdate = it; s.autoUpdateCheck = it; apply()
                     }
                     OutlinedButton(onClick = onOpenUpdate) { Text("Nach Updates suchen…") }
+                }
+            }
+            item {
+                SectionCard("Beta / Diagnose") {
+                    Hint("Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen " +
+                        "(ohne Passwörter) und kopiert sie in die Zwischenablage. Geräte-ID: ${s.deviceId}")
+                    OutlinedButton(enabled = !diagBusy, onClick = {
+                        diagBusy = true
+                        scope.launch {
+                            try {
+                                Diagnostics.copyToClipboard(ctx, Diagnostics.build(ctx))
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(ctx, "Diagnose fehlgeschlagen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            } finally {
+                                diagBusy = false
+                            }
+                        }
+                    }) { Text(if (diagBusy) "Sammle Daten…" else "Diagnosedaten kopieren") }
                 }
             }
             item { Hint("LeoSync ${BuildConfig.VERSION_NAME} – Open Source (MIT)") }

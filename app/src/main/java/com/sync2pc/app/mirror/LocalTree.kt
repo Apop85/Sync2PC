@@ -201,5 +201,22 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         }
     }
 
+    /**
+     * Löscht im Papierkorb (neuer und alter Name) alle Datumsordner "yyyy-MM-dd", die vor [cutoff] liegen.
+     * Liefert die Anzahl gelöschter Ordner.
+     */
+    fun purgeTrash(cutoff: String): Int {
+        var n = 0
+        val trashDirs = children(rootDocId).filter {
+            it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
+        }
+        for (t in trashDirs) {
+            for (d in children(t.docId)) {
+                if (d.isDir && TrashPolicy.isExpired(d.name, cutoff)) { delete(d.docId); n++ }
+            }
+        }
+        return n
+    }
+
     private val TEMP = com.sync2pc.app.smb.SmbSession.TEMP_SUFFIX
 }

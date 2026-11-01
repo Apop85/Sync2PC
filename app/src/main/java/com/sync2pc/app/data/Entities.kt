@@ -86,6 +86,9 @@ data class Profile(
     val excludePatterns: String = "",
     /** Wie oft auf Änderungen geprüft wird, solange im WLAN (Minuten, nur MIRROR) */
     val remotePollMinutes: Int = 60,
+    // ---- seit DB v3 (0.1.0) ----
+    /** Papierkorb-Ordner älter als so viele Tage endgültig löschen (nur MIRROR), 0 = nie */
+    val trashRetentionDays: Int = 30,
 ) {
     fun folders(): List<String> = splitLines(sourceFolders)
     fun ssids(): List<String> = splitLines(wifiSsids)
@@ -192,6 +195,9 @@ data class StatRow(
     val year: Int?,
     val countryName: String?,
 )
+
+/** Anzahl je Lösch-Zustand (Diagnose). */
+data class StateCount(val state: Int, val count: Int)
 
 /** Benutzerentscheidung: Gruppe (Jahr/Monat/Land) -> Monatsordner. */
 @Entity(tableName = "folder_mappings", primaryKeys = ["profileId", "groupKey"])
