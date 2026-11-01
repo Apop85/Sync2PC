@@ -11,7 +11,7 @@ param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
     [int]$StartFrame = 13,          # erstes Bild der Schleife (1-basiert)
     [int]$EndFrame = 49,            # letztes Bild der Schleife (Bild 50 entspricht wieder Bild 13)
-    [int]$Size = 160,               # Kantenlaenge der Ausgabebilder
+    [int]$Size = 320,               # Kantenlaenge der Ausgabebilder (seit 0.1.5; scharf auch in der App-Anzeige)
     [string]$Watermark = "1210,1335,1430,1430",  # x1,y1,x2,y2 im quadratisch zugeschnittenen Bild
     [int]$FillMax = 80,             # Helligkeit bis zu der Hintergrund/Schein gefuellt wird
     [int]$OutlineMax = 26,          # dunkler als das = Umrisslinie (stoppt die Fuellung)

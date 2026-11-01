@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Laufender Hund - automatisch erzeugt von tools/make-anim-video.ps1 aus .claude/new_animation.mp4
-     (32 Bilder, 48 ms je Bild). Nicht von Hand bearbeiten.
+     (36 Bilder, 43 ms je Bild). Nicht von Hand bearbeiten.
      Benachrichtigungen koennen keine Videos/GIFs abspielen; ein ViewFlipper blaettert die Bilder durch
      und pausiert automatisch bei ausgeschaltetem Bildschirm. -->
 <ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:autoStart="true"
-    android:flipInterval="48">
+    android:flipInterval="43">
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_01" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_02" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_03" />
@@ -40,4 +40,8 @@
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_30" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_31" />
     <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_32" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_33" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_34" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_35" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/anim_dog_36" />
 </ViewFlipper>

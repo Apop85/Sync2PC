@@ -121,7 +121,8 @@ $animSheet = Join-Path $Root ".claude\gif_frames.png"
 $animHashFile = Join-Path $StateDir "anim.hash"
 $animSrc = if (Test-Path $animVideo) { $animVideo } elseif (Test-Path $animSheet) { $animSheet } else { $null }
 if ($animSrc) {
-    $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash
+    # Kennung der Erzeugungs-Einstellungen anhaengen: Aendert sie sich (z. B. Bildgroesse), wird neu erzeugt
+    $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash + "|v2-320px"
     $oldA = if (Test-Path $animHashFile) { (Get-Content $animHashFile -Raw).Trim() } else { "" }
     $firstFrame = Join-Path $Root "app\src\main\res\drawable-nodpi\anim_dog_01.png"
     if ($ah -ne $oldA -or -not (Test-Path $firstFrame)) {

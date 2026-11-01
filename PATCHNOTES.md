@@ -2,6 +2,13 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.1.5 (2026-11-01)
+
+### Verbessert
+- **Grösserer laufender Hund:** In 0.1.4 wurden die Bilder in ihrer Pixelgrösse gezeichnet statt in der vorgesehenen Höhe. Der laufende Hund war dadurch nur etwa halb so hoch wie der sitzende. Jetzt erhalten alle Bilder eine feste Höhe: Der laufende Hund ist etwa gleich hoch wie der sitzende, und der sitzende und der schlafende Hund bleiben so gross wie bisher.
+- **Kein Springen mehr:** Der Bildbereich ist in allen Zuständen gleich hoch. Die Startseite verschiebt sich nicht, wenn ein Sync beginnt oder endet.
+- **Schärfere Animation:** Die Einzelbilder haben jetzt 320 px statt 160 px. Davon profitiert auch die Benachrichtigung. Die APK wird dadurch etwas grösser.
+
 ## 0.1.4 (2026-11-01)
 
 ### Verbessert
