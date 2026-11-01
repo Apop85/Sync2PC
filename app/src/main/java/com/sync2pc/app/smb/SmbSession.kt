@@ -158,14 +158,21 @@ class SmbSession private constructor(
         )
     }
 
-    /** Lädt eine Datei herunter und schreibt sie in [out]. onProgress(bytes) */
-    fun download(path: String, out: java.io.OutputStream, onProgress: (Long) -> Unit, checkCancel: () -> Unit) {
+    /**
+     * Lädt eine Datei herunter und schreibt sie in [out]. onProgress(bytes inkl. [startOffset]).
+     * [startOffset] > 0: Fortsetzen – es wird erst ab dieser Stelle gelesen.
+     */
+    fun download(
+        path: String, out: java.io.OutputStream, onProgress: (Long) -> Unit, checkCancel: () -> Unit,
+        startOffset: Long = 0,
+    ) {
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, null
         ).use { f ->
             val buf = ByteArray(BUFFER)
-            var offset = 0L
+            var offset = startOffset
+            if (offset > 0) onProgress(offset)
             while (true) {
                 checkCancel()
                 val n = f.read(buf, offset, 0, buf.size)

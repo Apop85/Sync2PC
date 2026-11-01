@@ -28,8 +28,8 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     private val resolver = context.contentResolver
     val rootDocId: String = DocumentsContract.getTreeDocumentId(treeUri)
 
-    /** relativer Ordnerpfad (Kleinbuchstaben) -> Dokument-ID */
-    private val dirIds = HashMap<String, String>().apply { put("", rootDocId) }
+    /** relativer Ordnerpfad (Kleinbuchstaben) -> Dokument-ID (parallele Übertragungen -> threadsicher) */
+    private val dirIds = java.util.concurrent.ConcurrentHashMap<String, String>().apply { put("", rootDocId) }
 
     companion object {
         const val FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
@@ -103,7 +103,11 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             )
         }
 
-    /** Ordner (inkl. Zwischenebenen) anlegen, liefert die Dokument-ID */
+    /**
+     * Ordner (inkl. Zwischenebenen) anlegen, liefert die Dokument-ID.
+     * Synchronized: Legen zwei Übertragungen gleichzeitig denselben Ordner an, entstünde sonst "Ordner (1)".
+     */
+    @Synchronized
     fun ensureDir(relDir: String): String {
         if (relDir.isEmpty()) return rootDocId
         dirIds[relDir.lowercase()]?.let { return it }
@@ -163,6 +167,56 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         val finalUri = DocumentsContract.renameDocument(resolver, tmpUri, name)
             ?: throw IOException("Umbenennen von '$relPath' fehlgeschlagen")
         return DocumentsContract.getDocumentId(finalUri)
+    }
+
+    /**
+     * Wie [writeFile], aber ein abgebrochener Download wird fortgesetzt: Eine vorhandene "<name>.s2ptmp"
+     * wird weitergeschrieben, wenn [TransferPlan.resumeOffset] es erlaubt. [write] erhält den Ausgabestrom
+     * und die Startposition. Liefert Dokument-ID der fertigen Datei und die Startposition (0 = neu).
+     * Die Temp-Datei bleibt bei einem Abbruch liegen (wird nie synchronisiert, siehe FileFilter).
+     */
+    fun writeFileResumable(
+        relPath: String, expectedSize: Long, remoteModified: Long,
+        write: (OutputStream, Long) -> Unit,
+    ): Pair<String, Long> {
+        val parentRel = relPath.substringBeforeLast('/', "")
+        val name = relPath.substringAfterLast('/')
+        val parentId = ensureDir(parentRel)
+        val siblings = children(parentId)
+        var offset = 0L
+        var tmpUri: Uri? = null
+        val tmp = siblings.firstOrNull { !it.isDir && it.name == name + TEMP }
+        if (tmp != null) {
+            offset = TransferPlan.resumeOffset(tmp.size, tmp.modified, expectedSize, remoteModified)
+            if (offset > 0) {
+                tmpUri = docUri(tmp.docId)
+            } else {
+                delete(tmp.docId)
+            }
+        }
+        var out: OutputStream? = null
+        if (tmpUri != null) {
+            // "wa" = anhängen; unterstützt der Anbieter das nicht, neu beginnen
+            out = try { resolver.openOutputStream(tmpUri!!, "wa") } catch (e: Exception) { null }
+            if (out == null) { try { DocumentsContract.deleteDocument(resolver, tmpUri!!) } catch (ignored: Exception) {}; tmpUri = null; offset = 0 }
+        }
+        if (tmpUri == null) {
+            tmpUri = DocumentsContract.createDocument(resolver, docUri(parentId), "application/octet-stream", name + TEMP)
+                ?: throw IOException("Datei '$relPath' konnte nicht angelegt werden")
+            out = resolver.openOutputStream(tmpUri!!, "w") ?: throw IOException("Datei nicht beschreibbar")
+        }
+        val uri = tmpUri!!
+        out!!.use { write(it, offset) }
+        // Grösse prüfen: Hat der Anbieter "anhängen" ignoriert, stimmt sie nicht -> verwerfen, nächstes Mal neu
+        val written = stat(DocumentsContract.getDocumentId(uri))?.size ?: -1
+        if (written != expectedSize) {
+            try { DocumentsContract.deleteDocument(resolver, uri) } catch (ignored: Exception) {}
+            throw IOException("Grösse nach Download stimmt nicht ($written statt $expectedSize Bytes)")
+        }
+        siblings.firstOrNull { !it.isDir && it.name.equals(name, ignoreCase = true) }?.let { delete(it.docId) }
+        val finalUri = DocumentsContract.renameDocument(resolver, uri, name)
+            ?: throw IOException("Umbenennen von '$relPath' fehlgeschlagen")
+        return DocumentsContract.getDocumentId(finalUri) to offset
     }
 
     fun rename(docId: String, newName: String): String {

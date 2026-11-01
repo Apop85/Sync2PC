@@ -20,12 +20,21 @@ import com.sync2pc.app.sync.PartialHash
 import com.sync2pc.app.sync.PreviewEntry
 import com.sync2pc.app.sync.SyncProgress
 import com.sync2pc.app.sync.SyncRunner
+import com.sync2pc.app.data.GlobalSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,13 +69,14 @@ class MirrorEngine(
     }
 
     override val preview = ArrayList<PreviewEntry>()
-    override var connectionFailed = false
+    // @Volatile: werden seit 0.3.0 von parallelen Übertragungen gesetzt
+    @Volatile override var connectionFailed = false
         private set
-    override var wifiLost = false
+    @Volatile override var wifiLost = false
         private set
     override var newConflicts = 0
         private set
-    override var spaceShortage = false
+    @Volatile override var spaceShortage = false
         private set
 
     private val dao = AppDatabase.get(context).dao()
@@ -93,7 +103,22 @@ class MirrorEngine(
         dao.insertLog(LogEntry(runId = run.id, time = System.currentTimeMillis(), level = level, message = msg))
     }
 
-    private var up = 0; private var down = 0; private var failed = 0; private var bytes = 0L; private var trashed = 0
+    // Zähler (threadsicher, parallele Übertragungen)
+    private val up = AtomicInteger(); private val down = AtomicInteger(); private val failed = AtomicInteger()
+    private val bytes = AtomicLong(); private val trashed = AtomicInteger()
+
+    /** Zwischen den parallelen Übertragungen geteilter Zustand */
+    private class Shared(val totalFiles: Int, val totalBytes: Long, budget: Long) {
+        val done = AtomicInteger()
+        /** Bytes vollständig übertragener Dateien */
+        val bytesDone = AtomicLong()
+        /** Bytes der gerade laufenden Übertragungen (Schlüssel -> Bytes) */
+        val inflight = ConcurrentHashMap<String, Long>()
+        val stop = AtomicBoolean(false)
+        /** Noch verfügbarer Speicher auf dem Handy für Downloads */
+        val budget = AtomicLong(budget)
+        @Volatile var lastEmit = 0L
+    }
 
     override suspend fun run(): SyncRun {
         run = run.copy(id = dao.insertRun(run))
@@ -162,50 +187,40 @@ class MirrorEngine(
             }
 
             // --- 3. Ausführen -----------------------------------------------------
+            // Phase A (nacheinander): Verwaltung – Papierkorb, Stand merken, Konflikte, Aufräumen
+            // Phase B (parallel):     Übertragungen, kleine Dateien zuerst
             val transfers = actions.filter { it.kind == Kind.UPLOAD || it.kind == Kind.DOWNLOAD || it.kind == Kind.KEEP_BOTH }
-            val totalBytes = transfers.sumOf { a ->
-                when (a.kind) {
-                    Kind.UPLOAD -> local[a.key]?.second?.size ?: 0
-                    Kind.DOWNLOAD -> remote[a.key]?.second?.size ?: 0
-                    else -> (local[a.key]?.second?.size ?: 0) + (remote[a.key]?.second?.size ?: 0)
-                }
-            }
-            var budget = freeSpace() - RESERVE_BYTES
-            var done = 0
-            for ((index, a) in actions.withIndex()) {
-                currentCoroutineContext().ensureActive()
-                if (dryRun) { previewOf(a); continue }
-                if (index % 10 == 0 && !shouldContinue()) {
-                    wifiLost = true; status = "PARTIAL"; message = "Abgebrochen: WLAN nicht mehr verbunden"
-                    log("W", message); break
-                }
-                try {
-                    val needs = if (a.kind == Kind.DOWNLOAD || a.kind == Kind.KEEP_BOTH) remote[a.key]?.second?.size ?: 0 else 0
-                    if (needs > 0 && needs > budget) {
-                        spaceShortage = true
-                        log("W", "Zu wenig Speicher auf dem Handy – übersprungen: ${a.rel}")
-                        continue
+            if (dryRun) {
+                actions.forEach { previewOf(it) }
+            } else {
+                val admin = actions.filter { it !in transfers }
+                for ((index, a) in admin.withIndex()) {
+                    currentCoroutineContext().ensureActive()
+                    if (index % 10 == 0 && !shouldContinue()) { wifiLost = true; break }
+                    try {
+                        executeAdmin(a, smb!!)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // Verbindungsabbruch ist erwartbar -> Lauf unterbrechen, kein Datei-Fehler
+                        if (isNetworkError(e)) { connectionFailed = true; throw e }
+                        failed.incrementAndGet()
+                        log("E", "✗ ${a.rel}: ${com.sync2pc.app.sync.shortError(e)}")
                     }
-                    budget -= needs
-                    val base = bytes
-                    execute(a) { b -> emit("Synchronisiere…", done, transfers.size, base + b, totalBytes, a.rel) }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    // Verbindungsabbruch ist erwartbar -> Lauf unterbrechen, kein Datei-Fehler
-                    if (isNetworkError(e)) { connectionFailed = true; throw e }
-                    failed++
-                    log("E", "✗ ${a.rel}: ${com.sync2pc.app.sync.shortError(e)}")
                 }
-                if (a in transfers) { done++; emit("Synchronisiere…", done, transfers.size, bytes, totalBytes, null) }
+                if (!wifiLost && transfers.isNotEmpty()) runTransfers(transfers)
+                if (wifiLost) {
+                    status = "PARTIAL"; message = "Abgebrochen: WLAN nicht mehr verbunden"
+                    log("W", message)
+                }
             }
 
-            if (status == "OK" && (failed > 0 || spaceShortage)) status = "PARTIAL"
+            if (status == "OK" && (failed.get() > 0 || spaceShortage)) status = "PARTIAL"
             if (message.isEmpty()) message = buildString {
-                append("↑ $up hochgeladen, ↓ $down heruntergeladen")
-                if (trashed > 0) append(", $trashed in Papierkorb")
+                append("↑ ${up.get()} hochgeladen, ↓ ${down.get()} heruntergeladen")
+                if (trashed.get() > 0) append(", ${trashed.get()} in Papierkorb")
                 if (newConflicts > 0) append(", $newConflicts Konflikt(e)")
-                if (failed > 0) append(", $failed Fehler")
+                if (failed.get() > 0) append(", ${failed.get()} Fehler")
                 if (spaceShortage) append(", Speicher voll")
             }
             return finish(status, message)
@@ -214,7 +229,7 @@ class MirrorEngine(
                 val reason = interruptReason()
                 if (reason != null) {
                     log("W", "Unterbrochen ($reason) – wird automatisch fortgesetzt")
-                    finish("INTERRUPTED", "Unterbrochen ($reason) – ↑ $up / ↓ $down übertragen, Rest folgt automatisch")
+                    finish("INTERRUPTED", "Unterbrochen ($reason) – ↑ ${up.get()} / ↓ ${down.get()} übertragen, Rest folgt automatisch")
                 } else {
                     log("W", "Lauf abgebrochen"); finish("CANCELLED", "Abgebrochen")
                 }
@@ -224,7 +239,7 @@ class MirrorEngine(
             if (isNetworkError(e)) {
                 connectionFailed = true
                 log("W", "Verbindung unterbrochen (${com.sync2pc.app.sync.shortError(e)}) – wird beim nächsten Sync fortgesetzt")
-                return finish("INTERRUPTED", "Verbindung unterbrochen – ↑ $up / ↓ $down übertragen, Rest folgt beim nächsten Sync")
+                return finish("INTERRUPTED", "Verbindung unterbrochen – ↑ ${up.get()} / ↓ ${down.get()} übertragen, Rest folgt beim nächsten Sync")
             }
             log("E", "Lauf fehlgeschlagen: ${com.sync2pc.app.sync.shortError(e)}")
             return finish("FAILED", com.sync2pc.app.sync.shortError(e))
@@ -286,30 +301,29 @@ class MirrorEngine(
     }
 
     // ---- Ausführung ------------------------------------------------------------------
-    private fun remotePath(rel: String): String = smb!!.path(rel.replace('/', '\\'))
+    private fun remotePath(s: SmbSession, rel: String): String = s.path(rel.replace('/', '\\'))
+    private fun remotePath(rel: String): String = remotePath(smb!!, rel)
 
-    private suspend fun execute(a: Action, onBytes: (Long) -> Unit) {
+    /** Grösse einer Übertragung (für Reihenfolge, Fortschritt und Speicherbudget) */
+    private fun sizeOf(a: Action): Long = when (a.kind) {
+        Kind.UPLOAD -> local[a.key]?.second?.size ?: 0
+        Kind.DOWNLOAD -> remote[a.key]?.second?.size ?: 0
+        else -> (local[a.key]?.second?.size ?: 0) + (remote[a.key]?.second?.size ?: 0)
+    }
+
+    /** Phase A: Verwaltungsschritte (nacheinander, Haupt-Verbindung) */
+    private suspend fun executeAdmin(a: Action, s: SmbSession) {
         val l = local[a.key]?.second
         val r = remote[a.key]?.second
         when (a.kind) {
-            Kind.UPLOAD -> {
-                l ?: return
-                if (a.trashOther && r != null) trashRemote(a.rel)
-                upload(a.key, a.rel, l, onBytes)
-            }
-            Kind.DOWNLOAD -> {
-                r ?: return
-                if (a.trashOther && l != null) { tree.moveToTrash(a.rel, l, today); trashed++ }
-                download(a.key, a.rel, r, onBytes)
-            }
             Kind.TRASH_LOCAL -> {
                 l ?: return
-                tree.moveToTrash(a.rel, l, today); trashed++
+                tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet()
                 dao.deleteMirrorState(profile.id, a.key)
                 log("I", "🗑 Handy: ${a.rel} (auf dem PC gelöscht)")
             }
             Kind.TRASH_REMOTE -> {
-                trashRemote(a.rel)
+                trashRemote(s, a.rel)
                 dao.deleteMirrorState(profile.id, a.key)
                 log("I", "🗑 PC: ${a.rel} (auf dem Handy gelöscht)")
             }
@@ -325,6 +339,96 @@ class MirrorEngine(
                 )
                 log("W", "⚠ Konflikt: ${a.rel} wurde auf Handy und PC geändert")
             }
+            Kind.UPLOAD, Kind.DOWNLOAD, Kind.KEEP_BOTH -> {} // Phase B
+        }
+    }
+
+    /**
+     * Phase B: Übertragungen parallel (Einstellung "Parallele Übertragungen"), kleine Dateien zuerst.
+     * Jede Übertragung hat ihre eigene SMB-Verbindung. Bei Verbindungsabbruch einmal neu verbinden und
+     * wiederholen; ist das Netz weg, wird der ganze Lauf unterbrochen (Rest folgt beim nächsten Sync).
+     */
+    private suspend fun runTransfers(transfers: List<Action>) {
+        val ordered = TransferPlan.smallFirst(transfers) { sizeOf(it) }
+        val sh = Shared(ordered.size, ordered.sumOf { sizeOf(it) }, freeSpace() - RESERVE_BYTES)
+        val queue = ConcurrentLinkedQueue(ordered)
+        val parallel = GlobalSettings(context).parallelUploads.coerceIn(1, 4).coerceAtMost(ordered.size)
+        log("I", "Übertrage ${ordered.size} Dateien mit $parallel parallelen Verbindungen")
+        emitShared(sh, null, force = true)
+        coroutineScope {
+            repeat(parallel) { launch { transferWorker(queue, sh) } }
+        }
+    }
+
+    private suspend fun transferWorker(queue: ConcurrentLinkedQueue<Action>, sh: Shared) {
+        var session: SmbSession? = null
+        try {
+            while (!sh.stop.get()) {
+                val a = queue.poll() ?: break
+                currentCoroutineContext().ensureActive()
+                if (sh.done.get() % 10 == 0 && !shouldContinue()) {
+                    if (sh.stop.compareAndSet(false, true)) wifiLost = true
+                    break
+                }
+                val size = sizeOf(a)
+                // Speicher auf dem Handy für Downloads gemeinsam verrechnen
+                val needs = if (a.kind == Kind.DOWNLOAD || a.kind == Kind.KEEP_BOTH) remote[a.key]?.second?.size ?: 0 else 0
+                if (needs > 0 && sh.budget.addAndGet(-needs) < 0) {
+                    sh.budget.addAndGet(needs)
+                    spaceShortage = true
+                    log("W", "Zu wenig Speicher auf dem Handy – übersprungen: ${a.rel}")
+                    countDone(sh, size)
+                    continue
+                }
+                var attempt = 0
+                while (true) {
+                    try {
+                        // Tote Verbindung (Leerlauf-Trennung, kurzer WLAN-Aussetzer) -> neu aufbauen
+                        val s = session?.takeIf { it.isAlive() }
+                            ?: SmbSession.open(profile).also { try { session?.close() } catch (ignored: Exception) {}; session = it }
+                        executeTransfer(a, s) { b ->
+                            sh.inflight[a.key] = b
+                            emitShared(sh, a.rel)
+                        }
+                        break
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        if (isNetworkError(e)) {
+                            try { session?.close() } catch (ignored: Exception) {}
+                            session = null
+                            if (attempt++ == 0) { delay(2_000); continue } // Upload/Download setzt an der Abbruchstelle fort
+                            sh.stop.set(true)
+                            connectionFailed = true
+                            throw e // Netz wirklich weg -> Lauf unterbrechen
+                        }
+                        failed.incrementAndGet()
+                        log("E", "✗ ${a.rel}: ${com.sync2pc.app.sync.shortError(e)}")
+                        break
+                    }
+                }
+                sh.inflight.remove(a.key)
+                countDone(sh, size)
+            }
+        } finally {
+            session?.close()
+        }
+    }
+
+    private suspend fun executeTransfer(a: Action, s: SmbSession, onBytes: (Long) -> Unit) {
+        val l = local[a.key]?.second
+        val r = remote[a.key]?.second
+        when (a.kind) {
+            Kind.UPLOAD -> {
+                l ?: return
+                if (a.trashOther && r != null) trashRemote(s, a.rel)
+                upload(s, a.key, a.rel, l, onBytes)
+            }
+            Kind.DOWNLOAD -> {
+                r ?: return
+                if (a.trashOther && l != null) { tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet() }
+                download(s, a.key, a.rel, r, onBytes)
+            }
             Kind.KEEP_BOTH -> {
                 if (l == null || r == null) return
                 // Handy-Version umbenennen und hochladen, PC-Version unter Originalnamen holen
@@ -336,15 +440,15 @@ class MirrorEngine(
                 val newDoc = tree.rename(l.docId, newName)
                 val ls = tree.stat(newDoc) ?: throw IOException("Umbenannte Datei nicht gefunden")
                 dao.deleteMirrorState(profile.id, a.key)
-                upload(newRel.lowercase(), newRel, ls, onBytes)
-                download(a.key, a.rel, r, onBytes)
+                upload(s, newRel.lowercase(), newRel, ls, onBytes)
+                download(s, a.key, a.rel, r) { b -> onBytes(ls.size + b) }
             }
+            else -> {} // Phase A
         }
     }
 
-    private suspend fun upload(key: String, rel: String, l: LocalEntry, onBytes: (Long) -> Unit) {
-        val s = smb!!
-        val path = remotePath(rel)
+    private suspend fun upload(s: SmbSession, key: String, rel: String, l: LocalEntry, onBytes: (Long) -> Unit) {
+        val path = remotePath(s, rel)
         s.ensureDir(path.substringBeforeLast('\\', ""))
         val ctx = currentCoroutineContext()
         s.upload(
@@ -356,26 +460,25 @@ class MirrorEngine(
         val rs = s.stat(path) ?: throw IOException("Datei nach Upload nicht gefunden")
         if (rs.size != l.size) throw IOException("Grösse nach Upload stimmt nicht")
         record(key, l, rs)
-        up++; bytes += l.size
+        up.incrementAndGet(); bytes.addAndGet(l.size)
         log("I", "↑ $rel")
     }
 
-    private suspend fun download(key: String, rel: String, r: RemoteEntry, onBytes: (Long) -> Unit) {
-        val s = smb!!
+    private suspend fun download(s: SmbSession, key: String, rel: String, r: RemoteEntry, onBytes: (Long) -> Unit) {
         val ctx = currentCoroutineContext()
-        val docId = tree.writeFile(rel) { out ->
-            s.download(remotePath(rel), out, onBytes) { ctx.ensureActive() }
+        // Abgebrochene Downloads setzen an der Abbruchstelle fort (angefangene .s2ptmp auf dem Handy)
+        val (docId, resumedAt) = tree.writeFileResumable(rel, r.size, r.modified) { out, offset ->
+            s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
         }
         val ls = tree.stat(docId) ?: throw IOException("Datei nach Download nicht gefunden")
         if (ls.size != r.size) throw IOException("Grösse nach Download stimmt nicht")
         record(key, ls, r)
-        down++; bytes += r.size
-        log("I", "↓ $rel")
+        down.incrementAndGet(); bytes.addAndGet(r.size)
+        log("I", "↓ $rel" + if (resumedAt > 0) " (fortgesetzt ab ${com.sync2pc.app.sync.Notifications.formatBytes(resumedAt)})" else "")
     }
 
     /** PC-Datei nach "<Basis>\.LeoSync-Papierkorb\<Datum>\<Pfad>" verschieben */
-    private fun trashRemote(rel: String) {
-        val s = smb!!
+    private fun trashRemote(s: SmbSession, rel: String) {
         val parent = rel.substringBeforeLast('/', "").replace('/', '\\')
         val trashDir = s.path(listOf(TRASH_DIR, today, parent).filter { it.isNotEmpty() }.joinToString("\\"))
         s.ensureDir(trashDir)
@@ -383,8 +486,22 @@ class MirrorEngine(
         var name = orig
         var n = 2
         while (s.stat("$trashDir\\$name") != null) name = FolderNames.conflictName(orig, n++)
-        s.move(remotePath(rel), "$trashDir\\$name")
-        trashed++
+        s.move(remotePath(s, rel), "$trashDir\\$name")
+        trashed.incrementAndGet()
+    }
+
+    private fun countDone(sh: Shared, size: Long) {
+        sh.bytesDone.addAndGet(size)
+        val done = sh.done.incrementAndGet()
+        emitShared(sh, null, force = done == sh.totalFiles)
+    }
+
+    private fun emitShared(sh: Shared, file: String?, force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - sh.lastEmit < 700) return
+        sh.lastEmit = now
+        val b = (sh.bytesDone.get() + sh.inflight.values.sum()).coerceAtMost(sh.totalBytes)
+        emit("Synchronisiere…", sh.done.get(), sh.totalFiles, b, sh.totalBytes, file)
     }
 
     /** Abgelaufene Datumsordner im Papierkorb auf beiden Seiten endgültig löschen */
@@ -442,7 +559,7 @@ class MirrorEngine(
     private suspend fun finish(status: String, message: String): SyncRun {
         run = run.copy(
             finishedAt = System.currentTimeMillis(), status = status, message = message,
-            uploaded = up + down, skipped = 0, failed = failed, waiting = newConflicts, bytes = bytes
+            uploaded = up.get() + down.get(), skipped = 0, failed = failed.get(), waiting = newConflicts, bytes = bytes.get()
         )
         dao.updateRun(run)
         if (!dryRun) log("I", "Ende: $message")

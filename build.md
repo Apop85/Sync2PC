@@ -80,8 +80,25 @@ Vor jedem GitHub-Release:
 7. *Einstellungen → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
 8. *Einstellungen → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
 9. *Speicher freigeben* mit grosser Monatszahl (z. B. 120) und kleiner Auswahl: Die Prüfung auf dem PC läuft, der Android-Dialog erscheint, und im Papierkorb der Galerie sind die Dateien wiederherstellbar.
-10. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
-11. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
+10. Ordner-Sync (siehe „Test Ordner-Sync“ unten), wenn sich daran etwas geändert hat.
+11. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
+12. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
+
+### Test Ordner-Sync
+
+Vorbereitung auf dem PC: In der Freigabe einen Testordner anlegen, z. B. `\\192.168.3.3\Fotos\_Test-Ordnersync`, und darin:
+- einige hundert kleine Dateien (z. B. Textdateien oder kleine PDFs, gern in Unterordnern)
+- 2–3 grosse Dateien (je einige hundert MB, z. B. ein Video)
+
+Auf dem Handy:
+1. Neues Profil → **Ordner synchronisieren**. Gleiche Freigabe und Zugangsdaten wie beim Fotos-Profil (über die Chips übernehmen), als Unterordner `_Test-Ordnersync` wählen.
+2. Handy-Ordner: einen **neuen, leeren** Ordner wählen (z. B. `Documents/LeoSync-Test`), Richtung **Beidseitig**.
+3. *Vorschau* → alle Dateien erscheinen als „↓ PC → Handy“.
+4. *Jetzt synchronisieren*: Im Verlauf steht „Übertrage … mit 3 parallelen Verbindungen“. Die kleinen Dateien kommen zuerst, die grossen am Schluss.
+5. **Fortsetzen testen:** Während eine grosse Datei lädt, das WLAN kurz trennen und wieder verbinden. Im Verlauf erscheint danach „↓ … (fortgesetzt ab … MB)“.
+6. **Rückweg:** Auf dem Handy eine Datei ändern oder neu anlegen → nächster Sync lädt sie hoch („↑ …“).
+7. Es gibt auf dem Handy keine doppelten Ordner wie „Ordner (1)“.
+8. Zum Schluss das Test-Profil löschen. Die Dateien auf PC und Handy bleiben erhalten und können von Hand entfernt werden.
 
 ## Manuell bauen (ohne Builder)
 

@@ -2,6 +2,18 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.0 (2026-11-01)
+
+### Neu
+- **Ordner-Sync überträgt parallel:** Statt einer Datei nach der anderen laufen jetzt so viele Übertragungen gleichzeitig, wie unter *Einstellungen → Parallele Übertragungen* eingestellt sind (dieselbe Einstellung wie beim Fotos-Sync, Standard 3). Bei vielen kleinen Dateien ist das deutlich schneller.
+- **Kleine Dateien zuerst:** Der Fortschritt kommt schneller voran, und bei einem Abbruch sind möglichst viele Dateien schon fertig.
+- **Abgebrochene Downloads setzen fort:** Bricht ein Download aufs Handy ab, lädt der nächste Lauf nur noch den Rest. Wurde die Datei auf dem PC inzwischen geändert, beginnt der Download neu. Uploads zum PC konnten das schon bisher.
+
+### Verbessert
+- Bricht die Verbindung kurz ab, wird sie neu aufgebaut und die Datei wiederholt. Ist das Netz weg, stoppen alle Übertragungen sauber, und der Lauf gilt als „Unterbrochen“.
+- Neue Ordner auf dem Handy werden auch bei parallelen Übertragungen nur einmal angelegt, es entsteht kein „Ordner (1)“.
+- Am Fotos-Sync ändert sich nichts.
+
 ## 0.2.1 (2026-11-01)
 
 ### Neu
