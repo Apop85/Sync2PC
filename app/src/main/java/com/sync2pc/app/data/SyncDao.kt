@@ -156,8 +156,28 @@ interface SyncDao {
     @Query("SELECT * FROM sync_runs WHERE dryRun = 0 AND finishedAt IS NOT NULL ORDER BY id DESC LIMIT 1")
     fun lastRunFlow(): Flow<SyncRun?>
 
-    @Query("UPDATE sync_runs SET status = 'CANCELLED', finishedAt = :now WHERE status = 'RUNNING'")
-    suspend fun closeDanglingRuns(now: Long)
+    /** Offene echte Läufe (Vorschau-Läufe nicht – die können gerade parallel in der Oberfläche laufen) */
+    @Query("SELECT * FROM sync_runs WHERE status = 'RUNNING' AND dryRun = 0")
+    suspend fun runningRuns(): List<SyncRun>
+
+    @Query("SELECT MAX(time) FROM log_entries WHERE runId = :runId")
+    suspend fun lastLogTime(runId: Long): Long?
+
+    /**
+     * Läufe, die beim Beenden der App (Update, Hersteller-Stromsparer, Wegwischen) offen blieben, abschliessen.
+     * Aufruf nur, wenn sicher kein Lauf aktiv ist (SyncWorker unter Mutex).
+     */
+    suspend fun closeDanglingRuns() {
+        for (r in runningRuns()) {
+            val end = lastLogTime(r.id) ?: r.startedAt
+            insertLog(LogEntry(runId = r.id, time = end, level = "W",
+                message = "Unterbrochen – die App wurde beendet (z. B. durch ein Update). Der Rest folgt beim nächsten Sync."))
+            updateRun(r.copy(
+                status = "INTERRUPTED", finishedAt = end,
+                message = "Unterbrochen – App wurde beendet (z. B. Update), Rest folgt beim nächsten Sync",
+            ))
+        }
+    }
 
     @Insert
     suspend fun insertLog(e: LogEntry)

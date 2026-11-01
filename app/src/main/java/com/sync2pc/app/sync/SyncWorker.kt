@@ -109,7 +109,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val manual = inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)
         val trigger = inputData.getString(SyncScheduler.KEY_TRIGGER) ?: "Automatisch"
         val dao = AppDatabase.get(ctx).dao()
-        dao.closeDanglingRuns(System.currentTimeMillis())
+        dao.closeDanglingRuns()
 
         val settings = GlobalSettings(ctx)
         val all = dao.profiles().filter { it.enabled && it.isConfigured() }

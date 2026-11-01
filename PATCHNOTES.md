@@ -2,6 +2,11 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.1.6 (2026-11-01)
+
+### Behoben
+- **Läufe, die beim Beenden der App offen blieben**, zum Beispiel durch ein Update während eines Syncs, stehen im Verlauf jetzt als „Unterbrochen – App wurde beendet (z. B. Update), Rest folgt beim nächsten Sync“. Bisher stand dort ein leeres „Abgebrochen“. Als Endzeit gilt der letzte Log-Eintrag des Laufs, und im Log steht ein entsprechender Hinweis.
+
 ## 0.1.5 (2026-11-01)
 
 ### Verbessert
