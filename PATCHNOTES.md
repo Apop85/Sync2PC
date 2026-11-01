@@ -2,6 +2,15 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.2.1 (2026-11-01)
+
+### Neu
+- **Keine doppelten Profile:**
+  - Ein Profil mit **gleichem Ziel und denselben Quellen** wie ein bestehendes wird nicht gespeichert. Beim Ordner-Profil zählen der gleiche Handy-Ordner und das gleiche Ziel.
+  - Bei **teilweiser Überschneidung** (gleiches Ziel, mindestens ein gemeinsamer Quellordner) erscheint eine Warnung mit „Trotzdem speichern“.
+  - Gross- und Kleinschreibung sowie `/` und `\` spielen beim Vergleich keine Rolle. Deaktivierte Profile zählen mit.
+- **Import mit „Hinzufügen“:** Identische Profile werden übersprungen, teilweise überschneidende importiert und im Ergebnis als Hinweis aufgeführt. Das gilt auch für doppelte Profile innerhalb derselben Sicherungsdatei.
+
 ## 0.2.0 (2026-11-01)
 
 ### Neu

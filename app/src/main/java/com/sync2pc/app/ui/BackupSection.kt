@@ -107,6 +107,11 @@ fun BackupSection() {
                     append("${r.profiles} Profil(e) importiert")
                     if (r.synced > 0) append(", Sync-Status für ${r.synced} Dateien")
                     append(".")
+                    if (r.skippedIdentical.isNotEmpty())
+                        append("\n\nÜbersprungen, weil schon vorhanden (gleiches Ziel und gleiche Quellen): ${r.skippedIdentical.joinToString(", ")}")
+                    if (r.overlapping.isNotEmpty())
+                        append("\n\nHinweis: Überschneidet sich mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner): " +
+                            r.overlapping.joinToString(", "))
                     if (r.withoutPassword.isNotEmpty())
                         append("\n\nPasswort neu eingeben bei: ${r.withoutPassword.joinToString(", ")}")
                     if (r.needFolder.isNotEmpty())

@@ -55,6 +55,7 @@ import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.DeleteMode
 import com.sync2pc.app.data.ConflictMode
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.ProfileOverlap
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncDirection
 import com.sync2pc.app.mirror.LocalTree
@@ -106,6 +107,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
     var trashText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
+    var overlap by remember { mutableStateOf<ProfileOverlap.Hit?>(null) }
     val currentSsid = remember { WifiHelper.currentSsid(ctx) }
     // Andere Profile mit Zugangsdaten -> zum Übernehmen anbieten
     val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
@@ -127,9 +129,15 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
 
     fun withPassword(): Profile = p.copy(smbPasswordEnc = CredentialCrypto.encrypt(password))
 
-    fun save() {
+    fun save(force: Boolean = false) {
         scope.launch {
             val toSave = withPassword()
+            // Doppelte Profile verhindern bzw. bei Überschneidung warnen
+            val hit = withContext(Dispatchers.IO) { ProfileOverlap.check(toSave, dao.profiles()) }
+            if (hit != null && (hit.kind == ProfileOverlap.Kind.IDENTICAL || !force)) {
+                overlap = hit
+                return@launch
+            }
             withContext(Dispatchers.IO) {
                 if (toSave.id == 0L) dao.insertProfile(toSave) else dao.updateProfile(toSave)
                 SyncScheduler.updateRemotePoll(ctx, dao.profiles())
@@ -455,6 +463,20 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
         },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") } },
     )
+
+    overlap?.let { hit ->
+        val identical = hit.kind == ProfileOverlap.Kind.IDENTICAL
+        AlertDialog(
+            onDismissRequest = { overlap = null },
+            title = { Text(if (identical) "Profil existiert bereits" else "Profile überschneiden sich") },
+            text = { Text(hit.message() + if (identical) "\n\nDas Profil wurde nicht gespeichert." else "") },
+            confirmButton = {
+                if (identical) TextButton(onClick = { overlap = null }) { Text("OK") }
+                else TextButton(onClick = { overlap = null; save(force = true) }) { Text("Trotzdem speichern") }
+            },
+            dismissButton = { if (!identical) TextButton(onClick = { overlap = null }) { Text("Abbrechen") } },
+        )
+    }
 
     if (confirmReset) AlertDialog(
         onDismissRequest = { confirmReset = false },

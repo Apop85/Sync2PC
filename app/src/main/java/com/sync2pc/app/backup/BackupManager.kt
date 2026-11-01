@@ -7,6 +7,7 @@ import com.sync2pc.app.BuildConfig
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.data.ProfileOverlap
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.mirror.LocalTree
 import com.sync2pc.app.sync.SyncScheduler
@@ -28,6 +29,10 @@ object BackupManager {
         val withoutPassword: List<String>,
         /** Ordner-Profile: Handy-Ordner muss neu gewählt werden (Android überträgt die Freigabe nicht) */
         val needFolder: List<String>,
+        /** Nicht importiert, weil ein identisches Profil (gleiches Ziel, gleiche Quellen) schon besteht */
+        val skippedIdentical: List<String> = emptyList(),
+        /** Importiert, überschneidet sich aber mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner) */
+        val overlapping: List<String> = emptyList(),
     )
 
     fun suggestedFileName(): String =
@@ -70,7 +75,10 @@ object BackupManager {
         val c = backup.content
         val withoutPw = ArrayList<String>()
         val needFolder = ArrayList<String>()
+        val skipped = ArrayList<String>()
+        val overlapping = ArrayList<String>()
         var synced = 0
+        var imported = 0
         db.withTransaction {
             if (replace) {
                 for (old in dao.profiles()) {
@@ -78,9 +86,19 @@ object BackupManager {
                     dao.clearMirrorState(old.id); dao.clearConflicts(old.id); dao.deleteProfileRow(old.id)
                 }
             }
+            // Bestehende (bei "Ersetzen" keine) + bereits importierte Profile -> doppelte erkennen
+            val present = dao.profiles().toMutableList()
             for (p in c.profiles) {
+                // id = -1: die ID aus der Sicherung darf nicht mit einer bestehenden ID verwechselt werden
+                when (ProfileOverlap.check(p.copy(id = -1), present)?.kind) {
+                    ProfileOverlap.Kind.IDENTICAL -> { skipped += p.name; continue }
+                    ProfileOverlap.Kind.PARTIAL -> overlapping += p.name
+                    null -> {}
+                }
                 val pw = c.passwords[p.id].orEmpty()
                 val newId = dao.insertProfile(p.copy(id = 0, smbPasswordEnc = CredentialCrypto.encrypt(pw)))
+                present += p.copy(id = newId)
+                imported++
                 if (pw.isEmpty() && p.smbUser.isNotBlank()) withoutPw += p.name
                 if (p.type() == ProfileType.MIRROR &&
                     (p.localTreeUri.isBlank() || !LocalTree.hasPermission(context, Uri.parse(p.localTreeUri)))
@@ -96,6 +114,6 @@ object BackupManager {
         if (replace) GlobalSettings(context).importFrom(c.settings)
         SyncScheduler.updateRemotePoll(context, dao.profiles())
         SyncScheduler.setupAll(context)
-        ImportResult(c.profiles.size, synced, withoutPw, needFolder)
+        ImportResult(imported, synced, withoutPw, needFolder, skipped, overlapping)
     }
 }
