@@ -15,7 +15,7 @@ class WifiNetworkReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
         val s = GlobalSettings(ctx)
-        if (!s.autoSyncOnWifi) return
+        if (!s.autoSyncOnWifi || s.manualOnly) return // "für immer pausiert": nur manuell
         val now = System.currentTimeMillis()
         // Drosselung gegen Mehrfach-Events – aber nie nach einem unterbrochenen Sync (sofort fortsetzen)
         if (!s.resumeOnWifi && now - s.lastWifiTriggerAt < 60_000) return

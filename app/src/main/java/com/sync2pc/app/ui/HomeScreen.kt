@@ -138,12 +138,14 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val paused = remember(tick, works) { GlobalSettings(ctx).resumeOnWifi }
     // Vom Benutzer pausiert (Symbol oben rechts)? pauseVersion erzwingt das Neulesen nach Aktionen
     var pauseVersion by remember { mutableIntStateOf(0) }
+    // Long.MAX_VALUE = "für immer" (nur manuelle Syncs)
     val userPausedUntil = remember(tick, works, pauseVersion) {
-        GlobalSettings(ctx).pausedUntil.takeIf { it > System.currentTimeMillis() } ?: 0L
+        val s = GlobalSettings(ctx)
+        if (s.manualOnly) Long.MAX_VALUE else s.pausedUntil.takeIf { it > System.currentTimeMillis() } ?: 0L
     }
     LaunchedEffect(userPausedUntil) {
         // Pause läuft ab, während die Startseite offen ist -> Anzeige aktualisieren
-        if (userPausedUntil > 0) { delay(userPausedUntil - System.currentTimeMillis() + 500); pauseVersion++ }
+        if (userPausedUntil in 1 until Long.MAX_VALUE) { delay(userPausedUntil - System.currentTimeMillis() + 500); pauseVersion++ }
     }
     var showPauseDialog by remember { mutableStateOf(false) }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
@@ -271,6 +273,11 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             showPauseDialog = false
             pauseVersion++
         },
+        onForever = {
+            SyncScheduler.pauseForever(ctx)
+            showPauseDialog = false
+            pauseVersion++
+        },
     )
 }
 
@@ -286,9 +293,9 @@ private fun pauseEndText(until: Long): String {
     }
 }
 
-/** Wie lange pausieren? Schnellwahl 1/4/24 Stunden oder eigene Anzahl (1–168) */
+/** Wie lange pausieren? Schnellwahl 1/4/24 Stunden, eigene Anzahl (1–168) oder "für immer" (nur manuell) */
 @Composable
-private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit) {
+private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit, onForever: () -> Unit) {
     var hoursText by remember { mutableStateOf("") }
     val hours = hoursText.toIntOrNull()?.takeIf { it in 1..168 }
     AlertDialog(
@@ -307,6 +314,8 @@ private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
+                OutlinedButton(onClick = onForever, modifier = Modifier.fillMaxWidth()) { Text("Für immer (nur manuell)") }
+                Hint("Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Jetzt synchronisieren“, bis du über ⏸ wieder einschaltest.")
             }
         },
         confirmButton = { TextButton(enabled = hours != null, onClick = { hours?.let(onPause) }) { Text("Pausieren") } },
@@ -361,6 +370,11 @@ private fun StatusCard(
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
+            userPaused && userPausedUntil == Long.MAX_VALUE -> {
+                Text("⏸ Automatik aus – nur manuelle Syncs", style = MaterialTheme.typography.titleSmall)
+                Hint("Es wird nur synchronisiert, wenn du „Jetzt synchronisieren“ tippst. ⏸ oben rechts schaltet die Automatik wieder ein.")
+                lastRun?.let { Hint("Letzter Sync: ${formatTime(it.finishedAt ?: it.startedAt)} (${it.profileName})") }
+            }
             userPaused -> {
                 Text("⏸ Pausiert bis ${pauseEndText(userPausedUntil)}", style = MaterialTheme.typography.titleSmall)
                 Hint("Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Jetzt synchronisieren“ beendet die Pause sofort.")
@@ -391,7 +405,8 @@ private fun StatusCard(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // "Pausieren" hält nur den laufenden Sync an; beim nächsten automatischen Start geht es weiter
             if (isRunning) OutlinedButton(onClick = onCancel) { Text("Pausieren") }
-            else if (userPaused) Button(onClick = onResume) { Text("Fortsetzen") }
+            // Befristete Pause -> "Fortsetzen"; "für immer" -> weiterhin manuell synchronisieren können
+            else if (userPaused && userPausedUntil != Long.MAX_VALUE) Button(onClick = onResume) { Text("Fortsetzen") }
             else Button(onClick = onSync, enabled = hasProfiles) { Text("Jetzt synchronisieren") }
             OutlinedButton(onClick = onPreview, enabled = hasProfiles) { Text("Vorschau") }
         }

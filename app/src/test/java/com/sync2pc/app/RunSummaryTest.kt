@@ -39,11 +39,26 @@ class RunSummaryTest {
         assertEquals(0L, (items[3] as LogItem.Single).run.id)
     }
 
-    @Test fun singleIdleRunStaysSingleButIsFilteredOut() {
+    @Test fun singleIdleRunStaysSingle() {
         val items = RunGrouping.group(listOf(run(2, up = 1, msg = "1 übertragen"), run(1)))
         assertTrue(items[1] is LogItem.Single)
-        val important = RunGrouping.important(items)
-        assertEquals(listOf(2L), important.map { (it as LogItem.Single).run.id })
+    }
+
+    @Test fun errorAndTransferFilters() {
+        // neueste zuerst: Upload, Fehler, Upload mit Datei-Fehler, 2× ruhig, Unterbruch
+        val runs = listOf(
+            run(6, up = 2, msg = "2 übertragen"),
+            run(5, status = "FAILED", msg = "PC nicht erreichbar"),
+            run(4, status = "PARTIAL", up = 1, msg = "1 übertragen, 1 Fehler"),
+            run(3), run(2),
+            run(1, status = "INTERRUPTED", msg = "Unterbrochen"),
+        )
+        val items = RunGrouping.group(runs)
+        fun ids(e: Boolean, t: Boolean) = RunGrouping.filter(items, e, t).map { (it as LogItem.Single).run.id }
+        assertEquals(items, RunGrouping.filter(items, false, false)) // kein Filter = alles
+        assertEquals(listOf(5L, 4L), ids(e = true, t = false))
+        assertEquals(listOf(6L, 4L), ids(e = false, t = true))
+        assertEquals(listOf(6L, 5L, 4L), ids(e = true, t = true))
     }
 
     @Test fun foundOnPcOrTrashIsNotIdle() {

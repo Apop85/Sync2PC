@@ -131,6 +131,7 @@ object Diagnostics {
             kv("resumeSince", t(s.resumeSince))
             kv("lastWifiTriggerAt", t(s.lastWifiTriggerAt))
             kv("pausedUntil (Benutzer)", t(s.pausedUntil))
+            kv("manualOnly (für immer pausiert)", s.manualOnly)
             kv("staleWarn", if (s.staleWarnEnabled) "an, ${s.staleWarnDays} Tage, zuletzt ${t(s.lastStaleWarnAt)}" else "aus")
             kv("freeSpace", "${s.freeSpaceMonths} Monate, Favoriten behalten ${s.freeSpaceKeepFavorites}")
             kv("lastSkip", if (s.lastSkipAt > 0) "${t(s.lastSkipAt)} – ${s.lastSkipInfo}" else "-")

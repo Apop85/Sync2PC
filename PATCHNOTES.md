@@ -2,6 +2,17 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.5 (2026-11-02)
+
+### Neu
+- **„Für immer (nur manuell)“** im Pause-Dialog: schaltet die Automatik ganz ab. Es gibt dann keine Syncs bei WLAN-Verbindung, bei neuen Fotos, durch das Sicherheitsnetz oder die Ordner-Prüfung, und auch keine Erinnerung. Synchronisiert wird nur noch mit „Jetzt synchronisieren“, ohne dass das die Einstellung aufhebt. Die Startseite zeigt „⏸ Automatik aus – nur manuelle Syncs“. ⏸ oben rechts schaltet die Automatik wieder ein.
+
+### Geändert
+- **Filter im Verlauf:** Statt „Alle“ und „Nur Übertragungen und Probleme“ gibt es zwei kurze Knöpfe, **„Fehler“** und **„Übertragungen“**. Beide lassen sich einzeln oder zusammen einschalten. Ist keiner aktiv, erscheinen alle Läufe.
+  - „Fehler“: fehlgeschlagene oder teilweise erfolgreiche Läufe und Läufe mit Datei-Fehlern
+  - „Übertragungen“: Läufe, die mindestens eine Datei übertragen haben
+  - Beide aktiv: Läufe mit Fehlern oder Übertragungen
+
 ## 0.3.4 (2026-11-02)
 
 ### Verbessert

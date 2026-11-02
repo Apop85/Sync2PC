@@ -27,7 +27,8 @@ object StaleCheck {
 
     fun schedule(context: Context) {
         val wm = WorkManager.getInstance(context)
-        if (!GlobalSettings(context).staleWarnEnabled) {
+        // Nur manuell synchronisieren = bewusst keine Automatik -> auch keine Erinnerung
+        if (!GlobalSettings(context).staleWarnEnabled || GlobalSettings(context).manualOnly) {
             wm.cancelUniqueWork(WORK)
             Notifications.cancelStale(context)
             return
@@ -42,7 +43,7 @@ object StaleCheck {
 
     suspend fun run(context: Context) {
         val s = GlobalSettings(context)
-        if (!s.staleWarnEnabled) return
+        if (!s.staleWarnEnabled || s.manualOnly) return
         val dao = AppDatabase.get(context).dao()
         val now = System.currentTimeMillis()
         val days = s.staleWarnDays

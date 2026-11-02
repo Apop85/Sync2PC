@@ -119,7 +119,8 @@ object SyncScheduler {
     /** Einmaliger Content-Trigger; wird nach jedem Sync-Lauf neu "scharf" gestellt. */
     fun armContentTrigger(context: Context, replace: Boolean = true) {
         val wm = WorkManager.getInstance(context)
-        if (!GlobalSettings(context).syncOnNewMedia) {
+        val gs = GlobalSettings(context)
+        if (!gs.syncOnNewMedia || gs.manualOnly) {
             wm.cancelUniqueWork(WORK_CONTENT); return
         }
         // Akku (0.3.4): erst auslösen, wenn das neueste Foto das Mindestalter erreicht hat. Sonst findet der
@@ -151,7 +152,7 @@ object SyncScheduler {
     fun scheduleRemotePoll(context: Context) {
         val minutes = GlobalSettings(context).remotePollMinutes
         val wm = WorkManager.getInstance(context)
-        if (minutes <= 0) { wm.cancelUniqueWork(WORK_REMOTE_POLL); return }
+        if (minutes <= 0 || GlobalSettings(context).manualOnly) { wm.cancelUniqueWork(WORK_REMOTE_POLL); return }
         val req = PeriodicWorkRequestBuilder<TriggerWorker>(minutes.coerceAtLeast(15).toLong(), TimeUnit.MINUTES)
             .setInputData(workDataOf(KEY_TRIGGER to "Ordner-Prüfung (Intervall)"))
             .setConstraints(autoConstraints(context))
@@ -180,6 +181,7 @@ object SyncScheduler {
         val wm = WorkManager.getInstance(context)
         // Bis 0.3.3 ein starrer 6-h-Rhythmus (periodischer Auftrag) -> entfernen
         wm.cancelUniqueWork(WORK_PERIODIC)
+        if (GlobalSettings(context).manualOnly) { wm.cancelUniqueWork(WORK_SAFETY); return }
         val req = OneTimeWorkRequestBuilder<TriggerWorker>()
             .setInputData(workDataOf(KEY_TRIGGER to "Sicherheitsnetz (${SAFETY_HOURS} h ohne Sync)"))
             .setConstraints(autoConstraints(context))
@@ -191,7 +193,8 @@ object SyncScheduler {
     /** Beim App-Start, nach Neustart und nach Änderung der Einstellungen aufrufen. */
     fun setupAll(context: Context) {
         val s = GlobalSettings(context)
-        if (s.autoSyncOnWifi) WifiHelper.registerWifiCallback(context) else WifiHelper.unregisterWifiCallback(context)
+        // "Für immer pausiert": kein WLAN-Auslöser (die übrigen Auslöser prüfen manualOnly selbst)
+        if (s.autoSyncOnWifi && !s.manualOnly) WifiHelper.registerWifiCallback(context) else WifiHelper.unregisterWifiCallback(context)
         armContentTrigger(context, replace = false)
         scheduleSafetyNet(context, restart = false)
         scheduleRemotePoll(context)
@@ -225,9 +228,24 @@ object SyncScheduler {
         return true
     }
 
-    /** Pause sofort beenden und prüfen, ob es etwas zu tun gibt */
+    /**
+     * "Für immer pausieren" (0.3.5): Hintergrund-Syncs ganz abschalten, nur noch manuell.
+     * Bleibt bestehen, bis der Benutzer fortsetzt ("Jetzt synchronisieren" hebt es nicht auf).
+     */
+    fun pauseForever(context: Context) {
+        val s = GlobalSettings(context)
+        s.manualOnly = true
+        clearPause(context)
+        cancelAll(context)
+        setupAll(context) // schaltet WLAN-Auslöser, Foto-Auslöser, Sicherheitsnetz, Ordner-Prüfung und Erinnerung ab
+    }
+
+    /** Pause (befristet oder "für immer") sofort beenden und prüfen, ob es etwas zu tun gibt */
     fun resume(context: Context) {
-        if (clearPause(context)) enqueueAuto(context, "Fortgesetzt")
+        val s = GlobalSettings(context)
+        val wasManualOnly = s.manualOnly
+        if (wasManualOnly) { s.manualOnly = false; setupAll(context) }
+        if (clearPause(context) || wasManualOnly) enqueueAuto(context, "Fortgesetzt")
     }
 
     fun cancelAll(context: Context) {

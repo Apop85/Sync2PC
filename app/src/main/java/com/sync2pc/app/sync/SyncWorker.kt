@@ -116,7 +116,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val settings = GlobalSettings(ctx)
         // Vom Benutzer pausiert: keine automatischen Läufe (ein manueller Start hebt die Pause vorher auf)
         if (!manual && settings.isPaused()) {
-            settings.noteSkip("Pausiert bis ${java.text.SimpleDateFormat("dd.MM. HH:mm", java.util.Locale.GERMANY).format(java.util.Date(settings.pausedUntil))}")
+            settings.noteSkip(
+                if (settings.manualOnly) "Automatische Syncs ausgeschaltet (nur manuell)"
+                else "Pausiert bis ${java.text.SimpleDateFormat("dd.MM. HH:mm", java.util.Locale.GERMANY).format(java.util.Date(settings.pausedUntil))}"
+            )
             return Result.success()
         }
         val all = dao.profiles().filter { it.enabled && it.isConfigured() }

@@ -51,9 +51,10 @@ fun LogScreen(onBack: () -> Unit) {
     var open by remember { mutableStateOf<Long?>(null) }
     var openGroup by remember { mutableStateOf<Long?>(null) }
     val settings = remember { com.sync2pc.app.data.GlobalSettings(ctx) }
-    var importantOnly by remember { mutableStateOf(settings.logImportantOnly) }
+    var onlyErrors by remember { mutableStateOf(settings.logFilterErrors) }
+    var onlyTransfers by remember { mutableStateOf(settings.logFilterTransfers) }
     val grouped = remember(runs) { RunGrouping.group(runs) }
-    val shown = if (importantOnly) RunGrouping.important(grouped) else grouped
+    val shown = RunGrouping.filter(grouped, onlyErrors, onlyTransfers)
 
     ScreenScaffold(
         title = "Verlauf",
@@ -81,13 +82,21 @@ fun LogScreen(onBack: () -> Unit) {
         ) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !importantOnly, onClick = { importantOnly = false; settings.logImportantOnly = false },
-                        label = { Text("Alle") })
-                    FilterChip(selected = importantOnly, onClick = { importantOnly = true; settings.logImportantOnly = true },
-                        label = { Text("Nur Übertragungen und Probleme") })
+                    // Unabhängig ein-/ausschaltbar; keiner aktiv = alle Läufe
+                    FilterChip(selected = onlyErrors, onClick = { onlyErrors = !onlyErrors; settings.logFilterErrors = onlyErrors },
+                        label = { Text("Fehler") })
+                    FilterChip(selected = onlyTransfers, onClick = { onlyTransfers = !onlyTransfers; settings.logFilterTransfers = onlyTransfers },
+                        label = { Text("Übertragungen") })
                 }
             }
-            if (shown.isEmpty()) item { Text(if (runs.isEmpty()) "Noch keine Einträge." else "Keine Läufe mit Übertragungen oder Problemen.") }
+            if (shown.isEmpty()) item {
+                Text(when {
+                    runs.isEmpty() -> "Noch keine Einträge."
+                    onlyErrors && onlyTransfers -> "Keine Läufe mit Fehlern oder Übertragungen."
+                    onlyErrors -> "Keine Läufe mit Fehlern."
+                    else -> "Keine Läufe mit Übertragungen."
+                })
+            }
             items(shown, key = { item ->
                 when (item) {
                     is LogItem.Single -> "r" + item.run.id

@@ -107,10 +107,13 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
-    /** Verlauf: nur Läufe mit Übertragungen und Problemen zeigen (0.3.4) */
-    var logImportantOnly: Boolean
-        get() = prefs.getBoolean("logImportantOnly", false)
-        set(v) = prefs.edit().putBoolean("logImportantOnly", v).apply()
+    /** Verlauf-Filter (0.3.5): nur Läufe mit Fehler / nur Läufe mit Übertragungen; beide aus = alles */
+    var logFilterErrors: Boolean
+        get() = prefs.getBoolean("logFilterErrors", false)
+        set(v) = prefs.edit().putBoolean("logFilterErrors", v).apply()
+    var logFilterTransfers: Boolean
+        get() = prefs.getBoolean("logFilterTransfers", false)
+        set(v) = prefs.edit().putBoolean("logFilterTransfers", v).apply()
 
     // ---- Pause durch den Benutzer (seit 0.3.1) ---------------------------------------
     /** Bis zu diesem Zeitpunkt (ms) keine automatischen Syncs; 0 = nicht pausiert */
@@ -118,7 +121,15 @@ class GlobalSettings(context: Context) {
         get() = prefs.getLong("pausedUntil", 0)
         set(v) = prefs.edit().putLong("pausedUntil", v).apply()
 
-    fun isPaused(now: Long = System.currentTimeMillis()): Boolean = pausedUntil > now
+    fun isPaused(now: Long = System.currentTimeMillis()): Boolean = pausedUntil > now || manualOnly
+
+    /**
+     * "Für immer pausiert" (0.3.5): keine Hintergrund-Syncs mehr (WLAN, neue Fotos, Sicherheitsnetz,
+     * Ordner-Prüfung, Erinnerung). Nur noch "Jetzt synchronisieren" – das hebt diesen Modus NICHT auf.
+     */
+    var manualOnly: Boolean
+        get() = prefs.getBoolean("manualOnly", false)
+        set(v) = prefs.edit().putBoolean("manualOnly", v).apply()
 
     // ---- Erinnerung "lange nicht gesichert" (seit 0.2.0) -------------------------
     var staleWarnEnabled: Boolean

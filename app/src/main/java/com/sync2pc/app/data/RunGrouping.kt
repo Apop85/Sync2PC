@@ -32,7 +32,20 @@ object RunGrouping {
         return out
     }
 
-    /** Filter "Nur Übertragungen und Probleme": ruhige Läufe ausblenden */
-    fun important(items: List<LogItem>): List<LogItem> =
-        items.filter { it is LogItem.Single && !isIdle(it.run) }
+    /** Lauf mit Fehler (fehlgeschlagen, teilweise oder einzelne Dateien mit Fehler) */
+    fun hasError(r: SyncRun): Boolean = r.status == "FAILED" || r.status == "PARTIAL" || r.failed > 0
+
+    /** Lauf, der mindestens eine Datei übertragen hat (Ordner-Sync: hoch- oder heruntergeladen) */
+    fun hasTransfer(r: SyncRun): Boolean = r.uploaded > 0
+
+    /**
+     * Filter im Verlauf (0.3.5): keiner aktiv = alles; "Fehler" und/oder "Übertragungen" = nur passende Läufe
+     * (beide aktiv = Läufe mit Fehler ODER Übertragung). Zusammengefasste ruhige Läufe fallen dann weg.
+     */
+    fun filter(items: List<LogItem>, errors: Boolean, transfers: Boolean): List<LogItem> {
+        if (!errors && !transfers) return items
+        return items.filter { item ->
+            item is LogItem.Single && ((errors && hasError(item.run)) || (transfers && hasTransfer(item.run)))
+        }
+    }
 }
