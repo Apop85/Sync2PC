@@ -216,13 +216,9 @@ class MirrorEngine(
             }
 
             if (status == "OK" && (failed.get() > 0 || spaceShortage)) status = "PARTIAL"
-            if (message.isEmpty()) message = buildString {
-                append("↑ ${up.get()} hochgeladen, ↓ ${down.get()} heruntergeladen")
-                if (trashed.get() > 0) append(", ${trashed.get()} in Papierkorb")
-                if (newConflicts > 0) append(", $newConflicts Konflikt(e)")
-                if (failed.get() > 0) append(", ${failed.get()} Fehler")
-                if (spaceShortage) append(", Speicher voll")
-            }
+            if (message.isEmpty()) message = com.sync2pc.app.sync.RunSummary.mirror(
+                up.get(), down.get(), trashed.get(), newConflicts, failed.get(), spaceShortage
+            )
             return finish(status, message)
         } catch (e: CancellationException) {
             withContext(NonCancellable) {

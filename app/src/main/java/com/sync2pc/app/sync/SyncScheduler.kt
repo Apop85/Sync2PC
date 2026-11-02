@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
  *  - WLAN verbunden      -> WifiNetworkReceiver -> sofort (expedited)
  *  - neue Fotos/Videos   -> Content-Trigger (gebündelt) -> Sync, sobald im WLAN
  *  - zu junge Dateien    -> Nachhol-Sync nach Ablauf des Mindestalters
- *  - Sicherheitsnetz     -> alle 6 Stunden (nur WLAN)
+ *  - Sicherheitsnetz     -> 6 Stunden nach dem letzten Sync (bei jedem Sync neu gestartet, nur WLAN)
  *  - manuell             -> Button in der App
  */
 object SyncScheduler {
@@ -29,6 +29,7 @@ object SyncScheduler {
     const val WORK_MANUAL = "sync-manual"
     const val WORK_FOLLOWUP = "sync-followup"
     const val WORK_CONTENT = "trigger-content"
+    /** Bis 0.3.3: starrer 6-h-Auftrag; wird beim Start entfernt (ersetzt durch WORK_SAFETY) */
     const val WORK_PERIODIC = "trigger-periodic"
     const val WORK_RETRY = "sync-share-retry"
     const val WORK_REMOTE_POLL = "trigger-remote-poll"
@@ -121,11 +122,16 @@ object SyncScheduler {
         if (!GlobalSettings(context).syncOnNewMedia) {
             wm.cancelUniqueWork(WORK_CONTENT); return
         }
+        // Akku (0.3.4): erst auslösen, wenn das neueste Foto das Mindestalter erreicht hat. Sonst findet der
+        // erste Lauf nur "zu junge" Dateien und ein zweiter Lauf (Nachhol-Sync) wird nötig.
+        val minAge = Duration.ofMinutes(GlobalSettings(context).minFileAgeMinutes.toLong())
+        val update = maxOf(Duration.ofSeconds(30), minAge.plusSeconds(30))
         val c = Constraints.Builder()
             .addContentUriTrigger(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true)
             .addContentUriTrigger(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true)
-            .setTriggerContentUpdateDelay(Duration.ofSeconds(30))
-            .setTriggerContentMaxDelay(Duration.ofMinutes(5))
+            .setTriggerContentUpdateDelay(update)
+            // Bei einer Fotoserie spätestens nach dieser Zeit (ältere Bilder der Serie sind dann alt genug)
+            .setTriggerContentMaxDelay(maxOf(Duration.ofMinutes(5), update.plusMinutes(2)))
             .build()
         val req = OneTimeWorkRequestBuilder<TriggerWorker>()
             .setInputData(workDataOf(KEY_TRIGGER to "Neue Fotos/Videos"))
@@ -161,13 +167,25 @@ object SyncScheduler {
         scheduleRemotePoll(context)
     }
 
-    fun schedulePeriodic(context: Context) {
-        val req = PeriodicWorkRequestBuilder<TriggerWorker>(6, TimeUnit.HOURS)
-            .setInputData(workDataOf(KEY_TRIGGER to "Periodisch"))
+    /** Sicherheitsnetz (seit 0.3.4): 6 Stunden nach dem letzten Sync, wird bei jedem Sync nach hinten geschoben */
+    const val WORK_SAFETY = "trigger-safety"
+    const val SAFETY_HOURS = 6L
+
+    /**
+     * Sicherheitsnetz, falls ein Auslöser verloren geht (z. B. WLAN-Meldung vom Hersteller blockiert).
+     * [restart] = true (nach jedem Sync-Lauf): Zähler neu starten -> 6 h nach dem letzten Sync.
+     * [restart] = false (App-Start): nur anlegen, wenn noch keiner geplant ist.
+     */
+    fun scheduleSafetyNet(context: Context, restart: Boolean) {
+        val wm = WorkManager.getInstance(context)
+        // Bis 0.3.3 ein starrer 6-h-Rhythmus (periodischer Auftrag) -> entfernen
+        wm.cancelUniqueWork(WORK_PERIODIC)
+        val req = OneTimeWorkRequestBuilder<TriggerWorker>()
+            .setInputData(workDataOf(KEY_TRIGGER to "Sicherheitsnetz (${SAFETY_HOURS} h ohne Sync)"))
             .setConstraints(autoConstraints(context))
+            .setInitialDelay(SAFETY_HOURS, TimeUnit.HOURS)
             .build()
-        WorkManager.getInstance(context)
-            .enqueueUniquePeriodicWork(WORK_PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, req)
+        wm.enqueueUniqueWork(WORK_SAFETY, if (restart) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP, req)
     }
 
     /** Beim App-Start, nach Neustart und nach Änderung der Einstellungen aufrufen. */
@@ -175,7 +193,7 @@ object SyncScheduler {
         val s = GlobalSettings(context)
         if (s.autoSyncOnWifi) WifiHelper.registerWifiCallback(context) else WifiHelper.unregisterWifiCallback(context)
         armContentTrigger(context, replace = false)
-        schedulePeriodic(context)
+        scheduleSafetyNet(context, restart = false)
         scheduleRemotePoll(context)
         com.sync2pc.app.update.UpdateWorker.schedule(context)
         StaleCheck.schedule(context)

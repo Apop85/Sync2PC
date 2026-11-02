@@ -2,6 +2,19 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.4 (2026-11-02)
+
+### Verbessert
+- **Kürzere Zusammenfassungen** in Verlauf und Benachrichtigung: nur noch, was passiert ist, z. B. „3 übertragen“ oder „3 übertragen, 12 bereits vorhanden“ (Dateien, die die Duplikatsuche schon auf dem PC gefunden hat). Ohne Übertragung steht „Nichts zu tun“. Beim Ordner-Sync erscheinen nur die Teile, die nicht 0 sind („↓ 3 heruntergeladen“). Das Detail-Log beim Aufklappen enthält weiterhin alle Zahlen.
+- **Verlauf übersichtlicher:**
+  - Aufeinanderfolgende Läufe ohne Übertragung erscheinen als **ein** Eintrag („12× geprüft – nichts zu tun“ mit Zeitraum und Profilen). Antippen zeigt die einzelnen Läufe.
+  - Neuer Filter oben: „Alle“ oder „Nur Übertragungen und Probleme“. Die Auswahl bleibt gespeichert.
+  - Der Verlauf zeigt jetzt alle Läufe der letzten 90 Tage statt nur der letzten 100.
+- **Akku:**
+  - Gibt es bei einem Fotos-Profil keine neuen Fotos, wird der PC gar nicht erst kontaktiert (kein Erreichbarkeitstest, keine Verbindung).
+  - Neue Fotos lösen den Sync erst aus, wenn sie das Mindestalter erreicht haben. So reicht ein Lauf statt zwei.
+  - Das **Sicherheitsnetz** (zusätzliche Prüfung, falls ein Auslöser verloren geht) läuft jetzt **6 Stunden nach dem letzten Sync** statt in einem starren 6-Stunden-Rhythmus. Jeder Sync schiebt es nach hinten.
+
 ## 0.3.3 (2026-11-02)
 
 ### Behoben

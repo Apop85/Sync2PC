@@ -62,6 +62,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             ) markInterrupted()
             mutex.unlock()
             SyncScheduler.armContentTrigger(applicationContext)
+            // Sicherheitsnetz: 6 Stunden nach diesem Lauf erneut prüfen (schiebt den Zeitpunkt nach hinten)
+            SyncScheduler.scheduleSafetyNet(applicationContext, restart = true)
         }
     }
 
@@ -159,6 +161,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val unreachable = ArrayList<Profile>()
         val runnable = ArrayList<Profile>()
         for (p in eligible) {
+            // Akku (0.3.4): Bildordner ohne übertragungsbereite Dateien brauchen den PC nicht – kein
+            // Erreichbarkeitstest, keine Verbindung. SyncEngine meldet dann ohne Netzwerk "Nichts zu tun"
+            // (und plant für zu junge Fotos den Nachhol-Sync). Ordner-Profile brauchen den PC immer.
+            if (p.type() == ProfileType.PHOTOS &&
+                PendingCheck.readyFiles(ctx, p, settings.minFileAgeMinutes) == 0
+            ) { runnable += p; continue }
             val host = SmbTarget.parse(p.smbPath)?.host
             if (host == null) { runnable += p; continue } // ungültiger Pfad -> Engine meldet den Fehler
             val ok = reach[host.lowercase()] ?: run {

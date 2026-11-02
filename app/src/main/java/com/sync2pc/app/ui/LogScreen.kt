@@ -31,7 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.LogItem
+import com.sync2pc.app.data.RunGrouping
 import com.sync2pc.app.data.SyncRun
+import androidx.compose.material3.FilterChip
 import com.sync2pc.app.diag.Diagnostics
 import com.sync2pc.app.sync.Notifications
 import kotlinx.coroutines.Dispatchers
@@ -43,8 +46,14 @@ fun LogScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val scope = rememberCoroutineScope()
-    val runs by remember { dao.runsFlow() }.collectAsState(initial = emptyList())
+    // Alle Läufe der letzten 90 Tage (älter löscht pruneRuns), höchstens 2000
+    val runs by remember { dao.runsFlow(2000) }.collectAsState(initial = emptyList())
     var open by remember { mutableStateOf<Long?>(null) }
+    var openGroup by remember { mutableStateOf<Long?>(null) }
+    val settings = remember { com.sync2pc.app.data.GlobalSettings(ctx) }
+    var importantOnly by remember { mutableStateOf(settings.logImportantOnly) }
+    val grouped = remember(runs) { RunGrouping.group(runs) }
+    val shown = if (importantOnly) RunGrouping.important(grouped) else grouped
 
     ScreenScaffold(
         title = "Verlauf",
@@ -70,9 +79,56 @@ fun LogScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (runs.isEmpty()) item { Text("Noch keine Einträge.") }
-            items(runs, key = { it.id }) { r ->
-                RunCard(r, open == r.id) { open = if (open == r.id) null else r.id }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = !importantOnly, onClick = { importantOnly = false; settings.logImportantOnly = false },
+                        label = { Text("Alle") })
+                    FilterChip(selected = importantOnly, onClick = { importantOnly = true; settings.logImportantOnly = true },
+                        label = { Text("Nur Übertragungen und Probleme") })
+                }
+            }
+            if (shown.isEmpty()) item { Text(if (runs.isEmpty()) "Noch keine Einträge." else "Keine Läufe mit Übertragungen oder Problemen.") }
+            items(shown, key = { item ->
+                when (item) {
+                    is LogItem.Single -> "r" + item.run.id
+                    is LogItem.Idle -> "g" + item.runs.first().id
+                }
+            }) { item ->
+                when (item) {
+                    is LogItem.Single -> RunCard(item.run, open == item.run.id) {
+                        open = if (open == item.run.id) null else item.run.id
+                    }
+                    is LogItem.Idle -> {
+                        val gid = item.runs.first().id
+                        IdleCard(item.runs, openGroup == gid) { openGroup = if (openGroup == gid) null else gid }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Mehrere aufeinanderfolgende Läufe ohne Übertragung als ein Eintrag; antippen zeigt die einzelnen Läufe */
+@Composable
+private fun IdleCard(runs: List<SyncRun>, expanded: Boolean, onClick: () -> Unit) {
+    val newest = runs.first()
+    val oldest = runs.last()
+    val profiles = runs.map { it.profileName }.distinct().joinToString(", ")
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("${runs.size}× geprüft – nichts zu tun", modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall)
+                Text("OK", color = MaterialTheme.colorScheme.primary)
+            }
+            val end = formatTime(newest.finishedAt ?: newest.startedAt)
+            val start = formatTime(oldest.startedAt)
+            // Gleicher Tag -> beim Ende nur die Uhrzeit
+            val endShort = if (start.substringBefore(' ') == end.substringBefore(' ')) end.substringAfter(' ') else end
+            Hint("$start – $endShort · $profiles")
+            if (expanded) runs.forEach { r ->
+                Text("#${r.id} · ${formatTime(r.startedAt)} · ${r.profileName} (${r.trigger})",
+                    style = MaterialTheme.typography.bodySmall)
             }
         }
     }

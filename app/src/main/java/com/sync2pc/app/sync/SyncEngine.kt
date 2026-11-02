@@ -338,9 +338,7 @@ class SyncEngine(
             }
 
             if (status == "OK" && fl() > 0) status = "PARTIAL"
-            if (message.isEmpty()) message = "${up()} übertragen, ${sk()} übersprungen" +
-                (if (fl() > 0) ", ${fl()} Fehler" else "") +
-                (if (waiting > 0) ", $waiting warten auf Ordnerauswahl" else "")
+            if (message.isEmpty()) message = RunSummary.photos(up(), shared?.skipped?.get() ?: 0, fl(), waiting)
             return finish(status, message, up(), sk(), fl(), waiting, by())
         } catch (e: CancellationException) {
             withContext(NonCancellable) {

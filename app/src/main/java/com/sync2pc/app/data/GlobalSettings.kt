@@ -107,6 +107,11 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
+    /** Verlauf: nur Läufe mit Übertragungen und Problemen zeigen (0.3.4) */
+    var logImportantOnly: Boolean
+        get() = prefs.getBoolean("logImportantOnly", false)
+        set(v) = prefs.edit().putBoolean("logImportantOnly", v).apply()
+
     // ---- Pause durch den Benutzer (seit 0.3.1) ---------------------------------------
     /** Bis zu diesem Zeitpunkt (ms) keine automatischen Syncs; 0 = nicht pausiert */
     var pausedUntil: Long

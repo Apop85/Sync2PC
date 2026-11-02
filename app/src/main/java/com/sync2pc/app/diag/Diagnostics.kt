@@ -47,7 +47,7 @@ object Diagnostics {
     /** Unique-Work-Namen, deren Zustand interessiert */
     private val WORK_NAMES = listOf(
         SyncScheduler.WORK_AUTO, SyncScheduler.WORK_MANUAL, SyncScheduler.WORK_FOLLOWUP,
-        SyncScheduler.WORK_CONTENT, SyncScheduler.WORK_PERIODIC, SyncScheduler.WORK_RETRY,
+        SyncScheduler.WORK_CONTENT, SyncScheduler.WORK_SAFETY, SyncScheduler.WORK_RETRY,
         SyncScheduler.WORK_REMOTE_POLL, SyncScheduler.WORK_RESUME, "update-check", "stale-check", SyncScheduler.WORK_PAUSE_END,
     )
 

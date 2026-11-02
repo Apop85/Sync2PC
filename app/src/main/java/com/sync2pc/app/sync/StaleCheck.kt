@@ -9,8 +9,6 @@ import androidx.work.WorkerParameters
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.ProfileType
-import com.sync2pc.app.media.MediaScanner
-import com.sync2pc.app.mirror.FileFilter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,7 +55,7 @@ object StaleCheck {
             val last = dao.lastSuccessAt(p.id) ?: baseline
             if (last > limit) continue
             if (p.type() == ProfileType.PHOTOS) {
-                val pending = pendingFiles(context, p, s.minFileAgeMinutes)
+                val pending = PendingCheck.readyFiles(context, p, s.minFileAgeMinutes)
                 if (pending == 0) continue
                 lines += "${p.name}: $pending neue Dateien warten, letzte Sicherung ${date.format(Date(last))}"
             } else {
@@ -75,19 +73,6 @@ object StaleCheck {
         s.lastStaleWarnAt = now
     }
 
-    /** Fotos/Videos eines Bildordner-Profils, die noch nicht gesichert sind (wie im SyncEngine-Abgleich) */
-    private suspend fun pendingFiles(context: Context, p: com.sync2pc.app.data.Profile, minAgeMinutes: Int): Int {
-        val dao = AppDatabase.get(context).dao()
-        val filter = FileFilter(p.includePatterns, p.excludePatterns)
-        val known = dao.syncedLite(p.id).associateBy { it.sourceKey }
-        val readyBefore = System.currentTimeMillis() / 1000 - minAgeMinutes * 60L
-        return MediaScanner.scan(context, p.folders(), p.includeSubfolders, p.includeImages, p.includeVideos)
-            .count { m ->
-                filter.accepts(m.relativePath + m.displayName) &&
-                    maxOf(m.dateAddedSec, m.dateModifiedSec) < readyBefore &&
-                    known[m.sourceKey].let { k -> k == null || k.size != m.size || k.dateModified != m.dateModifiedSec }
-            }
-    }
 }
 
 class StaleCheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
