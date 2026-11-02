@@ -311,7 +311,8 @@ $done = 0; $failed = 0; [long]$doneBytes = 0
 foreach ($p in $toCopy) {
     $src = $p.Item.File
     Write-Progress -Activity "Kopiere nach $Target" -Status ("{0} / {1}  ({2} von {3})  {4}" -f ($done + $failed + 1), $toCopy.Count, (Fmt $doneBytes), (Fmt $bytes), $src.Name) `
-        -PercentComplete ([math]::Min(100, 100 * $doneBytes / [math]::Max(1, $bytes)))
+        -PercentComplete ([int][math]::Min([double]100, [double]100 * $doneBytes / [math]::Max([double]1, [double]$bytes)))
+    # Hinweis: [math]::Max(1, $bytes) waehlt die Int32-Variante und scheitert ab ca. 2 GB -> immer [double]
     $tmp = $p.Dest + ".s2ptmp"
     try {
         New-Item -ItemType Directory -Force (Split-Path $p.Dest) | Out-Null

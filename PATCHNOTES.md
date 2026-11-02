@@ -2,6 +2,15 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.3 (2026-11-02)
+
+### Behoben
+- **Statusanzeige:** „Sync eingeplant – wartet auf passendes WLAN“ erschien auch dann, wenn das Heim-WLAN verbunden war und nur eine zeitversetzte Prüfung geplant war (z. B. der Nachhol-Sync für gerade erst aufgenommene Fotos). Jetzt gilt:
+  - Wartet ein Sync wirklich, nennt die Startseite den Grund: „Wartet auf das Heim-WLAN“, „Wartet auf das Ladegerät“ oder „Sync startet gleich…“.
+  - Ist nur eine spätere Prüfung geplant, zeigt sie den letzten Lauf und darunter „Nächste Prüfung um …“. Ist alles gesichert, erscheint der schlafende Hund.
+  - Ein Lauf ohne Übertragung erscheint als „Nichts zu tun – alles aktuell“.
+- **PC-Import-Werkzeug** (`tools\LeoSync-Import.bat`): Bei mehr als ca. 2 GB zu kopierender Daten brach das Werkzeug vor der ersten Datei mit „Der Wert für einen Int32 war zu groß“ ab (Fortschrittsanzeige). Es wurde dabei nichts kopiert.
+
 ## 0.3.2 (2026-11-01)
 
 ### Verbessert

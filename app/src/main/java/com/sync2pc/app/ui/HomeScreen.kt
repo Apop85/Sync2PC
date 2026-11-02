@@ -109,7 +109,23 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     }
     val works by workFlow.collectAsState(initial = emptyList())
     val running = works.firstOrNull { it.state == WorkInfo.State.RUNNING }
-    val queued = works.any { it.state == WorkInfo.State.ENQUEUED }
+    // Eingeplant heisst nicht immer "wartet": Nachhol-Sync und erneute PC-Prüfung laufen absichtlich später.
+    // Fällig (Startzeit erreicht, aber Bedingungen fehlen) vs. zeitversetzt (Startzeit in der Zukunft)
+    val now = System.currentTimeMillis()
+    val enqueued = works.filter { it.state == WorkInfo.State.ENQUEUED }
+    val queued = enqueued.any { it.nextScheduleTimeMillis <= now + 5_000 }
+    val nextPlanned = enqueued.map { it.nextScheduleTimeMillis }.filter { it in (now + 5_001) until Long.MAX_VALUE }.minOrNull()
+    // Warum wartet ein fälliger Auftrag? (WLAN fehlt / nicht am Ladegerät / startet gleich)
+    val waitText = remember(tick, works, ssid, profiles) {
+        val s = GlobalSettings(ctx)
+        val onTarget = ssid != null && profiles.any { it.enabled && it.ssids().contains(ssid) }
+        val charging = ctx.getSystemService(android.os.BatteryManager::class.java)?.isCharging == true
+        when {
+            !onTarget -> "Wartet auf das Heim-WLAN."
+            s.onlyWhileCharging && !charging -> "Wartet auf das Ladegerät („Nur beim Laden“ ist eingeschaltet)."
+            else -> "Sync startet gleich…"
+        }
+    }
     val progress = running?.let { SyncWorker.progressFrom(it.progress) }
     // Grund, falls der letzte automatische Start nicht synchronisiert hat (max. 24 h alt)
     val skipInfo = remember(tick, works) {
@@ -165,6 +181,8 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     ssid = ssid,
                     isRunning = running != null,
                     isQueued = queued,
+                    waitText = waitText,
+                    nextPlanned = nextPlanned,
                     progress = progress,
                     lastRun = lastRun,
                     shareWait = shareWait,
@@ -301,6 +319,8 @@ private fun StatusCard(
     ssid: String?,
     isRunning: Boolean,
     isQueued: Boolean,
+    waitText: String,
+    nextPlanned: Long?,
     progress: SyncProgress?,
     lastRun: SyncRun?,
     shareWait: String?,
@@ -353,13 +373,17 @@ private fun StatusCard(
                 Text(shareWait, color = MaterialTheme.colorScheme.error)
                 Hint("Ist der PC eingeschaltet und die Freigabe aktiv? „Jetzt synchronisieren“ prüft sofort.")
             }
-            isQueued -> Text("Sync eingeplant – wartet auf passendes WLAN/Bedingungen.")
+            isQueued -> Text(waitText)
             lastRun != null -> {
                 Text("Letzter Sync: ${formatTime(lastRun.finishedAt ?: lastRun.startedAt)} (${lastRun.profileName})")
-                Hint(lastRun.message)
+                val nothing = lastRun.status == "OK" && lastRun.uploaded == 0 && lastRun.failed == 0
+                Hint(if (nothing) "Nichts zu tun – alles aktuell" else lastRun.message)
             }
             else -> Text("Noch kein Sync durchgeführt.")
         }
+        // Zeitversetzt geplante Prüfung (z. B. Nachhol-Sync für gerade erst aufgenommene Fotos)
+        if (!isRunning && !userPaused && !isQueued && nextPlanned != null)
+            Hint("Nächste Prüfung um ${pauseEndText(nextPlanned)}")
         if (!isRunning && !userPaused && shareWait == null && skipInfo != null) {
             Text("⚠ Automatischer Start übersprungen – $skipInfo", color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
