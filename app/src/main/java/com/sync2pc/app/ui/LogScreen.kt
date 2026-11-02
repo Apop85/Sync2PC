@@ -82,7 +82,11 @@ fun LogScreen(onBack: () -> Unit) {
         ) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Unabhängig ein-/ausschaltbar; keiner aktiv = alle Läufe
+                    // "Alle" = kein Filter (setzt beide zurück); "Fehler"/"Übertragungen" einzeln oder zusammen
+                    FilterChip(selected = !onlyErrors && !onlyTransfers, onClick = {
+                        onlyErrors = false; onlyTransfers = false
+                        settings.logFilterErrors = false; settings.logFilterTransfers = false
+                    }, label = { Text("Alle") })
                     FilterChip(selected = onlyErrors, onClick = { onlyErrors = !onlyErrors; settings.logFilterErrors = onlyErrors },
                         label = { Text("Fehler") })
                     FilterChip(selected = onlyTransfers, onClick = { onlyTransfers = !onlyTransfers; settings.logFilterTransfers = onlyTransfers },

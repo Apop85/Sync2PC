@@ -2,6 +2,11 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.6 (2026-11-02)
+
+### Geändert
+- **Verlauf:** Der Knopf **„Alle“** ist zurück, neben „Fehler“ und „Übertragungen“. „Alle“ ist aktiv, solange kein Filter eingeschaltet ist, und setzt beim Antippen beide Filter zurück.
+
 ## 0.3.5 (2026-11-02)
 
 ### Neu
