@@ -38,7 +38,8 @@ sealed class Screen {
     data object Settings : Screen()
     data class ProfileEdit(val id: Long) : Screen()
     data object Decisions : Screen()
-    data object Preview : Screen()
+    /** Simulation eines Profils; Zurück führt ins Profil */
+    data class Preview(val profileId: Long) : Screen()
     data object Log : Screen()
     data object Stats : Screen()
     data object Update : Screen()
@@ -164,9 +165,12 @@ private fun AppRoot(
     when (screen) {
         Screen.Home -> HomeScreen(navigate = navigate, onConfirmDeletes = confirmDeletes)
         Screen.Settings -> SettingsScreen(onBack = back, onOpenUpdate = { navigate(Screen.Update) })
-        is Screen.ProfileEdit -> ProfileScreen(profileId = screen.id, onBack = back)
+        is Screen.ProfileEdit -> ProfileScreen(
+            profileId = screen.id, onBack = back,
+            onSimulate = { id -> navigate(Screen.Preview(id)) },
+        )
         Screen.Decisions -> DecisionScreen(onBack = back)
-        Screen.Preview -> PreviewScreen(onBack = back)
+        is Screen.Preview -> PreviewScreen(profileId = screen.profileId, onBack = { navigate(Screen.ProfileEdit(screen.profileId)) })
         Screen.Log -> LogScreen(onBack = back)
         Screen.Stats -> StatsScreen(onBack = back)
         Screen.Update -> UpdateScreen(onBack = back)

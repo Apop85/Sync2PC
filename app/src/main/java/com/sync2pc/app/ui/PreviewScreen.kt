@@ -10,19 +10,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -32,40 +32,54 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.data.Profile
 import com.sync2pc.app.sync.PreviewEntry
 import com.sync2pc.app.sync.SyncEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Trockenlauf: zeigt, welche Datei in welchen Ordner käme – ohne etwas zu übertragen. */
+/**
+ * Simulation (Trockenlauf) für EIN Profil: zeigt, welche Datei in welchen Ordner käme bzw. was der
+ * Ordner-Sync tun würde – ohne etwas zu übertragen. Wahlweise nur die ersten X Dateien (schneller).
+ */
 @Composable
-fun PreviewScreen(onBack: () -> Unit) {
+fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
+    val settings = remember { GlobalSettings(ctx) }
     val scope = rememberCoroutineScope()
-    val profiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
-    var selected by remember { mutableStateOf<Long?>(null) }
+    var profile by remember { mutableStateOf<Profile?>(null) }
     var running by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<List<PreviewEntry>?>(null) }
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
+    // 0 = alle
+    var all by remember { mutableStateOf(settings.previewLimit == 0) }
+    var limitText by remember { mutableStateOf((settings.previewLimit.takeIf { it > 0 } ?: 100).toString()) }
+    val limit = limitText.toIntOrNull()?.takeIf { it in 1..100_000 }
 
-    LaunchedEffect(profiles) { if (selected == null) selected = profiles.firstOrNull()?.id }
+    LaunchedEffect(profileId) { profile = withContext(Dispatchers.IO) { dao.profile(profileId) } }
+    // Zurück-Geste führt ins Profil (nicht zur Startseite)
+    androidx.activity.compose.BackHandler { onBack() }
 
     fun start() {
-        val p = profiles.firstOrNull { it.id == selected } ?: return
-        running = true; result = null; status = "Starte…"
+        val p = profile ?: return
+        val max = if (all) Int.MAX_VALUE else (limit ?: return)
+        settings.previewLimit = if (all) 0 else max
+        running = true; result = null; status = "Starte…"; expanded.clear()
         scope.launch {
             val onProgress: (com.sync2pc.app.sync.SyncProgress) -> Unit = { pr ->
                 status = if (pr.totalFiles > 0) "${pr.phase} ${pr.doneFiles} / ${pr.totalFiles}" else pr.phase
             }
             val engine: com.sync2pc.app.sync.SyncRunner =
                 if (p.type() == com.sync2pc.app.data.ProfileType.MIRROR)
-                    com.sync2pc.app.mirror.MirrorEngine(ctx, p, "Vorschau", dryRun = true, onProgress = onProgress)
-                else SyncEngine(ctx, p, "Vorschau", dryRun = true, onProgress = onProgress)
+                    com.sync2pc.app.mirror.MirrorEngine(ctx, p, "Simulation", dryRun = true, onProgress = onProgress, previewLimit = max)
+                else SyncEngine(ctx, p, "Simulation", dryRun = true, onProgress = onProgress, previewLimit = max)
             val run = withContext(Dispatchers.IO) { engine.run() }
             result = engine.preview.toList()
             status = run.message
@@ -73,7 +87,7 @@ fun PreviewScreen(onBack: () -> Unit) {
         }
     }
 
-    ScreenScaffold(title = "Vorschau", onBack = onBack) { pad ->
+    ScreenScaffold(title = "Simulation" + (profile?.let { " – ${it.name}" } ?: ""), onBack = onBack) { pad ->
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
@@ -81,14 +95,27 @@ fun PreviewScreen(onBack: () -> Unit) {
         ) {
             item {
                 SectionCard {
-                    Hint("Zeigt, was beim nächsten Sync passieren würde (Bildordner: Zielordner; Ordner-Sync: Aktion je Datei). " +
+                    Hint("Zeigt, was beim Synchronisieren passieren würde (Bildordner: Zielordner; Ordner-Sync: Aktion je Datei). " +
                         "Es wird nichts kopiert, angelegt oder gelöscht.")
-                    if (profiles.size > 1) LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        items(profiles, key = { it.id }) { p ->
-                            FilterChip(selected = p.id == selected, onClick = { selected = p.id }, label = { Text(p.name) })
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { all = false }) {
+                        RadioButton(selected = !all, onClick = { all = false })
+                        Text("Nur die ersten")
+                        OutlinedTextField(
+                            limitText, { v -> limitText = v.filter { it.isDigit() }.take(6); all = false },
+                            singleLine = true, isError = !all && limit == null,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.padding(horizontal = 8.dp).width(96.dp),
+                        )
+                        Text("Dateien")
                     }
-                    Button(onClick = { start() }, enabled = !running && selected != null) { Text("Vorschau starten") }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { all = true }) {
+                        RadioButton(selected = all, onClick = { all = true })
+                        Text("Alle Dateien")
+                    }
+                    Hint("Bei vielen Fotos dauert „Alle“ länger, weil jedes Foto auf Datum und Ort ausgewertet wird.")
+                    Button(onClick = { start() }, enabled = !running && profile != null && (all || limit != null)) {
+                        Text("Simulation starten")
+                    }
                     if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
                     status?.let { Text(it) }
                 }

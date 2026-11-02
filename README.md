@@ -32,7 +32,7 @@ Es gibt zwei Profiltypen:
 - **Optional aufräumen.** Nach geprüftem Upload kann die App Dateien in den Papierkorb verschieben oder löschen. Standard ist behalten.
 - **Akkuschonend.** Es gibt keinen Dauerdienst. Die App nutzt System-Callbacks und WorkManager und hat eine Option „Nur beim Laden“.
 - **Fortschritt** erscheint in der Benachrichtigung und auf dem Sperrbildschirm.
-- **Profile** für mehrere Ziele, eine **Vorschau** (Trockenlauf) und einen **Verlauf** mit Log.
+- **Profile** für mehrere Ziele, eine **Simulation** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
 - **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo. Der Papierkorb leert sich nach einer pro Profil einstellbaren Frist (Standard 30 Tage, 0 = nie).
 - **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
@@ -58,7 +58,7 @@ Status: **Beta (0.1.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter 
    - **Standort „Immer zulassen“**: Android gibt den WLAN-Namen nur mit Standortberechtigung heraus. Die App nutzt den Standort **nicht**.
    - **Benachrichtigungen** und **Akku-Optimierung aus**
 3. Profil anlegen: Freigabe (`\\server\freigabe`), Benutzer und Passwort, WLAN und Quellordner. Die Quellordner wählst du über die Android-Dateiauswahl, z. B. `DCIM › Camera`.
-4. Mit **Verbindung testen** und **Vorschau** prüfen und dann **Jetzt synchronisieren**.
+4. Nach dem Speichern fragt die App, wie es weitergeht: **Simulieren** (zeigt ohne Übertragung, was passieren würde), **Synchronisieren** oder **Später**. Ein neues Profil startet erst automatisch, nachdem es einmal von Hand synchronisiert wurde. Die erste Synchronisierung am besten am Ladegerät ausführen.
 
 ## Bestehende Fotos vom PC einsortieren
 

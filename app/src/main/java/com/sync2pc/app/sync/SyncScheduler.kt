@@ -94,7 +94,7 @@ object SyncScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_AUTO, ExistingWorkPolicy.KEEP, b.build())
     }
 
-    /** Manueller Start ("Jetzt synchronisieren") – hebt eine Pause auf, wer von Hand startet, will synchronisieren */
+    /** Manueller Start ("Synchronisieren") – hebt eine Pause auf, wer von Hand startet, will synchronisieren */
     fun enqueueManual(context: Context) {
         clearPause(context)
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
@@ -230,7 +230,7 @@ object SyncScheduler {
 
     /**
      * "Für immer pausieren" (0.3.5): Hintergrund-Syncs ganz abschalten, nur noch manuell.
-     * Bleibt bestehen, bis der Benutzer fortsetzt ("Jetzt synchronisieren" hebt es nicht auf).
+     * Bleibt bestehen, bis der Benutzer fortsetzt ("Synchronisieren" hebt es nicht auf).
      */
     fun pauseForever(context: Context) {
         val s = GlobalSettings(context)

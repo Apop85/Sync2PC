@@ -32,6 +32,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -148,6 +150,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         if (userPausedUntil in 1 until Long.MAX_VALUE) { delay(userPausedUntil - System.currentTimeMillis() + 500); pauseVersion++ }
     }
     var showPauseDialog by remember { mutableStateOf(false) }
+    var showChargeWarning by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val awaitingStart = remember(tick, works) { GlobalSettings(ctx).awaitingFirstStart() }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
         val s = GlobalSettings(ctx)
@@ -194,10 +199,15 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
                     allUpToDate = lastRun?.status == "OK" && !queued && skipInfo == null &&
                         decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0,
-                    onSync = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+                    onSync = {
+                        // Erste Synchronisierung ohne Ladegerät -> vorher warnen
+                        scope.launch {
+                            if (FirstSync.warnNeeded(ctx, profiles)) showChargeWarning = true
+                            else { SyncScheduler.enqueueManual(ctx); pauseVersion++ }
+                        }
+                    },
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onResume = { SyncScheduler.resume(ctx); pauseVersion++ },
-                    onPreview = { navigate(Screen.Preview) },
                     hasProfiles = profiles.isNotEmpty(),
                 )
             }
@@ -250,7 +260,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     Button(onClick = { navigate(Screen.ProfileEdit(0)) }) { Text("Erstes Profil anlegen") }
                 }
             }
-            items(profiles, key = { it.id }) { p -> ProfileCard(p, ssid) { navigate(Screen.ProfileEdit(p.id)) } }
+            items(profiles, key = { it.id }) { p ->
+                ProfileCard(p, ssid, awaitingFirstStart = p.id in awaitingStart) { navigate(Screen.ProfileEdit(p.id)) }
+            }
             if (profiles.any { it.type() == ProfileType.PHOTOS }) item {
                 TextButton(onClick = { navigate(Screen.FreeSpace) }) { Text("Speicher freigeben…") }
             }
@@ -265,6 +277,11 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             }
         }
     }
+
+    if (showChargeWarning) ChargeWarningDialog(
+        onStart = { showChargeWarning = false; SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+        onDismiss = { showChargeWarning = false },
+    )
 
     if (showPauseDialog) PauseDialog(
         onDismiss = { showPauseDialog = false },
@@ -315,7 +332,7 @@ private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit, onForever
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedButton(onClick = onForever, modifier = Modifier.fillMaxWidth()) { Text("Für immer (nur manuell)") }
-                Hint("Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Jetzt synchronisieren“, bis du über ⏸ wieder einschaltest.")
+                Hint("Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Synchronisieren“, bis du über ⏸ wieder einschaltest.")
             }
         },
         confirmButton = { TextButton(enabled = hours != null, onClick = { hours?.let(onPause) }) { Text("Pausieren") } },
@@ -340,7 +357,6 @@ private fun StatusCard(
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onResume: () -> Unit,
-    onPreview: () -> Unit,
     hasProfiles: Boolean,
 ) {
     val userPaused = userPausedUntil > 0
@@ -372,12 +388,12 @@ private fun StatusCard(
             }
             userPaused && userPausedUntil == Long.MAX_VALUE -> {
                 Text("⏸ Automatik aus – nur manuelle Syncs", style = MaterialTheme.typography.titleSmall)
-                Hint("Es wird nur synchronisiert, wenn du „Jetzt synchronisieren“ tippst. ⏸ oben rechts schaltet die Automatik wieder ein.")
+                Hint("Es wird nur synchronisiert, wenn du „Synchronisieren“ tippst. ⏸ oben rechts schaltet die Automatik wieder ein.")
                 lastRun?.let { Hint("Letzter Sync: ${formatTime(it.finishedAt ?: it.startedAt)} (${it.profileName})") }
             }
             userPaused -> {
                 Text("⏸ Pausiert bis ${pauseEndText(userPausedUntil)}", style = MaterialTheme.typography.titleSmall)
-                Hint("Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Jetzt synchronisieren“ beendet die Pause sofort.")
+                Hint("Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Synchronisieren“ beendet die Pause sofort.")
             }
             paused -> {
                 Text("⏸ Pausiert – wartet auf das Heim-WLAN", style = MaterialTheme.typography.titleSmall)
@@ -385,7 +401,7 @@ private fun StatusCard(
             }
             shareWait != null -> {
                 Text(shareWait, color = MaterialTheme.colorScheme.error)
-                Hint("Ist der PC eingeschaltet und die Freigabe aktiv? „Jetzt synchronisieren“ prüft sofort.")
+                Hint("Ist der PC eingeschaltet und die Freigabe aktiv? „Synchronisieren“ prüft sofort.")
             }
             isQueued -> Text(waitText)
             lastRun != null -> {
@@ -402,13 +418,15 @@ private fun StatusCard(
             Text("⚠ Automatischer Start übersprungen – $skipInfo", color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Zwei gleich breite Knöpfe, Text einzeilig (kein Umbruch wie "Vorsc-hau")
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val w = Modifier.weight(1f)
             // "Pausieren" hält nur den laufenden Sync an; beim nächsten automatischen Start geht es weiter
-            if (isRunning) OutlinedButton(onClick = onCancel) { Text("Pausieren") }
+            if (isRunning) OutlinedButton(onClick = onCancel, modifier = w) { Text("Pausieren", maxLines = 1) }
             // Befristete Pause -> "Fortsetzen"; "für immer" -> weiterhin manuell synchronisieren können
-            else if (userPaused && userPausedUntil != Long.MAX_VALUE) Button(onClick = onResume) { Text("Fortsetzen") }
-            else Button(onClick = onSync, enabled = hasProfiles) { Text("Jetzt synchronisieren") }
-            OutlinedButton(onClick = onPreview, enabled = hasProfiles) { Text("Vorschau") }
+            else if (userPaused && userPausedUntil != Long.MAX_VALUE) Button(onClick = onResume, modifier = w) { Text("Fortsetzen", maxLines = 1) }
+            else Button(onClick = onSync, enabled = hasProfiles, modifier = w) { Text("Synchronisieren", maxLines = 1) }
+            // "Simulieren" ist seit 0.3.6 pro Profil im Profil-Bildschirm
         }
     }
 }
@@ -428,7 +446,7 @@ private fun ActionCard(title: String, text: String, button: String, onClick: () 
 }
 
 @Composable
-private fun ProfileCard(p: Profile, ssid: String?, onClick: () -> Unit) {
+private fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -448,6 +466,10 @@ private fun ProfileCard(p: Profile, ssid: String?, onClick: () -> Unit) {
                 Hint("Quellen: " + (p.folders().joinToString(", ").ifBlank { "keine" }))
             }
             Hint("WLAN: " + (p.ssids().joinToString(", ").ifBlank { "keines – nur manueller Sync" }))
+            if (awaitingFirstStart && p.enabled) Text(
+                "Wartet auf den ersten Start – zuerst im Profil simulieren oder „Synchronisieren“ tippen",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,
+            )
         }
     }
 }

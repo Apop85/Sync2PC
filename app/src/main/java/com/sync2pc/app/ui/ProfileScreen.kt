@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
+fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Unit = {}) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val scope = rememberCoroutineScope()
@@ -114,6 +114,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
     var baseline by remember { mutableStateOf<Profile?>(null) }
     var basePassword by remember { mutableStateOf("") }
     var askLeave by remember { mutableStateOf(false) }
+    /** Gerade neu angelegtes Profil -> Dialog "Wie weiter?" */
+    var createdId by remember { mutableStateOf<Long?>(null) }
+    var chargeWarnFor by remember { mutableStateOf<Long?>(null) }
     val currentSsid = remember { WifiHelper.currentSsid(ctx) }
     // Andere Profile mit Zugangsdaten -> zum Übernehmen anbieten
     val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
@@ -146,13 +149,22 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 overlap = hit
                 return@launch
             }
-            withContext(Dispatchers.IO) {
-                if (toSave.id == 0L) dao.insertProfile(toSave) else dao.updateProfile(toSave)
+            val isNew = toSave.id == 0L
+            val savedId = withContext(Dispatchers.IO) {
+                val id = if (isNew) dao.insertProfile(toSave) else { dao.updateProfile(toSave); toSave.id }
+                // Neues Profil: erst nach dem ersten manuellen Start automatisch (VOR setupAll, sonst startet
+                // der WLAN-Auslöser sofort einen Sync)
+                if (isNew) com.sync2pc.app.data.GlobalSettings(ctx).setAwaitingFirstStart(id, true)
                 SyncScheduler.updateRemotePoll(ctx, dao.profiles())
+                id
             }
             SyncScheduler.setupAll(ctx)
             Toast.makeText(ctx, "Gespeichert", Toast.LENGTH_SHORT).show()
-            onBack()
+            if (isNew) {
+                // Stand gilt jetzt als gespeichert (keine Nachfrage beim Verlassen)
+                p = toSave.copy(id = savedId); baseline = p; basePassword = password
+                createdId = savedId
+            } else onBack()
         }
     }
 
@@ -438,6 +450,15 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                 }
             }
 
+            // Simulation dieses Profils (nur gespeicherte Profile; simuliert wird der gespeicherte Stand)
+            if (profileId != 0L) item {
+                SectionCard("Simulation") {
+                    Hint("Zeigt, was beim Synchronisieren mit diesem Profil passieren würde – ohne etwas zu übertragen.")
+                    OutlinedButton(onClick = { onSimulate(profileId) }, enabled = !dirty) { Text("Simulieren") }
+                    if (dirty) Hint("Zuerst speichern – simuliert wird der gespeicherte Stand.")
+                }
+            }
+
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { save() }, enabled = p.name.isNotBlank()) { Text("Speichern") }
@@ -473,6 +494,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
                         dao.clearSynced(profileId); dao.clearMappings(profileId)
                         dao.clearDecisions(profileId); dao.clearMirrorState(profileId)
                         dao.clearConflicts(profileId); dao.deleteProfileRow(profileId)
+                        com.sync2pc.app.data.GlobalSettings(ctx).setAwaitingFirstStart(profileId, false)
                         SyncScheduler.updateRemotePoll(ctx, dao.profiles())
                     }
                     confirmDelete = false; onBack()
@@ -481,6 +503,40 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit) {
         },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") } },
     )
+
+    // Nach dem Anlegen: zuerst simulieren, gleich synchronisieren oder später (bis dahin keine Automatik)
+    createdId?.let { id ->
+        AlertDialog(
+            onDismissRequest = { createdId = null; onBack() },
+            title = { Text("Profil gespeichert") },
+            text = {
+                Text("Wie weiter? Bis du dieses Profil einmal synchronisierst, startet es nicht automatisch. " +
+                    "So kannst du zuerst in Ruhe simulieren.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    createdId = null
+                    scope.launch {
+                        // Neues Profil = erste Synchronisierung -> ohne Ladegerät vorher warnen
+                        if (!FirstSync.isCharging(ctx)) chargeWarnFor = id
+                        else { SyncScheduler.enqueueManual(ctx); onBack() }
+                    }
+                }) { Text("Synchronisieren") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { createdId = null; onBack() }) { Text("Später") }
+                    TextButton(onClick = { createdId = null; onSimulate(id) }) { Text("Simulieren") }
+                }
+            },
+        )
+    }
+    chargeWarnFor?.let {
+        ChargeWarningDialog(
+            onStart = { chargeWarnFor = null; SyncScheduler.enqueueManual(ctx); onBack() },
+            onDismiss = { chargeWarnFor = null; onBack() },
+        )
+    }
 
     if (askLeave) AlertDialog(
         onDismissRequest = { askLeave = false },

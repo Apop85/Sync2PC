@@ -75,6 +75,8 @@ class SyncEngine(
     private val onProgress: (SyncProgress) -> Unit = {},
     /** Bei einem Stopp: Grund, wenn Android unterbrochen hat (z. B. "WLAN getrennt"); null = vom Benutzer abgebrochen */
     private val interruptReason: () -> String? = { null },
+    /** Simulation (dryRun): nur die ersten so vielen neuen Dateien analysieren (EXIF/GPS lesen kostet Zeit) */
+    private val previewLimit: Int = Int.MAX_VALUE,
 ) : SyncRunner {
     private val db = AppDatabase.get(context)
     private val dao = db.dao()
@@ -277,11 +279,14 @@ class SyncEngine(
 
             // --- 3. Dateien verarbeiten ---------------------------------------------
             if (dryRun || offline) {
-                for ((index, item) in todo.withIndex()) {
+                val simulated = todo.take(previewLimit)
+                for ((index, item) in simulated.withIndex()) {
                     currentCoroutineContext().ensureActive()
                     try { plan(item) } catch (e: CancellationException) { throw e } catch (ignored: Exception) {}
-                    if (index % 25 == 0) emit("Analysiere…", index, todo.size, 0, totalBytes, null)
+                    if (index % 25 == 0) emit("Analysiere…", index, simulated.size, 0, totalBytes, null)
                 }
+                if (message.isEmpty()) message = "${todo.size} neue Dateien" +
+                    (if (simulated.size < todo.size) " – die ersten ${simulated.size} simuliert" else " simuliert")
             } else {
                 val sh = Shared(todo.size, totalBytes).also { shared = it }
                 val parallel = settings.parallelUploads

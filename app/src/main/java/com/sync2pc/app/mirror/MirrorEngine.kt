@@ -58,6 +58,8 @@ class MirrorEngine(
     private val onProgress: (SyncProgress) -> Unit = {},
     /** Bei einem Stopp: Grund, wenn Android unterbrochen hat (z. B. "WLAN getrennt"); null = vom Benutzer abgebrochen */
     private val interruptReason: () -> String? = { null },
+    /** Simulation (dryRun): höchstens so viele Einträge anzeigen */
+    private val previewLimit: Int = Int.MAX_VALUE,
 ) : SyncRunner {
 
     companion object {
@@ -191,7 +193,10 @@ class MirrorEngine(
             // Phase B (parallel):     Übertragungen, kleine Dateien zuerst
             val transfers = actions.filter { it.kind == Kind.UPLOAD || it.kind == Kind.DOWNLOAD || it.kind == Kind.KEEP_BOTH }
             if (dryRun) {
-                actions.forEach { previewOf(it) }
+                for (a in actions) { if (preview.size >= previewLimit) break; previewOf(a) }
+                val visible = actions.count { it.kind != Kind.RECORD && it.kind != Kind.DROP }
+                if (message.isEmpty()) message = "$visible Aktionen" +
+                    (if (preview.size < visible) " – die ersten ${preview.size} simuliert" else " simuliert")
             } else {
                 val admin = actions.filter { it !in transfers }
                 for ((index, a) in admin.withIndex()) {

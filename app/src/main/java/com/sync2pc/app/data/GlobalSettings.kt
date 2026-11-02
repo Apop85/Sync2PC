@@ -107,6 +107,22 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
+    // ---- Neue Profile warten auf den ersten manuellen Start (0.3.6) ------------------
+    /** IDs neu angelegter Profile, für die noch kein manueller Sync lief -> keine automatischen Syncs */
+    fun awaitingFirstStart(): Set<Long> =
+        (prefs.getStringSet("awaitingFirstStart", emptySet()) ?: emptySet()).mapNotNull { it.toLongOrNull() }.toSet()
+
+    fun setAwaitingFirstStart(profileId: Long, waiting: Boolean) {
+        val cur = awaitingFirstStart().toMutableSet()
+        if (waiting) cur += profileId else cur -= profileId
+        prefs.edit().putStringSet("awaitingFirstStart", cur.map { it.toString() }.toSet()).apply()
+    }
+
+    /** Simulation: Standard-Anzahl Dateien (0 = alle) */
+    var previewLimit: Int
+        get() = prefs.getInt("previewLimit", 100).coerceIn(0, 100_000)
+        set(v) = prefs.edit().putInt("previewLimit", v.coerceIn(0, 100_000)).apply()
+
     /** Verlauf-Filter (0.3.5): nur Läufe mit Fehler / nur Läufe mit Übertragungen; beide aus = alles */
     var logFilterErrors: Boolean
         get() = prefs.getBoolean("logFilterErrors", false)
@@ -125,7 +141,7 @@ class GlobalSettings(context: Context) {
 
     /**
      * "Für immer pausiert" (0.3.5): keine Hintergrund-Syncs mehr (WLAN, neue Fotos, Sicherheitsnetz,
-     * Ordner-Prüfung, Erinnerung). Nur noch "Jetzt synchronisieren" – das hebt diesen Modus NICHT auf.
+     * Ordner-Prüfung, Erinnerung). Nur noch "Synchronisieren" – das hebt diesen Modus NICHT auf.
      */
     var manualOnly: Boolean
         get() = prefs.getBoolean("manualOnly", false)

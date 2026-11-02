@@ -2,10 +2,20 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.3.7 (2026-11-02)
+
+- Automatischer Build: Quellcode geaendert, Patchnotes bitte ergaenzen.
+
 ## 0.3.6 (2026-11-02)
+
+### Neu
+- **Neue Profile starten erst nach deiner Freigabe:** Nach dem Anlegen fragt die App „Wie weiter?“ mit **Simulieren**, **Synchronisieren** oder **Später**. Bis du das Profil einmal von Hand synchronisierst, startet es nicht automatisch; die Profilkarte zeigt „Wartet auf den ersten Start“. Importierte Profile laufen wie bisher sofort.
+- **Simulation pro Profil:** Der Knopf „Simulieren“ ist jetzt im Profil (Abschnitt „Simulation“) statt auf der Startseite. Du wählst „Nur die ersten [Anzahl] Dateien“ (Anzahl frei wählbar, wird gemerkt) oder „Alle Dateien“.
+- **Warnung vor der ersten Synchronisierung:** Ist das Telefon nicht am Ladegerät und synchronisiert ein Profil zum ersten Mal, weist die App darauf hin, dass das lange dauern und viel Akku brauchen kann („Trotzdem starten“ / „Abbrechen“).
 
 ### Geändert
 - **Verlauf:** Der Knopf **„Alle“** ist zurück, neben „Fehler“ und „Übertragungen“. „Alle“ ist aktiv, solange kein Filter eingeschaltet ist, und setzt beim Antippen beide Filter zurück.
+- **Startseite:** „Jetzt synchronisieren“ heisst jetzt **„Synchronisieren“** und bricht nicht mehr um. „Vorschau“ heisst neu „Simulieren“ und ist ins Profil umgezogen.
 
 ## 0.3.5 (2026-11-02)
 

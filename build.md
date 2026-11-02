@@ -74,7 +74,7 @@ Vor jedem GitHub-Release:
 1. `build.bat` läuft ohne Fehler durch (Unit-Tests und R8 inklusive).
 2. Falls sich die Datenbank geändert hat: Es gibt eine neue Datei `app\schemas\…\<Version>.json` und eine passende Migration in `AppDatabase`. Die Schema-Datei wird committet.
 3. Update über die bestehende Version installieren, **nicht** neu installieren. Die App startet, Profile und Verlauf sind noch da (prüft die Migration).
-4. Bildordner-Profil: *Vorschau* und *Jetzt synchronisieren* klappen, neue Fotos landen im richtigen Monats- bzw. Länderordner, und es entstehen keine Duplikate.
+4. Bildordner-Profil: *Simulieren* und *Synchronisieren* klappen, neue Fotos landen im richtigen Monats- bzw. Länderordner, und es entstehen keine Duplikate.
 5. Ordner-Profil: Je eine Datei auf dem Handy und auf dem PC ändern → beide werden abgeglichen.
 6. WLAN während eines Syncs trennen → „Pausiert“ erscheint. WLAN wieder verbinden → der Sync setzt fort.
 7. *Einstellungen → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
@@ -93,8 +93,8 @@ Vorbereitung auf dem PC: In der Freigabe einen Testordner anlegen, z. B. `\\192.
 Auf dem Handy:
 1. Neues Profil → **Ordner synchronisieren**. Gleiche Freigabe und Zugangsdaten wie beim Fotos-Profil (über die Chips übernehmen), als Unterordner `_Test-Ordnersync` wählen.
 2. Handy-Ordner: einen **neuen, leeren** Ordner wählen (z. B. `Documents/LeoSync-Test`), Richtung **Beidseitig**.
-3. *Vorschau* → alle Dateien erscheinen als „↓ PC → Handy“.
-4. *Jetzt synchronisieren*: Im Verlauf steht „Übertrage … mit 3 parallelen Verbindungen“. Die kleinen Dateien kommen zuerst, die grossen am Schluss.
+3. Nach dem Speichern im Dialog *Simulieren* wählen (oder später im Profil, Abschnitt „Simulation“) → alle Dateien erscheinen als „↓ PC → Handy“. Bis zum ersten manuellen Sync startet das Profil nicht automatisch.
+4. *Synchronisieren*: Im Verlauf steht „Übertrage … mit 3 parallelen Verbindungen“. Die kleinen Dateien kommen zuerst, die grossen am Schluss.
 5. **Fortsetzen testen:** Während eine grosse Datei lädt, das WLAN kurz trennen und wieder verbinden. Im Verlauf erscheint danach „↓ … (fortgesetzt ab … MB)“.
 6. **Rückweg:** Auf dem Handy eine Datei ändern oder neu anlegen → nächster Sync lädt sie hoch („↑ …“).
 7. Es gibt auf dem Handy keine doppelten Ordner wie „Ordner (1)“.
