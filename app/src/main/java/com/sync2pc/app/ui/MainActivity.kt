@@ -35,7 +35,8 @@ import kotlinx.coroutines.withContext
 
 sealed class Screen {
     data object Home : Screen()
-    data object Settings : Screen()
+    /** Eine Rubrik der Einstellungen (0.4.0) */
+    data class Settings(val section: SettingsSection) : Screen()
     data class ProfileEdit(val id: Long) : Screen()
     data object Decisions : Screen()
     /** Simulation eines Profils; Zurück führt ins Profil */
@@ -164,7 +165,7 @@ private fun AppRoot(
     val back = { navigate(Screen.Home) }
     when (screen) {
         Screen.Home -> HomeScreen(navigate = navigate, onConfirmDeletes = confirmDeletes)
-        Screen.Settings -> SettingsScreen(onBack = back, onOpenUpdate = { navigate(Screen.Update) })
+        is Screen.Settings -> SettingsScreen(section = screen.section, onBack = back)
         is Screen.ProfileEdit -> ProfileScreen(
             profileId = screen.id, onBack = back,
             onSimulate = { id -> navigate(Screen.Preview(id)) },

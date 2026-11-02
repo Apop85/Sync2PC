@@ -26,6 +26,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -151,6 +154,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     }
     var showPauseDialog by remember { mutableStateOf(false) }
     var showChargeWarning by remember { mutableStateOf(false) }
+    var settingsMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val awaitingStart = remember(tick, works) { GlobalSettings(ctx).awaitingFirstStart() }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
@@ -173,7 +177,19 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             }
             IconButton(onClick = { navigate(Screen.Stats) }) { Icon(Icons.Filled.DateRange, "Statistik") }
             IconButton(onClick = { navigate(Screen.Log) }) { Icon(Icons.AutoMirrored.Filled.List, "Verlauf") }
-            IconButton(onClick = { navigate(Screen.Settings) }) { Icon(Icons.Filled.Settings, "Einstellungen") }
+            // Zahnrad -> Menü mit den Rubriken der Einstellungen (je eine eigene Seite)
+            Box {
+                IconButton(onClick = { settingsMenu = true }) { Icon(Icons.Filled.Settings, "Einstellungen") }
+                DropdownMenu(expanded = settingsMenu, onDismissRequest = { settingsMenu = false }) {
+                    SettingsSection.entries.forEach { sec ->
+                        DropdownMenuItem(text = { Text(sec.title) }, onClick = {
+                            settingsMenu = false
+                            // "Updates" öffnet direkt die Update-Seite (prüft sofort)
+                            navigate(if (sec == SettingsSection.UPDATES) Screen.Update else Screen.Settings(sec))
+                        })
+                    }
+                }
+            }
         },
     ) { pad ->
         LazyColumn(

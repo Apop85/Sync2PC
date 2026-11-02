@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.ui.Hint
 import com.sync2pc.app.ui.ScreenScaffold
 import com.sync2pc.app.ui.SectionCard
+import com.sync2pc.app.ui.SwitchRow
 import com.sync2pc.app.ui.formatTime
 import com.sync2pc.app.ui.rememberResumeTick
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +48,7 @@ fun UpdateScreen(onBack: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf<Float?>(null) }
     val canInstall = remember(tick) { UpdateInstaller.canInstall(ctx) }
+    var autoUpdate by remember { mutableStateOf(s.autoUpdateCheck) }
 
     fun check() {
         busy = true; status = "Suche nach Updates…"
@@ -80,7 +83,10 @@ fun UpdateScreen(onBack: () -> Unit) {
         }
     }
 
-    ScreenScaffold(title = "App-Update", onBack = onBack) { pad ->
+    // Beim Öffnen sofort prüfen (kein zusätzlicher Knopf nötig)
+    LaunchedEffect(Unit) { check() }
+
+    ScreenScaffold(title = "Updates", onBack = onBack) { pad ->
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
@@ -89,10 +95,13 @@ fun UpdateScreen(onBack: () -> Unit) {
             item {
                 SectionCard("Installiert") {
                     Text("Version ${UpdateChecker.currentVersion()}")
-                    val repo = UpdateChecker.normalizeRepo(s.updateRepo)
-                    Hint(if (repo != null) "Quelle: github.com/$repo (Releases)" else "Kein GitHub-Repository eingestellt (Einstellungen → Updates)")
+                    // Quelle ist seit 0.4.0 fest eingebaut (nicht mehr änderbar)
+                    Hint("Quelle: github.com/${s.updateRepo} (Releases)")
                     if (s.lastUpdateCheck > 0) Hint("Zuletzt geprüft: ${formatTime(s.lastUpdateCheck)}")
-                    OutlinedButton(onClick = { check() }, enabled = !busy && repo != null) { Text("Nach Updates suchen") }
+                    if (busy && progress == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    SwitchRow("Täglich nach Updates suchen", autoUpdate, subtitle = "Nur im WLAN, Meldung per Benachrichtigung") {
+                        autoUpdate = it; s.autoUpdateCheck = it; com.sync2pc.app.sync.SyncScheduler.setupAll(ctx)
+                    }
                 }
             }
             val u = info

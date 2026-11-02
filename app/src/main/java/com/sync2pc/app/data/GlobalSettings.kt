@@ -38,11 +38,29 @@ class GlobalSettings(context: Context) {
         get() = prefs.getInt("parallelUploads", 3).coerceIn(1, 4)
         set(v) = prefs.edit().putInt("parallelUploads", v.coerceIn(1, 4)).apply()
 
+    // ---- Benachrichtigungen (0.4.0) ---------------------------------------------
+    /** Meldung nach jedem erfolgreichen Sync ("3 Dateien übertragen") */
+    var notifySummary: Boolean
+        get() = prefs.getBoolean("notifySummary", true)
+        set(v) = prefs.edit().putBoolean("notifySummary", v).apply()
+
+    /** "Update verfügbar" / "Update installiert" */
+    var notifyUpdate: Boolean
+        get() = prefs.getBoolean("notifyUpdate", true)
+        set(v) = prefs.edit().putBoolean("notifyUpdate", v).apply()
+
+    /** Hinweise: Ordnerauswahl, Konflikte, Dateien entfernen, Fehler (alles auch auf der Startseite sichtbar) */
+    var notifyHints: Boolean
+        get() = prefs.getBoolean("notifyHints", true)
+        set(v) = prefs.edit().putBoolean("notifyHints", v).apply()
+
     // ---- Selbst-Update (GitHub Releases) -------------------------------------
-    /** "besitzer/repo" auf GitHub; Vorgabe aus version.properties (UPDATE_REPO) */
-    var updateRepo: String
-        get() = prefs.getString("updateRepo", null) ?: com.sync2pc.app.BuildConfig.UPDATE_REPO
-        set(v) = prefs.edit().putString("updateRepo", v.trim()).apply()
+    /**
+     * "besitzer/repo" auf GitHub – seit 0.4.0 fest aus version.properties (UPDATE_REPO), nicht mehr änderbar.
+     * Ein früher in den Einstellungen gespeicherter Wert wird ignoriert.
+     */
+    val updateRepo: String
+        get() = com.sync2pc.app.BuildConfig.UPDATE_REPO
 
     var autoUpdateCheck: Boolean
         get() = prefs.getBoolean("autoUpdateCheck", true)
@@ -186,7 +204,8 @@ class GlobalSettings(context: Context) {
         "autoSyncOnWifi" to autoSyncOnWifi, "syncOnNewMedia" to syncOnNewMedia,
         "onlyWhileCharging" to onlyWhileCharging, "minFileAgeMinutes" to minFileAgeMinutes,
         "homeCountryIso" to homeCountryIso, "parallelUploads" to parallelUploads,
-        "updateRepo" to updateRepo, "autoUpdateCheck" to autoUpdateCheck,
+        "autoUpdateCheck" to autoUpdateCheck,
+        "notifySummary" to notifySummary, "notifyUpdate" to notifyUpdate, "notifyHints" to notifyHints,
         "staleWarnEnabled" to staleWarnEnabled, "staleWarnDays" to staleWarnDays,
         "freeSpaceMonths" to freeSpaceMonths, "freeSpaceKeepFavorites" to freeSpaceKeepFavorites,
     )
@@ -199,7 +218,9 @@ class GlobalSettings(context: Context) {
         b("autoSyncOnWifi") { autoSyncOnWifi = it }; b("syncOnNewMedia") { syncOnNewMedia = it }
         b("onlyWhileCharging") { onlyWhileCharging = it }; i("minFileAgeMinutes") { minFileAgeMinutes = it }
         s("homeCountryIso") { homeCountryIso = it }; i("parallelUploads") { parallelUploads = it }
-        s("updateRepo") { updateRepo = it }; b("autoUpdateCheck") { autoUpdateCheck = it }
+        // "updateRepo" wird seit 0.4.0 nicht mehr übernommen (fest eingebaut)
+        b("autoUpdateCheck") { autoUpdateCheck = it }
+        b("notifySummary") { notifySummary = it }; b("notifyUpdate") { notifyUpdate = it }; b("notifyHints") { notifyHints = it }
         b("staleWarnEnabled") { staleWarnEnabled = it }; i("staleWarnDays") { staleWarnDays = it }
         i("freeSpaceMonths") { freeSpaceMonths = it }; b("freeSpaceKeepFavorites") { freeSpaceKeepFavorites = it }
     }

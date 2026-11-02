@@ -38,7 +38,7 @@ Es gibt zwei Profiltypen:
 - **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
 - **Erinnerung**, wenn seit 7 Tagen (einstellbar) nichts gesichert wurde, obwohl neue Fotos warten.
 - **Speicher freigeben:** Alte Fotos und Videos, die nachweislich auf dem PC liegen, kommen in den Android-Papierkorb. Vorher wird jede Datei auf dem PC geprüft.
-- **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Beta / Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
+- **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
 - **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
 
 ## Download

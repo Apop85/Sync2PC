@@ -77,8 +77,8 @@ Vor jedem GitHub-Release:
 4. Bildordner-Profil: *Simulieren* und *Synchronisieren* klappen, neue Fotos landen im richtigen Monats- bzw. Länderordner, und es entstehen keine Duplikate.
 5. Ordner-Profil: Je eine Datei auf dem Handy und auf dem PC ändern → beide werden abgeglichen.
 6. WLAN während eines Syncs trennen → „Pausiert“ erscheint. WLAN wieder verbinden → der Sync setzt fort.
-7. *Einstellungen → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
-8. *Einstellungen → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
+7. *Einstellungen → Diagnose → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
+8. *Einstellungen → Diagnose → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
 9. *Speicher freigeben* mit grosser Monatszahl (z. B. 120) und kleiner Auswahl: Die Prüfung auf dem PC läuft, der Android-Dialog erscheint, und im Papierkorb der Galerie sind die Dateien wiederherstellbar.
 10. Ordner-Sync (siehe „Test Ordner-Sync“ unten), wenn sich daran etwas geändert hat.
 11. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
@@ -112,7 +112,7 @@ Alternativ das Projekt in Android Studio öffnen: *File → Open → Projektordn
 
 Die App holt Updates aus dem **neuesten Release** des eingestellten GitHub-Repositorys.
 
-1. Das Repository ist als Vorgabe in `version.properties` eingetragen (`UPDATE_REPO=Apop85/Sync2PC`) und in der App unter *Einstellungen → Updates* änderbar. Nach einer Änderung in `version.properties` mit `build.bat -Force` bauen, weil die Datei nicht zum Änderungs-Hash zählt.
+1. Das Repository ist in `version.properties` eingetragen (`UPDATE_REPO=Apop85/Sync2PC`). Seit 0.4.0 ist es fest in die App eingebaut und dort nicht mehr änderbar. Nach einer Änderung in `version.properties` mit `build.bat -Force` bauen, weil die Datei nicht zum Änderungs-Hash zählt.
 2. Version bauen (`build.bat`).
 3. Auf GitHub ein Release mit dem Tag `v<version>` anlegen (z. B. `v0.0.3`) und die Datei `releases\LeoSync-<version>.apk` anhängen. Der Dateiname muss auf `.apk` enden und darf nicht „debug“ enthalten. Markiere es nicht als „Pre-release“, auch nicht in der Beta: Die App fragt nur `releases/latest` ab, und dort erscheinen Pre-releases nicht.
 4. Der Release-Text erscheint in der App als Änderungsbeschreibung. Am einfachsten kopierst du den Abschnitt aus `PATCHNOTES.md`.

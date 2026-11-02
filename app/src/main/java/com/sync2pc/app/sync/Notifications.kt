@@ -143,21 +143,31 @@ object Notifications {
         try { NotificationManagerCompat.from(context).notify(id, b.build()) } catch (ignored: SecurityException) {}
     }
 
-    /** Abschlussmeldung; bei Erfolg mit dem schlafenden Hund ("alles aktuell") */
-    fun summary(context: Context, text: String, error: Boolean) =
+    // Schalter in Einstellungen → Benachrichtigungen (0.4.0). Fortschritt und "Pausiert" sind nicht abschaltbar
+    // (Android verlangt die Fortschrittsanzeige; "Pausiert" sichert das Fortsetzen ab).
+    private fun s(context: Context) = com.sync2pc.app.data.GlobalSettings(context)
+
+    /** Abschlussmeldung; bei Erfolg mit dem schlafenden Hund ("alles aktuell"). Erfolg: Schalter "Meldung nach jedem Sync", Fehler: "Hinweise" */
+    fun summary(context: Context, text: String, error: Boolean) {
+        if (if (error) !s(context).notifyHints else !s(context).notifySummary) return
         post(context, ID_SUMMARY, if (error) CH_ALERTS else CH_PROGRESS,
             if (error) "LeoSync – Problem" else "LeoSync – fertig", text, OPEN_LOG,
             largeImage = if (error) null else R.drawable.dog_idle)
+    }
 
-    fun decisionNeeded(context: Context, groups: Int, files: Int) =
+    fun decisionNeeded(context: Context, groups: Int, files: Int) {
+        if (!s(context).notifyHints) return // steht auch auf der Startseite ("Ordnerauswahl nötig")
         post(context, ID_DECISION, CH_ALERTS, "Ordnerauswahl nötig",
             "$files Dateien in $groups Gruppe(n) warten: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen.",
             OPEN_DECISIONS)
+    }
 
-    fun deleteReady(context: Context, files: Int) =
+    fun deleteReady(context: Context, files: Int) {
+        if (!s(context).notifyHints) return // steht auch auf der Startseite ("Gesicherte Dateien entfernen")
         post(context, ID_DELETE, CH_ALERTS, "Gesicherte Dateien entfernen",
             "$files Dateien sind verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.",
             OPEN_DELETE)
+    }
 
     /**
      * Fortschrittsanzeige im Zustand "Pausiert" (WLAN weg). Bleibt stehen, bis der Sync weiterläuft.
@@ -201,10 +211,12 @@ object Notifications {
     /** Alte Hinweis-Benachrichtigung aus 0.0.9 entfernen */
     fun cancelInterrupted(context: Context) = NotificationManagerCompat.from(context).cancel(ID_INTERRUPTED)
 
-    fun conflictsNeeded(context: Context, count: Int) =
+    fun conflictsNeeded(context: Context, count: Int) {
+        if (!s(context).notifyHints) return // steht auch auf der Startseite ("Konflikte beim Ordner-Sync")
         post(context, ID_CONFLICT, CH_ALERTS, "Konflikt beim Ordner-Sync",
             "$count Datei(en) wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.",
             OPEN_CONFLICTS)
+    }
 
     /** Erinnerung: seit [days] Tagen keine erfolgreiche Sicherung (0.2.0) */
     fun staleWarning(context: Context, days: Int, lines: List<String>) =
@@ -214,12 +226,16 @@ object Notifications {
 
     fun cancelStale(context: Context) = NotificationManagerCompat.from(context).cancel(ID_STALE)
 
-    fun updateAvailable(context: Context, version: String) =
+    fun updateAvailable(context: Context, version: String) {
+        if (!s(context).notifyUpdate) return // steht auch auf der Startseite ("Update verfügbar")
         post(context, ID_UPDATE, CH_ALERTS, "Update verfügbar",
             "LeoSync $version ist verfügbar. Tippen zum Installieren.", OPEN_UPDATE)
+    }
 
     /** Nach einem Selbst-Update, falls Android den automatischen Neustart der App nicht erlaubt */
-    fun updateInstalled(context: Context, version: String) =
+    fun updateInstalled(context: Context, version: String) {
+        if (!s(context).notifyUpdate) return
         post(context, ID_UPDATE, CH_ALERTS, "Update installiert",
             "LeoSync wurde auf Version $version aktualisiert. Tippen zum Öffnen.", null)
+    }
 }

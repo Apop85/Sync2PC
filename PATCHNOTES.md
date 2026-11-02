@@ -2,11 +2,23 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.4.0 (2026-11-02)
+
+### Neu
+- **Einstellungen neu gegliedert:** Das Zahnrad öffnet ein Menü mit sechs Rubriken. Jede ist eine eigene Seite:
+  1. **Benachrichtigungen:** Schalter, Erinnerung „lange nicht gesichert“
+  2. **Übertragung:** Automatik, parallele Übertragungen
+  3. **App-Berechtigungen:** Hintergrund, Akku-Optimierung, Hersteller-Hinweise, „Anleitung im Browser“
+  4. **App-Einstellungen:** Länderordner
+  5. **Updates:** prüft beim Öffnen sofort, ohne zusätzlichen Knopf, mit der täglichen Prüfung
+  6. **Diagnose:** Sicherung, Diagnosedaten
+- **Benachrichtigungen einzeln abschaltbar:** „Meldung nach jedem Sync“, „Update verfügbar“ und „Hinweise“ (Ordnerauswahl, Konflikte, Dateien entfernen, Fehler – stehen auch ohne Benachrichtigung auf der Startseite). Dazu ein Knopf zu den Android-Einstellungen für Benachrichtigungen. Die Fortschrittsanzeige und „Pausiert – wartet auf WLAN“ bleiben bewusst immer an.
+
+### Geändert
+- **Update-Quelle fest:** Das GitHub-Repository lässt sich nicht mehr ändern. Die App lädt Updates immer aus dem eingebauten Repository; ein früher geänderter Wert wird ignoriert, und eine importierte Sicherung setzt es nicht mehr.
+- **Play Store:** Die Vorbereitung für den Play Store ist **nicht** Teil von 0.4.0, sondern folgt in einer späteren Version.
+
 ## 0.3.7 (2026-11-02)
-
-- Automatischer Build: Quellcode geaendert, Patchnotes bitte ergaenzen.
-
-## 0.3.6 (2026-11-02)
 
 ### Neu
 - **Neue Profile starten erst nach deiner Freigabe:** Nach dem Anlegen fragt die App „Wie weiter?“ mit **Simulieren**, **Synchronisieren** oder **Später**. Bis du das Profil einmal von Hand synchronisierst, startet es nicht automatisch; die Profilkarte zeigt „Wartet auf den ersten Start“. Importierte Profile laufen wie bisher sofort.
@@ -14,8 +26,12 @@ Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0
 - **Warnung vor der ersten Synchronisierung:** Ist das Telefon nicht am Ladegerät und synchronisiert ein Profil zum ersten Mal, weist die App darauf hin, dass das lange dauern und viel Akku brauchen kann („Trotzdem starten“ / „Abbrechen“).
 
 ### Geändert
-- **Verlauf:** Der Knopf **„Alle“** ist zurück, neben „Fehler“ und „Übertragungen“. „Alle“ ist aktiv, solange kein Filter eingeschaltet ist, und setzt beim Antippen beide Filter zurück.
 - **Startseite:** „Jetzt synchronisieren“ heisst jetzt **„Synchronisieren“** und bricht nicht mehr um. „Vorschau“ heisst neu „Simulieren“ und ist ins Profil umgezogen.
+
+## 0.3.6 (2026-11-02)
+
+### Geändert
+- **Verlauf:** Der Knopf **„Alle“** ist zurück, neben „Fehler“ und „Übertragungen“. „Alle“ ist aktiv, solange kein Filter eingeschaltet ist, und setzt beim Antippen beide Filter zurück.
 
 ## 0.3.5 (2026-11-02)
 
