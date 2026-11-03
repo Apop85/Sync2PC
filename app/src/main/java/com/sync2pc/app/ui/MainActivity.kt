@@ -48,6 +48,8 @@ sealed class Screen {
     data object FreeSpace : Screen()
     /** Papierkorb & alte Versionen (0.5.0) */
     data object Restore : Screen()
+    /** Papierkorb leeren (0.6.0) */
+    data object Purge : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -180,5 +182,6 @@ private fun AppRoot(
         Screen.Conflicts -> ConflictScreen(onBack = back)
         Screen.FreeSpace -> FreeSpaceScreen(onBack = back)
         Screen.Restore -> RestoreScreen(onBack = back)
+        Screen.Purge -> PurgeScreen(onBack = back)
     }
 }

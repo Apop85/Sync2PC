@@ -618,6 +618,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         dao.clearDecisions(profileId); dao.clearMirrorState(profileId)
                         dao.clearConflicts(profileId); dao.deleteProfileRow(profileId); dao.clearRestores(profileId)
                         GuardStore(ctx).forget(profileId)
+                        com.sync2pc.app.mirror.PurgeStore(ctx).forget(profileId)
                         com.sync2pc.app.data.GlobalSettings(ctx).setAwaitingFirstStart(profileId, false)
                         SyncScheduler.updateRemotePoll(ctx, dao.profiles())
                     }

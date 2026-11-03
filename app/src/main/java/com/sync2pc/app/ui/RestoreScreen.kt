@@ -108,6 +108,7 @@ private fun RestoreList(profile: Profile, modifier: Modifier, onDone: () -> Unit
     var selected by remember(profile.id) { mutableStateOf<List<TrashEntry>>(emptyList()) }
     var date by remember(profile.id) { mutableStateOf<String?>(null) }
     var confirm by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     LaunchedEffect(profile.id, reload) { loaded = null; loaded = RestoreManager.load(ctx, profile) }
 
     val data = loaded
@@ -201,11 +202,41 @@ private fun RestoreList(profile: Profile, modifier: Modifier, onDone: () -> Unit
             }
         }
         item {
-            Button(onClick = { confirm = true }, enabled = selected.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
-                Text(if (selected.isEmpty()) "Dateien auswählen" else "${selected.size} Datei(en) wiederherstellen")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { confirm = true }, enabled = selected.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+                    Text(if (selected.isEmpty()) "Dateien auswählen" else "${selected.size} Datei(en) wiederherstellen")
+                }
+                // 0.6.0: markierte Einträge endgültig löschen
+                OutlinedButton(onClick = { confirmDelete = true }, enabled = selected.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+                    Text("Endgültig löschen", color = if (selected.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
+
+    if (confirmDelete) AlertDialog(
+        onDismissRequest = { confirmDelete = false },
+        title = { Text("${selected.size} Datei(en) endgültig löschen?") },
+        text = {
+            Text("Die markierten Versionen werden aus dem Papierkorb gelöscht und lassen sich danach nicht mehr " +
+                "wiederherstellen." + if (!data.pcAvailable && selected.any { it.side == Side.REMOTE })
+                    " Der PC ist nicht erreichbar: Dort wird beim nächsten Sync mit PC gelöscht." else "")
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                confirmDelete = false
+                scope.launch {
+                    val r = com.sync2pc.app.mirror.TrashCleaner.deleteEntries(ctx, profile, selected)
+                    Toast.makeText(ctx, if (r.remotePending) "Gelöscht – PC folgt beim nächsten Sync mit PC"
+                        else "Endgültig gelöscht", Toast.LENGTH_SHORT).show()
+                    selected = emptyList()
+                    reload++
+                }
+            }) { Text("Endgültig löschen", color = MaterialTheme.colorScheme.error) }
+        },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") } },
+    )
 
     if (confirm) AlertDialog(
         onDismissRequest = { confirm = false },
@@ -230,7 +261,7 @@ private fun RestoreList(profile: Profile, modifier: Modifier, onDone: () -> Unit
 }
 
 /** "2026-11-03" -> "03.11.2026" */
-private fun dayLabel(d: String): String {
+fun dayLabel(d: String): String {
     val p = d.split('-')
     return if (p.size == 3) "${p[2]}.${p[1]}.${p[0]}" else d
 }

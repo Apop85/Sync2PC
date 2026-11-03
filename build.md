@@ -120,6 +120,14 @@ Mit dem Test-Profil von oben, **Löschungen übernehmen** eingeschaltet, nach ei
 5. „Alles vom … auswählen“ und „Ganzer Ordner“ ausprobieren: pro Datei wird nur eine Version gewählt.
 6. **PC aus:** PC ausschalten, eine Wiederherstellung auslösen → Startseite zeigt „Wiederherstellung vorgemerkt“. PC einschalten → nächster Sync führt sie aus.
 
+### Test Papierkorb leeren (seit 0.6.0)
+
+1. Startseite → Tools → **Papierkorb leeren**. Die Kachel zeigt nach dem ersten Öffnen die belegte Grösse.
+2. „Älter als 0 Tage“, „Nur Handy“ → Anzahl und Grösse stimmen mit dem Handy-Papierkorb überein; nach dem Löschen ist `.LeoSync-Papierkorb` auf dem Handy leer, auf dem PC unverändert.
+3. „Einzelne Tage“ mit einem Tag, „Handy und PC“ → nur dieser Tagesordner verschwindet auf beiden Seiten.
+4. **PC aus:** „Alles“, „Nur PC“ → Startseite zeigt „Papierkorb leeren vorgemerkt“. PC an → nächster Sync leert ihn (Verlauf: „PC-Papierkorb geleert (vorgemerkt)“).
+5. In **Wiederherstellen** eine Version markieren → *Endgültig löschen* → sie ist weg.
+
 ### Test Profil-Assistent (seit 0.5.0)
 
 1. *Profil hinzufügen* → Typ wählen → Schritt 1–4 erscheinen einzeln mit Fortschrittsbalken. „Weiter“ ohne Pflichtangabe (Name, Ordner, Freigabe-Pfad) zeigt einen roten Hinweis.

@@ -39,6 +39,8 @@ object RestoreManager {
             } else emptyList()
         } catch (e: Exception) { emptyList() }
         val existing = AppDatabase.get(context).dao().mirrorStates(profile.id).map { it.relPath }.toSet()
+        // Grösse für die Kachel "Papierkorb leeren" merken (0.6.0)
+        PurgeStore(context).saveSizes(profile.id, local.sumOf { it.size }, if (pcOk) remote.sumOf { it.size } else -1)
         Loaded(
             (local + remote).sortedWith(compareBy<TrashEntry>({ it.origPath.lowercase() }).thenByDescending { it.date }),
             pcOk, existing,

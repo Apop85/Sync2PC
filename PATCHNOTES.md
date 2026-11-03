@@ -2,6 +2,17 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.6.0 (2026-11-03)
+
+### Neu
+- **Papierkorb leeren:** Neue Kachel unter Tools. Sie zeigt, wie viel Platz der Papierkorb zuletzt belegt hat (Handy und PC). Zuerst wählst du das Ordner-Profil (bei nur einem öffnet es direkt), dann:
+  - **Was:** älter als … Tage (Standard 7), einzelne Tage oder alles
+  - **Wo:** Handy und PC (Standard), nur Handy oder nur PC
+  - Vor dem Löschen zeigt LeoSync Anzahl und Grösse und fragt nach. Endgültig gelöschte Dateien lassen sich nicht wiederherstellen.
+  - Ist der PC nicht erreichbar, wird das Handy sofort geleert und der PC beim nächsten Sync mit PC.
+- **Endgültig löschen** in „Papierkorb & alte Versionen“: markierte Einträge direkt löschen statt wiederherstellen.
+- Fotos-Profile haben keinen eigenen Papierkorb – ein Hinweis erklärt, dass entfernte Fotos im Papierkorb der Galerie liegen.
+
 ## 0.5.2 (2026-11-03)
 
 ### Behoben

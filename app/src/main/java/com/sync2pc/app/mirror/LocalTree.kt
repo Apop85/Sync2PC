@@ -391,6 +391,38 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     }
 
     /**
+     * "Papierkorb leeren" (0.6.0): Datumsordner löschen, die [rule] trifft; ALL löscht die ganzen Papierkorb-Ordner.
+     * Liefert die Anzahl gelöschter Ordner.
+     */
+    fun purgeTrash(rule: PurgeRule): Int {
+        var n = 0
+        val trashDirs = children(rootDocId).filter {
+            it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
+        }
+        for (t in trashDirs) {
+            if (rule.mode == PurgeRule.Mode.ALL) { delete(t.docId); n++ }
+            else for (d in children(t.docId)) {
+                if (d.isDir && rule.matches(d.name)) { delete(d.docId); n++ }
+            }
+            forgetDirs(t.name)
+        }
+        return n
+    }
+
+    /** Eine einzelne Datei im Papierkorb endgültig löschen. false = nicht (mehr) vorhanden */
+    fun deleteTrashFile(trashPath: String): Boolean {
+        val e = find(trashPath) ?: return false
+        delete(e.docId)
+        return true
+    }
+
+    /** Gemerkte Ordner-IDs unterhalb von [relDir] verwerfen (nach dem Löschen sonst veraltet) */
+    private fun forgetDirs(relDir: String) {
+        val k = relDir.lowercase()
+        dirIds.keys.removeIf { it == k || it.startsWith("$k/") }
+    }
+
+    /**
      * Löscht im Papierkorb (neuer und alter Name) alle Datumsordner "yyyy-MM-dd", die vor [cutoff] liegen.
      * Liefert die Anzahl gelöschter Ordner.
      */

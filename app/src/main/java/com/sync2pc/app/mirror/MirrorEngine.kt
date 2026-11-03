@@ -176,8 +176,12 @@ class MirrorEngine(
             }
             // Vorgemerkte Wiederherstellungen (0.5.0) vor dem Einlesen: Der Abgleich sieht danach den neuen Stand
             // (nicht, solange nach einem Ordnerwechsel die Stichprobe aussteht – erst muss der Ordner bestätigt sein)
-            if (!dryRun && s != null && guards.pendingCheck(profile.id).isEmpty() && runRestores(s))
-                states = dao.mirrorStates(profile.id).associateBy { it.relPath }
+            if (!dryRun && s != null && guards.pendingCheck(profile.id).isEmpty()) {
+                if (runRestores(s)) states = dao.mirrorStates(profile.id).associateBy { it.relPath }
+                // Danach vorgemerktes Leeren des PC-Papierkorbs (0.6.0) – nach dem Wiederherstellen, damit nichts
+                // gelöscht wird, was gerade zurückgeholt werden soll
+                runPendingPurges(s)
+            }
 
             // recover: liegengebliebene ".s2pold" aufräumen bzw. zurückholen (nicht in der Simulation)
             local = tree.listRecursive(skipTrash, recover = !dryRun).filterKeys { filter.accepts(it) }
@@ -657,6 +661,28 @@ class MirrorEngine(
             }
         }
         return true
+    }
+
+    /** Vorgemerktes Leeren des PC-Papierkorbs (PC war beim Auslösen nicht erreichbar) */
+    private suspend fun runPendingPurges(s: SmbSession) {
+        val store = PurgeStore(context)
+        val rules = store.rules(profile.id)
+        val files = store.files(profile.id)
+        if (rules.isEmpty() && files.isEmpty()) return
+        try {
+            var dirs = 0
+            for (r in rules) dirs += TrashCleaner.purgeRemote(s, r)
+            var n = 0
+            for (f in files) if (TrashCleaner.deleteRemoteFile(s, f)) n++
+            store.clear(profile.id)
+            log("I", "🗑 PC-Papierkorb geleert (vorgemerkt): $dirs Tagesordner, $n einzelne Dateien endgültig gelöscht")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (isNetworkError(e)) { connectionFailed = true; throw e } // bleibt vorgemerkt
+            store.clear(profile.id)
+            log("E", "✗ PC-Papierkorb leeren: ${com.sync2pc.app.sync.shortError(e)}")
+        }
     }
 
     /** Datei wurde seit dem Einlesen geändert -> nicht überschreiben; der nächste Lauf sieht beide Stände */

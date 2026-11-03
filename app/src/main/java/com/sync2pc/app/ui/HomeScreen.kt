@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.filled.PlayArrow
@@ -80,6 +81,7 @@ import com.sync2pc.app.mirror.Guard
 import com.sync2pc.app.mirror.GuardKind
 import com.sync2pc.app.mirror.GuardStore
 import com.sync2pc.app.mirror.MirrorGuard
+import com.sync2pc.app.mirror.PurgeStore
 import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.sync.SyncProgress
 import com.sync2pc.app.sync.SyncScheduler
@@ -173,6 +175,20 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         GuardStore(ctx).all().filter { it.profileId in ids }
     }
     LaunchedEffect(guards.isEmpty()) { if (guards.isEmpty()) Notifications.cancelGuard(ctx) }
+    // Papierkorb (0.6.0): zuletzt gemessene Grösse und vorgemerktes Leeren auf dem PC
+    val trashSizeText = remember(tick, works, profiles) {
+        val store = PurgeStore(ctx)
+        val sizes = purgeProfiles(profiles).map { store.sizes(it.id) }
+        val local = sizes.map { it.first }.filter { it >= 0 }
+        val remote = sizes.map { it.second }.filter { it >= 0 }
+        if (local.isEmpty() && remote.isEmpty()) "Endgültig Platz schaffen auf Handy und PC"
+        else "Belegt: Handy " + (if (local.isEmpty()) "?" else Notifications.formatBytes(local.sum())) +
+            " · PC " + (if (remote.isEmpty()) "?" else Notifications.formatBytes(remote.sum()))
+    }
+    val pendingPurges = remember(tick, works, profiles) {
+        val ids = profiles.map { it.id }.toSet()
+        PurgeStore(ctx).pendingProfiles().count { it in ids }
+    }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
         val s = GlobalSettings(ctx)
@@ -311,16 +327,27 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             // Tools (0.5.0): Kacheln statt Textlinks, nur was zu den vorhandenen Profilen passt
             val tools = buildList {
                 if (profiles.any { it.type() == ProfileType.PHOTOS }) add(
-                    ToolTile(Icons.Filled.Delete, "Speicher freigeben",
+                    ToolTile(Icons.Filled.Phone, "Speicher freigeben",
                         "Alte, auf dem PC gesicherte Fotos vom Handy entfernen") { navigate(Screen.FreeSpace) }
                 )
                 if (restoreProfiles(profiles).isNotEmpty()) add(
                     ToolTile(Icons.Filled.Refresh, "Wiederherstellen",
                         "Gelöschte Dateien und alte Versionen zurückholen") { navigate(Screen.Restore) }
                 )
+                if (purgeProfiles(profiles).isNotEmpty()) add(
+                    ToolTile(Icons.Filled.Delete, "Papierkorb leeren", trashSizeText) { navigate(Screen.Purge) }
+                )
             }
             if (tools.isNotEmpty()) {
                 item { Text("Tools", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 4.dp)) }
+                if (pendingPurges > 0) item {
+                    ActionCard(
+                        title = "Papierkorb leeren vorgemerkt",
+                        text = "Der PC-Papierkorb wird beim nächsten Sync mit erreichbarem PC geleert.",
+                        button = "Jetzt synchronisieren",
+                        onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+                    )
+                }
                 if (pendingRestores > 0) item {
                     ActionCard(
                         title = "Wiederherstellung vorgemerkt",
