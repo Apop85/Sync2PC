@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ausloeser (im Verlauf "Ausloeser: …") -->
+    <string name="trigger_auto">Automatic</string>
+    <string name="trigger_manual">Manual</string>
+    <string name="trigger_wifi">Wi-Fi connected</string>
+    <string name="trigger_resume">Resume after Wi-Fi interruption</string>
+    <string name="trigger_resume_wifi">Resume after Wi-Fi interruption (%1$s)</string>
+    <string name="trigger_retry">Check again (PC was not reachable)</string>
+    <string name="trigger_poll">Folder check (interval)</string>
+    <string name="trigger_safety">Safety net (%1$s h without sync)</string>
+    <string name="trigger_followup">Catch up (minimum age)</string>
+    <string name="trigger_new_media">New photos/videos</string>
+    <string name="trigger_pause_end">Pause ended</string>
+    <string name="trigger_resumed">Resumed</string>
+    <string name="trigger_generic">Trigger</string>
+
+    <!-- Hintergrund-Lauf (SyncWorker) -->
+    <string name="stop_wifi">Wi-Fi disconnected</string>
+    <string name="stop_charger">no longer on the charger</string>
+    <string name="stop_timeout">Android time limit</string>
+    <string name="stop_system">stopped by the system (%1$s)</string>
+    <string name="stop_android">stopped by Android (%1$s)</string>
+    <string name="skip_manual_only">Automatic syncs turned off (manual only)</string>
+    <string name="skip_paused_until">Paused until %1$s</string>
+    <string name="skip_ssid_unreadable">Wi-Fi name not readable – check location “Allow all the time” and the location service</string>
+    <string name="skip_ssid_unknown">Wi-Fi “%1$s” is not set in any profile</string>
+    <string name="skip_pc_unreachable">PC not reachable: %1$s</string>
+    <string name="wait_for_pc">Waiting for PC (%1$s) – attempt %2$s/%3$s…</string>
+    <string name="summary_failed">Sync failed – %1$s</string>
+    <plurals name="summary_transferred">
+        <item quantity="one">%1$s file transferred (%2$s)</item>
+        <item quantity="other">%1$s files transferred (%2$s)</item>
+    </plurals>
+    <plurals name="summary_errors">
+        <item quantity="one">%1$s error – details in the history</item>
+        <item quantity="other">%1$s errors – details in the history</item>
+    </plurals>
+    <string name="summary_no_space">Not enough storage on the phone – some files were not downloaded.</string>
+    <string name="summary_pc_unreachable">PC not reachable (%1$s). Is it switched on and the share active?</string>
+    <string name="paused_connection_retry">Connection interrupted – next attempt in %1$s minutes</string>
+
+    <!-- Kurztext eines Laufs (RunSummary) -->
+    <string name="run_nothing">Nothing to do</string>
+    <string name="run_uploaded">%1$s transferred</string>
+    <string name="run_found">%1$s already present</string>
+    <plurals name="run_failed">
+        <item quantity="one">%1$s error</item>
+        <item quantity="other">%1$s errors</item>
+    </plurals>
+    <plurals name="run_waiting">
+        <item quantity="one">%1$s waiting for folder selection</item>
+        <item quantity="other">%1$s waiting for folder selection</item>
+    </plurals>
+    <string name="run_up">↑ %1$s uploaded</string>
+    <string name="run_down">↓ %1$s downloaded</string>
+    <string name="run_trashed">%1$s in trash</string>
+    <plurals name="run_conflicts">
+        <item quantity="one">%1$s conflict</item>
+        <item quantity="other">%1$s conflicts</item>
+    </plurals>
+    <string name="run_space_full">storage full</string>
+
+    <!-- Schutzbremse (MirrorGuard) -->
+    <string name="guard_title_remote">PC folder not found</string>
+    <string name="guard_title_local">Phone folder not found</string>
+    <string name="guard_title_mass">Many files would be deleted</string>
+    <string name="guard_text_remote">The PC folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests.</string>
+    <string name="guard_text_local">The phone folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests.</string>
+    <plurals name="guard_text_folder">
+        <item quantity="one">In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s file in total). Was it really deleted? Until you decide, this profile rests.</item>
+        <item quantity="other">In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s files in total). Was it really deleted? Until you decide, this profile rests.</item>
+    </plurals>
+    <string name="guard_text_mass">In “%1$s”, %2$s of %3$s files would be moved to the trash. Was that much really deleted? Until you decide, this profile rests.</string>
+    <string name="guard_text_check">The chosen folder of “%1$s” does not match the previous sync state. Until you decide, this profile rests.</string>
+
+    <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
+    <string name="delete_log_done">Deleted: %1$s</string>
+    <string name="delete_log_failed">Deleting failed: %1$s – %2$s</string>
+    <string name="update_err_404">No release found (repository “%1$s” private, misspelled or without a release yet)</string>
+    <string name="update_err_403">GitHub request limit reached – try again later</string>
+    <string name="update_err_http">GitHub responds with HTTP %1$s</string>
+    <string name="update_err_no_apk">Release %1$s contains no APK file</string>
+    <string name="update_err_repo">No valid GitHub repository set (format: user/repo)</string>
+    <string name="update_err_invalid_apk">The downloaded file is not a valid APK</string>
+    <string name="update_err_package">The APK belongs to “%1$s”, not to this app</string>
+    <string name="update_err_debug">(debug builds cannot be updated this way)</string>
+    <string name="update_err_not_newer">The APK is not newer than the installed version</string>
+    <string name="smb_err_path">Invalid share path: “%1$s” (expected \\\\server\\share)</string>
+    <string name="smb_err_not_disk">“%1$s” is not a file share</string>
+    <string name="smb_err_incomplete">Upload incomplete: %1$s of %2$s bytes</string>
+    <string name="smb_err_resume">Resumed upload does not match the file – will be transferred again</string>
+    <string name="smb_test_missing_folder">Connected, but folder “%1$s” does not exist (will be created at the first sync).</string>
+    <plurals name="smb_test_ok">
+        <item quantity="one">Connection OK – %1$s (%2$s entry)</item>
+        <item quantity="other">Connection OK – %1$s (%2$s entries)</item>
+    </plurals>
+    <string name="backup_err_write">File cannot be written</string>
+    <string name="backup_err_read">File cannot be read</string>
+    <string name="backup_err_version">Backup has format version %1$s – this app knows up to version %2$s. Please update LeoSync.</string>
+    <string name="backup_err_json">The file is not a LeoSync backup (no valid JSON).</string>
+    <string name="backup_err_format">The file is not a LeoSync backup.</string>
+    <plurals name="stale_pending">
+        <item quantity="one">%1$s: %2$s new file waiting, last backup %3$s</item>
+        <item quantity="other">%1$s: %2$s new files waiting, last backup %3$s</item>
+    </plurals>
+    <string name="stale_last">%1$s: last backup %2$s</string>
+    <string name="space_profile_id">Profile %1$s</string>
+    <string name="tree_err_unreadable">Phone folder not readable</string>
+    <string name="tree_err_mkdir">Folder “%1$s” could not be created</string>
+    <string name="tree_err_read">File not readable</string>
+    <string name="tree_err_write">File not writable</string>
+    <string name="tree_err_rename">Renaming “%1$s” failed</string>
+    <string name="tree_err_size">Size after download does not match (%1$s instead of %2$s bytes)</string>
+    <string name="tree_err_move">Moving not supported</string>
+    <string name="tree_err_changed">File was changed during the run</string>
+    <string name="tree_err_create">File “%1$s” could not be created</string>
+
+    <!-- Ordner-Sync (MirrorEngine) -->
+    <string name="eng_start_mirror">Start (%1$s) – folder sync “%2$s” (%3$s)</string>
+    <string name="eng_reading_folders">Reading folders…</string>
+    <string name="eng_local_missing">Phone folder not found – please choose it again in the profile</string>
+    <string name="eng_offline_preview">Offline preview (share not reachable): %1$s</string>
+    <string name="eng_counts">Phone: %1$s files, PC: %2$s files</string>
+    <string name="eng_keep_files">Deletions are not applied in this run (your decision)</string>
+    <string name="eng_comparing">Comparing…</string>
+    <string name="eng_would_stop">⚠ The run would stop and ask: %1$s</string>
+    <string name="eng_would_trash_folder">The folder “%1$s” would go to the trash completely</string>
+    <string name="eng_would_trash_files">%1$s of %2$s files would go to the trash</string>
+    <string name="eng_actions_first">%1$s actions – the first %2$s simulated</string>
+    <string name="eng_actions_all">%1$s actions simulated</string>
+    <string name="eng_wifi_lost">Cancelled: Wi-Fi no longer connected</string>
+    <string name="eng_interrupted_log">Interrupted (%1$s) – resumes automatically</string>
+    <string name="eng_interrupted_mirror">Interrupted (%1$s) – ↑ %2$s / ↓ %3$s transferred, the rest follows automatically</string>
+    <string name="eng_paused_log">Paused (by you) – continues at the next automatic start</string>
+    <string name="eng_connection_log_mirror">Connection interrupted (%1$s) – continues at the next sync</string>
+    <string name="eng_connection_mirror">Connection interrupted – ↑ %1$s / ↓ %2$s transferred, the rest follows at the next sync</string>
+    <string name="eng_run_failed">Run failed: %1$s</string>
+    <string name="eng_waiting_decision">Waiting for your decision: %1$s</string>
+    <string name="eng_trash_local">🗑 Phone: %1$s (deleted on the PC)</string>
+    <string name="eng_trash_remote">🗑 PC: %1$s (deleted on the phone)</string>
+    <string name="eng_conflict">⚠ Conflict: %1$s was changed on phone and PC</string>
+    <plurals name="eng_transfer_mirror">
+        <item quantity="one">Transferring %1$s file with %2$s parallel connections</item>
+        <item quantity="other">Transferring %1$s files with %2$s parallel connections</item>
+    </plurals>
+    <string name="eng_no_space">Not enough storage on the phone – skipped: %1$s</string>
+    <string name="eng_on_pc">on the PC</string>
+    <string name="eng_on_phone">on the phone</string>
+    <string name="eng_err_renamed_missing">Renamed file not found</string>
+    <string name="eng_err_after_upload_missing">File not found after upload</string>
+    <string name="eng_err_after_upload_size">Size after upload does not match</string>
+    <string name="eng_err_after_download_missing">File not found after download</string>
+    <string name="eng_err_after_download_size">Size after download does not match</string>
+    <string name="eng_resumed_at">(resumed from %1$s)</string>
+    <plurals name="eng_restoring">
+        <item quantity="one">Restoring %1$s file from the trash</item>
+        <item quantity="other">Restoring %1$s files from the trash</item>
+    </plurals>
+    <string name="eng_restore_gone">↺ %1$s: version in the trash no longer present – skipped</string>
+    <string name="eng_err_restored_missing">Restored file not found</string>
+    <string name="eng_restored">↺ %1$s restored (version from %2$s)</string>
+    <string name="eng_restore_failed_rolled_back">✗ Restore %1$s: %2$s – rolled back, will be tried again at the next sync</string>
+    <string name="eng_restore_failed_partial">✗ Restore %1$s: %2$s – not completely rolled back, see trash</string>
+    <string name="eng_purged_pc">🗑 PC trash emptied (scheduled): %1$s day folders, %2$s single files permanently deleted</string>
+    <string name="eng_purge_pc_failed">✗ Emptying PC trash: %1$s</string>
+    <string name="eng_changed_during_run">⏭ %1$s: was changed %2$s during the run – follows at the next sync</string>
+    <string name="eng_syncing">Syncing…</string>
+    <string name="eng_purge_local_failed">Trash on the phone not emptied: %1$s</string>
+    <string name="eng_purge_remote_failed">Trash on the PC not emptied: %1$s</string>
+    <string name="eng_purged_expired">🗑 Trash: %1$s folders older than %2$s days permanently deleted</string>
+    <string name="eng_pv_upload_trash">↑ Phone → PC (PC version to trash)</string>
+    <string name="eng_pv_upload">↑ Phone → PC</string>
+    <string name="eng_pv_download_trash">↓ PC → Phone (phone version to trash)</string>
+    <string name="eng_pv_download">↓ PC → Phone</string>
+    <string name="eng_pv_trash_local">🗑 To the trash on the phone</string>
+    <string name="eng_pv_trash_remote">🗑 To the trash on the PC</string>
+    <string name="eng_pv_conflict">⚠ Conflict – decision needed</string>
+    <string name="eng_pv_keep_both">⇄ Keep both versions</string>
+    <string name="eng_end">End: %1$s</string>
+
+    <!-- Fotos-Sync (SyncEngine) -->
+    <plurals name="eng_already_in">
+        <item quantity="one">= %1$s file already present in %2$s</item>
+        <item quantity="other">= %1$s files already present in %2$s</item>
+    </plurals>
+    <string name="eng_start_photos">Start (%1$s) – profile “%2$s” → %3$s</string>
+    <string name="eng_searching">Searching files…</string>
+    <plurals name="eng_filtered">
+        <item quantity="one">%1$s file excluded by filter</item>
+        <item quantity="other">%1$s files excluded by filter</item>
+    </plurals>
+    <plurals name="eng_found">
+        <item quantity="one">%1$s file found, %2$s new, %3$s already backed up</item>
+        <item quantity="other">%1$s files found, %2$s new, %3$s already backed up</item>
+    </plurals>
+    <string name="eng_too_young">%1$s still too young (&lt; %2$s min)</string>
+    <string name="eng_connecting">Connecting…</string>
+    <string name="eng_no_geo">Country data missing – folders without country suffix</string>
+    <string name="eng_no_media_location">Permission “media location” missing – GPS is not evaluated</string>
+    <string name="eng_analysing">Analysing…</string>
+    <plurals name="eng_new_files_first">
+        <item quantity="one">%1$s new file – the first %2$s simulated</item>
+        <item quantity="other">%1$s new files – the first %2$s simulated</item>
+    </plurals>
+    <plurals name="eng_new_files_all">
+        <item quantity="one">%1$s new file simulated</item>
+        <item quantity="other">%1$s new files simulated</item>
+    </plurals>
+    <string name="eng_transfer_photos">Transferring with %1$s parallel connections</string>
+    <string name="eng_analysis_failed">✗ %1$s: analysis failed: %2$s</string>
+    <plurals name="eng_waiting_groups">
+        <item quantity="one">%1$s file waiting for folder selection (%2$s)</item>
+        <item quantity="other">%1$s files waiting for folder selection (%2$s)</item>
+    </plurals>
+    <string name="eng_interrupted_photos">Interrupted (%1$s) – %2$s transferred, the rest follows automatically</string>
+    <string name="eng_paused_photos">Paused (by you) – %1$s transferred, the rest at the next automatic start</string>
+    <string name="eng_connection_log_photos">Connection interrupted (%1$s) – open files are transferred at the next sync</string>
+    <string name="eng_connection_photos">Connection interrupted – %1$s transferred, the rest follows at the next sync</string>
+    <string name="eng_transferring">Transferring…</string>
+    <string name="eng_err_unreadable">File not readable: %1$s</string>
+    <string name="eng_err_verify">Check after upload failed – the file will be transferred again at the next run</string>
+    <string name="tree_sd_card">SD card</string>
+    <string name="tree_err_rename_short">Renaming failed</string>
+    <string name="update_err_no_tag">Release without version tag</string>
+    <string name="update_err_download">Download failed (HTTP %1$s)</string>
+</resources>

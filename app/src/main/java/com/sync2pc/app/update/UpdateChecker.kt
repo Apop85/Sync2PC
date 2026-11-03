@@ -52,12 +52,12 @@ object UpdateChecker {
         try {
             when (conn.responseCode) {
                 200 -> {}
-                404 -> throw IOException("Kein Release gefunden (Repository '$repo' privat, falsch geschrieben oder noch ohne Release)")
-                403 -> throw IOException("GitHub-Abfragelimit erreicht – später erneut versuchen")
-                else -> throw IOException("GitHub antwortet mit HTTP ${conn.responseCode}")
+                404 -> throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_404, repo))
+                403 -> throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_403))
+                else -> throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_http, conn.responseCode))
             }
             val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-            val tag = json.optString("tag_name").ifBlank { throw IOException("Release ohne Versions-Tag") }
+            val tag = json.optString("tag_name").ifBlank { throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_no_tag)) }
             val assets = json.optJSONArray("assets")
             var url = ""; var size = 0L
             if (assets != null) for (i in 0 until assets.length()) {
@@ -67,7 +67,7 @@ object UpdateChecker {
                     url = a.optString("browser_download_url"); size = a.optLong("size"); break
                 }
             }
-            if (url.isBlank()) throw IOException("Release $tag enthält keine APK-Datei")
+            if (url.isBlank()) throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_no_apk, tag))
             return UpdateInfo(tag.removePrefix("v").removePrefix("V"), url, size, json.optString("body"))
         } finally {
             conn.disconnect()
@@ -80,7 +80,7 @@ object UpdateChecker {
      */
     fun checkAndStore(context: Context): UpdateInfo? {
         val s = GlobalSettings(context)
-        val repo = normalizeRepo(s.updateRepo) ?: throw IOException("Kein gültiges GitHub-Repository eingestellt (Format: benutzer/repo)")
+        val repo = normalizeRepo(s.updateRepo) ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_repo))
         val info = fetchLatest(repo)
         s.lastUpdateCheck = System.currentTimeMillis()
         return if (isNewer(info.version)) {

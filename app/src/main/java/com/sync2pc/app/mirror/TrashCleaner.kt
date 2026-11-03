@@ -25,7 +25,7 @@ object TrashCleaner {
      */
     fun purgeRemote(s: SmbSession, rule: PurgeRule, keep: Set<String> = emptySet()): Int {
         var n = 0
-        for (t in listOf(MirrorEngine.TRASH_DIR, MirrorEngine.OLD_TRASH_DIR)) {
+        for (t in MirrorEngine.TRASH_DIRS) {
             val base = s.path(t)
             if (!s.dirExists(base)) continue
             val keepHere = keep.filter { it.startsWith(t.lowercase() + "/") }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ordner-Sync: Seiten und Fehler (TrashPurge, FolderFreer, LocalTree …) -->
+    <string name="sides_both">Handy und PC</string>
+    <string name="sides_phone_only">Nur Handy</string>
+    <string name="sides_pc_only">Nur PC</string>
+    <string name="err_local_access_lost">Kein Zugriff mehr auf den Handy-Ordner – bitte im Profil neu auswählen</string>
+</resources>

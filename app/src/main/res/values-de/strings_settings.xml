@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Einstellungen (SettingsScreen) -->
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_transfer">Übertragung</string>
+    <string name="settings_permissions">App-Berechtigungen</string>
+    <string name="settings_app">App-Einstellungen</string>
+    <string name="settings_updates">Updates</string>
+    <string name="settings_diagnose">Diagnose</string>
+
+    <string name="settings_notify_summary">Meldung nach jedem Sync</string>
+    <string name="settings_notify_summary_sub">z. B. „3 Dateien übertragen“</string>
+    <string name="settings_notify_update">Update verfügbar</string>
+    <string name="settings_notify_update_sub">Neue Version gefunden bzw. installiert</string>
+    <string name="settings_notify_hints">Hinweise</string>
+    <string name="settings_notify_hints_sub">Ordnerauswahl nötig, Konflikte, Dateien entfernen, Fehler. Erscheinen auch ohne Benachrichtigung auf der Startseite.</string>
+    <string name="settings_notify_fixed">Die Fortschrittsanzeige während eines Syncs und „Pausiert – wartet auf WLAN“ lassen sich nicht abschalten: Android verlangt sie, damit der Sync im Hintergrund weiterlaufen bzw. fortgesetzt werden kann.</string>
+    <string name="settings_notify_android">Android-Einstellungen für Benachrichtigungen</string>
+
+    <string name="settings_stale">Erinnerung</string>
+    <string name="settings_stale_switch">Erinnern, wenn lange nicht gesichert</string>
+    <string name="settings_stale_sub">Nur wenn neue Fotos/Videos warten. Wiederholt sich alle %1$s Tage.</string>
+    <string name="settings_stale_days">Nach … Tagen ohne Sicherung</string>
+
+    <string name="settings_auto">Automatik</string>
+    <string name="settings_auto_wifi">Sync beim Verbinden mit Heim-WLAN</string>
+    <string name="settings_auto_wifi_sub">Startet sofort, wenn ein WLAN eines Profils verbunden wird</string>
+    <string name="settings_auto_new">Neue Fotos/Videos sofort übertragen</string>
+    <string name="settings_auto_new_sub">Nur, wenn gerade ein Heim-WLAN verbunden ist</string>
+    <string name="settings_auto_charging">Nur beim Laden</string>
+    <string name="settings_auto_charging_sub">Automatische Syncs nur am Ladegerät (manueller Sync immer möglich)</string>
+    <string name="settings_min_age">Mindestalter einer Datei (Minuten)</string>
+    <string name="settings_min_age_hint">Verhindert, dass Fotos übertragen werden, die gerade noch bearbeitet werden.</string>
+
+    <string name="settings_parallel">Parallele Übertragungen</string>
+    <string name="settings_parallel_value">Gleichzeitige Übertragungen: %1$s</string>
+    <string name="settings_parallel_hint">Mehr Verbindungen beschleunigen viele kleine Dateien. Bei grossen Videos bringt es wenig. Standard: 3</string>
+
+    <string name="settings_background">Hintergrund</string>
+    <string name="settings_background_hint">Damit Android den Sync nicht verzögert oder abbricht, sollte die Akku-Optimierung für LeoSync aus sein.</string>
+    <string name="settings_battery">Akku-Optimierungen</string>
+    <string name="settings_battery_off">Akku-Optimierung ausschalten</string>
+    <string name="settings_vendor_extra">Zusätzlich bei %1$s:</string>
+    <string name="settings_vendor_note">Die Bezeichnungen können je nach Software-Stand leicht abweichen.</string>
+    <string name="settings_vendor_web">Anleitung im Browser</string>
+
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">Systemsprache</string>
+    <string name="settings_language_hint">„Systemsprache“ zeigt Deutsch, wenn das Handy auf Deutsch eingestellt ist, sonst Englisch.</string>
+
+    <string name="settings_geo_loading">Lade Länderdaten…</string>
+    <string name="settings_geo_loaded">%1$s Länder geladen (offline)</string>
+    <string name="settings_geo_missing">Länderdaten fehlen – Ordner werden ohne Land angelegt</string>
+    <string name="settings_country_folders">Länderordner</string>
+    <string name="settings_home_country">Heimatland (ISO-Code)</string>
+    <string name="settings_home_country_hint">Fotos aus diesem Land bekommen keinen Länderzusatz (Standard: CH = Schweiz).</string>
+
+    <string name="settings_diag_title">Beta / Diagnose</string>
+    <string name="settings_diag_hint">Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen (ohne Passwörter) und kopiert sie in die Zwischenablage. Geräte-ID: %1$s</string>
+    <string name="settings_diag_failed">Diagnose fehlgeschlagen: %1$s</string>
+    <string name="settings_diag_busy">Sammle Daten…</string>
+    <string name="settings_diag_copy">Diagnosedaten kopieren</string>
+    <string name="settings_about">LeoSync %1$s – Open Source (MIT)</string>
+</resources>

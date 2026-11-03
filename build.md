@@ -81,6 +81,7 @@ Vor jedem GitHub-Release:
 8. *Einstellungen → Diagnose → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
 9. *Speicher freigeben* mit grosser Monatszahl (z. B. 120) und kleiner Auswahl: Die Prüfung auf dem PC läuft, der Android-Dialog erscheint, und im Papierkorb der Galerie sind die Dateien wiederherstellbar.
 10. Ordner-Sync (siehe „Test Ordner-Sync“ und „Test Schutzbremse“ unten), wenn sich daran etwas geändert hat.
+10a. Sprache (seit 0.8.0): *Einstellungen → App-Einstellungen → Sprache* auf „English“ → alle Seiten, Benachrichtigungen und neue Verlaufseinträge englisch. Zurück auf „Systemsprache“. Neue oder geänderte Texte stehen in beiden `strings_*.xml`, `.claude/translations.md` ist neu erzeugt (`tools/make-translations.ps1`).
 11. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
 12. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
 
@@ -105,7 +106,7 @@ Auf dem Handy:
 Mit dem Test-Profil von oben, **Löschungen übernehmen** eingeschaltet, nach einem erfolgreichen Sync:
 1. **PC-Ordner umbenannt:** `_Test-Ordnersync` auf dem PC umbenennen → *Synchronisieren*. Auf der Startseite erscheint „PC-Ordner nicht gefunden“ mit dem stehenden Hund, auf dem Handy wird **nichts** gelöscht, auf dem PC kein leerer Ordner angelegt. Ordner zurückbenennen → *Erneut prüfen* → der Sync läuft normal.
 2. **Neuer Ordner gewählt:** Im Profil einen anderen, ungleichen PC-Unterordner wählen und speichern → „Ist das wirklich der richtige Ordner?“. *Abbrechen* lässt alles, wie es war.
-3. **Viele Löschungen:** Auf dem PC mehr als 20 % der Testdateien löschen → *Synchronisieren* → „Viele Dateien würden gelöscht“. *Nicht löschen* → die Dateien kommen wieder auf den PC. Nochmals löschen, *Trotzdem in den Papierkorb* → sie landen auf dem Handy in `.LeoSync-Papierkorb`.
+3. **Viele Löschungen:** Auf dem PC mehr als 20 % der Testdateien löschen → *Synchronisieren* → „Viele Dateien würden gelöscht“. *Nicht löschen* → die Dateien kommen wieder auf den PC. Nochmals löschen, *Trotzdem in den Papierkorb* → sie landen auf dem Handy in `.LeoSync-Bin`.
 4. Im Verlauf steht bei den angehaltenen Läufen „Wartet auf dich“. Andere Profile laufen in der Zeit normal weiter.
 5. **Ganzer Unterordner (seit 0.4.2):** Auf dem PC einen Unterordner mit mehr als 5 Dateien löschen (aber weniger als 20 % aller Dateien) → „Viele Dateien würden gelöscht“ nennt den Ordner.
 6. **Grenze im Profil:** „Schutzbremse (optional)“ z. B. auf 50 % stellen → 30 % Löschungen laufen ohne Rückfrage durch.

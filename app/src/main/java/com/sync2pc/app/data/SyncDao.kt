@@ -71,7 +71,7 @@ interface SyncDao {
 
     @Query(
         """SELECT s.sourceKey AS sourceKey, s.remotePath AS remotePath, s.size AS size,
-                  m.year AS year, m.countryName AS countryName
+                  m.year AS year, m.countryIso AS countryIso, m.countryName AS countryName
            FROM synced_files s LEFT JOIN media_info m ON m.sourceKey = s.sourceKey
            WHERE s.profileId = :profileId"""
     )
@@ -191,10 +191,10 @@ interface SyncDao {
         for (r in runningRuns()) {
             val end = lastLogTime(r.id) ?: r.startedAt
             insertLog(LogEntry(runId = r.id, time = end, level = "W",
-                message = "Unterbrochen – die App wurde beendet (z. B. durch ein Update). Der Rest folgt beim nächsten Sync."))
+                message = com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.run_dangling_log)))
             updateRun(r.copy(
                 status = "INTERRUPTED", finishedAt = end,
-                message = "Unterbrochen – App wurde beendet (z. B. Update), Rest folgt beim nächsten Sync",
+                message = com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.run_dangling),
             ))
         }
     }

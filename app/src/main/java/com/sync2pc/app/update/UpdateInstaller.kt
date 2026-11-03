@@ -29,7 +29,7 @@ object UpdateInstaller {
         conn.instanceFollowRedirects = true
         conn.setRequestProperty("User-Agent", "LeoSync/${BuildConfig.VERSION_NAME}")
         try {
-            if (conn.responseCode != 200) throw IOException("Download fehlgeschlagen (HTTP ${conn.responseCode})")
+            if (conn.responseCode != 200) throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_download, conn.responseCode))
             val total = conn.contentLengthLong.takeIf { it > 0 } ?: info.size
             conn.inputStream.use { input ->
                 target.outputStream().use { out ->
@@ -54,12 +54,12 @@ object UpdateInstaller {
     /** Sicherheitsprüfung: richtige App und wirklich neuer. Die Signatur prüft Android beim Installieren. */
     private fun verify(context: Context, apk: File) {
         val pi = context.packageManager.getPackageArchiveInfo(apk.path, 0)
-            ?: throw IOException("Die heruntergeladene Datei ist keine gültige APK")
+            ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_invalid_apk))
         if (pi.packageName != context.packageName)
-            throw IOException("Die APK gehört zu '${pi.packageName}', nicht zu dieser App" +
-                if (BuildConfig.DEBUG) " (Debug-Builds lassen sich nicht per Update aktualisieren)" else "")
+            throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_package, pi.packageName) +
+                if (BuildConfig.DEBUG) " " + com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_debug) else "")
         if (pi.longVersionCode <= BuildConfig.VERSION_CODE.toLong())
-            throw IOException("Die APK ist nicht neuer als die installierte Version")
+            throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.update_err_not_newer))
     }
 
     /**

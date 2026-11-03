@@ -34,9 +34,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.Texts
+import com.sync2pc.app.l10n.str
+import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun LeoSyncTheme(content: @Composable () -> Unit) {
@@ -63,7 +66,7 @@ fun ScreenScaffold(
                 title = { Text(title) },
                 navigationIcon = {
                     if (onBack != null) IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = str(R.string.common_back))
                     }
                 },
                 actions = actions,
@@ -113,10 +116,10 @@ fun Hint(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
+/** Datum + Uhrzeit, getrennt durch genau ein Leerzeichen (Aufrufer nutzen substringAfter(' ') für die Uhrzeit) */
 fun formatTime(ms: Long): String =
-    SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(Date(ms))
+    SimpleDateFormat(str(R.string.fmt_date_time), Texts.locale).format(Date(ms))
 
-val monthNames = listOf(
-    "Januar", "Februar", "März", "April", "Mai", "Juni",
-    "Juli", "August", "September", "Oktober", "November", "Dezember"
-)
+/** Monatsnamen in der App-Sprache (Januar … / January …) */
+val monthNames: List<String>
+    get() = DateFormatSymbols.getInstance(Texts.locale).months.take(12)

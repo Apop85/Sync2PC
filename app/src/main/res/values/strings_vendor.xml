@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hersteller-Hinweise gegen App-Killer (VendorHints). Bezeichnungen wie in der englischen Oberflaeche. -->
+    <string name="vendor_oplus_1">App info → Battery usage: turn on “Allow foreground activity”, “Allow background activity” and “Auto launch”</string>
+    <string name="vendor_oplus_2">Lock LeoSync in the recent apps overview (long-press the card → Lock)</string>
+    <string name="vendor_samsung_1">App info → Battery: choose “Unrestricted”</string>
+    <string name="vendor_samsung_2">Settings → Battery → Background usage limits: add LeoSync to “Never sleeping apps”</string>
+    <string name="vendor_xiaomi_1">App info → turn on “Autostart”</string>
+    <string name="vendor_xiaomi_2">App info → Battery saver: choose “No restrictions”</string>
+    <string name="vendor_xiaomi_3">Lock LeoSync in the recent apps overview</string>
+    <string name="vendor_huawei_1">Settings → Battery → App launch: set LeoSync to “Manage manually” and turn on all three switches</string>
+</resources>

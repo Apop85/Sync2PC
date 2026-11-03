@@ -1,5 +1,10 @@
 package com.sync2pc.app.sync
 
+import androidx.annotation.PluralsRes
+import androidx.annotation.StringRes
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.mirror.FileFilter
 import java.util.Calendar
 
@@ -8,13 +13,15 @@ import java.util.Calendar
  */
 
 /** Dateiart nach Endung */
-enum class FileKind(val label: String, val exts: Set<String>) {
-    IMAGE("Bilder", setOf("jpg", "jpeg", "png", "heic", "heif", "gif", "webp", "bmp", "tif", "tiff", "dng", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2")),
-    VIDEO("Videos", setOf("mp4", "mov", "mkv", "avi", "3gp", "webm", "m4v", "wmv", "mts", "m2ts")),
-    AUDIO("Audio", setOf("mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "amr", "wma", "aiff")),
-    DOCUMENT("Dokumente", setOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "txt", "rtf", "csv", "md", "epub", "pages", "numbers", "key")),
-    ARCHIVE("Archive", setOf("zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", "apk", "dmg")),
-    OTHER("Andere", emptySet());
+enum class FileKind(@StringRes private val labelRes: Int, val exts: Set<String>) {
+    IMAGE(R.string.kind_images, setOf("jpg", "jpeg", "png", "heic", "heif", "gif", "webp", "bmp", "tif", "tiff", "dng", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2")),
+    VIDEO(R.string.kind_videos, setOf("mp4", "mov", "mkv", "avi", "3gp", "webm", "m4v", "wmv", "mts", "m2ts")),
+    AUDIO(R.string.kind_audio, setOf("mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "amr", "wma", "aiff")),
+    DOCUMENT(R.string.kind_documents, setOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "txt", "rtf", "csv", "md", "epub", "pages", "numbers", "key")),
+    ARCHIVE(R.string.kind_archives, setOf("zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", "apk", "dmg")),
+    OTHER(R.string.kind_other, emptySet());
+
+    val label: String get() = str(labelRes)
 
     companion object {
         fun ext(name: String): String =
@@ -27,11 +34,14 @@ enum class FileKind(val label: String, val exts: Set<String>) {
     }
 }
 
-enum class AgeUnit(val one: String, val many: String, val calendarField: Int, val factor: Int) {
-    DAYS("Tag", "Tage", Calendar.DAY_OF_YEAR, 1),
-    WEEKS("Woche", "Wochen", Calendar.DAY_OF_YEAR, 7),
-    MONTHS("Monat", "Monate", Calendar.MONTH, 1),
-    YEARS("Jahr", "Jahre", Calendar.YEAR, 1),
+enum class AgeUnit(@StringRes private val manyRes: Int, @PluralsRes val amountRes: Int, val calendarField: Int, val factor: Int) {
+    DAYS(R.string.unit_days, R.plurals.age_days, Calendar.DAY_OF_YEAR, 1),
+    WEEKS(R.string.unit_weeks, R.plurals.age_weeks, Calendar.DAY_OF_YEAR, 7),
+    MONTHS(R.string.unit_months, R.plurals.age_months, Calendar.MONTH, 1),
+    YEARS(R.string.unit_years, R.plurals.age_years, Calendar.YEAR, 1);
+
+    /** "Tage", "Wochen" … (Auswahlliste) */
+    val many: String get() = str(manyRes)
 }
 
 /** "älter als [amount] [unit]" */
@@ -40,7 +50,7 @@ data class Age(val amount: Int, val unit: AgeUnit) {
     fun cutoff(now: Long): Long =
         Calendar.getInstance().apply { timeInMillis = now; add(unit.calendarField, -amount * unit.factor) }.timeInMillis
 
-    val label: String get() = "$amount " + if (amount == 1) unit.one else unit.many
+    val label: String get() = plural(unit.amountRes, amount)
 }
 
 /**

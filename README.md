@@ -34,7 +34,7 @@ Es gibt zwei Profiltypen:
 - **Fortschritt** erscheint in der Benachrichtigung und auf dem Sperrbildschirm.
 - **Profile** für mehrere Ziele, eine **Simulation** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
-- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo. Der Papierkorb leert sich nach einer pro Profil einstellbaren Frist (Standard 30 Tage, 0 = nie).
+- **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im Ordner `.LeoSync-Bin` (bis 0.7.x `.LeoSync-Papierkorb`), nicht im Nirgendwo. Der Papierkorb leert sich nach einer pro Profil einstellbaren Frist (Standard 30 Tage, 0 = nie).
 - **Papierkorb:** Gelöschte Dateien und überschriebene Versionen bleiben im Papierkorb. Du holst einzelne Dateien, ganze Ordner oder alles von einem Tag zurück – auf Handy und PC – oder löschst sie endgültig. „Aufräumen“ leert ganz, nach Alter oder einzelne Tage, auf Handy, PC oder beiden. Ist der PC aus, wird das beim nächsten Sync nachgeholt.
 - **Schutzbremse:** Fehlt ein Ordner, passt ein neu gewählter Ordner nicht zum bisherigen Stand oder würden mehr als 20 % der Dateien gelöscht, hält der Ordner-Sync an und fragt nach.
 - **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
@@ -42,6 +42,7 @@ Es gibt zwei Profiltypen:
 - **Speicher freigeben:** Alte Dateien, die nachweislich auf dem PC liegen, verschwinden vom Handy. Fotos und Videos kommen in den Papierkorb der Galerie. Bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“ werden die Dateien direkt gelöscht; auf dem PC bleiben sie erhalten. Vorher wird jede Datei auf dem PC geprüft. Die Auswahl läuft nach Alter, Ordner, Dateityp, Grösse und Ausnahmen, mit Vorschau.
 - **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
 - **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
+- **Deutsch und Englisch:** Ist das Handy auf Deutsch eingestellt, erscheint die App auf Deutsch, sonst auf Englisch. Unter *Einstellungen → App-Einstellungen → Sprache* lässt sich die Sprache fest wählen (ab Android 13 auch in den Android-Einstellungen der App). Länderordner auf dem PC heissen in der App-Sprache; bestehende Ordner der anderen Sprache werden weiterverwendet.
 
 ## Download
 
@@ -89,7 +90,7 @@ app/src/main/java/com/sync2pc/app/
   diag/    Diagnosedaten, Verlauf-Export, Absturzberichte, Hersteller-Hinweise
   backup/  Sicherung (Export/Import, Verschlüsselung mit Export-Passwort)
   ui/      Jetpack Compose Oberfläche
-tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten) und LeoSync-Import (PC → Share)
+tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten), Übersetzungstabelle und LeoSync-Import (PC → Share)
 ```
 
 ## Bauen

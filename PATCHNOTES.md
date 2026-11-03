@@ -2,6 +2,30 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.8.0 (2026-11-03)
+
+### Neu
+- **App auf Englisch:** Alle Texte gibt es jetzt auf Deutsch und Englisch, auch Benachrichtigungen, Verlauf und Fehlermeldungen. Ist das Handy auf Deutsch eingestellt (Schweiz, Deutschland, Österreich …), erscheint Deutsch, sonst Englisch.
+- **Sprache wählen:** *Einstellungen → App-Einstellungen → Sprache* mit „Systemsprache“, „Deutsch“ und „English“. Ab Android 13 auch in den Android-Einstellungen der App.
+- **Länderordner in der App-Sprache:** Neue Ordner heissen z. B. „06 - Egypt“ statt „06 - Ägypten“, wenn die App auf Englisch läuft. Bestehende Ordner in der anderen Sprache werden erkannt und weiterverwendet; es entsteht kein zweiter Ordner und keine Rückfrage. Statistik und Ordnerauswahl zeigen die Ländernamen ebenfalls in der App-Sprache.
+
+### Geändert
+- **Papierkorb heisst `.LeoSync-Bin`** (vorher `.LeoSync-Papierkorb`). Der alte Ordner wird weiter vom Sync ausgeschlossen, im Papierkorb angezeigt, kann wiederhergestellt und geleert werden.
+- **„Beide Versionen behalten“** bei Konflikten benennt die Handy-Datei jetzt `…_conflict-phone` (vorher `…_Konflikt-Handy`).
+- **Datum** auf Englisch als `2026-11-03`, auf Deutsch wie bisher `03.11.2026`.
+- Verlaufseinträge werden in der Sprache gespeichert, die beim Lauf aktiv war. Ältere Einträge bleiben deutsch.
+
+### Intern
+- Texte in `res/values/strings_*.xml` (Englisch, Grundsprache) und `res/values-de/strings_*.xml` (Deutsch). Zugriff über `l10n/Texts.kt` (`str`, `plural`), Sprachwahl in `l10n/AppLanguage.kt`, `res/xml/locales_config.xml`.
+- Neuer Unit-Test `StringsParityTest`: Jeder Text muss in beiden Sprachen mit denselben Platzhaltern vorhanden sein und sich formatieren lassen. Bestehende Tests prüfen weiterhin die deutschen Texte (`TestTexts`).
+- `tools/make-translations.ps1` erzeugt `.claude/translations.md` (alle Texte Deutsch | Englisch mit Zeilennummern).
+- Keine Datenbank-Änderung.
+
+## 0.7.1 (2026-11-03)
+
+### Behoben
+- **Papierkorb:** „Wiederherstellen“ und „Endgültig löschen“ in der Auswahlleiste haben jetzt je eine eigene Zeile. Nebeneinander wurden die Texte abgeschnitten.
+
 ## 0.7.0 (2026-11-03)
 
 ### Neu

@@ -1,5 +1,8 @@
 package com.sync2pc.app.data
 
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.str
+
 /**
  * Erkennt doppelte Profile (0.2.1).
  *  - IDENTICAL: gleiches Ziel und dieselben Quellen -> wird nicht gespeichert bzw. beim Import übersprungen
@@ -16,13 +19,10 @@ object ProfileOverlap {
         val nested: Boolean = false,
     ) {
         fun message(): String = when {
-            kind == Kind.IDENTICAL -> "Profil „${other.name}“ hat bereits dasselbe Ziel und dieselben Quellen."
-            nested -> "Ein Ordner dieses Profils liegt innerhalb eines Ordners von Profil „${other.name}“ (oder umgekehrt). " +
-                "Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, " +
-                "Konflikten oder ungewollten Löschungen führen."
-            else -> "Gleiches Ziel wie Profil „${other.name}“" +
-                (if (sharedFolders.isNotEmpty()) " und gemeinsame Quellordner: ${sharedFolders.joinToString(", ")}" else "") +
-                ". Diese Dateien würden von beiden Profilen geprüft und übertragen."
+            kind == Kind.IDENTICAL -> str(R.string.overlap_identical, other.name)
+            nested -> str(R.string.overlap_nested, other.name)
+            sharedFolders.isNotEmpty() -> str(R.string.overlap_shared_folders, other.name, sharedFolders.joinToString(", "))
+            else -> str(R.string.overlap_same_target, other.name)
         }
     }
 

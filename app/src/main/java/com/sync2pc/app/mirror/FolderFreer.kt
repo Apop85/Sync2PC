@@ -30,7 +30,7 @@ object FolderFreer {
         val tree = tree(context, profile)
         val filter = FileFilter(profile.includePatterns, profile.excludePatterns)
         val skipTrash: (String) -> Boolean = {
-            it.equals(MirrorEngine.TRASH_DIR, ignoreCase = true) || it.equals(MirrorEngine.OLD_TRASH_DIR, ignoreCase = true)
+            MirrorEngine.isTrashDir(it)
         }
         val states = AppDatabase.get(context).dao().mirrorStates(profile.id).associateBy { it.relPath }
         tree.listRecursive(skipTrash).filterKeys { filter.accepts(it) }.map { (rel, e) ->
@@ -102,7 +102,7 @@ object FolderFreer {
     private fun tree(context: Context, profile: Profile): LocalTree {
         val uri = Uri.parse(profile.localTreeUri)
         if (!LocalTree.hasPermission(context, uri))
-            throw IOException("Kein Zugriff mehr auf den Handy-Ordner – bitte im Profil neu auswählen")
+            throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.err_local_access_lost))
         return LocalTree(context, uri)
     }
 }

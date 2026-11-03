@@ -3,11 +3,23 @@ package com.sync2pc.app.geo
 import android.content.Context
 import android.util.JsonReader
 import android.util.JsonToken
+import com.sync2pc.app.l10n.AppLanguage
+import com.sync2pc.app.l10n.Texts
 import java.io.InputStreamReader
+import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sqrt
 
-data class Country(val iso: String, val nameDe: String)
+/**
+ * Ein Land mit seinen Namen aus Natural Earth (0.8.0): Sprache ("de", "en", "fr" …) -> Name.
+ * [nameDe] bleibt als Kennzeichen im Analyse-Cache (media_info.countryName != null = Land bestimmt).
+ */
+data class Country(val iso: String, val names: Map<String, String>) {
+    val nameDe: String get() = names["de"] ?: names["en"] ?: names.values.first()
+
+    /** Name in der App-Sprache (Rückfall Englisch) */
+    fun name(lang: String = Texts.locale.language): String = names[lang] ?: names["en"] ?: nameDe
+}
 
 /**
  * Offline-Ländererkennung aus GPS-Koordinaten.
@@ -33,8 +45,25 @@ class CountryLookup private constructor(private val shapes: List<Shape>) {
 
     val isAvailable: Boolean get() = shapes.isNotEmpty()
 
-    /** Alle deutschen Ländernamen (für die Erkennung "unveränderter" Standard-Ordner). */
-    val allCountryNames: Set<String> by lazy { shapes.map { it.country.nameDe }.toSet() }
+    /**
+     * Alle Ländernamen in den Sprachen der App (AppLanguage.SUPPORTED) – Erkennung "unveränderter" Standard-Ordner (0.8.0).
+     * Bewusst nicht alle Sprachen der Geodaten: Ein selbst gewählter Name wie "06 - Italia" soll weiter als umbenannt gelten.
+     */
+    val allCountryNames: Set<String> by lazy { shapes.flatMap { it.country.names.values }.toSet() }
+
+    /** Anzahl Länder (Anzeige in den Einstellungen) */
+    val countryCount: Int get() = byIso.size
+
+    private val byIso: Map<String, Country> by lazy {
+        shapes.map { it.country }.filter { it.iso.isNotEmpty() }.associateBy { it.iso.uppercase() }
+    }
+
+    /** Name für den Ordner in der App-Sprache; unbekanntes Kürzel -> [fallback] (z. B. alter Name aus dem Cache) */
+    fun nameFor(iso: String?, fallback: String?): String? =
+        iso?.uppercase()?.let { byIso[it] }?.name() ?: fallback
+
+    /** Alle Namen eines Landes (alle Sprachen), um bestehende Standardordner nach einem Sprachwechsel zu finden */
+    fun namesOf(iso: String): Collection<String> = byIso[iso.uppercase()]?.names?.values?.distinct() ?: emptyList()
 
     @Synchronized
     fun lookup(lat: Double, lon: Double): Country? {
@@ -100,6 +129,17 @@ class CountryLookup private constructor(private val shapes: List<Shape>) {
         const val ASSET = "geo/countries.geojson"
         @Volatile private var instance: CountryLookup? = null
 
+        /**
+         * Ländername zur Anzeige (Statistik, Ordnerauswahl) in der App-Sprache: aus den Geodaten, falls schon geladen,
+         * sonst aus Java (Locale). [fallback] = gespeicherter Name. null = kein Land.
+         */
+        fun displayName(iso: String?, fallback: String?): String? {
+            val code = iso?.trim()?.uppercase()?.takeIf { it.length == 2 } ?: return fallback
+            instance?.byIso?.get(code)?.let { return it.name() }
+            val n = try { Locale.Builder().setRegion(code).build().getDisplayCountry(Texts.locale) } catch (e: Exception) { "" }
+            return if (n.isNotBlank() && !n.equals(code, ignoreCase = true)) n else fallback
+        }
+
         fun get(context: Context): CountryLookup =
             instance ?: synchronized(this) {
                 instance ?: load(context).also { instance = it }
@@ -142,8 +182,18 @@ class CountryLookup private constructor(private val shapes: List<Shape>) {
             r.endObject()
             val iso = listOf("ISO_A2_EH", "ISO_A2", "WB_A2")
                 .mapNotNull { props[it] }.firstOrNull { it.length == 2 && it != "-9" } ?: ""
-            val name = props["NAME_DE"]?.takeIf { it.isNotBlank() } ?: props["NAME"] ?: return
-            val country = Country(iso.uppercase(), name)
+            // Namen je Sprache: NAME_DE -> "de", NAME_EN (sonst NAME) -> "en", NAME_FR -> "fr" …
+            val names = LinkedHashMap<String, String>()
+            for ((k, v) in props) {
+                if (v.isBlank()) continue
+                if (k.length == 7 && k.startsWith("NAME_")) {
+                    val lang = k.substring(5).lowercase()
+                    if (lang in AppLanguage.SUPPORTED) names[lang] = v
+                }
+            }
+            if ("en" !in names) props["NAME"]?.takeIf { it.isNotBlank() }?.let { names["en"] = it }
+            if (names.isEmpty()) return
+            val country = Country(iso.uppercase(), names)
             for (rings in polys) {
                 if (rings.isEmpty()) continue
                 val outer = rings[0]
@@ -160,7 +210,9 @@ class CountryLookup private constructor(private val shapes: List<Shape>) {
             }
         }
 
-        private val wantedProps = setOf("ISO_A2_EH", "ISO_A2", "WB_A2", "NAME_DE", "NAME")
+        private val wantedProps = setOf("ISO_A2_EH", "ISO_A2", "WB_A2", "NAME")
+        /** Namen in einzelnen Sprachen, z. B. NAME_DE, NAME_EN (nicht NAME_LONG, NAME_SORT …) */
+        private val langNameProp = Regex("^NAME_[A-Z]{2}$")
 
         private fun readProps(r: JsonReader): Map<String, String> {
             val m = HashMap<String, String>()
@@ -168,7 +220,7 @@ class CountryLookup private constructor(private val shapes: List<Shape>) {
             r.beginObject()
             while (r.hasNext()) {
                 val k = r.nextName().uppercase()
-                if (k in wantedProps && r.peek() == JsonToken.STRING) m[k] = r.nextString()
+                if ((k in wantedProps || langNameProp.matches(k)) && r.peek() == JsonToken.STRING) m[k] = r.nextString()
                 else r.skipValue()
             }
             r.endObject()

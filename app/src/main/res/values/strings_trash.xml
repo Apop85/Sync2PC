@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Papierkorb (TrashScreen) -->
+    <string name="side_phone">Phone</string>
+    <string name="side_pc">PC</string>
+    <string name="trash_switch_profile">Switch profile</string>
+    <string name="trash_choose_profile">Which trash do you want to open?</string>
+    <string name="trash_photos_hint">Photo profiles have no trash of their own: removed photos are in the gallery trash and are emptied in the gallery app.</string>
+    <string name="trash_waiting_for_sync">Waiting until the running sync is finished…\nPlease keep this view open.</string>
+    <string name="trash_deleting">Deleting…</string>
+    <string name="trash_reading">Reading the trash on phone and PC…</string>
+    <plurals name="trash_phone_summary">
+        <item quantity="one">Phone: %1$s file, %2$s</item>
+        <item quantity="other">Phone: %1$s files, %2$s</item>
+    </plurals>
+    <plurals name="trash_pc_summary">
+        <item quantity="one">PC: %1$s file, %2$s</item>
+        <item quantity="other">PC: %1$s files, %2$s</item>
+    </plurals>
+    <string name="trash_pc_unreachable">PC: not reachable</string>
+    <string name="trash_pc_unreachable_hint">Entries from the PC trash are missing from the list. Restoring and deleting on the PC are scheduled and carried out at the next sync with a reachable PC.</string>
+    <string name="trash_cleanup_button">Clean up…</string>
+    <string name="trash_reload">Reload</string>
+    <string name="trash_empty">The trash is empty.</string>
+    <string name="trash_intro">Deleted files and older versions are kept here. Mark entries to restore them or delete them permanently.</string>
+    <string name="trash_day">Day</string>
+    <string name="trash_all_days">All days</string>
+    <string name="trash_select_day">Select everything from %1$s</string>
+    <string name="trash_whole_folder">Whole folder</string>
+    <string name="trash_older_version">older version</string>
+    <string name="trash_deleted">deleted</string>
+    <string name="trash_reserved">scheduled for restore</string>
+    <string name="trash_selected">%1$s selected · %2$s</string>
+    <string name="trash_clear_selection">Clear</string>
+    <string name="trash_restore">Restore</string>
+    <string name="trash_purged_pc_pending">Phone emptied – the PC will be emptied at the next sync with the PC</string>
+    <string name="trash_purged">Trash cleaned up</string>
+    <plurals name="trash_delete_title">
+        <item quantity="one">Delete %1$s file permanently?</item>
+        <item quantity="other">Delete %1$s files permanently?</item>
+    </plurals>
+    <string name="trash_delete_text">The marked entries are deleted from the trash and can no longer be restored afterwards.</string>
+    <string name="trash_delete_pc_later">The PC is not reachable: it will be deleted there at the next sync with the PC.</string>
+    <string name="trash_deleted_pc_pending">Deleted – the PC follows at the next sync with the PC</string>
+    <string name="trash_deleted_done">Permanently deleted</string>
+    <plurals name="trash_restore_title">
+        <item quantity="one">Restore %1$s file?</item>
+        <item quantity="other">Restore %1$s files?</item>
+    </plurals>
+    <string name="trash_restore_text">The current versions go to the trash first. The chosen versions are written back on phone and PC.</string>
+    <string name="trash_restore_now">This happens right away with a sync.</string>
+    <string name="trash_restore_later">The PC is not reachable: this happens at the next sync with the PC.</string>
+    <string name="trash_cleanup">Clean up</string>
+    <string name="trash_cleanup_hint">Permanently deleted files can no longer be restored.</string>
+    <string name="trash_what">What?</string>
+    <string name="trash_mode_older">Older than … days</string>
+    <string name="trash_mode_dates">Single days</string>
+    <string name="trash_no_days">No days in the trash.</string>
+    <string name="trash_none_chosen">None chosen</string>
+    <plurals name="trash_days_chosen">
+        <item quantity="one">%1$s day chosen</item>
+        <item quantity="other">%1$s days chosen</item>
+    </plurals>
+    <string name="trash_mode_all">Everything</string>
+    <string name="trash_where">Where?</string>
+    <string name="trash_phone_only_hint">“%1$s” frees up space on the phone; the copies in the PC trash are kept.</string>
+    <string name="trash_choose_what">Please choose what should be emptied.</string>
+    <plurals name="trash_affects">
+        <item quantity="one">Affects %1$s file (%2$s)</item>
+        <item quantity="other">Affects %1$s files (%2$s)</item>
+    </plurals>
+    <string name="trash_affects_pc_later">– plus the PC trash as soon as the PC is reachable</string>
+    <string name="trash_pc_later_hint">The PC is not reachable. The phone is emptied right away, the PC at the next sync with the PC.</string>
+    <plurals name="trash_kept_reserved">
+        <item quantity="one">%1$s file is scheduled for restore and stays.</item>
+        <item quantity="other">%1$s files are scheduled for restore and stay.</item>
+    </plurals>
+    <plurals name="trash_purge_confirm">
+        <item quantity="one">%1$s file (%2$s) will be permanently deleted (%3$s)</item>
+        <item quantity="other">%1$s files (%2$s) will be permanently deleted (%3$s)</item>
+    </plurals>
+    <string name="trash_purge_confirm_pc">– on the PC at the next sync with the PC</string>
+    <string name="trash_purge_irreversible">This cannot be undone.</string>
+    <string name="trash_pick_days">Choose days</string>
+    <string name="trash_pick_day">Choose day</string>
+    <string name="trash_none">None</string>
+    <plurals name="trash_day_files">
+        <item quantity="one">%1$s file · %2$s</item>
+        <item quantity="other">%1$s files · %2$s</item>
+    </plurals>
+</resources>

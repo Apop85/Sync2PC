@@ -8,10 +8,19 @@ sealed class LogItem {
 }
 
 object RunGrouping {
+    /**
+     * Merkmale im gespeicherten Kurztext (RunSummary), die einen Lauf "nicht ruhig" machen. Beide Sprachen, weil der
+     * Text in der Sprache gespeichert wird, die beim Lauf aktiv war (0.8.0).
+     */
+    private val notIdleMarkers = listOf(
+        "Papierkorb", "bereits vorhanden", "Konflikt", "Speicher",
+        "trash", "already present", "conflict", "storage",
+    )
+
     /** Lauf ohne Übertragung, ohne Fehler und ohne offene Punkte? */
     fun isIdle(r: SyncRun): Boolean =
         r.status == "OK" && r.uploaded == 0 && r.failed == 0 && r.waiting == 0 &&
-            listOf("Papierkorb", "bereits vorhanden", "Konflikt", "Speicher").none { r.message.contains(it) }
+            notIdleMarkers.none { r.message.contains(it, ignoreCase = true) }
 
     /** [runs] neueste zuerst. Aufeinanderfolgende ruhige Läufe (mind. 2) werden zu einem Eintrag. */
     fun group(runs: List<SyncRun>): List<LogItem> {

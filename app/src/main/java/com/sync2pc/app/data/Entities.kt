@@ -1,14 +1,19 @@
 package com.sync2pc.app.data
 
+import androidx.annotation.StringRes
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.str
 
 /** Was nach erfolgreichem (verifiziertem) Upload mit der Quelldatei passiert. */
-enum class DeleteMode(val label: String) {
-    KEEP("Dateien behalten"),
-    TRASH("In den Papierkorb verschieben"),
-    DELETE("Endgültig löschen");
+enum class DeleteMode(@StringRes private val labelRes: Int) {
+    KEEP(R.string.delete_mode_keep),
+    TRASH(R.string.delete_mode_trash),
+    DELETE(R.string.delete_mode_delete);
+
+    val label: String get() = str(labelRes)
 
     companion object {
         fun of(name: String?): DeleteMode = entries.firstOrNull { it.name == name } ?: KEEP
@@ -16,9 +21,11 @@ enum class DeleteMode(val label: String) {
 }
 
 /** Profiltyp: Bildordner (sortiert nach Jahr/Monat/Land) oder normaler Ordner (1:1-Spiegelung). */
-enum class ProfileType(val label: String) {
-    PHOTOS("Fotos & Videos sichern"),
-    MIRROR("Ordner synchronisieren");
+enum class ProfileType(@StringRes private val labelRes: Int) {
+    PHOTOS(R.string.profile_type_label_photos),
+    MIRROR(R.string.profile_type_label_mirror);
+
+    val label: String get() = str(labelRes)
 
     companion object {
         fun of(name: String?): ProfileType = entries.firstOrNull { it.name == name } ?: PHOTOS
@@ -26,10 +33,13 @@ enum class ProfileType(val label: String) {
 }
 
 /** Sync-Richtung (nur für normale Ordner; Bildordner immer Handy → PC). */
-enum class SyncDirection(val label: String, val short: String) {
-    UPLOAD("Handy → PC", "→ PC"),
-    DOWNLOAD("PC → Handy", "→ Handy"),
-    BOTH("Beidseitig", "⇄");
+enum class SyncDirection(@StringRes private val labelRes: Int, @StringRes private val shortRes: Int) {
+    UPLOAD(R.string.direction_upload, R.string.direction_upload_short),
+    DOWNLOAD(R.string.direction_download, R.string.direction_download_short),
+    BOTH(R.string.direction_both, R.string.direction_both_short);
+
+    val label: String get() = str(labelRes)
+    val short: String get() = str(shortRes)
 
     val up: Boolean get() = this != DOWNLOAD
     val down: Boolean get() = this != UPLOAD
@@ -40,9 +50,11 @@ enum class SyncDirection(val label: String, val short: String) {
 }
 
 /** Verhalten bei Konflikt (Datei auf beiden Seiten geändert, nur beidseitig). */
-enum class ConflictMode(val label: String) {
-    ASK("Jedes Mal fragen"),
-    NEWER("Immer die neuere Datei übernehmen");
+enum class ConflictMode(@StringRes private val labelRes: Int) {
+    ASK(R.string.conflict_mode_ask),
+    NEWER(R.string.conflict_mode_newer);
+
+    val label: String get() = str(labelRes)
 
     companion object {
         fun of(name: String?): ConflictMode = entries.firstOrNull { it.name == name } ?: ASK
@@ -216,6 +228,7 @@ data class StatRow(
     val remotePath: String,
     val size: Long,
     val year: Int?,
+    val countryIso: String?,
     val countryName: String?,
 )
 

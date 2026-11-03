@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Verlauf (LogScreen) -->
+    <string name="log_export_file">LeoSync-History_%1$s.txt</string>
+    <string name="log_export_failed">Export failed: %1$s</string>
+    <string name="log_share">Share history</string>
+    <string name="log_clear">Delete history</string>
+    <string name="log_filter_errors">Errors</string>
+    <string name="log_filter_transfers">Transfers</string>
+    <string name="log_empty">No entries yet.</string>
+    <string name="log_empty_both">No runs with errors or transfers.</string>
+    <string name="log_empty_errors">No runs with errors.</string>
+    <string name="log_empty_transfers">No runs with transfers.</string>
+    <string name="log_idle_group">%1$s× checked – nothing to do</string>
+    <string name="log_status_partial">Partial</string>
+    <string name="log_status_failed">Error</string>
+    <string name="log_status_paused">Paused</string>
+    <string name="log_status_interrupted">Interrupted</string>
+    <string name="log_status_waiting">Waiting for you</string>
+    <string name="log_status_running">Running</string>
+    <string name="log_trigger">Trigger: %1$s</string>
+
+    <!-- Sicherung (BackupSection) -->
+    <string name="backup_exporting">Exporting…</string>
+    <plurals name="backup_exported">
+        <item quantity="one">Backed up: %1$s profile</item>
+        <item quantity="other">Backed up: %1$s profiles</item>
+    </plurals>
+    <plurals name="backup_exported_sync">
+        <item quantity="one">sync status of %1$s file</item>
+        <item quantity="other">sync status of %1$s files</item>
+    </plurals>
+    <string name="backup_passwords_encrypted">passwords encrypted</string>
+    <string name="backup_without_passwords">without passwords</string>
+    <string name="backup_reading">Reading backup…</string>
+    <string name="backup_unreadable">Backup not readable</string>
+    <string name="backup_file_unreadable">File not readable: %1$s</string>
+    <string name="backup_importing">Importing…</string>
+    <plurals name="backup_imported">
+        <item quantity="one">%1$s profile imported</item>
+        <item quantity="other">%1$s profiles imported</item>
+    </plurals>
+    <plurals name="backup_imported_sync">
+        <item quantity="one">sync status for %1$s file</item>
+        <item quantity="other">sync status for %1$s files</item>
+    </plurals>
+    <string name="backup_skipped_identical">Skipped because already present (same target and same sources): %1$s</string>
+    <string name="backup_overlapping">Note: overlaps with an existing profile (same target, shared source folders): %1$s</string>
+    <string name="backup_without_password">Enter the password again for: %1$s</string>
+    <string name="backup_need_folder">Choose the phone folder again for: %1$s (Android does not transfer the folder permission).</string>
+    <string name="backup_import_failed">Import failed: %1$s</string>
+    <string name="backup_title">Backup</string>
+    <string name="backup_hint">Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing phones or reinstalling.</string>
+    <string name="backup_export">Export…</string>
+    <string name="backup_import">Import…</string>
+    <string name="backup_export_title">Export backup</string>
+    <string name="backup_include_sync">Include sync status</string>
+    <string name="backup_include_sync_sub">After the import it is known right away which files are already on the PC.</string>
+    <string name="backup_password_optional">Export password (optional)</string>
+    <string name="backup_password_repeat">Repeat export password</string>
+    <string name="backup_no_password_hint">Without an export password the file contains no SMB passwords; you enter them again after the import.</string>
+    <string name="backup_password_hint">The SMB passwords are encrypted with this password. Without it they cannot be restored.</string>
+    <string name="backup_choose_file">Choose file…</string>
+    <string name="backup_password">Export password</string>
+    <string name="backup_ask_password_hint">The backup contains encrypted SMB passwords. Without the export password the profiles are imported anyway, you then enter the passwords again.</string>
+    <string name="backup_without_password_button">Without password</string>
+    <string name="backup_import_title">Import backup</string>
+    <string name="backup_created">Created: %1$s (LeoSync %2$s)</string>
+    <string name="backup_profiles">Profiles: %1$s</string>
+    <plurals name="backup_sync_status">
+        <item quantity="one">Sync status: %1$s file</item>
+        <item quantity="other">Sync status: %1$s files</item>
+    </plurals>
+    <string name="backup_pw_taken">SMB passwords: will be taken over</string>
+    <string name="backup_pw_wrong">SMB passwords: export password missing or wrong – passwords are not taken over</string>
+    <string name="backup_pw_none">SMB passwords: not included</string>
+    <string name="backup_replace_hint">“Replace” deletes all existing profiles including sync status and also takes over the settings. “Add” creates the profiles in addition.</string>
+    <string name="backup_replace">Replace</string>
+    <string name="backup_import_done">Import finished</string>
+</resources>

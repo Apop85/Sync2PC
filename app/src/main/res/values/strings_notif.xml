@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Benachrichtigungen (Notifications) -->
+    <string name="notif_channel_progress">Sync</string>
+    <string name="notif_channel_progress_desc">Transfer progress</string>
+    <string name="notif_channel_alerts_desc">Folder selection, delete confirmation, errors</string>
+    <string name="notif_progress_title">%1$s: %2$s / %3$s files</string>
+    <string name="notif_progress_text">%1$s of %2$s (%3$s %%)</string>
+    <string name="notif_summary_problem">LeoSync – problem</string>
+    <string name="notif_summary_done">LeoSync – done</string>
+    <plurals name="notif_decision_text">
+        <item quantity="one">%1$s file in %2$s is waiting: there are renamed month folders. Tap to assign.</item>
+        <item quantity="other">%1$s files in %2$s are waiting: there are renamed month folders. Tap to assign.</item>
+    </plurals>
+    <plurals name="notif_delete_text">
+        <item quantity="one">%1$s file is verified as backed up. Tap to remove it from the phone.</item>
+        <item quantity="other">%1$s files are verified as backed up. Tap to remove them from the phone.</item>
+    </plurals>
+    <string name="notif_wait_wifi">Waiting for Wi-Fi</string>
+    <string name="notif_wait_wifi_named">Waiting for Wi-Fi “%1$s”</string>
+    <string name="notif_paused_files">%1$s / %2$s files</string>
+    <plurals name="notif_conflict_text">
+        <item quantity="one">%1$s file was changed on phone and PC. Tap to decide which version wins.</item>
+        <item quantity="other">%1$s files were changed on phone and PC. Tap to decide which version wins.</item>
+    </plurals>
+    <string name="notif_guard_title">LeoSync is waiting for you</string>
+    <string name="notif_guard_text">The folder sync “%1$s” was stopped for safety. Tap to decide.</string>
+    <plurals name="notif_stale_title">
+        <item quantity="one">Not backed up for %1$s day</item>
+        <item quantity="other">Not backed up for %1$s days</item>
+    </plurals>
+    <string name="notif_stale_text">Is the home Wi-Fi connected and the PC switched on? Tap to open.</string>
+    <string name="notif_update_text">LeoSync %1$s is available. Tap to install.</string>
+    <string name="notif_installed_title">Update installed</string>
+    <string name="notif_installed_text">LeoSync was updated to version %1$s. Tap to open.</string>
+</resources>

@@ -1,5 +1,8 @@
 package com.sync2pc.app.data
 
+import androidx.annotation.StringRes
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.smb.SmbTarget
 
 /**
@@ -7,14 +10,16 @@ import com.sync2pc.app.smb.SmbTarget
  * Rein (ohne Android), getestet in ProfileWizardTest.
  */
 object ProfileWizard {
-    enum class Step(val title: String, val optional: Boolean) {
-        NAME("Profilname", false),
-        SOURCE("Quelle", false),
-        TARGET("Ziel", false),
-        OPTIONS("Sync-Optionen", false),
-        FILTER("Filter", true),
+    enum class Step(@StringRes private val titleRes: Int, val optional: Boolean) {
+        NAME(R.string.wizard_step_name, false),
+        SOURCE(R.string.wizard_step_source, false),
+        TARGET(R.string.wizard_step_target, false),
+        OPTIONS(R.string.wizard_step_options, false),
+        FILTER(R.string.wizard_step_filter, true),
         /** Nur Ordner-Profile */
-        GUARD("Schutzbremse", true),
+        GUARD(R.string.wizard_step_guard, true);
+
+        val title: String get() = str(titleRes)
     }
 
     fun steps(p: Profile): List<Step> =
@@ -26,14 +31,14 @@ object ProfileWizard {
 
     /** Was fehlt in diesem Schritt noch? null = vollständig, weiter möglich */
     fun missing(p: Profile, step: Step): String? = when (step) {
-        Step.NAME -> if (p.name.isBlank()) "Bitte gib dem Profil einen Namen." else null
+        Step.NAME -> if (p.name.isBlank()) str(R.string.wizard_missing_name) else null
         Step.SOURCE -> when {
-            p.type() == ProfileType.MIRROR && p.localTreeUri.isBlank() -> "Bitte wähle den Ordner auf dem Handy."
-            p.type() == ProfileType.PHOTOS && p.folders().isEmpty() -> "Bitte wähle mindestens einen Ordner auf dem Telefon."
-            p.type() == ProfileType.PHOTOS && !p.includeImages && !p.includeVideos -> "Bitte schalte Fotos, Videos oder beides ein."
+            p.type() == ProfileType.MIRROR && p.localTreeUri.isBlank() -> str(R.string.wizard_missing_local)
+            p.type() == ProfileType.PHOTOS && p.folders().isEmpty() -> str(R.string.wizard_missing_sources)
+            p.type() == ProfileType.PHOTOS && !p.includeImages && !p.includeVideos -> str(R.string.wizard_missing_media)
             else -> null
         }
-        Step.TARGET -> if (SmbTarget.parse(p.smbPath) == null) "Bitte gib den Freigabe-Pfad ein, z. B. \\\\192.168.1.20\\Fotos." else null
+        Step.TARGET -> if (SmbTarget.parse(p.smbPath) == null) str(R.string.wizard_missing_target) else null
         Step.OPTIONS, Step.FILTER, Step.GUARD -> null
     }
 

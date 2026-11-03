@@ -54,13 +54,13 @@ object BackupManager {
                 mirrorStates = if (includeSyncState) dao.allMirrorStates() else emptyList(),
             )
             val json = BackupCodec.encode(content, exportPassword)
-            (context.contentResolver.openOutputStream(target, "wt") ?: throw BackupException("Datei kann nicht geschrieben werden"))
+            (context.contentResolver.openOutputStream(target, "wt") ?: throw BackupException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_write)))
                 .use { it.write(json.toByteArray(Charsets.UTF_8)) }
             ExportResult(profiles.size, content.synced.size, usePw)
         }
 
     suspend fun read(context: Context, source: Uri): String = withContext(Dispatchers.IO) {
-        (context.contentResolver.openInputStream(source) ?: throw BackupException("Datei kann nicht gelesen werden"))
+        (context.contentResolver.openInputStream(source) ?: throw BackupException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_read)))
             .use { it.readBytes().toString(Charsets.UTF_8) }
     }
 

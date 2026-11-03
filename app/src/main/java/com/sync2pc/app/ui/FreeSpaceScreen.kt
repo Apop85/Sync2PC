@@ -48,10 +48,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.mirror.FolderFreer
 import com.sync2pc.app.mirror.MirrorLock
 import com.sync2pc.app.sync.Age
@@ -83,7 +86,7 @@ fun FreeSpaceScreen(onBack: () -> Unit) {
     val profile = eligible.firstOrNull { it.id == chosen } ?: eligible.singleOrNull()
 
     ScreenScaffold(
-        title = "Speicher freigeben",
+        title = str(R.string.home_tool_free),
         onBack = { if (chosen != null && eligible.size > 1) chosen = null else onBack() },
     ) { pad ->
         when {
@@ -92,20 +95,20 @@ fun FreeSpaceScreen(onBack: () -> Unit) {
             }
             eligible.isEmpty() -> Column(Modifier.padding(pad).padding(16.dp)) {
                 SectionCard {
-                    Text("Kein passendes Profil.")
-                    Hint(FREE_HINT)
+                    Text(str(R.string.free_no_profile))
+                    Hint(str(R.string.free_hint))
                 }
             }
             profile == null -> LazyColumn(
                 Modifier.fillMaxSize().padding(pad), contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item { Hint("Für welches Profil möchtest du Speicher freigeben?") }
+                item { Hint(str(R.string.free_choose_profile)) }
                 items(eligible, key = { it.id }) { p ->
                     Card(Modifier.fillMaxWidth().clickable { chosen = p.id }) {
                         Column(Modifier.padding(16.dp)) {
                             Text(p.name, style = MaterialTheme.typography.titleMedium)
-                            Hint(if (p.type() == ProfileType.PHOTOS) "Fotos & Videos" else "Ordner Handy → PC")
+                            Hint(str(if (p.type() == ProfileType.PHOTOS) R.string.free_kind_photos else R.string.free_kind_folder))
                         }
                     }
                 }
@@ -114,9 +117,6 @@ fun FreeSpaceScreen(onBack: () -> Unit) {
         }
     }
 }
-
-const val FREE_HINT = "Speicher freigeben gibt es nur bei Fotos-Profilen und bei Ordner-Profilen Handy → PC " +
-    "ohne „Löschungen übernehmen“."
 
 private enum class Picker { PROFILE, AGE, FOLDERS, TYPES, SIZE, EXCLUDE }
 
@@ -137,7 +137,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         try {
             if (photos) { val d = SpaceFreer.photoItems(ctx, profile); photoData = d; items = d.items }
             else items = FolderFreer.items(ctx, profile)
-        } catch (e: Exception) { loadError = e.message ?: "Fehler beim Einlesen" }
+        } catch (e: Exception) { loadError = e.message ?: str(R.string.free_read_error) }
     }
 
     var criteria by remember(profile.id) {
@@ -164,10 +164,10 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         if (res.resultCode == Activity.RESULT_OK && current != null) {
             moved += current.second
             requests = requests.drop(1)
-            if (requests.isEmpty()) { resultText = "$moved Dateien in den Papierkorb der Galerie verschoben."; reload++ }
+            if (requests.isEmpty()) { resultText = plural(R.plurals.free_moved_to_gallery_trash, moved); reload++ }
         } else {
             requests = emptyList()
-            if (moved > 0) { resultText = "$moved Dateien in den Papierkorb der Galerie verschoben."; reload++ }
+            if (moved > 0) { resultText = plural(R.plurals.free_moved_to_gallery_trash, moved); reload++ }
         }
     }
     LaunchedEffect(requests) {
@@ -180,10 +180,10 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (loadError != null) {
                 Text(loadError.orEmpty(), color = MaterialTheme.colorScheme.error)
-                OutlinedButton(onClick = { reload++ }) { Text("Erneut versuchen") }
+                OutlinedButton(onClick = { reload++ }) { Text(str(R.string.home_retry)) }
             } else {
                 CircularProgressIndicator()
-                Hint("Lese Dateien…")
+                Hint(str(R.string.free_reading))
             }
         }
         return
@@ -201,42 +201,41 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
     fun runPhotos() {
         val data = photoData ?: return
         val list = final.mapNotNull { data.candidates[it.key] }
-        busy = "Prüfe auf dem PC…"; progress = 0 to list.size; resultText = null
+        busy = str(R.string.free_checking_pc); progress = 0 to list.size; resultText = null
         scope.launch {
             try {
                 val v = SpaceFreer.verify(ctx, list) { d, t -> progress = d to t }
                 resultText = buildString {
-                    append("${v.confirmed.size} Dateien auf dem PC bestätigt.")
-                    if (v.missing > 0) append(" ${v.missing} wurden auf dem PC nicht gefunden oder sind anders – sie bleiben.")
-                    if (v.unreachable.isNotEmpty()) append(" PC nicht erreichbar: ${v.unreachable.joinToString(", ")}.")
+                    append(plural(R.plurals.free_confirmed, v.confirmed.size))
+                    if (v.missing > 0) append(" ").append(plural(R.plurals.free_missing, v.missing))
+                    if (v.unreachable.isNotEmpty()) append(" ").append(str(R.string.free_unreachable_hosts, v.unreachable.joinToString(", ")))
                 }
                 if (v.confirmed.isNotEmpty()) {
                     if (hasTrash) { moved = 0; requests = SpaceFreer.trashRequests(ctx, v.confirmed) }
                     else confirmDirect = v.confirmed
                 }
             } catch (e: Exception) {
-                resultText = "Prüfung fehlgeschlagen: ${e.message}"
+                resultText = str(R.string.free_check_failed, e.message ?: "")
             } finally { busy = null; progress = null }
         }
     }
 
     fun runFolder() {
-        busy = if (MirrorLock.busy) "Wartet, bis der laufende Sync fertig ist… Diese Ansicht bitte offen lassen."
-            else "Prüfe auf dem PC und lösche…"
+        busy = str(if (MirrorLock.busy) R.string.free_waiting_for_sync else R.string.free_checking_deleting)
         progress = 0 to final.size; resultText = null
         scope.launch {
             try {
                 val r = FolderFreer.verifyAndDelete(ctx, profile, final) { d, t ->
-                    busy = "Prüfe auf dem PC und lösche…"; progress = d to t
+                    busy = str(R.string.free_checking_deleting); progress = d to t
                 }
                 resultText = buildString {
-                    append("${r.deleted} Dateien gelöscht, ${Notifications.formatBytes(r.bytes)} frei.")
-                    if (r.kept > 0) append(" ${r.kept} Dateien bleiben (auf dem PC nicht gefunden, anders oder inzwischen geändert).")
-                    if (r.unreachable) append(" Der PC war nicht (mehr) erreichbar.")
+                    append(plural(R.plurals.free_deleted, r.deleted, r.deleted, Notifications.formatBytes(r.bytes)))
+                    if (r.kept > 0) append(" ").append(plural(R.plurals.free_kept, r.kept))
+                    if (r.unreachable) append(" ").append(str(R.string.free_pc_lost))
                 }
                 reload++
             } catch (e: Exception) {
-                resultText = "Fehlgeschlagen: ${e.message}"
+                resultText = str(R.string.free_failed, e.message ?: "")
             } finally { busy = null; progress = null }
         }
     }
@@ -247,57 +246,54 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
     ) {
         item {
             SectionCard(profile.name) {
-                Hint(if (photos) "Verschiebt Fotos und Videos, die nachweislich auf dem PC gesichert sind, in den Papierkorb " +
-                    "der Galerie. Vorher prüft LeoSync jede Datei auf dem PC. Was dort fehlt oder anders ist, bleibt."
-                else "Löscht Dateien auf dem Handy, die nachweislich unverändert auf dem PC liegen. Auf dem PC bleiben sie " +
-                    "erhalten. Ordner-Dateien kommen nicht in einen Papierkorb, sie werden nach der Prüfung direkt gelöscht.")
+                Hint(str(if (photos) R.string.free_intro_photos else R.string.free_intro_folder))
             }
         }
         // Kriterien
         item {
-            SectionCard("Auswahl") {
-                if (eligible.size > 1) ValueField("Profil", profile.name) { picker = Picker.PROFILE }
-                ValueField(if (photos) "Älter als (Aufnahmedatum)" else "Älter als (Änderungsdatum)",
-                    criteria.age?.label ?: "egal") { picker = Picker.AGE }
-                ValueField("Ordner", when (criteria.folders.size) {
-                    0 -> "Alle"
+            SectionCard(str(R.string.free_selection)) {
+                if (eligible.size > 1) ValueField(str(R.string.free_profile), profile.name) { picker = Picker.PROFILE }
+                ValueField(str(if (photos) R.string.free_older_taken else R.string.free_older_modified),
+                    criteria.age?.label ?: str(R.string.free_any)) { picker = Picker.AGE }
+                ValueField(str(R.string.free_folders), when (criteria.folders.size) {
+                    0 -> str(R.string.free_all)
                     1 -> criteria.folders.first()
-                    else -> "${criteria.folders.size} Ordner"
+                    else -> plural(R.plurals.free_n_folders, criteria.folders.size)
                 }) { picker = Picker.FOLDERS }
-                TextButton(onClick = { more = !more }) { Text(if (more) "Weitere Kriterien ausblenden" else "Weitere Kriterien…") }
+                TextButton(onClick = { more = !more }) { Text(str(if (more) R.string.free_less else R.string.free_more)) }
                 // Geänderte Zeilen bleiben auch zugeklappt sichtbar
                 if (more || criteria.kinds != defaults.kinds || criteria.extensions.isNotEmpty())
-                    ValueField("Dateitypen", typesLabel(criteria)) { picker = Picker.TYPES }
+                    ValueField(str(R.string.free_types), typesLabel(criteria)) { picker = Picker.TYPES }
                 if (more || criteria.minSize > 0)
-                    ValueField("Grösse ab", if (criteria.minSize <= 0) "Kein Minimum" else Notifications.formatBytes(criteria.minSize)) {
+                    ValueField(str(R.string.free_min_size), if (criteria.minSize <= 0) str(R.string.free_no_minimum) else Notifications.formatBytes(criteria.minSize)) {
                         picker = Picker.SIZE
                     }
                 if (more || criteria.exclude.isNotEmpty())
-                    ValueField("Ausnehmen", when (criteria.exclude.size) {
-                        0 -> "Nichts"
+                    ValueField(str(R.string.free_exclude), when (criteria.exclude.size) {
+                        0 -> str(R.string.free_nothing)
                         1 -> criteria.exclude.first()
-                        else -> "${criteria.exclude.size} Muster"
+                        else -> plural(R.plurals.free_n_patterns, criteria.exclude.size)
                     }) { picker = Picker.EXCLUDE }
                 if (photos && (more || !criteria.keepFavorites)) {
-                    if (hasTrash) SwitchRow("Favoriten behalten", criteria.keepFavorites,
-                        subtitle = "In der Galerie als Favorit markierte Fotos bleiben auf dem Handy.") {
+                    if (hasTrash) SwitchRow(str(R.string.free_keep_favorites), criteria.keepFavorites,
+                        subtitle = str(R.string.free_keep_favorites_sub)) {
                         criteria = criteria.copy(keepFavorites = it); settings.freeSpaceKeepFavorites = it
                     }
-                    else Hint("Favoriten kann Android erst ab Version 11 melden.")
+                    else Hint(str(R.string.free_favorites_android11))
                 }
             }
         }
         // Ergebnis
         item {
             SectionCard {
-                Text("Passend: ${final.size} Dateien · ${Notifications.formatBytes(finalBytes)}",
+                Text(plural(R.plurals.free_matching, final.size, final.size, Notifications.formatBytes(finalBytes)),
                     style = MaterialTheme.typography.titleMedium)
-                if (deselected.isNotEmpty()) Hint("${selection.candidates.size - final.size} in der Vorschau abgewählt.")
-                if (selection.notBackedUp > 0) Hint("${selection.notBackedUp} passende Dateien sind (noch) nicht gesichert und bleiben.")
-                if (selection.favoritesKept > 0) Hint("${selection.favoritesKept} Favoriten bleiben.")
+                if (deselected.isNotEmpty()) Hint(str(R.string.free_deselected, selection.candidates.size - final.size))
+                if (selection.notBackedUp > 0) Hint(plural(R.plurals.free_not_backed_up, selection.notBackedUp))
+                if (selection.favoritesKept > 0) Hint(plural(R.plurals.free_favorites_kept, selection.favoritesKept))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(enabled = selection.candidates.isNotEmpty(), onClick = { showPreview = !showPreview }) {
-                        Text(if (showPreview) "Vorschau ausblenden" else "Vorschau")
+                        Text(str(if (showPreview) R.string.free_preview_hide else R.string.free_preview))
                     }
                 }
                 Button(
@@ -307,13 +303,9 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                     colors = if (photos) ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
                 ) {
-                    Text(when {
-                        !photos -> "Auf dem PC prüfen und löschen"
-                        hasTrash -> "Auf dem PC prüfen und in den Papierkorb"
-                        else -> "Auf dem PC prüfen und löschen"
-                    })
+                    Text(str(if (photos && hasTrash) R.string.free_run_trash else R.string.free_run_delete))
                 }
-                if (photos && hasTrash) Hint("Im Papierkorb der Galerie bleiben die Dateien 30 Tage wiederherstellbar.")
+                if (photos && hasTrash) Hint(str(R.string.free_gallery_trash_hint))
             }
         }
         busy?.let { b ->
@@ -328,7 +320,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 }
             }
         }
-        resultText?.let { t -> item { SectionCard("Ergebnis") { Text(t) } } }
+        resultText?.let { t -> item { SectionCard(str(R.string.free_result)) { Text(t) } } }
 
         // Vorschau: nach Ordnern gruppiert, einzelne Dateien und ganze Ordner abwählbar
         if (showPreview) {
@@ -341,7 +333,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                         deselected = if (allOn) deselected + keys else deselected - keys
                     }, verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = allOn, onCheckedChange = { on -> deselected = if (on) deselected - keys else deselected + keys })
-                        Text("📁 " + folder.ifEmpty { "(Hauptordner)" } + " · ${inFolder.size}",
+                        Text("📁 " + folder.ifEmpty { str(R.string.free_main_folder) } + " · ${inFolder.size}",
                             style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -357,13 +349,13 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                     }
                 }
             }
-            if (photos) item { Hint("Live-Fotos (Bild + Video) werden nur gemeinsam entfernt.") }
+            if (photos) item { Hint(str(R.string.free_live_photos)) }
         }
     }
 
     // ---- Auswahlfenster ---------------------------------------------------------------
     when (picker) {
-        Picker.PROFILE -> PickDialog("Profil", onDismiss = { picker = null }) {
+        Picker.PROFILE -> PickDialog(str(R.string.free_profile), onDismiss = { picker = null }) {
             eligible.forEach { p ->
                 RadioLine(p.name, p.id == profile.id) { picker = null; onSwitch(p.id) }
             }
@@ -389,43 +381,39 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
 
     if (confirmFolder) AlertDialog(
         onDismissRequest = { confirmFolder = false },
-        title = { Text("${final.size} Dateien löschen?") },
-        text = {
-            Text("LeoSync prüft jede Datei auf dem PC (vorhanden, gleiche Grösse, gleicher Inhalt) und löscht sie danach " +
-                "endgültig vom Handy (${Notifications.formatBytes(finalBytes)}). Auf dem PC bleiben sie erhalten. " +
-                "Was dort fehlt oder anders ist, bleibt auf dem Handy.")
-        },
+        title = { Text(plural(R.plurals.free_confirm_title, final.size)) },
+        text = { Text(str(R.string.free_confirm_text, Notifications.formatBytes(finalBytes))) },
         confirmButton = {
             TextButton(onClick = { confirmFolder = false; runFolder() }) {
-                Text("Prüfen und löschen", color = MaterialTheme.colorScheme.error)
+                Text(str(R.string.free_confirm_button), color = MaterialTheme.colorScheme.error)
             }
         },
-        dismissButton = { TextButton(onClick = { confirmFolder = false }) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = { confirmFolder = false }) { Text(str(R.string.common_cancel)) } },
     )
 
     confirmDirect?.let { list ->
         AlertDialog(
             onDismissRequest = { confirmDirect = null },
-            title = { Text("Endgültig löschen?") },
-            text = { Text("Android 10 hat keinen Papierkorb. ${list.size} Dateien werden endgültig vom Handy gelöscht. Sie sind auf dem PC vorhanden.") },
+            title = { Text(str(R.string.free_direct_title)) },
+            text = { Text(plural(R.plurals.free_direct_text, list.size)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDirect = null
                     scope.launch {
                         val n = SpaceFreer.deleteDirectly(ctx, list)
-                        Toast.makeText(ctx, "$n Dateien gelöscht", Toast.LENGTH_LONG).show()
+                        Toast.makeText(ctx, plural(R.plurals.free_direct_done, n), Toast.LENGTH_LONG).show()
                         reload++
                     }
-                }) { Text("Löschen") }
+                }) { Text(str(R.string.common_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDirect = null }) { Text("Abbrechen") } },
+            dismissButton = { TextButton(onClick = { confirmDirect = null }) { Text(str(R.string.common_cancel)) } },
         )
     }
 }
 
 private fun typesLabel(c: FreeCriteria): String {
     val parts = c.kinds.sortedBy { it.ordinal }.map { it.label } + c.extensions.sorted().map { "*.$it" }
-    return if (parts.isEmpty()) "Alle" else parts.joinToString(", ")
+    return if (parts.isEmpty()) str(R.string.free_all) else parts.joinToString(", ")
 }
 
 // ---- Dialoge ------------------------------------------------------------------------------
@@ -439,7 +427,7 @@ private fun PickDialog(
         title = { Text(title) },
         text = { Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState())) { content() } },
         confirmButton = { confirm?.invoke() },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.common_cancel)) } },
     )
 }
 
@@ -466,15 +454,15 @@ private fun AgeDialog(current: Age?, onDismiss: () -> Unit, onDone: (Age?) -> Un
     var amount by remember { mutableStateOf((current?.amount ?: 12).toString()) }
     var unit by remember { mutableStateOf(current?.unit ?: AgeUnit.MONTHS) }
     val n = amount.toIntOrNull()?.takeIf { it in 1..9999 }
-    PickDialog("Älter als", onDismiss, confirm = {
-        TextButton(enabled = any || n != null, onClick = { onDone(if (any) null else Age(n!!, unit)) }) { Text("Übernehmen") }
+    PickDialog(str(R.string.free_age_title), onDismiss, confirm = {
+        TextButton(enabled = any || n != null, onClick = { onDone(if (any) null else Age(n!!, unit)) }) { Text(str(R.string.free_apply)) }
     }) {
-        RadioLine("Alter egal", any) { any = true }
-        RadioLine("Älter als …", !any) { any = false }
+        RadioLine(str(R.string.free_age_any), any) { any = true }
+        RadioLine(str(R.string.free_age_older), !any) { any = false }
         if (!any) {
             OutlinedTextField(
                 amount, { v -> amount = v.filter { it.isDigit() }.take(4) },
-                label = { Text("Anzahl") }, isError = n == null, singleLine = true,
+                label = { Text(str(R.string.free_amount)) }, isError = n == null, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
@@ -486,10 +474,10 @@ private fun AgeDialog(current: Age?, onDismiss: () -> Unit, onDone: (Age?) -> Un
 @Composable
 private fun FoldersDialog(folders: List<String>, current: Set<String>, onDismiss: () -> Unit, onDone: (Set<String>) -> Unit) {
     var chosen by remember { mutableStateOf(current) }
-    PickDialog("Ordner", onDismiss, confirm = { TextButton(onClick = { onDone(chosen) }) { Text("Übernehmen") } }) {
-        CheckLine("Alle Ordner", chosen.isEmpty()) { if (it) chosen = emptySet() }
-        if (folders.isEmpty()) Hint("Keine Unterordner.")
-        Hint("Ein Ordner schliesst seine Unterordner ein.")
+    PickDialog(str(R.string.free_folders), onDismiss, confirm = { TextButton(onClick = { onDone(chosen) }) { Text(str(R.string.free_apply)) } }) {
+        CheckLine(str(R.string.free_all_folders), chosen.isEmpty()) { if (it) chosen = emptySet() }
+        if (folders.isEmpty()) Hint(str(R.string.free_no_subfolders))
+        Hint(str(R.string.free_folder_includes_sub))
         for (f in folders) {
             val depth = f.count { it == '/' }
             // Liegt in einem bereits gewählten Ordner -> automatisch dabei
@@ -508,20 +496,20 @@ private fun TypesDialog(
 ) {
     var kinds by remember { mutableStateOf(current.kinds) }
     var extText by remember { mutableStateOf(current.extensions.sorted().joinToString(", ")) }
-    PickDialog("Dateitypen", onDismiss, confirm = {
+    PickDialog(str(R.string.free_types), onDismiss, confirm = {
         TextButton(onClick = { onDone(kinds, if (allowExtensions) FreeRules.parseExtensions(extText) else emptySet()) }) {
-            Text("Übernehmen")
+            Text(str(R.string.free_apply))
         }
     }) {
-        CheckLine("Alle Typen", kinds.isEmpty() && extText.isBlank()) { if (it) { kinds = emptySet(); extText = "" } }
+        CheckLine(str(R.string.free_all_types), kinds.isEmpty() && extText.isBlank()) { if (it) { kinds = emptySet(); extText = "" } }
         for (k in offered) CheckLine(k.label, k in kinds) { on -> kinds = if (on) kinds + k else kinds - k }
         if (allowExtensions) {
             OutlinedTextField(
-                extText, { extText = it }, label = { Text("Eigene Endungen") },
-                placeholder = { Text("z. B. iso, bak") }, singleLine = true,
+                extText, { extText = it }, label = { Text(str(R.string.free_own_extensions)) },
+                placeholder = { Text(str(R.string.free_own_extensions_example)) }, singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
-            Hint("„Andere“ = alles, was in keine der Gruppen passt.")
+            Hint(str(R.string.free_other_hint, FileKind.OTHER.label))
         }
     }
 }
@@ -534,15 +522,15 @@ private fun SizeDialog(current: Long, onDismiss: () -> Unit, onDone: (Long) -> U
     var value by remember { mutableStateOf(current) }
     var text by remember { mutableStateOf(if (current > 0) (current / mb).toString() else "") }
     val customMb = text.toLongOrNull()?.takeIf { it in 1..1_000_000 }
-    PickDialog("Grösse ab", onDismiss, confirm = {
+    PickDialog(str(R.string.free_min_size), onDismiss, confirm = {
         TextButton(enabled = !custom || customMb != null, onClick = { onDone(if (custom) customMb!! * mb else value) }) {
-            Text("Übernehmen")
+            Text(str(R.string.free_apply))
         }
     }) {
         presets.forEach { p ->
-            RadioLine(if (p == 0L) "Kein Minimum" else Notifications.formatBytes(p), !custom && value == p) { custom = false; value = p }
+            RadioLine(if (p == 0L) str(R.string.free_no_minimum) else Notifications.formatBytes(p), !custom && value == p) { custom = false; value = p }
         }
-        RadioLine("Eigener Wert", custom) { custom = true }
+        RadioLine(str(R.string.free_custom_value), custom) { custom = true }
         if (custom) OutlinedTextField(
             text, { v -> text = v.filter { it.isDigit() }.take(7) }, label = { Text("MB") },
             isError = customMb == null, singleLine = true,
@@ -555,13 +543,13 @@ private fun SizeDialog(current: Long, onDismiss: () -> Unit, onDone: (Long) -> U
 @Composable
 private fun ExcludeDialog(current: List<String>, onDismiss: () -> Unit, onDone: (List<String>) -> Unit) {
     var text by remember { mutableStateOf(current.joinToString("\n")) }
-    PickDialog("Ausnehmen", onDismiss, confirm = {
-        TextButton(onClick = { onDone(com.sync2pc.app.mirror.FileFilter.split(text)) }) { Text("Übernehmen") }
+    PickDialog(str(R.string.free_exclude), onDismiss, confirm = {
+        TextButton(onClick = { onDone(com.sync2pc.app.mirror.FileFilter.split(text)) }) { Text(str(R.string.free_apply)) }
     }) {
-        Hint("Ein Muster pro Zeile. Passende Dateien bleiben immer auf dem Handy.")
-        Hint("Beispiele: *.kdbx (alle Dateien mit dieser Endung), Wichtig/** (alles im Ordner „Wichtig“), Thumbs.db")
+        Hint(str(R.string.free_exclude_hint))
+        Hint(str(R.string.free_exclude_examples))
         OutlinedTextField(
-            text, { text = it }, label = { Text("Muster") }, minLines = 4,
+            text, { text = it }, label = { Text(str(R.string.free_patterns)) }, minLines = 4,
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
     }

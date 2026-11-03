@@ -22,6 +22,8 @@ class TargetResolver(
     private val countryNames: Set<String>,
     private val dryRun: Boolean,
     private val offline: Boolean,
+    /** Alle Namen eines Landes (alle Sprachen) zum Länderkürzel – findet Standardordner nach einem Sprachwechsel */
+    private val namesOfCountry: (String) -> Collection<String> = { emptyList() },
 ) {
     sealed class Resolution {
         data class Folder(val name: String) : Resolution()
@@ -72,6 +74,10 @@ class TargetResolver(
         // 2. Standardname vorhanden
         val default = FolderNames.defaultName(month, countryName)
         findExisting(year, default)?.let { return Resolution.Folder(it) }
+        // 2b. Standardname in einer anderen Sprache (z. B. "06 - Ägypten" nach dem Wechsel auf Englisch, 0.8.0)
+        if (countryKey != null && countryName != null) for (alt in namesOfCountry(countryKey)) {
+            findExisting(year, FolderNames.defaultName(month, alt))?.let { return Resolution.Folder(it) }
+        }
 
         // 3. Umbenannte Ordner mit gleicher Monatszahl
         val candidates = foldersOf(year).filter {

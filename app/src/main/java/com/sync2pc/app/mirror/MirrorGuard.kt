@@ -237,10 +237,10 @@ object MirrorGuard {
 
     /** Text der Warnung (Startseite und Benachrichtigung) */
     fun title(g: Guard): String = when (g.kind) {
-        GuardKind.REMOTE_MISSING -> "PC-Ordner nicht gefunden"
-        GuardKind.LOCAL_MISSING -> "Handy-Ordner nicht gefunden"
-        GuardKind.MASS_DELETE -> "Viele Dateien würden gelöscht"
-        GuardKind.CHECK_FOLDER -> "Ist das wirklich der richtige Ordner?"
+        GuardKind.REMOTE_MISSING -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_title_remote)
+        GuardKind.LOCAL_MISSING -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_title_local)
+        GuardKind.MASS_DELETE -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_title_mass)
+        GuardKind.CHECK_FOLDER -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.profile_folder_warning_title)
     }
 
     /**
@@ -259,16 +259,11 @@ object MirrorGuard {
     }
 
     fun text(g: Guard, profileName: String): String = when (g.kind) {
-        GuardKind.REMOTE_MISSING -> "Der PC-Ordner von „$profileName“ fehlt oder ist leer, obwohl schon synchronisiert wurde. " +
-            "Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil."
-        GuardKind.LOCAL_MISSING -> "Der Handy-Ordner von „$profileName“ fehlt oder ist leer, obwohl schon synchronisiert wurde. " +
-            "Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil."
+        GuardKind.REMOTE_MISSING -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_text_remote, profileName)
+        GuardKind.LOCAL_MISSING -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_text_local, profileName)
         GuardKind.MASS_DELETE -> if (g.folder.isNotEmpty())
-            "In „$profileName“ würde der ganze Ordner „${g.folder}“ in den Papierkorb verschoben " +
-                "(insgesamt ${g.count} Dateien). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil."
-        else "In „$profileName“ würden ${g.count} von ${g.total} Dateien in den Papierkorb verschoben. " +
-            "Wurde wirklich so viel gelöscht? Bis du entscheidest, ruht dieses Profil."
-        GuardKind.CHECK_FOLDER -> "Der gewählte Ordner von „$profileName“ passt nicht zum bisherigen Sync-Stand. " +
-            "Bis du entscheidest, ruht dieses Profil."
+            com.sync2pc.app.l10n.plural(com.sync2pc.app.R.plurals.guard_text_folder, g.count, profileName, g.folder, g.count)
+        else com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_text_mass, profileName, g.count, g.total)
+        GuardKind.CHECK_FOLDER -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_text_check, profileName)
     }
 }

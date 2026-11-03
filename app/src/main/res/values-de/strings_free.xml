@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Speicher freigeben (FreeSpaceScreen) -->
+    <string name="free_hint">Speicher freigeben gibt es nur bei Fotos-Profilen und bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“.</string>
+    <string name="free_no_profile">Kein passendes Profil.</string>
+    <string name="free_choose_profile">Für welches Profil möchtest du Speicher freigeben?</string>
+    <string name="free_kind_photos">Fotos &amp; Videos</string>
+    <string name="free_kind_folder">Ordner Handy → PC</string>
+    <string name="free_read_error">Fehler beim Einlesen</string>
+    <plurals name="free_moved_to_gallery_trash">
+        <item quantity="one">%1$s Datei in den Papierkorb der Galerie verschoben.</item>
+        <item quantity="other">%1$s Dateien in den Papierkorb der Galerie verschoben.</item>
+    </plurals>
+    <string name="free_reading">Lese Dateien…</string>
+    <string name="free_checking_pc">Prüfe auf dem PC…</string>
+    <plurals name="free_confirmed">
+        <item quantity="one">%1$s Datei auf dem PC bestätigt.</item>
+        <item quantity="other">%1$s Dateien auf dem PC bestätigt.</item>
+    </plurals>
+    <plurals name="free_missing">
+        <item quantity="one">%1$s wurde auf dem PC nicht gefunden oder ist anders – sie bleibt.</item>
+        <item quantity="other">%1$s wurden auf dem PC nicht gefunden oder sind anders – sie bleiben.</item>
+    </plurals>
+    <string name="free_unreachable_hosts">PC nicht erreichbar: %1$s.</string>
+    <string name="free_check_failed">Prüfung fehlgeschlagen: %1$s</string>
+    <string name="free_waiting_for_sync">Wartet, bis der laufende Sync fertig ist… Diese Ansicht bitte offen lassen.</string>
+    <string name="free_checking_deleting">Prüfe auf dem PC und lösche…</string>
+    <plurals name="free_deleted">
+        <item quantity="one">%1$s Datei gelöscht, %2$s frei.</item>
+        <item quantity="other">%1$s Dateien gelöscht, %2$s frei.</item>
+    </plurals>
+    <plurals name="free_kept">
+        <item quantity="one">%1$s Datei bleibt (auf dem PC nicht gefunden, anders oder inzwischen geändert).</item>
+        <item quantity="other">%1$s Dateien bleiben (auf dem PC nicht gefunden, anders oder inzwischen geändert).</item>
+    </plurals>
+    <string name="free_pc_lost">Der PC war nicht (mehr) erreichbar.</string>
+    <string name="free_failed">Fehlgeschlagen: %1$s</string>
+    <string name="free_intro_photos">Verschiebt Fotos und Videos, die nachweislich auf dem PC gesichert sind, in den Papierkorb der Galerie. Vorher prüft LeoSync jede Datei auf dem PC. Was dort fehlt oder anders ist, bleibt.</string>
+    <string name="free_intro_folder">Löscht Dateien auf dem Handy, die nachweislich unverändert auf dem PC liegen. Auf dem PC bleiben sie erhalten. Ordner-Dateien kommen nicht in einen Papierkorb, sie werden nach der Prüfung direkt gelöscht.</string>
+    <string name="free_selection">Auswahl</string>
+    <string name="free_profile">Profil</string>
+    <string name="free_older_taken">Älter als (Aufnahmedatum)</string>
+    <string name="free_older_modified">Älter als (Änderungsdatum)</string>
+    <string name="free_any">egal</string>
+    <string name="free_folders">Ordner</string>
+    <string name="free_all">Alle</string>
+    <plurals name="free_n_folders">
+        <item quantity="one">%1$s Ordner</item>
+        <item quantity="other">%1$s Ordner</item>
+    </plurals>
+    <string name="free_less">Weitere Kriterien ausblenden</string>
+    <string name="free_more">Weitere Kriterien…</string>
+    <string name="free_types">Dateitypen</string>
+    <string name="free_min_size">Grösse ab</string>
+    <string name="free_no_minimum">Kein Minimum</string>
+    <string name="free_exclude">Ausnehmen</string>
+    <string name="free_nothing">Nichts</string>
+    <plurals name="free_n_patterns">
+        <item quantity="one">%1$s Muster</item>
+        <item quantity="other">%1$s Muster</item>
+    </plurals>
+    <string name="free_keep_favorites">Favoriten behalten</string>
+    <string name="free_keep_favorites_sub">In der Galerie als Favorit markierte Fotos bleiben auf dem Handy.</string>
+    <string name="free_favorites_android11">Favoriten kann Android erst ab Version 11 melden.</string>
+    <plurals name="free_matching">
+        <item quantity="one">Passend: %1$s Datei · %2$s</item>
+        <item quantity="other">Passend: %1$s Dateien · %2$s</item>
+    </plurals>
+    <string name="free_deselected">%1$s in der Vorschau abgewählt.</string>
+    <plurals name="free_not_backed_up">
+        <item quantity="one">%1$s passende Datei ist (noch) nicht gesichert und bleibt.</item>
+        <item quantity="other">%1$s passende Dateien sind (noch) nicht gesichert und bleiben.</item>
+    </plurals>
+    <plurals name="free_favorites_kept">
+        <item quantity="one">%1$s Favorit bleibt.</item>
+        <item quantity="other">%1$s Favoriten bleiben.</item>
+    </plurals>
+    <string name="free_preview_hide">Vorschau ausblenden</string>
+    <string name="free_preview">Vorschau</string>
+    <string name="free_run_trash">Auf dem PC prüfen und in den Papierkorb</string>
+    <string name="free_run_delete">Auf dem PC prüfen und löschen</string>
+    <string name="free_gallery_trash_hint">Im Papierkorb der Galerie bleiben die Dateien 30 Tage wiederherstellbar.</string>
+    <string name="free_result">Ergebnis</string>
+    <string name="free_main_folder">(Hauptordner)</string>
+    <string name="free_live_photos">Live-Fotos (Bild + Video) werden nur gemeinsam entfernt.</string>
+    <plurals name="free_confirm_title">
+        <item quantity="one">%1$s Datei löschen?</item>
+        <item quantity="other">%1$s Dateien löschen?</item>
+    </plurals>
+    <string name="free_confirm_text">LeoSync prüft jede Datei auf dem PC (vorhanden, gleiche Grösse, gleicher Inhalt) und löscht sie danach endgültig vom Handy (%1$s). Auf dem PC bleiben sie erhalten. Was dort fehlt oder anders ist, bleibt auf dem Handy.</string>
+    <string name="free_confirm_button">Prüfen und löschen</string>
+    <string name="free_direct_title">Endgültig löschen?</string>
+    <plurals name="free_direct_text">
+        <item quantity="one">Android 10 hat keinen Papierkorb. %1$s Datei wird endgültig vom Handy gelöscht. Sie ist auf dem PC vorhanden.</item>
+        <item quantity="other">Android 10 hat keinen Papierkorb. %1$s Dateien werden endgültig vom Handy gelöscht. Sie sind auf dem PC vorhanden.</item>
+    </plurals>
+    <plurals name="free_direct_done">
+        <item quantity="one">%1$s Datei gelöscht</item>
+        <item quantity="other">%1$s Dateien gelöscht</item>
+    </plurals>
+    <string name="free_age_title">Älter als</string>
+    <string name="free_apply">Übernehmen</string>
+    <string name="free_age_any">Alter egal</string>
+    <string name="free_age_older">Älter als …</string>
+    <string name="free_amount">Anzahl</string>
+    <string name="free_all_folders">Alle Ordner</string>
+    <string name="free_no_subfolders">Keine Unterordner.</string>
+    <string name="free_folder_includes_sub">Ein Ordner schliesst seine Unterordner ein.</string>
+    <string name="free_all_types">Alle Typen</string>
+    <string name="free_own_extensions">Eigene Endungen</string>
+    <string name="free_own_extensions_example">z. B. iso, bak</string>
+    <string name="free_other_hint">„%1$s“ = alles, was in keine der Gruppen passt.</string>
+    <string name="free_custom_value">Eigener Wert</string>
+    <string name="free_exclude_hint">Ein Muster pro Zeile. Passende Dateien bleiben immer auf dem Handy.</string>
+    <string name="free_exclude_examples">Beispiele: *.kdbx (alle Dateien mit dieser Endung), Wichtig/** (alles im Ordner „Wichtig“), Thumbs.db</string>
+    <string name="free_patterns">Muster</string>
+
+    <!-- Auswahlregeln (FreeRules) -->
+    <string name="kind_images">Bilder</string>
+    <string name="kind_videos">Videos</string>
+    <string name="kind_audio">Audio</string>
+    <string name="kind_documents">Dokumente</string>
+    <string name="kind_archives">Archive</string>
+    <string name="kind_other">Andere</string>
+    <string name="unit_days">Tage</string>
+    <string name="unit_weeks">Wochen</string>
+    <string name="unit_months">Monate</string>
+    <string name="unit_years">Jahre</string>
+    <plurals name="age_days">
+        <item quantity="one">%1$s Tag</item>
+        <item quantity="other">%1$s Tage</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%1$s Woche</item>
+        <item quantity="other">%1$s Wochen</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%1$s Monat</item>
+        <item quantity="other">%1$s Monate</item>
+    </plurals>
+    <plurals name="age_years">
+        <item quantity="one">%1$s Jahr</item>
+        <item quantity="other">%1$s Jahre</item>
+    </plurals>
+</resources>

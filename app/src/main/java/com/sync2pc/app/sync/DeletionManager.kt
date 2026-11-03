@@ -57,9 +57,9 @@ object DeletionManager {
                 try {
                     context.contentResolver.delete(Uri.parse(row.mediaUri), null, null)
                     dao.setDeleteStateForKey(key, DeleteState.DONE)
-                    log("Gelöscht: $key")
+                    log(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.delete_log_done, key))
                 } catch (e: Exception) {
-                    log("Löschen fehlgeschlagen: $key – ${e.message}")
+                    log(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.delete_log_failed, key, e.message ?: ""))
                 }
             } else {
                 dao.setDeleteStateForKey(key, if (trash) DeleteState.QUEUED_TRASH else DeleteState.QUEUED_DELETE)

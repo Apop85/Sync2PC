@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Speicher freigeben (FreeSpaceScreen) -->
+    <string name="free_hint">Free up space is only available for photo profiles and for folder profiles phone → PC without “Apply deletions”.</string>
+    <string name="free_no_profile">No suitable profile.</string>
+    <string name="free_choose_profile">For which profile do you want to free up space?</string>
+    <string name="free_kind_photos">Photos &amp; videos</string>
+    <string name="free_kind_folder">Folder phone → PC</string>
+    <string name="free_read_error">Error while reading</string>
+    <plurals name="free_moved_to_gallery_trash">
+        <item quantity="one">%1$s file moved to the gallery trash.</item>
+        <item quantity="other">%1$s files moved to the gallery trash.</item>
+    </plurals>
+    <string name="free_reading">Reading files…</string>
+    <string name="free_checking_pc">Checking on the PC…</string>
+    <plurals name="free_confirmed">
+        <item quantity="one">%1$s file confirmed on the PC.</item>
+        <item quantity="other">%1$s files confirmed on the PC.</item>
+    </plurals>
+    <plurals name="free_missing">
+        <item quantity="one">%1$s was not found on the PC or is different – it stays.</item>
+        <item quantity="other">%1$s were not found on the PC or are different – they stay.</item>
+    </plurals>
+    <string name="free_unreachable_hosts">PC not reachable: %1$s.</string>
+    <string name="free_check_failed">Check failed: %1$s</string>
+    <string name="free_waiting_for_sync">Waiting until the running sync is finished… Please keep this view open.</string>
+    <string name="free_checking_deleting">Checking on the PC and deleting…</string>
+    <plurals name="free_deleted">
+        <item quantity="one">%1$s file deleted, %2$s freed.</item>
+        <item quantity="other">%1$s files deleted, %2$s freed.</item>
+    </plurals>
+    <plurals name="free_kept">
+        <item quantity="one">%1$s file stays (not found on the PC, different or changed in the meantime).</item>
+        <item quantity="other">%1$s files stay (not found on the PC, different or changed in the meantime).</item>
+    </plurals>
+    <string name="free_pc_lost">The PC was not (or no longer) reachable.</string>
+    <string name="free_failed">Failed: %1$s</string>
+    <string name="free_intro_photos">Moves photos and videos that are verifiably backed up on the PC to the gallery trash. Before that LeoSync checks every file on the PC. Whatever is missing there or different stays.</string>
+    <string name="free_intro_folder">Deletes files on the phone that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check.</string>
+    <string name="free_selection">Selection</string>
+    <string name="free_profile">Profile</string>
+    <string name="free_older_taken">Older than (date taken)</string>
+    <string name="free_older_modified">Older than (date modified)</string>
+    <string name="free_any">any</string>
+    <string name="free_folders">Folders</string>
+    <string name="free_all">All</string>
+    <plurals name="free_n_folders">
+        <item quantity="one">%1$s folder</item>
+        <item quantity="other">%1$s folders</item>
+    </plurals>
+    <string name="free_less">Hide more criteria</string>
+    <string name="free_more">More criteria…</string>
+    <string name="free_types">File types</string>
+    <string name="free_min_size">Minimum size</string>
+    <string name="free_no_minimum">No minimum</string>
+    <string name="free_exclude">Exclude</string>
+    <string name="free_nothing">Nothing</string>
+    <plurals name="free_n_patterns">
+        <item quantity="one">%1$s pattern</item>
+        <item quantity="other">%1$s patterns</item>
+    </plurals>
+    <string name="free_keep_favorites">Keep favorites</string>
+    <string name="free_keep_favorites_sub">Photos marked as favorite in the gallery stay on the phone.</string>
+    <string name="free_favorites_android11">Android can only report favorites from version 11.</string>
+    <plurals name="free_matching">
+        <item quantity="one">Matching: %1$s file · %2$s</item>
+        <item quantity="other">Matching: %1$s files · %2$s</item>
+    </plurals>
+    <string name="free_deselected">%1$s deselected in the preview.</string>
+    <plurals name="free_not_backed_up">
+        <item quantity="one">%1$s matching file is not backed up (yet) and stays.</item>
+        <item quantity="other">%1$s matching files are not backed up (yet) and stay.</item>
+    </plurals>
+    <plurals name="free_favorites_kept">
+        <item quantity="one">%1$s favorite stays.</item>
+        <item quantity="other">%1$s favorites stay.</item>
+    </plurals>
+    <string name="free_preview_hide">Hide preview</string>
+    <string name="free_preview">Preview</string>
+    <string name="free_run_trash">Check on the PC and move to trash</string>
+    <string name="free_run_delete">Check on the PC and delete</string>
+    <string name="free_gallery_trash_hint">Files in the gallery trash can be restored for 30 days.</string>
+    <string name="free_result">Result</string>
+    <string name="free_main_folder">(main folder)</string>
+    <string name="free_live_photos">Live photos (image + video) are only removed together.</string>
+    <plurals name="free_confirm_title">
+        <item quantity="one">Delete %1$s file?</item>
+        <item quantity="other">Delete %1$s files?</item>
+    </plurals>
+    <string name="free_confirm_text">LeoSync checks every file on the PC (present, same size, same content) and then deletes it permanently from the phone (%1$s). They are kept on the PC. Whatever is missing there or different stays on the phone.</string>
+    <string name="free_confirm_button">Check and delete</string>
+    <string name="free_direct_title">Delete permanently?</string>
+    <plurals name="free_direct_text">
+        <item quantity="one">Android 10 has no trash. %1$s file will be permanently deleted from the phone. It is present on the PC.</item>
+        <item quantity="other">Android 10 has no trash. %1$s files will be permanently deleted from the phone. They are present on the PC.</item>
+    </plurals>
+    <plurals name="free_direct_done">
+        <item quantity="one">%1$s file deleted</item>
+        <item quantity="other">%1$s files deleted</item>
+    </plurals>
+    <string name="free_age_title">Older than</string>
+    <string name="free_apply">Apply</string>
+    <string name="free_age_any">Any age</string>
+    <string name="free_age_older">Older than …</string>
+    <string name="free_amount">Amount</string>
+    <string name="free_all_folders">All folders</string>
+    <string name="free_no_subfolders">No subfolders.</string>
+    <string name="free_folder_includes_sub">A folder includes its subfolders.</string>
+    <string name="free_all_types">All types</string>
+    <string name="free_own_extensions">Own extensions</string>
+    <string name="free_own_extensions_example">e.g. iso, bak</string>
+    <string name="free_other_hint">“%1$s” = everything that fits none of the groups.</string>
+    <string name="free_custom_value">Custom value</string>
+    <string name="free_exclude_hint">One pattern per line. Matching files always stay on the phone.</string>
+    <string name="free_exclude_examples">Examples: *.kdbx (all files with this extension), Important/** (everything in the folder “Important”), Thumbs.db</string>
+    <string name="free_patterns">Patterns</string>
+
+    <!-- Auswahlregeln (FreeRules) -->
+    <string name="kind_images">Images</string>
+    <string name="kind_videos">Videos</string>
+    <string name="kind_audio">Audio</string>
+    <string name="kind_documents">Documents</string>
+    <string name="kind_archives">Archives</string>
+    <string name="kind_other">Other</string>
+    <string name="unit_days">Days</string>
+    <string name="unit_weeks">Weeks</string>
+    <string name="unit_months">Months</string>
+    <string name="unit_years">Years</string>
+    <plurals name="age_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="age_weeks">
+        <item quantity="one">%1$s week</item>
+        <item quantity="other">%1$s weeks</item>
+    </plurals>
+    <plurals name="age_months">
+        <item quantity="one">%1$s month</item>
+        <item quantity="other">%1$s months</item>
+    </plurals>
+    <plurals name="age_years">
+        <item quantity="one">%1$s year</item>
+        <item quantity="other">%1$s years</item>
+    </plurals>
+</resources>

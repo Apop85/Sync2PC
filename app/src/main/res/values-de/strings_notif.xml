@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Benachrichtigungen (Notifications) -->
+    <string name="notif_channel_progress">Synchronisierung</string>
+    <string name="notif_channel_progress_desc">Fortschritt der Übertragung</string>
+    <string name="notif_channel_alerts_desc">Ordnerauswahl, Löschbestätigung, Fehler</string>
+    <string name="notif_progress_title">%1$s: %2$s / %3$s Dateien</string>
+    <string name="notif_progress_text">%1$s von %2$s (%3$s %%)</string>
+    <string name="notif_summary_problem">LeoSync – Problem</string>
+    <string name="notif_summary_done">LeoSync – fertig</string>
+    <plurals name="notif_decision_text">
+        <item quantity="one">%1$s Datei in %2$s wartet: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen.</item>
+        <item quantity="other">%1$s Dateien in %2$s warten: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen.</item>
+    </plurals>
+    <plurals name="notif_delete_text">
+        <item quantity="one">%1$s Datei ist verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.</item>
+        <item quantity="other">%1$s Dateien sind verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.</item>
+    </plurals>
+    <string name="notif_wait_wifi">Wartet auf WLAN</string>
+    <string name="notif_wait_wifi_named">Wartet auf WLAN „%1$s“</string>
+    <string name="notif_paused_files">%1$s / %2$s Dateien</string>
+    <plurals name="notif_conflict_text">
+        <item quantity="one">%1$s Datei wurde auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.</item>
+        <item quantity="other">%1$s Dateien wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.</item>
+    </plurals>
+    <string name="notif_guard_title">LeoSync wartet auf dich</string>
+    <string name="notif_guard_text">Der Ordner-Sync „%1$s“ wurde zur Sicherheit angehalten. Tippen, um zu entscheiden.</string>
+    <plurals name="notif_stale_title">
+        <item quantity="one">Seit %1$s Tag nicht gesichert</item>
+        <item quantity="other">Seit %1$s Tagen nicht gesichert</item>
+    </plurals>
+    <string name="notif_stale_text">Ist das Heim-WLAN verbunden und der PC eingeschaltet? Tippen zum Öffnen.</string>
+    <string name="notif_update_text">LeoSync %1$s ist verfügbar. Tippen zum Installieren.</string>
+    <string name="notif_installed_title">Update installiert</string>
+    <string name="notif_installed_text">LeoSync wurde auf Version %1$s aktualisiert. Tippen zum Öffnen.</string>
+</resources>

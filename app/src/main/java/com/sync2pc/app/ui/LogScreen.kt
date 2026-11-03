@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.LogItem
 import com.sync2pc.app.data.RunGrouping
@@ -57,22 +59,22 @@ fun LogScreen(onBack: () -> Unit) {
     val shown = RunGrouping.filter(grouped, onlyErrors, onlyTransfers)
 
     ScreenScaffold(
-        title = "Verlauf",
+        title = str(R.string.home_cd_log),
         onBack = onBack,
         actions = {
             IconButton(onClick = {
                 scope.launch {
                     try {
                         val text = Diagnostics.logExport(ctx)
-                        Diagnostics.shareAsFile(ctx, text, "LeoSync-Verlauf_${Diagnostics.fileStamp()}.txt")
+                        Diagnostics.shareAsFile(ctx, text, str(R.string.log_export_file, Diagnostics.fileStamp()))
                     } catch (e: Exception) {
-                        android.widget.Toast.makeText(ctx, "Export fehlgeschlagen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(ctx, str(R.string.log_export_failed, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
-            }) { Icon(Icons.Filled.Share, "Verlauf teilen") }
+            }) { Icon(Icons.Filled.Share, str(R.string.log_share)) }
             IconButton(onClick = {
                 scope.launch { withContext(Dispatchers.IO) { dao.clearLogs(); dao.clearRuns() } }
-            }) { Icon(Icons.Filled.Delete, "Verlauf löschen") }
+            }) { Icon(Icons.Filled.Delete, str(R.string.log_clear)) }
         },
     ) { pad ->
         LazyColumn(
@@ -86,20 +88,20 @@ fun LogScreen(onBack: () -> Unit) {
                     FilterChip(selected = !onlyErrors && !onlyTransfers, onClick = {
                         onlyErrors = false; onlyTransfers = false
                         settings.logFilterErrors = false; settings.logFilterTransfers = false
-                    }, label = { Text("Alle") })
+                    }, label = { Text(str(R.string.free_all)) })
                     FilterChip(selected = onlyErrors, onClick = { onlyErrors = !onlyErrors; settings.logFilterErrors = onlyErrors },
-                        label = { Text("Fehler") })
+                        label = { Text(str(R.string.log_filter_errors)) })
                     FilterChip(selected = onlyTransfers, onClick = { onlyTransfers = !onlyTransfers; settings.logFilterTransfers = onlyTransfers },
-                        label = { Text("Übertragungen") })
+                        label = { Text(str(R.string.log_filter_transfers)) })
                 }
             }
             if (shown.isEmpty()) item {
-                Text(when {
-                    runs.isEmpty() -> "Noch keine Einträge."
-                    onlyErrors && onlyTransfers -> "Keine Läufe mit Fehlern oder Übertragungen."
-                    onlyErrors -> "Keine Läufe mit Fehlern."
-                    else -> "Keine Läufe mit Übertragungen."
-                })
+                Text(str(when {
+                    runs.isEmpty() -> R.string.log_empty
+                    onlyErrors && onlyTransfers -> R.string.log_empty_both
+                    onlyErrors -> R.string.log_empty_errors
+                    else -> R.string.log_empty_transfers
+                }))
             }
             items(shown, key = { item ->
                 when (item) {
@@ -130,7 +132,7 @@ private fun IdleCard(runs: List<SyncRun>, expanded: Boolean, onClick: () -> Unit
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${runs.size}× geprüft – nichts zu tun", modifier = Modifier.weight(1f),
+                Text(str(R.string.log_idle_group, runs.size), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall)
                 Text("OK", color = MaterialTheme.colorScheme.primary)
             }
@@ -152,13 +154,13 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val (label, color) = when (r.status) {
-        "OK" -> "OK" to MaterialTheme.colorScheme.primary
-        "PARTIAL" -> "Teilweise" to Color(0xFFB26A00)
-        "FAILED" -> "Fehler" to MaterialTheme.colorScheme.error
-        "CANCELLED" -> "Pausiert" to MaterialTheme.colorScheme.onSurfaceVariant
-        "INTERRUPTED" -> "Unterbrochen" to MaterialTheme.colorScheme.onSurfaceVariant
-        "WAITING" -> "Wartet auf dich" to MaterialTheme.colorScheme.tertiary
-        else -> "Läuft" to MaterialTheme.colorScheme.tertiary
+        "OK" -> str(R.string.common_ok) to MaterialTheme.colorScheme.primary
+        "PARTIAL" -> str(R.string.log_status_partial) to Color(0xFFB26A00)
+        "FAILED" -> str(R.string.log_status_failed) to MaterialTheme.colorScheme.error
+        "CANCELLED" -> str(R.string.log_status_paused) to MaterialTheme.colorScheme.onSurfaceVariant
+        "INTERRUPTED" -> str(R.string.log_status_interrupted) to MaterialTheme.colorScheme.onSurfaceVariant
+        "WAITING" -> str(R.string.log_status_waiting) to MaterialTheme.colorScheme.tertiary
+        else -> str(R.string.log_status_running) to MaterialTheme.colorScheme.tertiary
     }
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -167,7 +169,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
                     style = MaterialTheme.typography.titleSmall)
                 Text(label, color = color)
             }
-            Hint("Auslöser: ${r.trigger}")
+            Hint(str(R.string.log_trigger, r.trigger))
             Text(r.message)
             if (r.bytes > 0) Hint(Notifications.formatBytes(r.bytes))
             if (expanded) {

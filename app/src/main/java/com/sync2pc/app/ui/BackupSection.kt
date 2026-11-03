@@ -24,10 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
 import com.sync2pc.app.backup.BackupCodec
 import com.sync2pc.app.backup.BackupException
 import com.sync2pc.app.backup.BackupManager
 import com.sync2pc.app.backup.ParsedBackup
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,15 +50,16 @@ fun BackupSection() {
     var pw2 by rememberSaveable { mutableStateOf("") }
     val createDoc = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        busy = "Exportiere…"
+        busy = str(R.string.backup_exporting)
         scope.launch {
             try {
                 val r = BackupManager.export(ctx, uri, includeSync, pw1.ifEmpty { null })
-                Toast.makeText(ctx, "Gesichert: ${r.profiles} Profil(e)" +
-                    (if (includeSync) ", ${r.synced} Dateien Sync-Status" else "") +
-                    (if (r.withPasswords) ", Passwörter verschlüsselt" else ", ohne Passwörter"), Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, plural(R.plurals.backup_exported, r.profiles) +
+                    (if (includeSync) ", " + plural(R.plurals.backup_exported_sync, r.synced) else "") +
+                    ", " + str(if (r.withPasswords) R.string.backup_passwords_encrypted else R.string.backup_without_passwords),
+                    Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                Toast.makeText(ctx, "Export fehlgeschlagen: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, str(R.string.log_export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
             } finally {
                 busy = null; pw1 = ""; pw2 = ""
             }
@@ -70,13 +74,13 @@ fun BackupSection() {
     var result by remember { mutableStateOf<String?>(null) }
 
     fun parse(json: String, password: String?) {
-        busy = "Lese Sicherung…"
+        busy = str(R.string.backup_reading)
         scope.launch {
             try {
                 // PBKDF2 braucht bewusst etwas Rechenzeit -> nicht im UI-Thread
                 parsed = withContext(Dispatchers.Default) { BackupCodec.parse(json, password) }
             } catch (e: Exception) {
-                Toast.makeText(ctx, e.message ?: "Sicherung nicht lesbar", Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, e.message ?: str(R.string.backup_unreadable), Toast.LENGTH_LONG).show()
                 importJson = null
             } finally {
                 busy = null
@@ -92,34 +96,32 @@ fun BackupSection() {
                 importJson = json
                 if (BackupCodec.isEncrypted(json)) { importPw = ""; askPassword = true } else parse(json, null)
             } catch (e: Exception) {
-                Toast.makeText(ctx, (e as? BackupException)?.message ?: "Datei nicht lesbar: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, (e as? BackupException)?.message ?: str(R.string.backup_file_unreadable, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
 
     fun runImport(b: ParsedBackup, replace: Boolean) {
         parsed = null
-        busy = "Importiere…"
+        busy = str(R.string.backup_importing)
         scope.launch {
             try {
                 val r = BackupManager.import(ctx, b, replace)
                 result = buildString {
-                    append("${r.profiles} Profil(e) importiert")
-                    if (r.synced > 0) append(", Sync-Status für ${r.synced} Dateien")
+                    append(plural(R.plurals.backup_imported, r.profiles))
+                    if (r.synced > 0) append(", ").append(plural(R.plurals.backup_imported_sync, r.synced))
                     append(".")
                     if (r.skippedIdentical.isNotEmpty())
-                        append("\n\nÜbersprungen, weil schon vorhanden (gleiches Ziel und gleiche Quellen): ${r.skippedIdentical.joinToString(", ")}")
+                        append("\n\n").append(str(R.string.backup_skipped_identical, r.skippedIdentical.joinToString(", ")))
                     if (r.overlapping.isNotEmpty())
-                        append("\n\nHinweis: Überschneidet sich mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner): " +
-                            r.overlapping.joinToString(", "))
+                        append("\n\n").append(str(R.string.backup_overlapping, r.overlapping.joinToString(", ")))
                     if (r.withoutPassword.isNotEmpty())
-                        append("\n\nPasswort neu eingeben bei: ${r.withoutPassword.joinToString(", ")}")
+                        append("\n\n").append(str(R.string.backup_without_password, r.withoutPassword.joinToString(", ")))
                     if (r.needFolder.isNotEmpty())
-                        append("\n\nHandy-Ordner neu wählen bei: ${r.needFolder.joinToString(", ")} " +
-                            "(Android überträgt die Ordner-Freigabe nicht).")
+                        append("\n\n").append(str(R.string.backup_need_folder, r.needFolder.joinToString(", ")))
                 }
             } catch (e: Exception) {
-                Toast.makeText(ctx, "Import fehlgeschlagen: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(ctx, str(R.string.backup_import_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
             } finally {
                 busy = null; importJson = null
             }
@@ -127,13 +129,12 @@ fun BackupSection() {
     }
 
     // --- Anzeige ---------------------------------------------------------------------
-    SectionCard("Sicherung") {
-        Hint("Sichert Profile, Einstellungen, Ordner-Zuordnungen und auf Wunsch den Sync-Status in eine Datei – " +
-            "z. B. vor einem Handywechsel oder einer Neuinstallation.")
+    SectionCard(str(R.string.backup_title)) {
+        Hint(str(R.string.backup_hint))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(enabled = busy == null, onClick = { exportDialog = true }) { Text("Exportieren…") }
+            OutlinedButton(enabled = busy == null, onClick = { exportDialog = true }) { Text(str(R.string.backup_export)) }
             OutlinedButton(enabled = busy == null, onClick = { openDoc.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) {
-                Text("Importieren…")
+                Text(str(R.string.backup_import))
             }
         }
         busy?.let { Hint(it) }
@@ -143,47 +144,45 @@ fun BackupSection() {
         val mismatch = pw1 != pw2
         AlertDialog(
             onDismissRequest = { exportDialog = false },
-            title = { Text("Sicherung exportieren") },
+            title = { Text(str(R.string.backup_export_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SwitchRow("Sync-Status mitsichern", includeSync,
-                        subtitle = "Nach dem Import ist sofort bekannt, welche Dateien schon auf dem PC sind.") { includeSync = it }
-                    OutlinedTextField(pw1, { pw1 = it }, label = { Text("Export-Passwort (optional)") },
+                    SwitchRow(str(R.string.backup_include_sync), includeSync,
+                        subtitle = str(R.string.backup_include_sync_sub)) { includeSync = it }
+                    OutlinedTextField(pw1, { pw1 = it }, label = { Text(str(R.string.backup_password_optional)) },
                         visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth())
-                    if (pw1.isNotEmpty()) OutlinedTextField(pw2, { pw2 = it }, label = { Text("Export-Passwort wiederholen") },
+                    if (pw1.isNotEmpty()) OutlinedTextField(pw2, { pw2 = it }, label = { Text(str(R.string.backup_password_repeat)) },
                         visualTransformation = PasswordVisualTransformation(), singleLine = true, isError = mismatch,
                         modifier = Modifier.fillMaxWidth())
-                    Hint(if (pw1.isEmpty()) "Ohne Export-Passwort enthält die Datei keine SMB-Passwörter; du gibst sie nach dem Import neu ein."
-                    else "Die SMB-Passwörter werden mit diesem Passwort verschlüsselt. Ohne es lassen sie sich nicht wiederherstellen.")
+                    Hint(str(if (pw1.isEmpty()) R.string.backup_no_password_hint else R.string.backup_password_hint))
                 }
             },
             confirmButton = {
                 TextButton(enabled = pw1.isEmpty() || !mismatch, onClick = {
                     exportDialog = false
                     createDoc.launch(BackupManager.suggestedFileName())
-                }) { Text("Datei wählen…") }
+                }) { Text(str(R.string.backup_choose_file)) }
             },
-            dismissButton = { TextButton(onClick = { exportDialog = false; pw1 = ""; pw2 = "" }) { Text("Abbrechen") } },
+            dismissButton = { TextButton(onClick = { exportDialog = false; pw1 = ""; pw2 = "" }) { Text(str(R.string.common_cancel)) } },
         )
     }
 
     if (askPassword) {
         AlertDialog(
             onDismissRequest = { askPassword = false; importJson = null },
-            title = { Text("Export-Passwort") },
+            title = { Text(str(R.string.backup_password)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Hint("Die Sicherung enthält verschlüsselte SMB-Passwörter. Ohne Export-Passwort werden die Profile " +
-                        "trotzdem importiert, die Passwörter gibst du dann neu ein.")
-                    OutlinedTextField(importPw, { importPw = it }, label = { Text("Export-Passwort") },
+                    Hint(str(R.string.backup_ask_password_hint))
+                    OutlinedTextField(importPw, { importPw = it }, label = { Text(str(R.string.backup_password)) },
                         visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                TextButton(onClick = { askPassword = false; importJson?.let { parse(it, importPw) } }) { Text("Weiter") }
+                TextButton(onClick = { askPassword = false; importJson?.let { parse(it, importPw) } }) { Text(str(R.string.profile_next)) }
             },
             dismissButton = {
-                TextButton(onClick = { askPassword = false; importJson?.let { parse(it, null) } }) { Text("Ohne Passwort") }
+                TextButton(onClick = { askPassword = false; importJson?.let { parse(it, null) } }) { Text(str(R.string.backup_without_password_button)) }
             },
         )
     }
@@ -192,26 +191,25 @@ fun BackupSection() {
         val c = b.content
         AlertDialog(
             onDismissRequest = { parsed = null; importJson = null },
-            title = { Text("Sicherung importieren") },
+            title = { Text(str(R.string.backup_import_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Erstellt: ${formatTime(c.createdAt)} (LeoSync ${c.appVersion})")
-                    Text("Profile: " + c.profiles.joinToString(", ") { it.name }.ifEmpty { "keine" })
-                    if (c.synced.isNotEmpty()) Text("Sync-Status: ${c.synced.size} Dateien")
-                    when (b.passwordOk) {
-                        true -> Text("SMB-Passwörter: werden übernommen")
-                        false -> Text("SMB-Passwörter: Export-Passwort fehlt oder ist falsch – Passwörter werden nicht übernommen")
-                        null -> Text("SMB-Passwörter: nicht enthalten")
-                    }
-                    Hint("„Ersetzen“ löscht alle bisherigen Profile samt Sync-Status und übernimmt auch die Einstellungen. " +
-                        "„Hinzufügen“ legt die Profile zusätzlich an.")
+                    Text(str(R.string.backup_created, formatTime(c.createdAt), c.appVersion))
+                    Text(str(R.string.backup_profiles, c.profiles.joinToString(", ") { it.name }.ifEmpty { str(R.string.home_profile_none) }))
+                    if (c.synced.isNotEmpty()) Text(plural(R.plurals.backup_sync_status, c.synced.size))
+                    Text(str(when (b.passwordOk) {
+                        true -> R.string.backup_pw_taken
+                        false -> R.string.backup_pw_wrong
+                        null -> R.string.backup_pw_none
+                    }))
+                    Hint(str(R.string.backup_replace_hint))
                 }
             },
-            confirmButton = { TextButton(onClick = { runImport(b, replace = true) }) { Text("Ersetzen") } },
+            confirmButton = { TextButton(onClick = { runImport(b, replace = true) }) { Text(str(R.string.backup_replace)) } },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { parsed = null; importJson = null }) { Text("Abbrechen") }
-                    TextButton(onClick = { runImport(b, replace = false) }) { Text("Hinzufügen") }
+                    TextButton(onClick = { parsed = null; importJson = null }) { Text(str(R.string.common_cancel)) }
+                    TextButton(onClick = { runImport(b, replace = false) }) { Text(str(R.string.profile_add)) }
                 }
             },
         )
@@ -220,9 +218,9 @@ fun BackupSection() {
     result?.let { msg ->
         AlertDialog(
             onDismissRequest = { result = null },
-            title = { Text("Import abgeschlossen") },
+            title = { Text(str(R.string.backup_import_done)) },
             text = { Text(msg) },
-            confirmButton = { TextButton(onClick = { result = null }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { result = null }) { Text(str(R.string.common_ok)) } },
         )
     }
 }

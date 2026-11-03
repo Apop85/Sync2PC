@@ -21,6 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.str
+import com.sync2pc.app.mirror.MirrorEngine
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.ConflictResolution
 import com.sync2pc.app.data.MirrorConflict
@@ -45,19 +48,19 @@ fun ConflictScreen(onBack: () -> Unit) {
                 list.forEach { dao.resolveConflict(it.profileId, it.relPath, choose(it)) }
             }
             NotificationManagerCompat.from(ctx).cancel(Notifications.ID_CONFLICT)
-            SyncScheduler.enqueueAuto(ctx, "Konfliktlösung")
+            SyncScheduler.enqueueAuto(ctx, str(R.string.trigger_conflicts))
         }
     }
 
     ScreenScaffold(
-        title = "Konflikte",
+        title = str(R.string.conflict_title),
         onBack = onBack,
         actions = {
             if (conflicts.isNotEmpty()) TextButton(onClick = {
                 resolve(conflicts) {
                     if (it.localModified >= it.remoteModified) ConflictResolution.KEEP_LOCAL else ConflictResolution.KEEP_REMOTE
                 }
-            }) { Text("Alle: neuere") }
+            }) { Text(str(R.string.conflict_all_newer)) }
         },
     ) { pad ->
         LazyColumn(
@@ -65,26 +68,23 @@ fun ConflictScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (conflicts.isEmpty()) item { Text("Keine offenen Konflikte.") }
-            else item {
-                Hint("Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. " +
-                    "Die andere Version wird in den Ordner „.LeoSync-Papierkorb“ verschoben, nicht gelöscht. " +
-                    "Die Auswahl wird beim nächsten Sync im WLAN angewendet.")
-            }
+            if (conflicts.isEmpty()) item { Text(str(R.string.conflict_none)) }
+            else item { Hint(str(R.string.conflict_hint, MirrorEngine.TRASH_DIR)) }
             items(conflicts, key = { "${it.profileId}|${it.relPath}" }) { c ->
                 val profileName = profiles.firstOrNull { it.id == c.profileId }?.name ?: ""
                 val localNewer = c.localModified >= c.remoteModified
+                val newer = "  " + str(R.string.conflict_newer)
                 SectionCard {
                     Text(c.relPath, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    if (profiles.size > 1) Hint("Profil: $profileName")
-                    Text("📱 Handy: ${formatTime(c.localModified)} · ${Notifications.formatBytes(c.localSize)}" +
-                        if (localNewer) "  (neuer)" else "")
-                    Text("💻 PC: ${formatTime(c.remoteModified)} · ${Notifications.formatBytes(c.remoteSize)}" +
-                        if (!localNewer) "  (neuer)" else "")
+                    if (profiles.size > 1) Hint(str(R.string.decision_profile, profileName))
+                    Text("📱 " + str(R.string.side_phone) + ": ${formatTime(c.localModified)} · ${Notifications.formatBytes(c.localSize)}" +
+                        if (localNewer) newer else "")
+                    Text("💻 " + str(R.string.side_pc) + ": ${formatTime(c.remoteModified)} · ${Notifications.formatBytes(c.remoteSize)}" +
+                        if (!localNewer) newer else "")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OutlinedButton(onClick = { resolve(listOf(c)) { ConflictResolution.KEEP_LOCAL } }) { Text("Handy") }
-                        OutlinedButton(onClick = { resolve(listOf(c)) { ConflictResolution.KEEP_REMOTE } }) { Text("PC") }
-                        OutlinedButton(onClick = { resolve(listOf(c)) { ConflictResolution.KEEP_BOTH } }) { Text("Beide") }
+                        OutlinedButton(onClick = { resolve(listOf(c)) { ConflictResolution.KEEP_LOCAL } }) { Text(str(R.string.side_phone)) }
+                        OutlinedButton(onClick = { resolve(listOf(c)) { ConflictResolution.KEEP_REMOTE } }) { Text(str(R.string.side_pc)) }
+                        OutlinedButton(onClick = { resolve(listOf(c)) { ConflictResolution.KEEP_BOTH } }) { Text(str(R.string.conflict_both)) }
                     }
                 }
             }

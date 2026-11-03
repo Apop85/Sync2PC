@@ -24,7 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
 import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.ui.Hint
 import com.sync2pc.app.ui.ScreenScaffold
@@ -51,12 +53,12 @@ fun UpdateScreen(onBack: () -> Unit) {
     var autoUpdate by remember { mutableStateOf(s.autoUpdateCheck) }
 
     fun check() {
-        busy = true; status = "Suche nach Updates…"
+        busy = true; status = str(R.string.update_checking)
         scope.launch {
             status = try {
                 val r = withContext(Dispatchers.IO) { UpdateChecker.checkAndStore(ctx) }
                 info = r
-                if (r == null) "Du hast die neueste Version (${UpdateChecker.currentVersion()})." else null
+                if (r == null) str(R.string.update_latest, UpdateChecker.currentVersion()) else null
             } catch (e: Exception) {
                 e.message ?: e.javaClass.simpleName
             }
@@ -65,7 +67,7 @@ fun UpdateScreen(onBack: () -> Unit) {
     }
 
     fun install(u: UpdateInfo) {
-        busy = true; progress = 0f; status = "Lade Version ${u.version}…"
+        busy = true; progress = 0f; status = str(R.string.update_downloading, u.version)
         scope.launch {
             try {
                 val file = withContext(Dispatchers.IO) {
@@ -73,11 +75,11 @@ fun UpdateScreen(onBack: () -> Unit) {
                         if (total > 0) progress = done.toFloat() / total
                     }
                 }
-                status = "Installation wird gestartet…"
+                status = str(R.string.update_installing)
                 withContext(Dispatchers.IO) { UpdateInstaller.install(ctx, file, u.version) }
                 androidx.core.app.NotificationManagerCompat.from(ctx).cancel(Notifications.ID_UPDATE)
             } catch (e: Exception) {
-                status = "Fehler: ${e.message ?: e.javaClass.simpleName}"
+                status = str(R.string.update_error, e.message ?: e.javaClass.simpleName)
             }
             progress = null; busy = false
         }
@@ -86,39 +88,39 @@ fun UpdateScreen(onBack: () -> Unit) {
     // Beim Öffnen sofort prüfen (kein zusätzlicher Knopf nötig)
     LaunchedEffect(Unit) { check() }
 
-    ScreenScaffold(title = "Updates", onBack = onBack) { pad ->
+    ScreenScaffold(title = str(R.string.settings_updates), onBack = onBack) { pad ->
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SectionCard("Installiert") {
-                    Text("Version ${UpdateChecker.currentVersion()}")
+                SectionCard(str(R.string.update_installed)) {
+                    Text(str(R.string.home_version, UpdateChecker.currentVersion()))
                     // Quelle ist seit 0.4.0 fest eingebaut (nicht mehr änderbar)
-                    Hint("Quelle: github.com/${s.updateRepo} (Releases)")
-                    if (s.lastUpdateCheck > 0) Hint("Zuletzt geprüft: ${formatTime(s.lastUpdateCheck)}")
+                    Hint(str(R.string.update_source, s.updateRepo))
+                    if (s.lastUpdateCheck > 0) Hint(str(R.string.update_last_check, formatTime(s.lastUpdateCheck)))
                     if (busy && progress == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    SwitchRow("Täglich nach Updates suchen", autoUpdate, subtitle = "Nur im WLAN, Meldung per Benachrichtigung") {
+                    SwitchRow(str(R.string.update_daily), autoUpdate, subtitle = str(R.string.update_daily_sub)) {
                         autoUpdate = it; s.autoUpdateCheck = it; com.sync2pc.app.sync.SyncScheduler.setupAll(ctx)
                     }
                 }
             }
             val u = info
             if (u != null) item {
-                SectionCard("Version ${u.version} verfügbar") {
-                    if (u.size > 0) Hint("Grösse: ${Notifications.formatBytes(u.size)}")
+                SectionCard(str(R.string.update_available, u.version)) {
+                    if (u.size > 0) Hint(str(R.string.update_size, Notifications.formatBytes(u.size)))
                     if (u.notes.isNotBlank()) Text(u.notes.take(3000), style = MaterialTheme.typography.bodySmall)
                     if (!canInstall) {
-                        Hint("Android muss LeoSync einmalig erlauben, Apps zu installieren.")
+                        Hint(str(R.string.update_permission_hint))
                         OutlinedButton(onClick = {
                             ctx.startActivity(
                                 Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${ctx.packageName}"))
                             )
-                        }) { Text("Erlaubnis erteilen") }
+                        }) { Text(str(R.string.update_permission)) }
                     }
-                    Button(onClick = { install(u) }, enabled = !busy && canInstall) { Text("Herunterladen und installieren") }
-                    Hint("Android fragt zur Bestätigung. Nach dem Update startet LeoSync neu.")
+                    Button(onClick = { install(u) }, enabled = !busy && canInstall) { Text(str(R.string.update_install)) }
+                    Hint(str(R.string.update_install_hint))
                 }
             }
             if (progress != null) item { LinearProgressIndicator(progress = { progress ?: 0f }, modifier = Modifier.fillMaxWidth()) }

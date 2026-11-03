@@ -1,7 +1,12 @@
 package com.sync2pc.app.ui
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.AppLanguage
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import android.content.pm.PackageInstaller
 import android.os.Bundle
 import android.widget.Toast
@@ -54,6 +59,11 @@ class MainActivity : ComponentActivity() {
 
     private var screen by mutableStateOf<Screen>(Screen.Home)
     private var startDeleteFlow by mutableStateOf(false)
+
+    /** Android 10–12: gewählte App-Sprache auch für System- und Material-Texte (ab 13 erledigt das Android) */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.localized(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,11 +121,11 @@ class MainActivity : ComponentActivity() {
             PackageInstaller.STATUS_SUCCESS -> { /* App wird ersetzt und neu gestartet */ }
             else -> {
                 GlobalSettings(this).updateInstalling = ""
-                val msg = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "Status $status"
-                val hint = if (status == PackageInstaller.STATUS_FAILURE_CONFLICT || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE)
-                    " – Die neue Version ist evtl. mit einem anderen Schlüssel signiert." else ""
+                val msg = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: str(R.string.main_install_status, status)
+                val text = if (status == PackageInstaller.STATUS_FAILURE_CONFLICT || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE)
+                    str(R.string.main_update_failed_key, msg) else str(R.string.main_update_failed, msg)
                 if (status != PackageInstaller.STATUS_FAILURE_ABORTED)
-                    Toast.makeText(this, "Update fehlgeschlagen: $msg$hint", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, text, Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -139,7 +149,7 @@ private fun AppRoot(
         scope.launch {
             if (res.resultCode == Activity.RESULT_OK) {
                 withContext(Dispatchers.IO) { DeletionManager.markDone(ctx, current.keys) }
-                Toast.makeText(ctx, "${current.keys.size} Dateien entfernt", Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, plural(R.plurals.main_files_removed, current.keys.size), Toast.LENGTH_SHORT).show()
             }
             batches = if (res.resultCode == Activity.RESULT_OK) rest else emptyList()
         }
@@ -152,7 +162,7 @@ private fun AppRoot(
     val confirmDeletes: () -> Unit = {
         scope.launch {
             val b = withContext(Dispatchers.IO) { DeletionManager.buildRequests(ctx) }
-            if (b.isEmpty()) Toast.makeText(ctx, "Nichts zu entfernen", Toast.LENGTH_SHORT).show()
+            if (b.isEmpty()) Toast.makeText(ctx, str(R.string.main_nothing_to_remove), Toast.LENGTH_SHORT).show()
             batches = b
         }
     }

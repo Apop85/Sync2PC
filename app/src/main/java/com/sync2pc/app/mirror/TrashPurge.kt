@@ -43,10 +43,12 @@ data class PurgeRule(
 }
 
 /** Welche Seite geleert wird */
-enum class PurgeSides(val label: String, val local: Boolean, val remote: Boolean) {
-    BOTH("Handy und PC", true, true),
-    LOCAL("Nur Handy", true, false),
-    REMOTE("Nur PC", false, true),
+enum class PurgeSides(@androidx.annotation.StringRes private val labelRes: Int, val local: Boolean, val remote: Boolean) {
+    BOTH(com.sync2pc.app.R.string.sides_both, true, true),
+    LOCAL(com.sync2pc.app.R.string.sides_phone_only, true, false),
+    REMOTE(com.sync2pc.app.R.string.sides_pc_only, false, true);
+
+    val label: String get() = com.sync2pc.app.l10n.str(labelRes)
 }
 
 object TrashPurge {

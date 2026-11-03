@@ -47,19 +47,19 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             val vol = id.substringBefore(':')
             val path = id.substringAfter(':', "")
             when {
-                vol == "primary" -> path.ifEmpty { "(Hauptordner)" }
+                vol == "primary" -> path.ifEmpty { com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.free_main_folder) }
                 vol == "raw" || path.startsWith("/storage/") -> rawPathLabel(path)
                 uri.authority == "com.android.providers.downloads.documents" -> "Download" + (if (path.isNotEmpty()) "/$path" else "")
-                else -> "SD-Karte: " + path.ifEmpty { "(Hauptordner)" }
+                else -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_sd_card) + ": " + path.ifEmpty { com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.free_main_folder) }
             }
         } catch (e: Exception) { uri.toString() }
 
         /** "/storage/emulated/0/Download/Test" -> "Download/Test", "/storage/1234-ABCD/DCIM" -> "SD-Karte: DCIM" */
         fun rawPathLabel(path: String): String {
             val internal = Regex("""^/storage/emulated/\d+/?""")
-            if (internal.containsMatchIn(path)) return path.replace(internal, "").trimEnd('/').ifEmpty { "(Hauptordner)" }
+            if (internal.containsMatchIn(path)) return path.replace(internal, "").trimEnd('/').ifEmpty { com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.free_main_folder) }
             val sd = Regex("""^/storage/[^/]+/?""")
-            return "SD-Karte: " + path.replace(sd, "").trimEnd('/').ifEmpty { "(Hauptordner)" }
+            return com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_sd_card) + ": " + path.replace(sd, "").trimEnd('/').ifEmpty { com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.free_main_folder) }
         }
 
         fun mimeOf(name: String): String =
@@ -82,7 +82,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
         val out = ArrayList<LocalEntry>()
         val cursor = resolver.query(uri, projection, null, null, null)
-            ?: throw IOException("Handy-Ordner nicht lesbar")
+            ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_unreadable))
         cursor.use { c ->
             while (c.moveToNext()) {
                 val mime = c.getString(2) ?: ""
@@ -190,7 +190,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         val existing = children(parentId).firstOrNull { it.isDir && it.name.equals(name, ignoreCase = true) }
         val id = existing?.docId ?: run {
             val uri = DocumentsContract.createDocument(resolver, docUri(parentId), Document.MIME_TYPE_DIR, name)
-                ?: throw IOException("Ordner '$relDir' konnte nicht angelegt werden")
+                ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_mkdir, relDir))
             DocumentsContract.getDocumentId(uri)
         }
         dirIds[relDir.lowercase()] = id
@@ -198,7 +198,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     }
 
     fun openInput(docId: String, offset: Long = 0): InputStream {
-        val pfd = resolver.openFileDescriptor(docUri(docId), "r") ?: throw IOException("Datei nicht lesbar")
+        val pfd = resolver.openFileDescriptor(docUri(docId), "r") ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_read))
         val ins = ParcelFileDescriptor.AutoCloseInputStream(pfd)
         if (offset > 0) ins.channel.position(offset)
         return ins
@@ -228,9 +228,9 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         val siblings = children(parentId)
         siblings.firstOrNull { !it.isDir && it.name == name + TEMP }?.let { delete(it.docId) }
         val tmpUri = DocumentsContract.createDocument(resolver, docUri(parentId), "application/octet-stream", name + TEMP)
-            ?: throw IOException("Datei '$relPath' konnte nicht angelegt werden")
+            ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_create, relPath))
         try {
-            (resolver.openOutputStream(tmpUri, "w") ?: throw IOException("Datei nicht beschreibbar")).use(write)
+            (resolver.openOutputStream(tmpUri, "w") ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_write))).use(write)
         } catch (e: Exception) {
             try { DocumentsContract.deleteDocument(resolver, tmpUri) } catch (ignored: Exception) {}
             throw e
@@ -254,7 +254,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         }
         val finalUri = try {
             DocumentsContract.renameDocument(resolver, tmpUri, name)
-                ?: throw IOException("Umbenennen von '$relPath' fehlgeschlagen")
+                ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_rename, relPath))
         } catch (e: Exception) {
             // Alte Version wiederherstellen; die Temp-Datei bleibt liegen (wird nie synchronisiert)
             backupId?.let { try { rename(it, name) } catch (ignored: Exception) {} }
@@ -301,8 +301,8 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         }
         if (tmpUri == null) {
             tmpUri = DocumentsContract.createDocument(resolver, docUri(parentId), "application/octet-stream", name + TEMP)
-                ?: throw IOException("Datei '$relPath' konnte nicht angelegt werden")
-            out = resolver.openOutputStream(tmpUri, "w") ?: throw IOException("Datei nicht beschreibbar")
+                ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_create, relPath))
+            out = resolver.openOutputStream(tmpUri, "w") ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_write))
         }
         val uri = tmpUri
         out!!.use { write(it, offset) }
@@ -310,14 +310,14 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         val written = stat(DocumentsContract.getDocumentId(uri))?.size ?: -1
         if (written != expectedSize) {
             try { DocumentsContract.deleteDocument(resolver, uri) } catch (ignored: Exception) {}
-            throw IOException("Grösse nach Download stimmt nicht ($written statt $expectedSize Bytes)")
+            throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_size, written, expectedSize))
         }
         return replaceWith(uri, siblings, name, relPath) to offset
     }
 
     fun rename(docId: String, newName: String): String {
         val uri = DocumentsContract.renameDocument(resolver, docUri(docId), newName)
-            ?: throw IOException("Umbenennen fehlgeschlagen")
+            ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_rename_short))
         return DocumentsContract.getDocumentId(uri)
     }
 
@@ -340,7 +340,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         if (name != entry.name) docId = rename(docId, name)
         try {
             DocumentsContract.moveDocument(resolver, docUri(docId), docUri(sourceParent), docUri(targetParent))
-                ?: throw IOException("Verschieben nicht unterstützt")
+                ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_move))
         } catch (e: Exception) {
             // Anbieter kann nicht verschieben -> kopieren + löschen
             val target = "$trashDir/$name"
@@ -364,7 +364,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             }
         }
         children(rootDocId).filter {
-            it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
+            it.isDir && MirrorEngine.isTrashDir(it.name)
         }.forEach { walk(it.name, it.docId) }
         return out
     }
@@ -396,7 +396,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     fun purgeTrash(rule: PurgeRule, keep: Set<String> = emptySet()): Int {
         var n = 0
         val trashDirs = children(rootDocId).filter {
-            it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
+            it.isDir && MirrorEngine.isTrashDir(it.name)
         }
         for (t in trashDirs) {
             val keepHere = keep.filter { it.startsWith(t.name.lowercase() + "/") }
@@ -445,4 +445,4 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
 const val OLD_SUFFIX = ".s2pold"
 
 /** Zieldatei wurde seit dem Einlesen geändert bzw. ist neu entstanden -> nicht überschreiben (0.4.1) */
-class ChangedDuringRunException : IOException("Datei wurde während des Laufs geändert")
+class ChangedDuringRunException : IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_changed))

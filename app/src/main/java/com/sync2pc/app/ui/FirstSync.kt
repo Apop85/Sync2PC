@@ -36,12 +36,11 @@ object FirstSync {
 fun ChargeWarningDialog(onStart: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Erste Synchronisierung") },
+        title = { Text(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.first_sync_title)) },
         text = {
-            Text("Die erste Synchronisierung überträgt alle vorhandenen Dateien. Je nach Menge dauert sie lange " +
-                "und braucht viel Akku. Schliesse das Telefon am besten ans Ladegerät an.")
+            Text(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.first_sync_text))
         },
-        confirmButton = { TextButton(onClick = onStart) { Text("Trotzdem starten") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+        confirmButton = { TextButton(onClick = onStart) { Text(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.first_sync_start)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.common_cancel)) } },
     )
 }

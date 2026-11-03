@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hersteller-Hinweise gegen App-Killer (VendorHints). Bezeichnungen wie in der deutschen Oberflaeche. -->
+    <string name="vendor_oplus_1">App-Info → Akkunutzung: „Vordergrundaktivität zulassen“, „Hintergrundaktivität zulassen“ und „Automatischer Start“ einschalten</string>
+    <string name="vendor_oplus_2">In der Übersicht der zuletzt genutzten Apps LeoSync sperren (Karte lange drücken → Sperren)</string>
+    <string name="vendor_samsung_1">App-Info → Akku: „Nicht eingeschränkt“ wählen</string>
+    <string name="vendor_samsung_2">Einstellungen → Akku → Hintergrundnutzungslimits: LeoSync zu „Nie ruhende Apps“ hinzufügen</string>
+    <string name="vendor_xiaomi_1">App-Info → „Autostart“ einschalten</string>
+    <string name="vendor_xiaomi_2">App-Info → Energiesparmodus: „Keine Einschränkungen“ wählen</string>
+    <string name="vendor_xiaomi_3">In der Übersicht der zuletzt genutzten Apps LeoSync sperren</string>
+    <string name="vendor_huawei_1">Einstellungen → Akku → App-Start: LeoSync auf „Manuell verwalten“ stellen und alle drei Schalter einschalten</string>
+</resources>

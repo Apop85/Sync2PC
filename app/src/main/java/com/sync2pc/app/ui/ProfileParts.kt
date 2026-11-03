@@ -24,8 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.smb.SmbSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -34,16 +36,14 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ProfileTypeChooser(modifier: Modifier, onChoose: (ProfileType) -> Unit) {
     Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Was möchtest du synchronisieren?", style = MaterialTheme.typography.titleLarge)
+        Text(str(R.string.type_chooser_title), style = MaterialTheme.typography.titleLarge)
         TypeCard(
-            "📷  Fotos & Videos sichern",
-            "Fotos und Videos vom Handy auf den PC. Ablage sortiert nach Jahr, Monat und Reiseland, " +
-                "z. B. 2026\\06 - Ägypten. Optional danach vom Handy entfernen.",
+            "📷  " + ProfileType.PHOTOS.label,
+            str(R.string.type_chooser_photos),
         ) { onChoose(ProfileType.PHOTOS) }
         TypeCard(
-            "📁  Ordner synchronisieren",
-            "Einen beliebigen Ordner 1:1 spiegeln, mit Unterordnern und allen Dateitypen. " +
-                "Richtung wählbar: Handy → PC, PC → Handy oder beidseitig.",
+            "📁  " + ProfileType.MIRROR.label,
+            str(R.string.type_chooser_mirror),
         ) { onChoose(ProfileType.MIRROR) }
     }
 }
@@ -90,7 +90,7 @@ fun RemoteFolderPicker(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ordner auf dem Share") },
+        title = { Text(str(R.string.remote_picker_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("\\" + path, style = MaterialTheme.typography.bodySmall)
@@ -104,7 +104,7 @@ fun RemoteFolderPicker(
                                 Text("⬆  ..")
                             }
                         }
-                        if (list.isEmpty()) item { Hint("Keine Unterordner") }
+                        if (list.isEmpty()) item { Hint(str(R.string.remote_picker_empty)) }
                         items(list) { d ->
                             Row(Modifier.fillMaxWidth().clickable { path = if (path.isEmpty()) d else "$path\\$d" }.padding(vertical = 10.dp)) {
                                 Text("📁  $d")
@@ -114,7 +114,7 @@ fun RemoteFolderPicker(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onPick(path) }, enabled = error == null) { Text("Diesen Ordner verwenden") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+        confirmButton = { TextButton(onClick = { onPick(path) }, enabled = error == null) { Text(str(R.string.remote_picker_use)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.common_cancel)) } },
     )
 }

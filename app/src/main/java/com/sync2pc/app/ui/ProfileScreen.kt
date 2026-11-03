@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.DeleteMode
@@ -65,9 +66,11 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncDirection
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.mirror.FolderCheck
 import com.sync2pc.app.mirror.GuardStore
 import com.sync2pc.app.mirror.LocalTree
+import com.sync2pc.app.mirror.MirrorEngine
 import com.sync2pc.app.mirror.MirrorGuard
 import com.sync2pc.app.mirror.Side
 import com.sync2pc.app.smb.SmbSession
@@ -85,7 +88,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     val scope = rememberCoroutineScope()
 
     var loaded by remember { mutableStateOf(profileId == 0L) }
-    var p by remember { mutableStateOf(Profile(name = "Fotos")) }
+    var p by remember { mutableStateOf(Profile(name = str(R.string.profile_default_photos))) }
     var password by remember { mutableStateOf("") }
     var newSsid by remember { mutableStateOf("") }
     var testResult by remember { mutableStateOf<String?>(null) }
@@ -96,7 +99,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         if (uri == null) return@rememberLauncherForActivityResult
         val rel = treeUriToRelativePath(uri)
         if (rel == null) {
-            Toast.makeText(ctx, "Dieser Ordner kann nicht verwendet werden. Bitte einen Unterordner wählen.", Toast.LENGTH_LONG).show()
+            Toast.makeText(ctx, str(R.string.profile_folder_unusable), Toast.LENGTH_LONG).show()
         } else {
             p = p.copy(sourceFolders = Profile.joinLines(p.folders() + rel))
         }
@@ -108,7 +111,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             ctx.contentResolver.takePersistableUriPermission(uri, LocalTree.FLAGS)
             p = p.copy(localTreeUri = uri.toString())
         } catch (e: SecurityException) {
-            Toast.makeText(ctx, "Für diesen Ordner wurde kein dauerhafter Zugriff erteilt.", Toast.LENGTH_LONG).show()
+            Toast.makeText(ctx, str(R.string.profile_no_persistent_access), Toast.LENGTH_LONG).show()
         }
     }
     /** Neues Profil: zuerst Typ wählen (Assistent) */
@@ -198,7 +201,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 id
             }
             SyncScheduler.setupAll(ctx)
-            Toast.makeText(ctx, "Gespeichert", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, str(R.string.profile_saved_toast), Toast.LENGTH_SHORT).show()
             if (isNew) {
                 // Stand gilt jetzt als gespeichert (keine Nachfrage beim Verlassen)
                 p = toSave.copy(id = savedId); baseline = p; basePassword = password
@@ -221,15 +224,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     // Zurück-Geste im Assistenten: einen Schritt zurück (später registriert -> hat Vorrang)
     BackHandler(enabled = wizard && typeChosen && stepIndex > 0) { showMissing = false; step = steps[stepIndex - 1] }
 
+    val trashName = MirrorEngine.TRASH_DIR
+
     ScreenScaffold(
-        title = if (profileId == 0L) "Neues Profil" else "Profil bearbeiten",
+        title = str(if (profileId == 0L) R.string.profile_title_new else R.string.profile_title_edit),
         onBack = { if (wizard && typeChosen && stepIndex > 0) { showMissing = false; step = steps[stepIndex - 1] } else leave() },
         actions = {
             // Im Assistenten erst ab den optionalen Schritten speichern (vorher fehlen Pflichtangaben)
             if (loaded && typeChosen && (!wizard || step.optional)) IconButton(onClick = { save() }, enabled = p.name.isNotBlank()) {
-                Icon(Icons.Filled.Check, "Speichern")
+                Icon(Icons.Filled.Check, str(R.string.common_save))
             }
-            if (profileId != 0L) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Profil löschen") }
+            if (profileId != 0L) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, str(R.string.profile_delete_cd)) }
         },
     ) { pad ->
         if (!loaded) {
@@ -240,7 +245,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             ProfileTypeChooser(Modifier.padding(pad)) { type ->
                 p = p.copy(
                     profileType = type.name,
-                    name = if (type == ProfileType.MIRROR) "Ordner" else "Fotos",
+                    name = str(if (type == ProfileType.MIRROR) R.string.profile_default_folder else R.string.profile_default_photos),
                     direction = if (type == ProfileType.MIRROR) SyncDirection.BOTH.name else SyncDirection.UPLOAD.name,
                 )
                 pollText = p.remotePollMinutes.toString()
@@ -266,7 +271,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         progress = { (stepIndex + 1f) / steps.size }, modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
-                        "Schritt ${stepIndex + 1} von ${steps.size}: ${step.title}" + if (step.optional) " (optional)" else "",
+                        str(if (step.optional) R.string.profile_step_optional else R.string.profile_step,
+                            stepIndex + 1, steps.size, step.title),
                         style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp),
                     )
                     Text(stepIntro(step, isMirror), style = MaterialTheme.typography.bodyMedium,
@@ -275,57 +281,54 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             }
 
             if (show(Step.NAME)) item {
-                SectionCard("Allgemein") {
-                    OutlinedTextField(p.name, { p = p.copy(name = it) }, label = { Text("Profilname") },
+                SectionCard(str(R.string.profile_general)) {
+                    OutlinedTextField(p.name, { p = p.copy(name = it) }, label = { Text(str(R.string.profile_name)) },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
-                    SwitchRow("Profil aktiv", p.enabled) { p = p.copy(enabled = it) }
-                    Hint("Typ: ${p.type().label}" +
-                        if (isMirror) " – 1:1-Spiegelung mit Unterordnern" else " – sortiert nach Jahr\\Monat - Land")
+                    SwitchRow(str(R.string.profile_active), p.enabled) { p = p.copy(enabled = it) }
+                    Hint(str(if (isMirror) R.string.profile_type_mirror else R.string.profile_type_photos, p.type().label))
                 }
             }
 
             if (isMirror && show(Step.SOURCE)) item {
-                SectionCard("Ordner auf dem Handy") {
+                SectionCard(str(R.string.profile_local_folder)) {
                     val treeUri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
-                    if (treeUri == null) Hint("Noch kein Ordner gewählt.")
+                    if (treeUri == null) Hint(str(R.string.profile_no_folder_yet))
                     else {
                         Text(LocalTree.label(treeUri))
                         if (!LocalTree.hasPermission(ctx, treeUri))
-                            Text("Zugriff verloren – bitte erneut wählen.", color = MaterialTheme.colorScheme.error)
+                            Text(str(R.string.profile_access_lost), color = MaterialTheme.colorScheme.error)
                     }
                     OutlinedButton(onClick = { treePicker.launch(null) }) {
-                        Text(if (treeUri == null) "Ordner wählen…" else "Anderen Ordner wählen…")
+                        Text(str(if (treeUri == null) R.string.profile_choose_folder else R.string.profile_choose_other_folder))
                     }
-                    Hint("Alle Dateien in diesem Ordner und seinen Unterordnern werden mit dem PC abgeglichen. " +
-                        "Android fragt einmalig, ob LeoSync auf den Ordner zugreifen darf (nötig für alle Dateitypen).")
+                    Hint(str(R.string.profile_local_folder_hint))
                 }
             }
 
             if (!isMirror && show(Step.SOURCE)) item {
-                SectionCard("Quellordner auf dem Telefon") {
-                    if (p.folders().isEmpty()) Hint("Noch kein Ordner gewählt (z. B. DCIM/Camera).")
+                SectionCard(str(R.string.profile_sources)) {
+                    if (p.folders().isEmpty()) Hint(str(R.string.profile_sources_empty))
                     p.folders().forEach { f ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(f, Modifier.weight(1f))
                             IconButton(onClick = { p = p.copy(sourceFolders = Profile.joinLines(p.folders() - f)) }) {
-                                Icon(Icons.Filled.Close, "Entfernen")
+                                Icon(Icons.Filled.Close, str(R.string.profile_remove))
                             }
                         }
                     }
-                    OutlinedButton(onClick = { folderPicker.launch(null) }) { Text("Ordner hinzufügen…") }
-                    Hint("Öffnet die Android-Dateiauswahl: Ordner wählen und „Diesen Ordner verwenden“ tippen. " +
-                        "Kamera-Fotos liegen meist in „DCIM/Camera“, Bildschirmfotos in „Pictures/Screenshots“.")
-                    SwitchRow("Unterordner einbeziehen", p.includeSubfolders,
-                        subtitle = "Auch Fotos in Ordnern innerhalb der gewählten Ordner sichern") { p = p.copy(includeSubfolders = it) }
-                    SwitchRow("Fotos", p.includeImages) { p = p.copy(includeImages = it) }
-                    SwitchRow("Videos", p.includeVideos) { p = p.copy(includeVideos = it) }
+                    OutlinedButton(onClick = { folderPicker.launch(null) }) { Text(str(R.string.profile_add_folder)) }
+                    Hint(str(R.string.profile_sources_hint))
+                    SwitchRow(str(R.string.profile_subfolders), p.includeSubfolders,
+                        subtitle = str(R.string.profile_subfolders_sub)) { p = p.copy(includeSubfolders = it) }
+                    SwitchRow(str(R.string.profile_photos), p.includeImages) { p = p.copy(includeImages = it) }
+                    SwitchRow(str(R.string.profile_videos), p.includeVideos) { p = p.copy(includeVideos = it) }
                 }
             }
 
             if (show(Step.TARGET)) item {
-                SectionCard("Ziel (Windows-Freigabe)") {
+                SectionCard(str(R.string.profile_target)) {
                     if (credentialSources.isNotEmpty()) {
-                        Hint("Zugangsdaten von einem anderen Profil übernehmen:")
+                        Hint(str(R.string.profile_copy_credentials))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             items(credentialSources, key = { it.id }) { src ->
                                 AssistChip(
@@ -338,7 +341,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                                         )
                                         password = CredentialCrypto.decrypt(src.smbPasswordEnc)
                                         testResult = null
-                                        Toast.makeText(ctx, "Zugangsdaten von „${src.name}“ übernommen", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(ctx, str(R.string.profile_credentials_copied, src.name), Toast.LENGTH_SHORT).show()
                                     },
                                     label = { Text("${src.name} (${src.smbUser})") },
                                 )
@@ -347,35 +350,35 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     }
                     OutlinedTextField(
                         p.smbPath, { p = p.copy(smbPath = it) },
-                        label = { Text("Freigabe-Pfad") },
-                        placeholder = { Text("\\\\192.168.1.20\\Fotos") },
+                        label = { Text(str(R.string.profile_share_path)) },
+                        placeholder = { Text("\\\\192.168.1.20\\" + str(R.string.profile_share_example)) },
                         isError = p.smbPath.isNotBlank() && SmbTarget.parse(p.smbPath) == null,
                         singleLine = true, modifier = Modifier.fillMaxWidth()
                     )
-                    Hint("Format: \\\\Server\\Freigabe (IP-Adresse oder Name)")
+                    Hint(str(R.string.profile_share_format))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedTextField(
                             p.remoteSubfolder, { p = p.copy(remoteSubfolder = it) },
-                            label = { Text("Unterordner auf dem Share (optional)") },
-                            placeholder = { Text(if (isMirror) "Dokumente\\Handy" else "Handy\\Fotos") },
+                            label = { Text(str(R.string.profile_subfolder)) },
+                            placeholder = { Text(str(if (isMirror) R.string.profile_subfolder_example_mirror else R.string.profile_subfolder_example_photos)) },
                             singleLine = true, modifier = Modifier.weight(1f)
                         )
                         TextButton(
                             enabled = SmbTarget.parse(p.smbPath) != null,
                             onClick = { showRemotePicker = true },
-                        ) { Text("Durchsuchen") }
+                        ) { Text(str(R.string.profile_browse)) }
                     }
-                    OutlinedTextField(p.smbUser, { p = p.copy(smbUser = it) }, label = { Text("Benutzer") },
+                    OutlinedTextField(p.smbUser, { p = p.copy(smbUser = it) }, label = { Text(str(R.string.profile_user)) },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
-                        password, { password = it }, label = { Text("Passwort") }, singleLine = true,
+                        password, { password = it }, label = { Text(str(R.string.profile_password)) }, singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(p.smbDomain, { p = p.copy(smbDomain = it) },
-                        label = { Text("Domäne / PC-Name (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    Hint("Bei einem lokalen Windows-Konto meist leer lassen. Microsoft-Konto: E-Mail-Adresse als Benutzer.")
+                        label = { Text(str(R.string.profile_domain)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Hint(str(R.string.profile_domain_hint))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedButton(enabled = !testing, onClick = {
                             testing = true; testResult = null
@@ -388,7 +391,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                                 }
                                 testing = false
                             }
-                        }) { Text("Verbindung testen") }
+                        }) { Text(str(R.string.profile_test)) }
                         if (testing) CircularProgressIndicator(Modifier.padding(start = 12.dp))
                     }
                     testResult?.let { Text(it) }
@@ -396,36 +399,34 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             }
 
             if (show(Step.OPTIONS)) item {
-                SectionCard("WLAN (automatischer Sync)") {
-                    Hint("Optional. Ist das Telefon mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch " +
-                        "im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst " +
-                        "(z. B. wenn du den PC über VPN erreichst).")
+                SectionCard(str(R.string.profile_wifi)) {
+                    Hint(str(R.string.profile_wifi_hint))
                     p.ssids().forEach { s ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(s, Modifier.weight(1f))
                             IconButton(onClick = { p = p.copy(wifiSsids = Profile.joinLines(p.ssids() - s)) }) {
-                                Icon(Icons.Filled.Close, "Entfernen")
+                                Icon(Icons.Filled.Close, str(R.string.profile_remove))
                             }
                         }
                     }
                     if (currentSsid != null && !p.ssids().contains(currentSsid)) {
                         OutlinedButton(onClick = { p = p.copy(wifiSsids = Profile.joinLines(p.ssids() + currentSsid)) }) {
-                            Text("Aktuelles WLAN „$currentSsid“ hinzufügen")
+                            Text(str(R.string.profile_wifi_add_current, currentSsid))
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(newSsid, { newSsid = it }, label = { Text("WLAN-Name") },
+                        OutlinedTextField(newSsid, { newSsid = it }, label = { Text(str(R.string.profile_wifi_name)) },
                             singleLine = true, modifier = Modifier.weight(1f))
                         TextButton(enabled = newSsid.isNotBlank(), onClick = {
                             p = p.copy(wifiSsids = Profile.joinLines(p.ssids() + newSsid.trim())); newSsid = ""
-                        }) { Text("Hinzufügen") }
+                        }) { Text(str(R.string.profile_add)) }
                     }
                 }
             }
 
             if (isMirror && show(Step.OPTIONS)) item {
-                SectionCard("Richtung und Änderungen") {
-                    Hint("In welche Richtung wird abgeglichen?")
+                SectionCard(str(R.string.profile_direction)) {
+                    Hint(str(R.string.profile_direction_hint))
                     SyncDirection.entries.forEach { d ->
                         Row(
                             Modifier.fillMaxWidth().clickable { p = p.copy(direction = d.name) },
@@ -436,14 +437,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         }
                     }
                     SwitchRow(
-                        "Löschungen übernehmen", p.propagateDeletes,
-                        subtitle = "Wird eine Datei auf einer Seite gelöscht, kommt sie auf der anderen Seite in den " +
-                            "Ordner „.LeoSync-Papierkorb“. Aus: gelöschte Dateien werden wiederhergestellt.",
+                        str(R.string.profile_propagate), p.propagateDeletes,
+                        subtitle = str(R.string.profile_propagate_sub, trashName),
                     ) { p = p.copy(propagateDeletes = it) }
                     SwitchRow(
-                        "Alte Versionen im Papierkorb behalten", p.keepVersions,
-                        subtitle = "Wird eine Datei überschrieben, kommt die alte Version in den Ordner „.LeoSync-Papierkorb“ " +
-                            "und lässt sich über „Wiederherstellen“ zurückholen. Braucht etwas mehr Speicher.",
+                        str(R.string.profile_keep_versions), p.keepVersions,
+                        subtitle = str(R.string.profile_keep_versions_sub, trashName),
                     ) { p = p.copy(keepVersions = it) }
                     OutlinedTextField(
                         trashText,
@@ -451,13 +450,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                             trashText = v.filter { it.isDigit() }.take(4)
                             trashText.toIntOrNull()?.let { p = p.copy(trashRetentionDays = it.coerceIn(0, 3650)) }
                         },
-                        label = { Text("Papierkorb leeren nach … Tagen") },
+                        label = { Text(str(R.string.profile_trash_days)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint("Ältere Einträge im „.LeoSync-Papierkorb“ werden auf Handy und PC endgültig gelöscht. 0 = nie. Standard: 30")
+                    Hint(str(R.string.profile_trash_days_hint, trashName))
                     if (p.dir() == SyncDirection.BOTH) {
-                        Text("Wenn eine Datei auf beiden Seiten geändert wurde:", style = MaterialTheme.typography.bodyMedium)
+                        Text(str(R.string.profile_conflict_question), style = MaterialTheme.typography.bodyMedium)
                         ConflictMode.entries.forEach { m ->
                             Row(
                                 Modifier.fillMaxWidth().clickable { p = p.copy(conflictMode = m.name) },
@@ -467,7 +466,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                                 Text(m.label)
                             }
                         }
-                        if (p.conflict() == ConflictMode.NEWER) Hint("Die ältere Version wird in den Papierkorb verschoben, nicht gelöscht.")
+                        if (p.conflict() == ConflictMode.NEWER) Hint(str(R.string.profile_conflict_newer_hint))
                     }
                     OutlinedTextField(
                         pollText,
@@ -475,17 +474,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                             pollText = v.filter { it.isDigit() }.take(4)
                             pollText.toIntOrNull()?.let { p = p.copy(remotePollMinutes = it.coerceIn(15, 24 * 60)) }
                         },
-                        label = { Text("Auf Änderungen prüfen alle … Minuten") },
+                        label = { Text(str(R.string.profile_poll)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint("Nur solange das Telefon im Ziel-WLAN ist (mindestens 15). Zusätzlich sofort beim Verbinden mit dem WLAN.")
+                    Hint(str(R.string.profile_poll_hint))
                 }
             }
 
             if (!isMirror && show(Step.OPTIONS)) item {
-                SectionCard("Nach erfolgreicher Übertragung") {
-                    Hint("Was passiert mit den Fotos auf dem Telefon, wenn sie sicher auf dem PC liegen?")
+                SectionCard(str(R.string.profile_after_upload)) {
+                    Hint(str(R.string.profile_after_upload_hint))
                     DeleteMode.entries.forEach { m ->
                         Row(
                             Modifier.fillMaxWidth().clickable { p = p.copy(deleteMode = m.name) },
@@ -495,56 +494,48 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                             Text(m.label)
                         }
                     }
-                    if (p.delete() != DeleteMode.KEEP) Hint(
-                        "Dateien werden nur entfernt, wenn der Upload geprüft wurde (Grösse + Prüfsumme). " +
-                            "Android fragt dabei einmal pro Durchgang nach Bestätigung."
-                    )
+                    if (p.delete() != DeleteMode.KEEP) Hint(str(R.string.profile_delete_hint))
                     SwitchRow(
-                        "Upload prüfen",
+                        str(R.string.profile_verify),
                         checked = p.mustVerify(),
-                        subtitle = if (p.delete() != DeleteMode.KEEP) "Pflicht, weil Dateien entfernt werden"
-                        else "Liest 192 KB der Zieldatei zurück und vergleicht die Prüfsumme",
+                        subtitle = str(if (p.delete() != DeleteMode.KEEP) R.string.profile_verify_required else R.string.profile_verify_sub),
                         enabled = p.delete() == DeleteMode.KEEP,
                     ) { p = p.copy(verifyUpload = it) }
                 }
             }
 
             if (show(Step.FILTER)) item {
-                SectionCard("Filter (optional)") {
+                SectionCard(str(R.string.profile_filter)) {
                     OutlinedTextField(
                         p.includePatterns, { p = p.copy(includePatterns = it) },
-                        label = { Text("Nur diese Dateien (Whitelist)") },
+                        label = { Text(str(R.string.profile_filter_include)) },
                         placeholder = { Text("*.pdf, *.docx") },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         p.excludePatterns, { p = p.copy(excludePatterns = it) },
-                        label = { Text("Diese Dateien ausschliessen (Blacklist)") },
+                        label = { Text(str(R.string.profile_filter_exclude)) },
                         placeholder = { Text("Thumbs.db, *.tmp, Temp/**") },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint("Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, " +
-                        "Ordner/** = alles in diesem Ordner. Leere Whitelist = alles. Die Blacklist hat Vorrang.")
+                    Hint(str(R.string.profile_filter_hint))
                 }
             }
 
             // Schutzbremse (0.4.2): letzte der optionalen Einstellungen (so auch im Profil-Assistenten ab 0.5.0)
             if (isMirror && show(Step.GUARD)) item {
-                SectionCard("Schutzbremse (optional)") {
+                SectionCard(str(R.string.profile_guard)) {
                     OutlinedTextField(
                         guardText,
                         { v ->
                             guardText = v.filter { it.isDigit() }.take(3)
                             guardText.toIntOrNull()?.let { p = p.copy(massDeletePercent = it.coerceIn(1, 100)) }
                         },
-                        label = { Text("Nachfragen, wenn mehr als … % gelöscht würden") },
+                        label = { Text(str(R.string.profile_guard_percent)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint("Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält der Sync an und " +
-                        "fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal " +
-                        "und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. " +
-                        "Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.")
+                    Hint(str(R.string.profile_guard_hint))
                 }
             }
 
@@ -555,7 +546,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     if (showMissing && missingText != null) Text(missingText, color = MaterialTheme.colorScheme.error)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (stepIndex > 0) OutlinedButton(onClick = { showMissing = false; step = steps[stepIndex - 1] }) {
-                            Text("Zurück")
+                            Text(str(R.string.common_back))
                         }
                         Spacer(Modifier.weight(1f))
                         if (stepIndex < steps.lastIndex) {
@@ -563,37 +554,36 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                                 if (missingText != null) { showMissing = true }
                                 else { showMissing = false; step = steps[stepIndex + 1] }
                             }
-                            if (step.optional) OutlinedButton(onClick = next) { Text("Weiter") }
-                            else Button(onClick = next) { Text("Weiter") }
+                            if (step.optional) OutlinedButton(onClick = next) { Text(str(R.string.profile_next)) }
+                            else Button(onClick = next) { Text(str(R.string.profile_next)) }
                         }
-                        if (step.optional || stepIndex == steps.lastIndex) Button(onClick = { save() }) { Text("Speichern") }
+                        if (step.optional || stepIndex == steps.lastIndex) Button(onClick = { save() }) { Text(str(R.string.common_save)) }
                     }
                     if (step.optional && stepIndex < steps.lastIndex)
-                        Hint("Die weiteren Schritte sind optional – du kannst jetzt schon speichern.")
+                        Hint(str(R.string.profile_optional_hint))
                 }
             }
 
             // Simulation dieses Profils (nur gespeicherte Profile; simuliert wird der gespeicherte Stand)
             if (profileId != 0L) item {
-                SectionCard("Simulation") {
-                    Hint("Zeigt, was beim Synchronisieren mit diesem Profil passieren würde – ohne etwas zu übertragen.")
-                    OutlinedButton(onClick = { onSimulate(profileId) }, enabled = !dirty) { Text("Simulieren") }
-                    if (dirty) Hint("Zuerst speichern – simuliert wird der gespeicherte Stand.")
+                SectionCard(str(R.string.profile_simulation)) {
+                    Hint(str(R.string.profile_simulation_hint))
+                    OutlinedButton(onClick = { onSimulate(profileId) }, enabled = !dirty) { Text(str(R.string.profile_simulate)) }
+                    if (dirty) Hint(str(R.string.profile_simulation_save_first))
                 }
             }
 
             if (!wizard) item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { save() }, enabled = p.name.isNotBlank()) { Text("Speichern") }
-                    OutlinedButton(onClick = { leave() }) { Text("Abbrechen") }
+                    Button(onClick = { save() }, enabled = p.name.isNotBlank()) { Text(str(R.string.common_save)) }
+                    OutlinedButton(onClick = { leave() }) { Text(str(R.string.common_cancel)) }
                 }
             }
 
             if (profileId != 0L) item {
-                SectionCard("Wartung") {
-                    Hint("Vergisst, welche Dateien bereits übertragen wurden. Beim nächsten Sync wird alles mit dem Share " +
-                        "abgeglichen (identische Dateien werden nicht erneut übertragen).")
-                    OutlinedButton(onClick = { confirmReset = true }) { Text("Sync-Status zurücksetzen") }
+                SectionCard(str(R.string.profile_maintenance)) {
+                    Hint(str(R.string.profile_maintenance_hint))
+                    OutlinedButton(onClick = { confirmReset = true }) { Text(str(R.string.profile_reset)) }
                 }
             }
         }
@@ -608,8 +598,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
-        title = { Text("Profil löschen?") },
-        text = { Text("Einstellungen und Sync-Status dieses Profils werden gelöscht. Dateien auf dem PC bleiben erhalten.") },
+        title = { Text(str(R.string.profile_delete_title)) },
+        text = { Text(str(R.string.profile_delete_text)) },
         confirmButton = {
             TextButton(onClick = {
                 scope.launch {
@@ -625,20 +615,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     }
                     confirmDelete = false; onBack()
                 }
-            }) { Text("Löschen") }
+            }) { Text(str(R.string.common_delete)) }
         },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.common_cancel)) } },
     )
 
     // Nach dem Anlegen: zuerst simulieren, gleich synchronisieren oder später (bis dahin keine Automatik)
     createdId?.let { id ->
         AlertDialog(
             onDismissRequest = { createdId = null; onBack() },
-            title = { Text("Profil gespeichert") },
-            text = {
-                Text("Wie weiter? Bis du dieses Profil einmal synchronisierst, startet es nicht automatisch. " +
-                    "So kannst du zuerst in Ruhe simulieren.")
-            },
+            title = { Text(str(R.string.profile_created_title)) },
+            text = { Text(str(R.string.profile_created_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     createdId = null
@@ -647,12 +634,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         if (!FirstSync.isCharging(ctx)) chargeWarnFor = id
                         else { SyncScheduler.enqueueManual(ctx); onBack() }
                     }
-                }) { Text("Synchronisieren") }
+                }) { Text(str(R.string.home_sync)) }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { createdId = null; onBack() }) { Text("Später") }
-                    TextButton(onClick = { createdId = null; onSimulate(id) }) { Text("Simulieren") }
+                    TextButton(onClick = { createdId = null; onBack() }) { Text(str(R.string.profile_later)) }
+                    TextButton(onClick = { createdId = null; onSimulate(id) }) { Text(str(R.string.profile_simulate)) }
                 }
             },
         )
@@ -666,13 +653,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     if (askLeave) AlertDialog(
         onDismissRequest = { askLeave = false },
-        title = { Text("Änderungen speichern?") },
-        text = { Text("Du hast Änderungen an diesem Profil noch nicht gespeichert.") },
-        confirmButton = { TextButton(onClick = { askLeave = false; save() }) { Text("Speichern") } },
+        title = { Text(str(R.string.profile_leave_title)) },
+        text = { Text(str(R.string.profile_leave_text)) },
+        confirmButton = { TextButton(onClick = { askLeave = false; save() }) { Text(str(R.string.common_save)) } },
         dismissButton = {
             Row {
-                TextButton(onClick = { askLeave = false }) { Text("Abbrechen") }
-                TextButton(onClick = { askLeave = false; onBack() }) { Text("Verwerfen") }
+                TextButton(onClick = { askLeave = false }) { Text(str(R.string.common_cancel)) }
+                TextButton(onClick = { askLeave = false; onBack() }) { Text(str(R.string.home_discard)) }
             }
         },
     )
@@ -681,23 +668,23 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         val identical = hit.kind == ProfileOverlap.Kind.IDENTICAL
         AlertDialog(
             onDismissRequest = { overlap = null },
-            title = { Text(if (identical) "Profil existiert bereits" else "Profile überschneiden sich") },
-            text = { Text(hit.message() + if (identical) "\n\nDas Profil wurde nicht gespeichert." else "") },
+            title = { Text(str(if (identical) R.string.profile_exists_title else R.string.profile_overlap_title)) },
+            text = { Text(hit.message() + if (identical) "\n\n" + str(R.string.profile_not_saved) else "") },
             confirmButton = {
-                if (identical) TextButton(onClick = { overlap = null }) { Text("OK") }
-                else TextButton(onClick = { overlap = null; save(force = true) }) { Text("Trotzdem speichern") }
+                if (identical) TextButton(onClick = { overlap = null }) { Text(str(R.string.common_ok)) }
+                else TextButton(onClick = { overlap = null; save(force = true) }) { Text(str(R.string.profile_save_anyway)) }
             },
-            dismissButton = { if (!identical) TextButton(onClick = { overlap = null }) { Text("Abbrechen") } },
+            dismissButton = { if (!identical) TextButton(onClick = { overlap = null }) { Text(str(R.string.common_cancel)) } },
         )
     }
 
     if (checkingFolder) AlertDialog(
         onDismissRequest = {},
-        title = { Text("Prüfe Ordner…") },
+        title = { Text(str(R.string.profile_checking_folder)) },
         text = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CircularProgressIndicator()
-                Text("Passt der neue Ordner zum bisherigen Sync-Stand?")
+                Text(str(R.string.profile_checking_folder_text))
             }
         },
         confirmButton = {},
@@ -707,17 +694,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     folderWarning?.let { w ->
         AlertDialog(
             onDismissRequest = { folderWarning = null },
-            title = { Text("Ist das wirklich der richtige Ordner?") },
-            text = { Text("Der gewählte Ordner passt nicht zum bisherigen Sync-Stand dieses Profils.") },
+            title = { Text(str(R.string.profile_folder_warning_title)) },
+            text = { Text(str(R.string.profile_folder_warning_text)) },
             confirmButton = {
                 Column(horizontalAlignment = Alignment.End) {
                     TextButton(onClick = {
                         folderWarning = null
                         if (Side.LOCAL in w.sides) treePicker.launch(null) else showRemotePicker = true
-                    }) { Text("Anderen Ordner wählen") }
-                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.ACCEPT) }) { Text("Trotzdem übernehmen") }
-                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.RESET) }) { Text("Als neuen Ordner behandeln") }
-                    TextButton(onClick = { folderWarning = null }) { Text("Abbrechen") }
+                    }) { Text(str(R.string.guard_choose_other)) }
+                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.ACCEPT) }) { Text(str(R.string.guard_accept)) }
+                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.RESET) }) { Text(str(R.string.guard_as_new)) }
+                    TextButton(onClick = { folderWarning = null }) { Text(str(R.string.common_cancel)) }
                 }
             },
         )
@@ -725,8 +712,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     if (confirmReset) AlertDialog(
         onDismissRequest = { confirmReset = false },
-        title = { Text("Sync-Status zurücksetzen?") },
-        text = { Text("Der nächste Sync gleicht alle Dateien erneut mit dem Share ab. Das kann bei vielen Dateien länger dauern.") },
+        title = { Text(str(R.string.profile_reset_title)) },
+        text = { Text(str(R.string.profile_reset_text)) },
         confirmButton = {
             TextButton(onClick = {
                 scope.launch {
@@ -735,30 +722,23 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         GuardStore(ctx).forget(profileId)
                     }
                     confirmReset = false
-                    Toast.makeText(ctx, "Zurückgesetzt", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, str(R.string.profile_reset_done), Toast.LENGTH_SHORT).show()
                 }
-            }) { Text("Zurücksetzen") }
+            }) { Text(str(R.string.profile_reset_button)) }
         },
-        dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(str(R.string.common_cancel)) } },
     )
 }
 
 /** Einleitung je Schritt des Assistenten: Was stellt man hier ein und warum? */
-private fun stepIntro(step: Step, mirror: Boolean): String = when (step) {
-    Step.NAME -> "Wie soll das Profil heissen? Der Name erscheint auf der Startseite, im Verlauf und in den " +
-        "Benachrichtigungen, z. B. „Kamera“ oder „Dokumente“."
-    Step.SOURCE -> if (mirror) "Welcher Ordner auf dem Handy soll mit dem PC abgeglichen werden? Alle Dateien und " +
-        "Unterordner darin werden synchronisiert."
-    else "Welche Fotos und Videos sollen gesichert werden? Wähle die Ordner auf dem Telefon, in denen sie liegen."
-    Step.TARGET -> "Wohin auf dem PC? Gib die Windows-Freigabe an und melde dich mit dem Windows-Benutzer an, der " +
-        "darauf zugreifen darf. „Verbindung testen“ zeigt, ob alles stimmt."
-    Step.OPTIONS -> if (mirror) "Wann wird synchronisiert, in welche Richtung, und was passiert mit gelöschten oder " +
-        "geänderten Dateien?"
-    else "Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Telefon?"
-    Step.FILTER -> "Optional: Nur bestimmte Dateien synchronisieren oder einzelne ausschliessen. Ohne Angaben wird alles " +
-        "synchronisiert."
-    Step.GUARD -> "Optional: Ab wann LeoSync bei vielen Löschungen zuerst nachfragt. Der Standard passt für die meisten."
-}
+private fun stepIntro(step: Step, mirror: Boolean): String = str(when (step) {
+    Step.NAME -> R.string.wizard_intro_name
+    Step.SOURCE -> if (mirror) R.string.wizard_intro_source_mirror else R.string.wizard_intro_source_photos
+    Step.TARGET -> R.string.wizard_intro_target
+    Step.OPTIONS -> if (mirror) R.string.wizard_intro_options_mirror else R.string.wizard_intro_options_photos
+    Step.FILTER -> R.string.wizard_intro_filter
+    Step.GUARD -> R.string.wizard_intro_guard
+})
 
 /** Antwort auf "Ist das wirklich der richtige Ordner?" */
 enum class FolderChoice { ACCEPT, RESET }

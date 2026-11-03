@@ -8,7 +8,11 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.l10n.Texts
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
@@ -77,13 +81,13 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (!isStopped) return null
         return when (val r = stopReason) {
             WorkInfo.STOP_REASON_CANCELLED_BY_APP -> null
-            WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> "WLAN getrennt"
-            WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> "nicht mehr am Ladegerät"
-            WorkInfo.STOP_REASON_TIMEOUT -> "Zeitlimit von Android"
+            WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> str(R.string.stop_wifi)
+            WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> str(R.string.stop_charger)
+            WorkInfo.STOP_REASON_TIMEOUT -> str(R.string.stop_timeout)
             WorkInfo.STOP_REASON_QUOTA, WorkInfo.STOP_REASON_APP_STANDBY,
             WorkInfo.STOP_REASON_BACKGROUND_RESTRICTION, WorkInfo.STOP_REASON_DEVICE_STATE,
-            WorkInfo.STOP_REASON_SYSTEM_PROCESSING -> "vom System gestoppt ($r)"
-            else -> "von Android gestoppt ($r)"
+            WorkInfo.STOP_REASON_SYSTEM_PROCESSING -> str(R.string.stop_system, r)
+            else -> str(R.string.stop_android, r)
         }
     }
 
@@ -109,7 +113,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val ctx = applicationContext
         val startedAt = System.currentTimeMillis()
         val manual = inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)
-        val trigger = inputData.getString(SyncScheduler.KEY_TRIGGER) ?: "Automatisch"
+        val trigger = inputData.getString(SyncScheduler.KEY_TRIGGER) ?: str(R.string.trigger_auto)
         val dao = AppDatabase.get(ctx).dao()
         dao.closeDanglingRuns()
 
@@ -117,8 +121,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // Vom Benutzer pausiert: keine automatischen Läufe (ein manueller Start hebt die Pause vorher auf)
         if (!manual && settings.isPaused()) {
             settings.noteSkip(
-                if (settings.manualOnly) "Automatische Syncs ausgeschaltet (nur manuell)"
-                else "Pausiert bis ${java.text.SimpleDateFormat("dd.MM. HH:mm", java.util.Locale.GERMANY).format(java.util.Date(settings.pausedUntil))}"
+                if (settings.manualOnly) str(R.string.skip_manual_only)
+                else str(R.string.skip_paused_until, java.text.SimpleDateFormat(str(R.string.fmt_day_month) + " HH:mm", Texts.locale).format(java.util.Date(settings.pausedUntil)))
             )
             return Result.success()
         }
@@ -145,8 +149,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val eligible = if (manual) all else all.filter { p -> currentSsid != null && p.ssids().contains(currentSsid) }
         if (eligible.isEmpty()) {
             if (!manual && WifiHelper.isOnWifi(ctx)) settings.noteSkip(
-                if (currentSsid == null) "WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen"
-                else "WLAN „$currentSsid“ ist in keinem Profil eingetragen"
+                if (currentSsid == null) str(R.string.skip_ssid_unreadable)
+                else str(R.string.skip_ssid_unknown, currentSsid)
             )
             // Fortsetzen-Auftrag, aber falsches WLAN: in 15 Minuten erneut schauen (max. 24 Stunden lang)
             if (isResumeRun && settings.resumeOnWifi) {
@@ -184,7 +188,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     if (w > 0) {
                         if (!manual && !WifiHelper.isOnWifi(ctx)) break // WLAN wieder weg -> aufgeben
                         Notifications.updateProgress(
-                            ctx, SyncProgress(p.name, "Warte auf PC ($host) – Versuch ${n + 1}/${waits.size}…", 0, 0, 0, 0, null), null
+                            ctx, SyncProgress(p.name, str(R.string.wait_for_pc, host, n + 1, waits.size), 0, 0, 0, 0, null), null
                         )
                         delay(w)
                     }
@@ -196,7 +200,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
             if (ok) runnable += p else unreachable += p
         }
-        if (unreachable.isNotEmpty()) settings.noteSkip("PC nicht erreichbar: " + unreachable.joinToString(", ") { it.name })
+        if (unreachable.isNotEmpty()) settings.noteSkip(str(R.string.skip_pc_unreachable, unreachable.joinToString(", ") { it.name }))
         if (runnable.isEmpty()) {
             handleUnreachable(unreachable, manual, isRetry)
             return Result.success()
@@ -277,14 +281,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // --- Abschluss-Benachrichtigungen ----------------------------------------
         // Verbindungsabbrüche sind erwartbar: keine Meldung, der Rest folgt automatisch
         if (hardFailure != null) {
-            Notifications.summary(ctx, "Sync fehlgeschlagen – $hardFailure", error = true)
+            Notifications.summary(ctx, str(R.string.summary_failed, hardFailure ?: ""), error = true)
         } else if (interruptedMidRun) {
             // still – Anzeige "Pausiert" bzw. erneuter Versuch übernimmt
         } else if (uploaded > 0 || failed > 0) {
             Notifications.summary(
                 ctx,
-                "$uploaded Dateien übertragen (${Notifications.formatBytes(bytes)})" +
-                    (if (failed > 0) ", $failed Fehler – Details im Verlauf" else ""),
+                plural(R.plurals.summary_transferred, uploaded, uploaded, Notifications.formatBytes(bytes)) +
+                    (if (failed > 0) ", " + plural(R.plurals.summary_errors, failed) else ""),
                 error = failed > 0
             )
         }
@@ -293,7 +297,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             Notifications.decisionNeeded(ctx, groups, waiting)
         }
         if (conflicts > 0) Notifications.conflictsNeeded(ctx, dao.openConflictCount())
-        if (spaceShortage) Notifications.summary(ctx, "Zu wenig Speicher auf dem Handy – einige Dateien wurden nicht heruntergeladen.", error = true)
+        if (spaceShortage) Notifications.summary(ctx, str(R.string.summary_no_space), error = true)
         val toDelete = dao.queuedDeletes().map { it.sourceKey }.distinct().size
         if (toDelete > 0) Notifications.deleteReady(ctx, toDelete)
         // Während des Laufs neu entstandene Fotos/Videos -> nach Mindestalter nachholen
@@ -329,7 +333,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val names = unreachable.joinToString(", ") { it.name }
         // Abbruch mitten in der Übertragung behandeln wie automatisch (auch bei manuellem Start): still fortsetzen
         if (manual && !midRun) {
-            Notifications.summary(ctx, "PC nicht erreichbar ($names). Ist er eingeschaltet und die Freigabe aktiv?", error = true)
+            Notifications.summary(ctx, str(R.string.summary_pc_unreachable, names), error = true)
             return
         }
         // Noch im Ziel-WLAN? Dann ist der PC weg -> in 30 Minuten erneut prüfen.
@@ -342,7 +346,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             s.shareRetryAt = System.currentTimeMillis() + minutes * 60_000
             s.shareUnreachable = names
             SyncScheduler.enqueueShareRetry(ctx, minutes)
-            if (midRun) Notifications.showPaused(ctx, lastProgress, targetWifi, "Verbindung unterbrochen – neuer Versuch in $minutes Minuten")
+            if (midRun) Notifications.showPaused(ctx, lastProgress, targetWifi, str(R.string.paused_connection_retry, minutes))
         } else {
             s.shareRetryAt = 0; s.shareUnreachable = ""
             if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)

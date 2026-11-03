@@ -1,11 +1,15 @@
 package com.sync2pc.app.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,15 +29,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.sync2pc.app.BuildConfig
+import com.sync2pc.app.R
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.diag.Diagnostics
 import com.sync2pc.app.diag.VendorHints
 import com.sync2pc.app.geo.CountryLookup
+import com.sync2pc.app.l10n.AppLanguage
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.sync.StaleCheck
 import com.sync2pc.app.sync.SyncScheduler
 import kotlinx.coroutines.Dispatchers
@@ -44,18 +53,18 @@ import kotlin.math.roundToInt
  * Rubriken der Einstellungen (0.4.0). Das Zahnrad auf der Startseite öffnet ein Menü mit diesen Punkten;
  * jede Rubrik ist eine eigene Seite. "Updates" führt direkt zur Update-Seite (prüft sofort).
  */
-enum class SettingsSection(val title: String) {
-    NOTIFICATIONS("Benachrichtigungen"),
-    TRANSFER("Übertragung"),
-    PERMISSIONS("App-Berechtigungen"),
-    APP("App-Einstellungen"),
-    UPDATES("Updates"),
-    DIAGNOSE("Diagnose"),
+enum class SettingsSection(@StringRes val title: Int) {
+    NOTIFICATIONS(R.string.settings_notifications),
+    TRANSFER(R.string.settings_transfer),
+    PERMISSIONS(R.string.settings_permissions),
+    APP(R.string.settings_app),
+    UPDATES(R.string.settings_updates),
+    DIAGNOSE(R.string.settings_diagnose),
 }
 
 @Composable
 fun SettingsScreen(section: SettingsSection, onBack: () -> Unit) {
-    ScreenScaffold(title = section.title, onBack = onBack) { pad ->
+    ScreenScaffold(title = str(section.title), onBack = onBack) { pad ->
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
@@ -81,25 +90,23 @@ private fun LazyListScope.notificationsPage() {
         var summary by remember { mutableStateOf(s.notifySummary) }
         var update by remember { mutableStateOf(s.notifyUpdate) }
         var hints by remember { mutableStateOf(s.notifyHints) }
-        SectionCard("Benachrichtigungen") {
-            SwitchRow("Meldung nach jedem Sync", summary, subtitle = "z. B. „3 Dateien übertragen“") {
+        SectionCard(str(R.string.settings_notifications)) {
+            SwitchRow(str(R.string.settings_notify_summary), summary, subtitle = str(R.string.settings_notify_summary_sub)) {
                 summary = it; s.notifySummary = it
             }
-            SwitchRow("Update verfügbar", update, subtitle = "Neue Version gefunden bzw. installiert") {
+            SwitchRow(str(R.string.settings_notify_update), update, subtitle = str(R.string.settings_notify_update_sub)) {
                 update = it; s.notifyUpdate = it
             }
-            SwitchRow("Hinweise", hints,
-                subtitle = "Ordnerauswahl nötig, Konflikte, Dateien entfernen, Fehler. Erscheinen auch ohne Benachrichtigung auf der Startseite.") {
+            SwitchRow(str(R.string.settings_notify_hints), hints, subtitle = str(R.string.settings_notify_hints_sub)) {
                 hints = it; s.notifyHints = it
             }
-            Hint("Die Fortschrittsanzeige während eines Syncs und „Pausiert – wartet auf WLAN“ lassen sich nicht abschalten: " +
-                "Android verlangt sie, damit der Sync im Hintergrund weiterlaufen bzw. fortgesetzt werden kann.")
+            Hint(str(R.string.settings_notify_fixed))
             OutlinedButton(onClick = {
                 try {
                     ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                         .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName))
                 } catch (ignored: Exception) {}
-            }) { Text("Android-Einstellungen für Benachrichtigungen") }
+            }) { Text(str(R.string.settings_notify_android)) }
         }
     }
     item {
@@ -107,9 +114,9 @@ private fun LazyListScope.notificationsPage() {
         val s = remember { GlobalSettings(ctx) }
         var staleOn by remember { mutableStateOf(s.staleWarnEnabled) }
         var staleDays by remember { mutableStateOf(s.staleWarnDays.toString()) }
-        SectionCard("Erinnerung") {
-            SwitchRow("Erinnern, wenn lange nicht gesichert", staleOn,
-                subtitle = "Nur wenn neue Fotos/Videos warten. Wiederholt sich alle ${StaleCheck.REPEAT_DAYS} Tage.") {
+        SectionCard(str(R.string.settings_stale)) {
+            SwitchRow(str(R.string.settings_stale_switch), staleOn,
+                subtitle = str(R.string.settings_stale_sub, StaleCheck.REPEAT_DAYS)) {
                 staleOn = it; s.staleWarnEnabled = it; SyncScheduler.setupAll(ctx)
             }
             if (staleOn) OutlinedTextField(
@@ -118,7 +125,7 @@ private fun LazyListScope.notificationsPage() {
                     staleDays = v.filter { it.isDigit() }.take(3)
                     staleDays.toIntOrNull()?.takeIf { it > 0 }?.let { s.staleWarnDays = it }
                 },
-                label = { Text("Nach … Tagen ohne Sicherung") },
+                label = { Text(str(R.string.settings_stale_days)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
@@ -136,17 +143,14 @@ private fun LazyListScope.transferPage() {
         var charging by remember { mutableStateOf(s.onlyWhileCharging) }
         var minAge by remember { mutableStateOf(s.minFileAgeMinutes.toString()) }
         fun apply() = SyncScheduler.setupAll(ctx)
-        SectionCard("Automatik") {
-            SwitchRow("Sync beim Verbinden mit Heim-WLAN", autoWifi,
-                subtitle = "Startet sofort, wenn ein WLAN eines Profils verbunden wird") {
+        SectionCard(str(R.string.settings_auto)) {
+            SwitchRow(str(R.string.settings_auto_wifi), autoWifi, subtitle = str(R.string.settings_auto_wifi_sub)) {
                 autoWifi = it; s.autoSyncOnWifi = it; apply()
             }
-            SwitchRow("Neue Fotos/Videos sofort übertragen", onNew,
-                subtitle = "Nur, wenn gerade ein Heim-WLAN verbunden ist") {
+            SwitchRow(str(R.string.settings_auto_new), onNew, subtitle = str(R.string.settings_auto_new_sub)) {
                 onNew = it; s.syncOnNewMedia = it; apply()
             }
-            SwitchRow("Nur beim Laden", charging,
-                subtitle = "Automatische Syncs nur am Ladegerät (manueller Sync immer möglich)") {
+            SwitchRow(str(R.string.settings_auto_charging), charging, subtitle = str(R.string.settings_auto_charging_sub)) {
                 charging = it; s.onlyWhileCharging = it; apply()
             }
             OutlinedTextField(
@@ -155,26 +159,26 @@ private fun LazyListScope.transferPage() {
                     minAge = v.filter { it.isDigit() }.take(4)
                     minAge.toIntOrNull()?.let { s.minFileAgeMinutes = it; apply() }
                 },
-                label = { Text("Mindestalter einer Datei (Minuten)") },
+                label = { Text(str(R.string.settings_min_age)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Hint("Verhindert, dass Fotos übertragen werden, die gerade noch bearbeitet werden.")
+            Hint(str(R.string.settings_min_age_hint))
         }
     }
     item {
         val ctx = LocalContext.current
         val s = remember { GlobalSettings(ctx) }
         var parallel by remember { mutableStateOf(s.parallelUploads) }
-        SectionCard("Parallele Übertragungen") {
-            Text("Gleichzeitige Übertragungen: $parallel")
+        SectionCard(str(R.string.settings_parallel)) {
+            Text(str(R.string.settings_parallel_value, parallel))
             Slider(
                 value = parallel.toFloat(),
                 onValueChange = { parallel = it.roundToInt().coerceIn(1, 4); s.parallelUploads = parallel },
                 valueRange = 1f..4f,
                 steps = 2,
             )
-            Hint("Mehr Verbindungen beschleunigen viele kleine Dateien. Bei grossen Videos bringt es wenig. Standard: 3")
+            Hint(str(R.string.settings_parallel_hint))
         }
     }
 }
@@ -184,58 +188,85 @@ private fun LazyListScope.transferPage() {
 private fun LazyListScope.permissionsPage() {
     item {
         val ctx = LocalContext.current
-        SectionCard("Hintergrund") {
-            Hint("Damit Android den Sync nicht verzögert oder abbricht, sollte die Akku-Optimierung für LeoSync aus sein.")
+        SectionCard(str(R.string.settings_background)) {
+            Hint(str(R.string.settings_background_hint))
             OutlinedButton(onClick = {
                 ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")))
-            }) { Text("App-Berechtigungen") }
+            }) { Text(str(R.string.settings_permissions)) }
         }
     }
     item {
         val ctx = LocalContext.current
-        SectionCard("Akku-Optimierungen") {
+        SectionCard(str(R.string.settings_battery)) {
             OutlinedButton(onClick = {
                 ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")))
-            }) { Text("Akku-Optimierung ausschalten") }
+            }) { Text(str(R.string.settings_battery_off)) }
             val vendor = remember { VendorHints.forDevice() }
             if (vendor != null) {
-                Text("Zusätzlich bei ${vendor.vendor}:", style = MaterialTheme.typography.bodyMedium)
+                Text(str(R.string.settings_vendor_extra, vendor.vendor), style = MaterialTheme.typography.bodyMedium)
                 vendor.steps.forEach { Hint("• $it") }
-                Hint("Die Bezeichnungen können je nach Software-Stand leicht abweichen.")
+                Hint(str(R.string.settings_vendor_note))
             }
             OutlinedButton(onClick = {
                 try {
                     ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(VendorHints.webUrl(vendor))))
                 } catch (ignored: Exception) {}
-            }) { Text("Anleitung im Browser") }
+            }) { Text(str(R.string.settings_vendor_web)) }
         }
     }
 }
 
 // ---- 4. App-Einstellungen -------------------------------------------------------------
 private fun LazyListScope.appPage() {
+    item { LanguageCard() }
     item {
         val ctx = LocalContext.current
         val s = remember { GlobalSettings(ctx) }
         var home by remember { mutableStateOf(s.homeCountryIso) }
-        var geoInfo by remember { mutableStateOf("Lade Länderdaten…") }
+        var geoInfo by remember { mutableStateOf(str(R.string.settings_geo_loading)) }
         LaunchedEffect(Unit) {
             geoInfo = withContext(Dispatchers.IO) {
                 val c = CountryLookup.get(ctx)
-                if (c.isAvailable) "${c.allCountryNames.size} Länder geladen (offline)"
-                else "Länderdaten fehlen – Ordner werden ohne Land angelegt"
+                if (c.isAvailable) str(R.string.settings_geo_loaded, c.countryCount)
+                else str(R.string.settings_geo_missing)
             }
         }
-        SectionCard("Länderordner") {
+        SectionCard(str(R.string.settings_country_folders)) {
             OutlinedTextField(
                 home,
                 { v -> home = v.filter { it.isLetter() }.take(2).uppercase(); if (home.length == 2) s.homeCountryIso = home },
-                label = { Text("Heimatland (ISO-Code)") },
+                label = { Text(str(R.string.settings_home_country)) },
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Hint("Fotos aus diesem Land bekommen keinen Länderzusatz (Standard: CH = Schweiz).")
+            Hint(str(R.string.settings_home_country_hint))
             Hint(geoInfo)
         }
+    }
+}
+
+/** Sprachwahl (0.8.0): Systemsprache / Deutsch / English. Die Sprachnamen stehen bewusst in der eigenen Sprache. */
+@Composable
+private fun LanguageCard() {
+    val ctx = LocalContext.current
+    val current = remember { AppLanguage.current(ctx) }
+    val options = listOf(
+        AppLanguage.SYSTEM to str(R.string.settings_language_system),
+        AppLanguage.GERMAN to "Deutsch",
+        AppLanguage.ENGLISH to "English",
+    )
+    SectionCard(str(R.string.settings_language)) {
+        options.forEach { (tag, label) ->
+            Row(
+                Modifier.fillMaxWidth().clickable {
+                    if (tag != current) (ctx as? Activity)?.let { AppLanguage.set(it, tag) }
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = tag == current, onClick = null)
+                Text(label, Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp))
+            }
+        }
+        Hint(str(R.string.settings_language_hint))
     }
 }
 
@@ -247,22 +278,21 @@ private fun LazyListScope.diagnosePage() {
         val s = remember { GlobalSettings(ctx) }
         val scope = rememberCoroutineScope()
         var diagBusy by remember { mutableStateOf(false) }
-        SectionCard("Beta / Diagnose") {
-            Hint("Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen " +
-                "(ohne Passwörter) und kopiert sie in die Zwischenablage. Geräte-ID: ${s.deviceId}")
+        SectionCard(str(R.string.settings_diag_title)) {
+            Hint(str(R.string.settings_diag_hint, s.deviceId))
             OutlinedButton(enabled = !diagBusy, onClick = {
                 diagBusy = true
                 scope.launch {
                     try {
                         Diagnostics.copyToClipboard(ctx, Diagnostics.build(ctx))
                     } catch (e: Exception) {
-                        android.widget.Toast.makeText(ctx, "Diagnose fehlgeschlagen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(ctx, str(R.string.settings_diag_failed, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
                     } finally {
                         diagBusy = false
                     }
                 }
-            }) { Text(if (diagBusy) "Sammle Daten…" else "Diagnosedaten kopieren") }
+            }) { Text(str(if (diagBusy) R.string.settings_diag_busy else R.string.settings_diag_copy)) }
         }
     }
-    item { Hint("LeoSync ${BuildConfig.VERSION_NAME} – Open Source (MIT)") }
+    item { Hint(str(R.string.settings_about, BuildConfig.VERSION_NAME)) }
 }

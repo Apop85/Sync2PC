@@ -40,6 +40,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.PendingDecision
 import com.sync2pc.app.data.Profile
@@ -95,16 +98,16 @@ fun DecisionScreen(onBack: () -> Unit) {
             }
             if (applied > 0) {
                 androidx.core.app.NotificationManagerCompat.from(ctx).cancel(Notifications.ID_DECISION)
-                SyncScheduler.enqueueAuto(ctx, "Ordnerauswahl")
+                SyncScheduler.enqueueAuto(ctx, str(R.string.trigger_folder_choice))
             }
         }
     }
 
     ScreenScaffold(
-        title = "Ordnerauswahl",
+        title = str(R.string.decision_title),
         onBack = onBack,
         actions = {
-            if (decisions.isNotEmpty()) TextButton(onClick = { apply(decisions) }) { Text("Alle übernehmen") }
+            if (decisions.isNotEmpty()) TextButton(onClick = { apply(decisions) }) { Text(str(R.string.decision_apply_all)) }
         },
     ) { pad ->
         LazyColumn(
@@ -112,20 +115,18 @@ fun DecisionScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (decisions.isEmpty()) item { Text("Keine offenen Entscheidungen.") }
-            else item {
-                Hint("Für diese Monate gibt es auf dem PC bereits umbenannte Ordner. Wähle, wohin die Dateien sollen. " +
-                    "Die Wahl gilt für alle Dateien der Gruppe und wird gemerkt.")
-            }
+            if (decisions.isEmpty()) item { Text(str(R.string.decision_none)) }
+            else item { Hint(str(R.string.decision_hint)) }
             items(decisions, key = { key(it) }) { d ->
                 val k = key(d)
                 val sel = choice[k] ?: preselect(d)
                 val profileName = profiles.firstOrNull { it.id == d.profileId }?.name
+                val country = com.sync2pc.app.geo.CountryLookup.displayName(d.countryIso, d.countryName)
                 SectionCard(
-                    "${monthNames[d.month - 1]} ${d.year}" + (d.countryName?.let { " · $it" } ?: "") +
-                        " · ${d.fileCount} Dateien (${Notifications.formatBytes(d.totalBytes)})"
+                    "${monthNames[d.month - 1]} ${d.year}" + (country?.let { " · $it" } ?: "") +
+                        " · " + plural(R.plurals.decision_files, d.fileCount, d.fileCount, Notifications.formatBytes(d.totalBytes))
                 ) {
-                    if (profiles.size > 1 && profileName != null) Hint("Profil: $profileName")
+                    if (profiles.size > 1 && profileName != null) Hint(str(R.string.decision_profile, profileName))
                     Thumbnails(Profile.splitLines(d.sampleUris))
                     val options = candidates(d) + listOf(d.defaultName).filter { it !in candidates(d) }
                     options.forEach { o ->
@@ -134,7 +135,7 @@ fun DecisionScreen(onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(selected = sel == o, onClick = { choice[k] = o })
-                            Text(if (o == d.defaultName && o !in candidates(d)) "Neuer Ordner: ${d.year}\\$o" else "${d.year}\\$o")
+                            Text(if (o == d.defaultName && o !in candidates(d)) str(R.string.decision_new_folder, "${d.year}\\$o") else "${d.year}\\$o")
                         }
                     }
                     Row(
@@ -142,18 +143,18 @@ fun DecisionScreen(onBack: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = sel == CUSTOM, onClick = { choice[k] = CUSTOM })
-                        Text("Eigener Name…")
+                        Text(str(R.string.decision_custom_name))
                     }
                     if (sel == CUSTOM) {
                         val txt = custom[k] ?: "%02d - ".format(d.month)
                         OutlinedTextField(
                             txt, { custom[k] = it },
-                            label = { Text("Ordnername (muss %02d enthalten)".format(d.month)) },
+                            label = { Text(str(R.string.decision_folder_name, "%02d".format(d.month))) },
                             isError = FolderNames.monthOf(txt) != d.month,
                             singleLine = true, modifier = Modifier.fillMaxWidth(),
                         )
                     }
-                    Button(onClick = { apply(listOf(d)) }, enabled = selectedFolder(d) != null) { Text("Übernehmen") }
+                    Button(onClick = { apply(listOf(d)) }, enabled = selectedFolder(d) != null) { Text(str(R.string.free_apply)) }
                 }
             }
         }

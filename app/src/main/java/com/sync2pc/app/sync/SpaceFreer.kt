@@ -105,7 +105,7 @@ object SpaceFreer {
             val profile = profiles[profileId]
             val session = try { profile?.let { SmbSession.open(it) } } catch (e: Exception) { null }
             if (session == null) {
-                unreachable += profile?.name ?: "Profil $profileId"
+                unreachable += profile?.name ?: com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.space_profile_id, profileId)
                 done += list.size; onProgress(done, candidates.size)
                 continue
             }

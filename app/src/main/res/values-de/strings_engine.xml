@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ausloeser (im Verlauf "Ausloeser: …") -->
+    <string name="trigger_auto">Automatisch</string>
+    <string name="trigger_manual">Manuell</string>
+    <string name="trigger_wifi">WLAN verbunden</string>
+    <string name="trigger_resume">Fortsetzen nach WLAN-Unterbruch</string>
+    <string name="trigger_resume_wifi">Fortsetzen nach WLAN-Unterbruch (%1$s)</string>
+    <string name="trigger_retry">Erneute Prüfung (PC war nicht erreichbar)</string>
+    <string name="trigger_poll">Ordner-Prüfung (Intervall)</string>
+    <string name="trigger_safety">Sicherheitsnetz (%1$s h ohne Sync)</string>
+    <string name="trigger_followup">Nachholen (Mindestalter)</string>
+    <string name="trigger_new_media">Neue Fotos/Videos</string>
+    <string name="trigger_pause_end">Pause beendet</string>
+    <string name="trigger_resumed">Fortgesetzt</string>
+    <string name="trigger_generic">Auslöser</string>
+
+    <!-- Hintergrund-Lauf (SyncWorker) -->
+    <string name="stop_wifi">WLAN getrennt</string>
+    <string name="stop_charger">nicht mehr am Ladegerät</string>
+    <string name="stop_timeout">Zeitlimit von Android</string>
+    <string name="stop_system">vom System gestoppt (%1$s)</string>
+    <string name="stop_android">von Android gestoppt (%1$s)</string>
+    <string name="skip_manual_only">Automatische Syncs ausgeschaltet (nur manuell)</string>
+    <string name="skip_paused_until">Pausiert bis %1$s</string>
+    <string name="skip_ssid_unreadable">WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen</string>
+    <string name="skip_ssid_unknown">WLAN „%1$s“ ist in keinem Profil eingetragen</string>
+    <string name="skip_pc_unreachable">PC nicht erreichbar: %1$s</string>
+    <string name="wait_for_pc">Warte auf PC (%1$s) – Versuch %2$s/%3$s…</string>
+    <string name="summary_failed">Sync fehlgeschlagen – %1$s</string>
+    <plurals name="summary_transferred">
+        <item quantity="one">%1$s Datei übertragen (%2$s)</item>
+        <item quantity="other">%1$s Dateien übertragen (%2$s)</item>
+    </plurals>
+    <plurals name="summary_errors">
+        <item quantity="one">%1$s Fehler – Details im Verlauf</item>
+        <item quantity="other">%1$s Fehler – Details im Verlauf</item>
+    </plurals>
+    <string name="summary_no_space">Zu wenig Speicher auf dem Handy – einige Dateien wurden nicht heruntergeladen.</string>
+    <string name="summary_pc_unreachable">PC nicht erreichbar (%1$s). Ist er eingeschaltet und die Freigabe aktiv?</string>
+    <string name="paused_connection_retry">Verbindung unterbrochen – neuer Versuch in %1$s Minuten</string>
+
+    <!-- Kurztext eines Laufs (RunSummary) -->
+    <string name="run_nothing">Nichts zu tun</string>
+    <string name="run_uploaded">%1$s übertragen</string>
+    <string name="run_found">%1$s bereits vorhanden</string>
+    <plurals name="run_failed">
+        <item quantity="one">%1$s Fehler</item>
+        <item quantity="other">%1$s Fehler</item>
+    </plurals>
+    <plurals name="run_waiting">
+        <item quantity="one">%1$s wartet auf Ordnerauswahl</item>
+        <item quantity="other">%1$s warten auf Ordnerauswahl</item>
+    </plurals>
+    <string name="run_up">↑ %1$s hochgeladen</string>
+    <string name="run_down">↓ %1$s heruntergeladen</string>
+    <string name="run_trashed">%1$s in Papierkorb</string>
+    <plurals name="run_conflicts">
+        <item quantity="one">%1$s Konflikt</item>
+        <item quantity="other">%1$s Konflikte</item>
+    </plurals>
+    <string name="run_space_full">Speicher voll</string>
+
+    <!-- Schutzbremse (MirrorGuard) -->
+    <string name="guard_title_remote">PC-Ordner nicht gefunden</string>
+    <string name="guard_title_local">Handy-Ordner nicht gefunden</string>
+    <string name="guard_title_mass">Viele Dateien würden gelöscht</string>
+    <string name="guard_text_remote">Der PC-Ordner von „%1$s“ fehlt oder ist leer, obwohl schon synchronisiert wurde. Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil.</string>
+    <string name="guard_text_local">Der Handy-Ordner von „%1$s“ fehlt oder ist leer, obwohl schon synchronisiert wurde. Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil.</string>
+    <plurals name="guard_text_folder">
+        <item quantity="one">In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Datei). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil.</item>
+        <item quantity="other">In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Dateien). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil.</item>
+    </plurals>
+    <string name="guard_text_mass">In „%1$s“ würden %2$s von %3$s Dateien in den Papierkorb verschoben. Wurde wirklich so viel gelöscht? Bis du entscheidest, ruht dieses Profil.</string>
+    <string name="guard_text_check">Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Sync-Stand. Bis du entscheidest, ruht dieses Profil.</string>
+
+    <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
+    <string name="delete_log_done">Gelöscht: %1$s</string>
+    <string name="delete_log_failed">Löschen fehlgeschlagen: %1$s – %2$s</string>
+    <string name="update_err_404">Kein Release gefunden (Repository „%1$s“ privat, falsch geschrieben oder noch ohne Release)</string>
+    <string name="update_err_403">GitHub-Abfragelimit erreicht – später erneut versuchen</string>
+    <string name="update_err_http">GitHub antwortet mit HTTP %1$s</string>
+    <string name="update_err_no_apk">Release %1$s enthält keine APK-Datei</string>
+    <string name="update_err_repo">Kein gültiges GitHub-Repository eingestellt (Format: benutzer/repo)</string>
+    <string name="update_err_invalid_apk">Die heruntergeladene Datei ist keine gültige APK</string>
+    <string name="update_err_package">Die APK gehört zu „%1$s“, nicht zu dieser App</string>
+    <string name="update_err_debug">(Debug-Builds lassen sich nicht per Update aktualisieren)</string>
+    <string name="update_err_not_newer">Die APK ist nicht neuer als die installierte Version</string>
+    <string name="smb_err_path">Ungültiger Share-Pfad: „%1$s“ (erwartet \\\\server\\freigabe)</string>
+    <string name="smb_err_not_disk">„%1$s“ ist keine Datei-Freigabe</string>
+    <string name="smb_err_incomplete">Upload unvollständig: %1$s von %2$s Bytes</string>
+    <string name="smb_err_resume">Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen</string>
+    <string name="smb_test_missing_folder">Verbunden, aber Ordner „%1$s“ existiert nicht (wird beim ersten Sync angelegt).</string>
+    <plurals name="smb_test_ok">
+        <item quantity="one">Verbindung OK – %1$s (%2$s Eintrag)</item>
+        <item quantity="other">Verbindung OK – %1$s (%2$s Einträge)</item>
+    </plurals>
+    <string name="backup_err_write">Datei kann nicht geschrieben werden</string>
+    <string name="backup_err_read">Datei kann nicht gelesen werden</string>
+    <string name="backup_err_version">Sicherung hat Format-Version %1$s – diese App kennt bis Version %2$s. Bitte LeoSync aktualisieren.</string>
+    <string name="backup_err_json">Die Datei ist keine LeoSync-Sicherung (kein gültiges JSON).</string>
+    <string name="backup_err_format">Die Datei ist keine LeoSync-Sicherung.</string>
+    <plurals name="stale_pending">
+        <item quantity="one">%1$s: %2$s neue Datei wartet, letzte Sicherung %3$s</item>
+        <item quantity="other">%1$s: %2$s neue Dateien warten, letzte Sicherung %3$s</item>
+    </plurals>
+    <string name="stale_last">%1$s: letzte Sicherung %2$s</string>
+    <string name="space_profile_id">Profil %1$s</string>
+    <string name="tree_err_unreadable">Handy-Ordner nicht lesbar</string>
+    <string name="tree_err_mkdir">Ordner „%1$s“ konnte nicht angelegt werden</string>
+    <string name="tree_err_read">Datei nicht lesbar</string>
+    <string name="tree_err_write">Datei nicht beschreibbar</string>
+    <string name="tree_err_rename">Umbenennen von „%1$s“ fehlgeschlagen</string>
+    <string name="tree_err_size">Grösse nach Download stimmt nicht (%1$s statt %2$s Bytes)</string>
+    <string name="tree_err_move">Verschieben nicht unterstützt</string>
+    <string name="tree_err_changed">Datei wurde während des Laufs geändert</string>
+    <string name="tree_err_create">Datei „%1$s“ konnte nicht angelegt werden</string>
+
+    <!-- Ordner-Sync (MirrorEngine) -->
+    <string name="eng_start_mirror">Start (%1$s) – Ordner-Sync „%2$s“ (%3$s)</string>
+    <string name="eng_reading_folders">Lese Ordner…</string>
+    <string name="eng_local_missing">Handy-Ordner nicht gefunden – bitte im Profil neu auswählen</string>
+    <string name="eng_offline_preview">Offline-Vorschau (Share nicht erreichbar): %1$s</string>
+    <string name="eng_counts">Handy: %1$s Dateien, PC: %2$s Dateien</string>
+    <string name="eng_keep_files">Löschungen werden in diesem Lauf nicht übernommen (deine Entscheidung)</string>
+    <string name="eng_comparing">Vergleiche…</string>
+    <string name="eng_would_stop">⚠ Der Lauf würde anhalten und nachfragen: %1$s</string>
+    <string name="eng_would_trash_folder">Der Ordner „%1$s“ käme ganz in den Papierkorb</string>
+    <string name="eng_would_trash_files">%1$s von %2$s Dateien kämen in den Papierkorb</string>
+    <string name="eng_actions_first">%1$s Aktionen – die ersten %2$s simuliert</string>
+    <string name="eng_actions_all">%1$s Aktionen simuliert</string>
+    <string name="eng_wifi_lost">Abgebrochen: WLAN nicht mehr verbunden</string>
+    <string name="eng_interrupted_log">Unterbrochen (%1$s) – wird automatisch fortgesetzt</string>
+    <string name="eng_interrupted_mirror">Unterbrochen (%1$s) – ↑ %2$s / ↓ %3$s übertragen, Rest folgt automatisch</string>
+    <string name="eng_paused_log">Pausiert (von dir) – läuft beim nächsten automatischen Start weiter</string>
+    <string name="eng_connection_log_mirror">Verbindung unterbrochen (%1$s) – wird beim nächsten Sync fortgesetzt</string>
+    <string name="eng_connection_mirror">Verbindung unterbrochen – ↑ %1$s / ↓ %2$s übertragen, Rest folgt beim nächsten Sync</string>
+    <string name="eng_run_failed">Lauf fehlgeschlagen: %1$s</string>
+    <string name="eng_waiting_decision">Wartet auf deine Entscheidung: %1$s</string>
+    <string name="eng_trash_local">🗑 Handy: %1$s (auf dem PC gelöscht)</string>
+    <string name="eng_trash_remote">🗑 PC: %1$s (auf dem Handy gelöscht)</string>
+    <string name="eng_conflict">⚠ Konflikt: %1$s wurde auf Handy und PC geändert</string>
+    <plurals name="eng_transfer_mirror">
+        <item quantity="one">Übertrage %1$s Datei mit %2$s parallelen Verbindungen</item>
+        <item quantity="other">Übertrage %1$s Dateien mit %2$s parallelen Verbindungen</item>
+    </plurals>
+    <string name="eng_no_space">Zu wenig Speicher auf dem Handy – übersprungen: %1$s</string>
+    <string name="eng_on_pc">auf dem PC</string>
+    <string name="eng_on_phone">auf dem Handy</string>
+    <string name="eng_err_renamed_missing">Umbenannte Datei nicht gefunden</string>
+    <string name="eng_err_after_upload_missing">Datei nach Upload nicht gefunden</string>
+    <string name="eng_err_after_upload_size">Grösse nach Upload stimmt nicht</string>
+    <string name="eng_err_after_download_missing">Datei nach Download nicht gefunden</string>
+    <string name="eng_err_after_download_size">Grösse nach Download stimmt nicht</string>
+    <string name="eng_resumed_at">(fortgesetzt ab %1$s)</string>
+    <plurals name="eng_restoring">
+        <item quantity="one">Stelle %1$s Datei aus dem Papierkorb wieder her</item>
+        <item quantity="other">Stelle %1$s Dateien aus dem Papierkorb wieder her</item>
+    </plurals>
+    <string name="eng_restore_gone">↺ %1$s: Version im Papierkorb nicht mehr vorhanden – übersprungen</string>
+    <string name="eng_err_restored_missing">Wiederhergestellte Datei nicht gefunden</string>
+    <string name="eng_restored">↺ %1$s wiederhergestellt (Version vom %2$s)</string>
+    <string name="eng_restore_failed_rolled_back">✗ Wiederherstellen %1$s: %2$s – zurückgerollt, wird beim nächsten Sync erneut versucht</string>
+    <string name="eng_restore_failed_partial">✗ Wiederherstellen %1$s: %2$s – nicht vollständig zurückgerollt, siehe Papierkorb</string>
+    <string name="eng_purged_pc">🗑 PC-Papierkorb geleert (vorgemerkt): %1$s Tagesordner, %2$s einzelne Dateien endgültig gelöscht</string>
+    <string name="eng_purge_pc_failed">✗ PC-Papierkorb leeren: %1$s</string>
+    <string name="eng_changed_during_run">⏭ %1$s: wurde während des Laufs %2$s geändert – folgt beim nächsten Sync</string>
+    <string name="eng_syncing">Synchronisiere…</string>
+    <string name="eng_purge_local_failed">Papierkorb auf dem Handy nicht geleert: %1$s</string>
+    <string name="eng_purge_remote_failed">Papierkorb auf dem PC nicht geleert: %1$s</string>
+    <string name="eng_purged_expired">🗑 Papierkorb: %1$s Ordner älter als %2$s Tage endgültig gelöscht</string>
+    <string name="eng_pv_upload_trash">↑ Handy → PC (PC-Version in Papierkorb)</string>
+    <string name="eng_pv_upload">↑ Handy → PC</string>
+    <string name="eng_pv_download_trash">↓ PC → Handy (Handy-Version in Papierkorb)</string>
+    <string name="eng_pv_download">↓ PC → Handy</string>
+    <string name="eng_pv_trash_local">🗑 Auf dem Handy in den Papierkorb</string>
+    <string name="eng_pv_trash_remote">🗑 Auf dem PC in den Papierkorb</string>
+    <string name="eng_pv_conflict">⚠ Konflikt – Entscheidung nötig</string>
+    <string name="eng_pv_keep_both">⇄ Beide Versionen behalten</string>
+    <string name="eng_end">Ende: %1$s</string>
+
+    <!-- Fotos-Sync (SyncEngine) -->
+    <plurals name="eng_already_in">
+        <item quantity="one">= %1$s Datei bereits in %2$s vorhanden</item>
+        <item quantity="other">= %1$s Dateien bereits in %2$s vorhanden</item>
+    </plurals>
+    <string name="eng_start_photos">Start (%1$s) – Profil „%2$s“ → %3$s</string>
+    <string name="eng_searching">Suche Dateien…</string>
+    <plurals name="eng_filtered">
+        <item quantity="one">%1$s Datei durch Filter ausgeschlossen</item>
+        <item quantity="other">%1$s Dateien durch Filter ausgeschlossen</item>
+    </plurals>
+    <plurals name="eng_found">
+        <item quantity="one">%1$s Datei gefunden, %2$s neu, %3$s bereits gesichert</item>
+        <item quantity="other">%1$s Dateien gefunden, %2$s neu, %3$s bereits gesichert</item>
+    </plurals>
+    <string name="eng_too_young">%1$s noch zu jung (&lt; %2$s min)</string>
+    <string name="eng_connecting">Verbinde…</string>
+    <string name="eng_no_geo">Länderdaten fehlen – Ordner ohne Länderzusatz</string>
+    <string name="eng_no_media_location">Berechtigung „Medien-Standort“ fehlt – GPS wird nicht ausgewertet</string>
+    <string name="eng_analysing">Analysiere…</string>
+    <plurals name="eng_new_files_first">
+        <item quantity="one">%1$s neue Datei – die ersten %2$s simuliert</item>
+        <item quantity="other">%1$s neue Dateien – die ersten %2$s simuliert</item>
+    </plurals>
+    <plurals name="eng_new_files_all">
+        <item quantity="one">%1$s neue Datei simuliert</item>
+        <item quantity="other">%1$s neue Dateien simuliert</item>
+    </plurals>
+    <string name="eng_transfer_photos">Übertrage mit %1$s parallelen Verbindungen</string>
+    <string name="eng_analysis_failed">✗ %1$s: Analyse fehlgeschlagen: %2$s</string>
+    <plurals name="eng_waiting_groups">
+        <item quantity="one">%1$s Datei wartet auf Ordnerauswahl (%2$s)</item>
+        <item quantity="other">%1$s Dateien warten auf Ordnerauswahl (%2$s)</item>
+    </plurals>
+    <string name="eng_interrupted_photos">Unterbrochen (%1$s) – %2$s übertragen, Rest folgt automatisch</string>
+    <string name="eng_paused_photos">Pausiert (von dir) – %1$s übertragen, Rest beim nächsten automatischen Start</string>
+    <string name="eng_connection_log_photos">Verbindung unterbrochen (%1$s) – offene Dateien werden beim nächsten Sync übertragen</string>
+    <string name="eng_connection_photos">Verbindung unterbrochen – %1$s übertragen, Rest folgt beim nächsten Sync</string>
+    <string name="eng_transferring">Übertrage…</string>
+    <string name="eng_err_unreadable">Datei nicht lesbar: %1$s</string>
+    <string name="eng_err_verify">Prüfung nach Upload fehlgeschlagen – Datei wird beim nächsten Lauf erneut übertragen</string>
+    <string name="tree_sd_card">SD-Karte</string>
+    <string name="tree_err_rename_short">Umbenennen fehlgeschlagen</string>
+    <string name="update_err_no_tag">Release ohne Versions-Tag</string>
+    <string name="update_err_download">Download fehlgeschlagen (HTTP %1$s)</string>
+</resources>

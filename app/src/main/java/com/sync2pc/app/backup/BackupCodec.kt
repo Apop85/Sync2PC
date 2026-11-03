@@ -115,7 +115,7 @@ object BackupCodec {
         val root = root(json)
         val version = root.optInt("version", 0)
         if (version < 1 || version > VERSION)
-            throw BackupException("Sicherung hat Format-Version $version – diese App kennt bis Version $VERSION. Bitte LeoSync aktualisieren.")
+            throw BackupException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_version, version, VERSION))
 
         var key: SecretKey? = null
         var passwordOk: Boolean? = null
@@ -169,8 +169,8 @@ object BackupCodec {
     }
 
     private fun root(json: String): JSONObject {
-        val r = try { JSONObject(json) } catch (e: Exception) { throw BackupException("Die Datei ist keine LeoSync-Sicherung (kein gültiges JSON).") }
-        if (r.optString("format") != FORMAT) throw BackupException("Die Datei ist keine LeoSync-Sicherung.")
+        val r = try { JSONObject(json) } catch (e: Exception) { throw BackupException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_json)) }
+        if (r.optString("format") != FORMAT) throw BackupException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_format))
         return r
     }
 

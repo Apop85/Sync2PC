@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ordnerauswahl (DecisionScreen) -->
+    <string name="trigger_folder_choice">Folder selection</string>
+    <string name="decision_title">Folder selection</string>
+    <string name="decision_apply_all">Apply all</string>
+    <string name="decision_none">No open decisions.</string>
+    <string name="decision_hint">For these months there are already renamed folders on the PC. Choose where the files should go. The choice applies to all files of the group and is remembered.</string>
+    <plurals name="decision_files">
+        <item quantity="one">%1$s file (%2$s)</item>
+        <item quantity="other">%1$s files (%2$s)</item>
+    </plurals>
+    <string name="decision_profile">Profile: %1$s</string>
+    <string name="decision_new_folder">New folder: %1$s</string>
+    <string name="decision_custom_name">Custom name…</string>
+    <string name="decision_folder_name">Folder name (must contain %1$s)</string>
+
+    <!-- Konflikte (ConflictScreen) -->
+    <string name="trigger_conflicts">Conflict resolution</string>
+    <string name="conflict_title">Conflicts</string>
+    <string name="conflict_all_newer">All: newer</string>
+    <string name="conflict_none">No open conflicts.</string>
+    <string name="conflict_hint">These files were changed on the phone and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
+    <string name="conflict_newer">(newer)</string>
+    <string name="conflict_both">Both</string>
+
+    <!-- Simulation (PreviewScreen) -->
+    <string name="preview_starting">Starting…</string>
+    <string name="preview_hint">Shows what would happen when syncing (photo folders: target folder; folder sync: action per file). Nothing is copied, created or deleted.</string>
+    <string name="preview_only_first">Only the first</string>
+    <string name="preview_files">files</string>
+    <string name="preview_all_files">All files</string>
+    <string name="preview_all_hint">With many photos “All” takes longer because every photo is analysed for date and location.</string>
+    <string name="preview_start">Start simulation</string>
+    <plurals name="preview_summary">
+        <item quantity="one">%1$s file in %2$s</item>
+        <item quantity="other">%1$s files in %2$s</item>
+    </plurals>
+    <string name="preview_needs_decision">Decision needed (folder selection or conflict)</string>
+    <string name="preview_more">… and %1$s more</string>
+
+    <!-- Statistik (StatsScreen) -->
+    <string name="stats_unknown">Unknown</string>
+    <string name="stats_no_location">Without location data</string>
+    <string name="stats_no_profile">No profile yet.</string>
+    <string name="stats_no_files">No files backed up yet.</string>
+    <string name="stats_total">Total</string>
+    <string name="stats_photos_videos">%1$s photos · %2$s videos</string>
+    <string name="stats_per_year">Per year</string>
+    <string name="stats_per_country">Per country (from GPS)</string>
+
+    <!-- Erste Synchronisierung, Hund -->
+    <string name="first_sync_title">First sync</string>
+    <string name="first_sync_text">The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the phone to the charger.</string>
+    <string name="first_sync_start">Start anyway</string>
+    <string name="dog_waiting">Waiting</string>
+    <string name="dog_idle">Everything backed up</string>
+    <string name="dog_syncing">Syncing</string>
+
+    <!-- Updates (UpdateScreen) -->
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_latest">You have the latest version (%1$s).</string>
+    <string name="update_downloading">Downloading version %1$s…</string>
+    <string name="update_installing">Starting installation…</string>
+    <string name="update_error">Error: %1$s</string>
+    <string name="update_installed">Installed</string>
+    <string name="update_source">Source: github.com/%1$s (releases)</string>
+    <string name="update_last_check">Last checked: %1$s</string>
+    <string name="update_daily">Check for updates daily</string>
+    <string name="update_daily_sub">Only on Wi-Fi, notification when found</string>
+    <string name="update_available">Version %1$s available</string>
+    <string name="update_size">Size: %1$s</string>
+    <string name="update_permission_hint">Android has to allow LeoSync once to install apps.</string>
+    <string name="update_permission">Grant permission</string>
+    <string name="update_install">Download and install</string>
+    <string name="update_install_hint">Android asks for confirmation. After the update LeoSync restarts.</string>
+
+    <!-- Datenbank (SyncDao) -->
+    <string name="run_dangling_log">Interrupted – the app was closed (e.g. by an update). The rest follows at the next sync.</string>
+    <string name="run_dangling">Interrupted – app was closed (e.g. update), rest follows at the next sync</string>
+</resources>

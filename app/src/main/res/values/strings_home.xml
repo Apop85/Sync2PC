@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Allgemeine Knoepfe -->
+    <string name="common_cancel">Cancel</string>
+    <string name="common_pause">Pause</string>
+    <string name="common_sync_now">Sync now</string>
+    <string name="common_save">Save</string>
+    <string name="common_ok">OK</string>
+    <string name="common_delete">Delete</string>
+    <string name="fmt_day_month">MM-dd</string>
+
+    <!-- Startseite (HomeScreen) -->
+    <string name="home_wait_wifi">Waiting for the home Wi-Fi.</string>
+    <string name="home_wait_charger">Waiting for the charger (“Only while charging” is on).</string>
+    <string name="home_starting">Sync is starting…</string>
+    <string name="home_tool_trash_text">Restore files or delete them permanently</string>
+    <string name="home_tool_trash_used">Used: phone %1$s · PC %2$s</string>
+    <string name="home_guard_note_all">Waiting for your decision (safety brake) – it continues only after that.</string>
+    <string name="home_guard_note_some">One profile is waiting for your decision (safety brake).</string>
+    <string name="home_pc_unreachable">PC not reachable (%1$s) – next check at %2$s</string>
+    <string name="home_cd_paused">Paused – tap to resume</string>
+    <string name="home_cd_running">Running – tap to pause</string>
+    <string name="home_cd_stats">Statistics</string>
+    <string name="home_cd_log">History</string>
+    <string name="home_cd_settings">Settings</string>
+    <string name="home_profile_fallback">Profile</string>
+    <string name="home_update_title">Update available</string>
+    <string name="home_update_text">Version %1$s is available (installed: %2$s).</string>
+    <string name="home_update_button">View</string>
+    <string name="home_conflicts_title">Folder sync conflicts</string>
+    <plurals name="home_conflicts_text">
+        <item quantity="one">%1$s file was changed on both phone and PC. Choose which version wins.</item>
+        <item quantity="other">%1$s files were changed on both phone and PC. Choose which version wins.</item>
+    </plurals>
+    <string name="home_conflicts_button">Decide</string>
+    <string name="home_decisions_title">Folder selection needed</string>
+    <plurals name="home_decisions_text">
+        <item quantity="one">%1$s file in %2$s is waiting because there are renamed month folders.</item>
+        <item quantity="other">%1$s files in %2$s are waiting because there are renamed month folders.</item>
+    </plurals>
+    <plurals name="home_groups">
+        <item quantity="one">%1$s group</item>
+        <item quantity="other">%1$s groups</item>
+    </plurals>
+    <string name="home_decisions_button">Assign</string>
+    <string name="home_delete_title">Remove backed-up files</string>
+    <plurals name="home_delete_text">
+        <item quantity="one">%1$s file is verified on the PC. Android asks once for confirmation.</item>
+        <item quantity="other">%1$s files are verified on the PC. Android asks once for confirmation.</item>
+    </plurals>
+    <string name="home_delete_button">Confirm removal</string>
+    <string name="home_profiles">Profiles</string>
+    <string name="home_add_profile">Add profile</string>
+    <string name="home_no_profile">No profile yet. Create a profile with a target share, Wi-Fi and source folders.</string>
+    <string name="home_first_profile">Create first profile</string>
+    <string name="home_tool_free">Free up space</string>
+    <string name="home_tool_free_text">Remove old files from the phone that are backed up on the PC</string>
+    <string name="home_tool_free_disabled">Only for photo profiles and folder profiles phone → PC</string>
+    <string name="home_tool_trash">Trash</string>
+    <string name="home_tool_trash_disabled">Only for folder profiles</string>
+    <string name="home_tool_trash_hint">The trash is only available for folder profiles.</string>
+    <string name="home_tools">Tools</string>
+    <string name="home_purge_pending_title">Emptying the trash is scheduled</string>
+    <string name="home_purge_pending_text">The PC trash will be emptied at the next sync with a reachable PC.</string>
+    <string name="home_restore_failed_title">Restore failed</string>
+    <plurals name="home_restore_failed_text">
+        <item quantity="one">%1$s file could not be restored. Everything was rolled back; the next sync will try again. Details are in the history.</item>
+        <item quantity="other">%1$s files could not be restored. Everything was rolled back; the next sync will try again. Details are in the history.</item>
+    </plurals>
+    <string name="home_retry">Try again</string>
+    <string name="home_discard">Discard</string>
+    <string name="home_restore_pending_title">Restore scheduled</string>
+    <plurals name="home_restore_pending_text">
+        <item quantity="one">%1$s file will be restored at the next sync with a reachable PC.</item>
+        <item quantity="other">%1$s files will be restored at the next sync with a reachable PC.</item>
+    </plurals>
+    <string name="home_version">Version %1$s</string>
+    <string name="home_tomorrow">tomorrow %1$s</string>
+    <string name="home_pause_title">Pause for how long?</string>
+    <string name="home_pause_hint">A running sync is stopped. Nothing starts automatically until the pause ends.</string>
+    <string name="home_pause_hours">Custom number of hours (1–168)</string>
+    <string name="home_pause_forever">Forever (manual only)</string>
+    <string name="home_pause_forever_hint">Turns automatic syncing off completely: syncing only happens with “Sync” until you turn it back on with ⏸.</string>
+    <string name="home_status">Status</string>
+    <string name="home_all_saved">✓ Everything backed up and up to date</string>
+    <string name="home_wifi">Wi-Fi: %1$s</string>
+    <string name="home_wifi_none">not connected / not readable</string>
+    <string name="home_progress">%1$s: %2$s / %3$s files – %4$s of %5$s</string>
+    <string name="home_running">Sync running…</string>
+    <string name="home_manual_only">⏸ Automatic off – manual syncs only</string>
+    <string name="home_manual_only_hint">Syncing only happens when you tap “Sync”. ⏸ at the top right turns automatic syncing back on.</string>
+    <string name="home_last_sync">Last sync: %1$s (%2$s)</string>
+    <string name="home_paused_until">⏸ Paused until %1$s</string>
+    <string name="home_paused_until_hint">Automatic syncs rest until then. “Resume” or “Sync” ends the pause immediately.</string>
+    <string name="home_paused_wifi">⏸ Paused – waiting for the home Wi-Fi</string>
+    <string name="home_paused_wifi_hint">The sync was stopped by a Wi-Fi interruption and continues automatically as soon as the Wi-Fi is connected again.</string>
+    <string name="home_pc_unreachable_hint">Is the PC switched on and the share active? “Sync” checks right away.</string>
+    <string name="home_nothing_to_do">Nothing to do – everything up to date</string>
+    <string name="home_no_sync_yet">No sync yet.</string>
+    <string name="home_next_check">Next check at %1$s</string>
+    <string name="home_skipped">⚠ Automatic start skipped – %1$s</string>
+    <string name="home_resume">Resume</string>
+    <string name="home_sync">Sync</string>
+    <string name="home_profile_disabled">disabled</string>
+    <string name="home_profile_on_wifi">on Wi-Fi ✓</string>
+    <string name="home_profile_no_target">No target set</string>
+    <string name="home_profile_no_local">no phone folder</string>
+    <string name="home_profile_propagate">apply deletions</string>
+    <string name="home_profile_sources">Sources: %1$s</string>
+    <string name="home_profile_none">none</string>
+    <string name="home_profile_no_wifi">none – manual sync only</string>
+    <string name="home_profile_awaiting">Waiting for the first start – simulate in the profile first or tap “Sync”</string>
+
+    <!-- Schutzbremse: Knoepfe der Karte auf der Startseite -->
+    <string name="guard_choose_new">Choose new folder</string>
+    <string name="guard_recheck">Check again (folder restored)</string>
+    <string name="guard_reset">Create anew and compare</string>
+    <string name="guard_reset_hint">“Create anew” compares everything again without deleting anything. Until you decide, only this profile rests.</string>
+    <string name="guard_keep">Don\'t delete</string>
+    <string name="guard_delete_anyway">Move to trash anyway</string>
+    <string name="guard_keep_hint">“Don\'t delete” keeps the files or restores them on the other side.</string>
+    <string name="guard_choose_other">Choose another folder</string>
+    <string name="guard_accept">Accept anyway</string>
+    <string name="guard_as_new">Treat as a new folder</string>
+
+    <!-- Berechtigungen (PermissionCard) -->
+    <string name="perm_incomplete">Setup incomplete</string>
+    <string name="perm_grant">Grant</string>
+    <string name="perm_open">Open</string>
+    <string name="perm_turn_on">Turn on</string>
+    <string name="perm_media">Access to photos &amp; videos</string>
+    <string name="perm_media_location">Read location in photos (for country folders)</string>
+    <string name="perm_notifications">Notifications (progress)</string>
+    <string name="perm_location">Location (Android needs it to read the Wi-Fi name)</string>
+    <string name="perm_location_always">Location “Allow all the time” (Wi-Fi detection in the background)</string>
+    <string name="perm_location_off">Location service is turned off</string>
+    <string name="perm_battery">Disable battery optimization (reliable background sync)</string>
+</resources>

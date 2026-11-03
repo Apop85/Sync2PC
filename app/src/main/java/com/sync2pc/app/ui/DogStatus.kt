@@ -58,10 +58,10 @@ fun DogStatus(state: DogState, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(AREA_HEIGHT), contentAlignment = Alignment.Center) {
         when (state) {
             DogState.RUNNING -> RunningDog(sized(RUNNING_HEIGHT))
-            DogState.WAITING -> Image(painterResource(R.drawable.dog_wait), "Wartet", sized(SITTING_HEIGHT))
-            DogState.SLEEPING -> Image(painterResource(R.drawable.dog_idle), "Alles gesichert", sized(SLEEPING_HEIGHT))
-            DogState.PAUSED -> Image(painterResource(R.drawable.dog_pause), "Pausiert", sized(PAUSED_HEIGHT))
-            DogState.ATTENTION -> Image(painterResource(R.drawable.dog_attention), "Wartet auf dich", sized(ATTENTION_HEIGHT))
+            DogState.WAITING -> Image(painterResource(R.drawable.dog_wait), com.sync2pc.app.l10n.str(R.string.dog_waiting), sized(SITTING_HEIGHT))
+            DogState.SLEEPING -> Image(painterResource(R.drawable.dog_idle), com.sync2pc.app.l10n.str(R.string.dog_idle), sized(SLEEPING_HEIGHT))
+            DogState.PAUSED -> Image(painterResource(R.drawable.dog_pause), com.sync2pc.app.l10n.str(R.string.log_status_paused), sized(PAUSED_HEIGHT))
+            DogState.ATTENTION -> Image(painterResource(R.drawable.dog_attention), com.sync2pc.app.l10n.str(R.string.log_status_waiting), sized(ATTENTION_HEIGHT))
         }
     }
 }
@@ -108,6 +108,6 @@ private fun RunningDog(modifier: Modifier) {
     }
 
     val frame = frames.getOrNull(index)
-    if (frame != null) Image(frame, "Synchronisiert", modifier)
-    else Image(painterResource(R.drawable.dog_wait), "Synchronisiert", modifier) // bis die Bilder geladen sind
+    if (frame != null) Image(frame, com.sync2pc.app.l10n.str(R.string.dog_syncing), modifier)
+    else Image(painterResource(R.drawable.dog_wait), com.sync2pc.app.l10n.str(R.string.dog_syncing), modifier) // bis die Bilder geladen sind
 }

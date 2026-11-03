@@ -34,6 +34,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.StatRow
 import com.sync2pc.app.sync.Notifications
@@ -63,8 +66,8 @@ private fun compute(rows: List<StatRow>): Stats {
         if (r.sourceKey.substringAfterLast('.', "").lowercase() in videoExt) videos++
         val y = r.year?.toString()
             ?: r.remotePath.split('\\').firstOrNull { yearSegment.matches(it) }
-            ?: "Unbekannt"
-        val c = r.countryName ?: "Ohne Standortdaten"
+            ?: str(R.string.stats_unknown)
+        val c = com.sync2pc.app.geo.CountryLookup.displayName(r.countryIso, r.countryName) ?: str(R.string.stats_no_location)
         years[y] = (years[y]?.first ?: 0) + 1 to (years[y]?.second ?: 0L) + r.size
         countries[c] = (countries[c]?.first ?: 0) + 1 to (countries[c]?.second ?: 0L) + r.size
     }
@@ -96,7 +99,7 @@ fun StatsScreen(onBack: () -> Unit) {
         stats = withContext(Dispatchers.IO) { compute(dao.statRows(id)) }
     }
 
-    ScreenScaffold(title = "Statistik", onBack = onBack) { pad ->
+    ScreenScaffold(title = str(R.string.home_cd_stats), onBack = onBack) { pad ->
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
@@ -111,19 +114,19 @@ fun StatsScreen(onBack: () -> Unit) {
             }
             val s = stats
             when {
-                profiles.isEmpty() -> item { Text("Noch kein Profil vorhanden.") }
+                profiles.isEmpty() -> item { Text(str(R.string.stats_no_profile)) }
                 s == null -> item { CircularProgressIndicator() }
-                s.files == 0 -> item { Text("Noch keine Dateien gesichert.") }
+                s.files == 0 -> item { Text(str(R.string.stats_no_files)) }
                 else -> {
                     item {
-                        SectionCard("Gesamt") {
-                            Text("${s.files} Dateien · ${Notifications.formatBytes(s.bytes)}",
+                        SectionCard(str(R.string.stats_total)) {
+                            Text(plural(R.plurals.trash_day_files, s.files, s.files, Notifications.formatBytes(s.bytes)),
                                 style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            Text("${s.photos} Fotos · ${s.videos} Videos")
+                            Text(str(R.string.stats_photos_videos, s.photos, s.videos))
                         }
                     }
-                    item { BucketCard("Pro Jahr", s.years) }
-                    item { BucketCard("Pro Land (aus GPS)", s.countries) }
+                    item { BucketCard(str(R.string.stats_per_year), s.years) }
+                    item { BucketCard(str(R.string.stats_per_country), s.countries) }
                 }
             }
         }

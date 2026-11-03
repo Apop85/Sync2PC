@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Profil-Optionen (Entities.kt) -->
+    <string name="delete_mode_keep">Keep files</string>
+    <string name="delete_mode_trash">Move to trash</string>
+    <string name="delete_mode_delete">Delete permanently</string>
+    <string name="profile_type_label_photos">Back up photos &amp; videos</string>
+    <string name="profile_type_label_mirror">Sync a folder</string>
+    <string name="direction_upload">Phone → PC</string>
+    <string name="direction_upload_short">→ PC</string>
+    <string name="direction_download">PC → Phone</string>
+    <string name="direction_download_short">→ Phone</string>
+    <string name="direction_both">Both ways</string>
+    <string name="direction_both_short">⇄</string>
+    <string name="conflict_mode_ask">Ask every time</string>
+    <string name="conflict_mode_newer">Always take the newer file</string>
+
+    <!-- Profil-Assistent (ProfileWizard) -->
+    <string name="wizard_step_name">Profile name</string>
+    <string name="wizard_step_source">Source</string>
+    <string name="wizard_step_target">Target</string>
+    <string name="wizard_step_options">Sync options</string>
+    <string name="wizard_step_filter">Filter</string>
+    <string name="wizard_step_guard">Safety brake</string>
+    <string name="wizard_missing_name">Please give the profile a name.</string>
+    <string name="wizard_missing_local">Please choose the folder on the phone.</string>
+    <string name="wizard_missing_sources">Please choose at least one folder on the phone.</string>
+    <string name="wizard_missing_media">Please turn on photos, videos or both.</string>
+    <string name="wizard_missing_target">Please enter the share path, e.g. \\\\192.168.1.20\\Photos.</string>
+
+    <!-- Doppelte Profile (ProfileOverlap) -->
+    <string name="overlap_identical">Profile “%1$s” already has the same target and the same sources.</string>
+    <string name="overlap_nested">A folder of this profile lies inside a folder of profile “%1$s” (or the other way round). The same files would be synced by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
+    <string name="overlap_shared_folders">Same target as profile “%1$s” and shared source folders: %2$s. These files would be checked and transferred by both profiles.</string>
+    <string name="overlap_same_target">Same target as profile “%1$s”. These files would be checked and transferred by both profiles.</string>
+
+    <!-- Typwahl und Ordnerauswahl auf dem Share (ProfileParts) -->
+    <string name="type_chooser_title">What do you want to sync?</string>
+    <string name="type_chooser_photos">Photos and videos from the phone to the PC. Stored by year, month and travel country, e.g. 2026\\06 - Egypt. Optionally remove them from the phone afterwards.</string>
+    <string name="type_chooser_mirror">Mirror any folder 1:1, with subfolders and all file types. Direction selectable: phone → PC, PC → phone or both ways.</string>
+    <string name="remote_picker_title">Folder on the share</string>
+    <string name="remote_picker_empty">No subfolders</string>
+    <string name="remote_picker_use">Use this folder</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gemeinsame Texte und Startbildschirm (MainActivity) -->
+    <string name="common_back">Zurück</string>
+    <string name="fmt_date_time">dd.MM.yyyy HH:mm</string>
+    <string name="main_install_status">Status %1$s</string>
+    <string name="main_update_failed">Update fehlgeschlagen: %1$s</string>
+    <string name="main_update_failed_key">Update fehlgeschlagen: %1$s – Die neue Version ist evtl. mit einem anderen Schlüssel signiert.</string>
+    <plurals name="main_files_removed">
+        <item quantity="one">%1$s Datei entfernt</item>
+        <item quantity="other">%1$s Dateien entfernt</item>
+    </plurals>
+    <string name="main_nothing_to_remove">Nichts zu entfernen</string>
+</resources>

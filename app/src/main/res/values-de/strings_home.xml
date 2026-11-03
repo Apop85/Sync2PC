@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Allgemeine Knoepfe -->
+    <string name="common_cancel">Abbrechen</string>
+    <string name="common_pause">Pausieren</string>
+    <string name="common_sync_now">Jetzt synchronisieren</string>
+    <string name="common_save">Speichern</string>
+    <string name="common_ok">OK</string>
+    <string name="common_delete">Löschen</string>
+    <string name="fmt_day_month">dd.MM.</string>
+
+    <!-- Startseite (HomeScreen) -->
+    <string name="home_wait_wifi">Wartet auf das Heim-WLAN.</string>
+    <string name="home_wait_charger">Wartet auf das Ladegerät („Nur beim Laden“ ist eingeschaltet).</string>
+    <string name="home_starting">Sync startet gleich…</string>
+    <string name="home_tool_trash_text">Dateien zurückholen oder endgültig löschen</string>
+    <string name="home_tool_trash_used">Belegt: Handy %1$s · PC %2$s</string>
+    <string name="home_guard_note_all">Wartet auf deine Entscheidung (Schutzbremse) – erst danach geht es weiter.</string>
+    <string name="home_guard_note_some">Bei einem Profil wartet es auf deine Entscheidung (Schutzbremse).</string>
+    <string name="home_pc_unreachable">PC nicht erreichbar (%1$s) – nächste Prüfung um %2$s</string>
+    <string name="home_cd_paused">Pausiert – tippen zum Fortsetzen</string>
+    <string name="home_cd_running">Läuft – tippen zum Pausieren</string>
+    <string name="home_cd_stats">Statistik</string>
+    <string name="home_cd_log">Verlauf</string>
+    <string name="home_cd_settings">Einstellungen</string>
+    <string name="home_profile_fallback">Profil</string>
+    <string name="home_update_title">Update verfügbar</string>
+    <string name="home_update_text">Version %1$s ist verfügbar (installiert: %2$s).</string>
+    <string name="home_update_button">Ansehen</string>
+    <string name="home_conflicts_title">Konflikte beim Ordner-Sync</string>
+    <plurals name="home_conflicts_text">
+        <item quantity="one">%1$s Datei wurde auf Handy und PC geändert. Wähle, welche Version gilt.</item>
+        <item quantity="other">%1$s Dateien wurden auf Handy und PC geändert. Wähle, welche Version gilt.</item>
+    </plurals>
+    <string name="home_conflicts_button">Entscheiden</string>
+    <string name="home_decisions_title">Ordnerauswahl nötig</string>
+    <plurals name="home_decisions_text">
+        <item quantity="one">%1$s Datei in %2$s wartet, weil es umbenannte Monatsordner gibt.</item>
+        <item quantity="other">%1$s Dateien in %2$s warten, weil es umbenannte Monatsordner gibt.</item>
+    </plurals>
+    <plurals name="home_groups">
+        <item quantity="one">%1$s Gruppe</item>
+        <item quantity="other">%1$s Gruppen</item>
+    </plurals>
+    <string name="home_decisions_button">Zuordnen</string>
+    <string name="home_delete_title">Gesicherte Dateien entfernen</string>
+    <plurals name="home_delete_text">
+        <item quantity="one">%1$s Datei ist verifiziert auf dem PC. Android fragt einmal zur Bestätigung.</item>
+        <item quantity="other">%1$s Dateien sind verifiziert auf dem PC. Android fragt einmal zur Bestätigung.</item>
+    </plurals>
+    <string name="home_delete_button">Entfernen bestätigen</string>
+    <string name="home_profiles">Profile</string>
+    <string name="home_add_profile">Profil hinzufügen</string>
+    <string name="home_no_profile">Noch kein Profil. Lege ein Profil mit Ziel-Freigabe, WLAN und Quellordnern an.</string>
+    <string name="home_first_profile">Erstes Profil anlegen</string>
+    <string name="home_tool_free">Speicher freigeben</string>
+    <string name="home_tool_free_text">Alte, auf dem PC gesicherte Dateien vom Handy entfernen</string>
+    <string name="home_tool_free_disabled">Nur bei Fotos-Profilen und Ordner-Profilen Handy → PC</string>
+    <string name="home_tool_trash">Papierkorb</string>
+    <string name="home_tool_trash_disabled">Nur bei Ordner-Profilen</string>
+    <string name="home_tool_trash_hint">Den Papierkorb gibt es nur bei Ordner-Profilen.</string>
+    <string name="home_tools">Tools</string>
+    <string name="home_purge_pending_title">Papierkorb leeren vorgemerkt</string>
+    <string name="home_purge_pending_text">Der PC-Papierkorb wird beim nächsten Sync mit erreichbarem PC geleert.</string>
+    <string name="home_restore_failed_title">Wiederherstellen fehlgeschlagen</string>
+    <plurals name="home_restore_failed_text">
+        <item quantity="one">%1$s Datei konnte nicht wiederhergestellt werden. Es wurde alles zurückgerollt; der nächste Sync versucht es erneut. Details stehen im Verlauf.</item>
+        <item quantity="other">%1$s Dateien konnten nicht wiederhergestellt werden. Es wurde alles zurückgerollt; der nächste Sync versucht es erneut. Details stehen im Verlauf.</item>
+    </plurals>
+    <string name="home_retry">Erneut versuchen</string>
+    <string name="home_discard">Verwerfen</string>
+    <string name="home_restore_pending_title">Wiederherstellung vorgemerkt</string>
+    <plurals name="home_restore_pending_text">
+        <item quantity="one">%1$s Datei wird beim nächsten Sync mit erreichbarem PC wiederhergestellt.</item>
+        <item quantity="other">%1$s Dateien werden beim nächsten Sync mit erreichbarem PC wiederhergestellt.</item>
+    </plurals>
+    <string name="home_version">Version %1$s</string>
+    <string name="home_tomorrow">morgen %1$s</string>
+    <string name="home_pause_title">Wie lange pausieren?</string>
+    <string name="home_pause_hint">Ein laufender Sync wird angehalten. Bis zum Ende der Pause startet nichts automatisch.</string>
+    <string name="home_pause_hours">Eigene Anzahl Stunden (1–168)</string>
+    <string name="home_pause_forever">Für immer (nur manuell)</string>
+    <string name="home_pause_forever_hint">Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Synchronisieren“, bis du über ⏸ wieder einschaltest.</string>
+    <string name="home_status">Status</string>
+    <string name="home_all_saved">✓ Alles gesichert und aktuell</string>
+    <string name="home_wifi">WLAN: %1$s</string>
+    <string name="home_wifi_none">nicht verbunden / nicht lesbar</string>
+    <string name="home_progress">%1$s: %2$s / %3$s Dateien – %4$s von %5$s</string>
+    <string name="home_running">Synchronisierung läuft…</string>
+    <string name="home_manual_only">⏸ Automatik aus – nur manuelle Syncs</string>
+    <string name="home_manual_only_hint">Es wird nur synchronisiert, wenn du „Synchronisieren“ tippst. ⏸ oben rechts schaltet die Automatik wieder ein.</string>
+    <string name="home_last_sync">Letzter Sync: %1$s (%2$s)</string>
+    <string name="home_paused_until">⏸ Pausiert bis %1$s</string>
+    <string name="home_paused_until_hint">Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Synchronisieren“ beendet die Pause sofort.</string>
+    <string name="home_paused_wifi">⏸ Pausiert – wartet auf das Heim-WLAN</string>
+    <string name="home_paused_wifi_hint">Der Sync wurde durch einen WLAN-Unterbruch angehalten und läuft automatisch weiter, sobald das WLAN wieder verbunden ist.</string>
+    <string name="home_pc_unreachable_hint">Ist der PC eingeschaltet und die Freigabe aktiv? „Synchronisieren“ prüft sofort.</string>
+    <string name="home_nothing_to_do">Nichts zu tun – alles aktuell</string>
+    <string name="home_no_sync_yet">Noch kein Sync durchgeführt.</string>
+    <string name="home_next_check">Nächste Prüfung um %1$s</string>
+    <string name="home_skipped">⚠ Automatischer Start übersprungen – %1$s</string>
+    <string name="home_resume">Fortsetzen</string>
+    <string name="home_sync">Synchronisieren</string>
+    <string name="home_profile_disabled">deaktiviert</string>
+    <string name="home_profile_on_wifi">im WLAN ✓</string>
+    <string name="home_profile_no_target">Kein Ziel festgelegt</string>
+    <string name="home_profile_no_local">kein Handy-Ordner</string>
+    <string name="home_profile_propagate">Löschungen übernehmen</string>
+    <string name="home_profile_sources">Quellen: %1$s</string>
+    <string name="home_profile_none">keine</string>
+    <string name="home_profile_no_wifi">keines – nur manueller Sync</string>
+    <string name="home_profile_awaiting">Wartet auf den ersten Start – zuerst im Profil simulieren oder „Synchronisieren“ tippen</string>
+
+    <!-- Schutzbremse: Knoepfe der Karte auf der Startseite -->
+    <string name="guard_choose_new">Neuen Ordner wählen</string>
+    <string name="guard_recheck">Erneut prüfen (Ordner wiederhergestellt)</string>
+    <string name="guard_reset">Neu anlegen und abgleichen</string>
+    <string name="guard_reset_hint">„Neu anlegen“ gleicht alles neu ab, ohne etwas zu löschen. Bis du entscheidest, ruht nur dieses Profil.</string>
+    <string name="guard_keep">Nicht löschen</string>
+    <string name="guard_delete_anyway">Trotzdem in den Papierkorb</string>
+    <string name="guard_keep_hint">„Nicht löschen“ behält die Dateien bzw. stellt sie auf der anderen Seite wieder her.</string>
+    <string name="guard_choose_other">Anderen Ordner wählen</string>
+    <string name="guard_accept">Trotzdem übernehmen</string>
+    <string name="guard_as_new">Als neuen Ordner behandeln</string>
+
+    <!-- Berechtigungen (PermissionCard) -->
+    <string name="perm_incomplete">Einrichtung unvollständig</string>
+    <string name="perm_grant">Erteilen</string>
+    <string name="perm_open">Öffnen</string>
+    <string name="perm_turn_on">Einschalten</string>
+    <string name="perm_media">Zugriff auf Fotos &amp; Videos</string>
+    <string name="perm_media_location">Standort in Fotos lesen (für Länderordner)</string>
+    <string name="perm_notifications">Benachrichtigungen (Fortschritt)</string>
+    <string name="perm_location">Standort (Android braucht ihn, um den WLAN-Namen zu lesen)</string>
+    <string name="perm_location_always">Standort „Immer zulassen“ (WLAN-Erkennung im Hintergrund)</string>
+    <string name="perm_location_off">Standortdienst ist ausgeschaltet</string>
+    <string name="perm_battery">Akku-Optimierung deaktivieren (zuverlässiger Hintergrund-Sync)</string>
+</resources>

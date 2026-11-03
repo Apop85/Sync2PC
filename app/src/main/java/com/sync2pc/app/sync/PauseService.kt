@@ -71,7 +71,7 @@ class PauseService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val last = intent?.getStringExtra(EXTRA_PROFILE)?.let {
             SyncProgress(
-                it, "Pausiert", intent.getIntExtra(EXTRA_DONE, 0), intent.getIntExtra(EXTRA_TOTAL, 0),
+                it, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.log_status_paused), intent.getIntExtra(EXTRA_DONE, 0), intent.getIntExtra(EXTRA_TOTAL, 0),
                 intent.getLongExtra(EXTRA_DONE_BYTES, 0), intent.getLongExtra(EXTRA_TOTAL_BYTES, 0), null
             )
         }
@@ -118,7 +118,7 @@ class PauseService : Service() {
                     val targets = com.sync2pc.app.data.AppDatabase.get(ctx).dao().profiles()
                         .filter { it.enabled }.flatMap { it.ssids() }
                     if (ssid != null && ssid in targets) {
-                        SyncScheduler.enqueueAuto(ctx, "Fortsetzen nach WLAN-Unterbruch ($ssid)")
+                        SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_resume_wifi, ssid))
                         stopSelf()
                         return@launch
                     }

@@ -56,9 +56,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.l10n.Texts
+import com.sync2pc.app.l10n.plural
+import com.sync2pc.app.l10n.str
 import com.sync2pc.app.mirror.MirrorLock
 import com.sync2pc.app.mirror.PurgeRule
 import com.sync2pc.app.mirror.PurgeSides
@@ -94,7 +98,7 @@ fun TrashScreen(onBack: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
 
     ScreenScaffold(
-        title = "Papierkorb",
+        title = str(R.string.home_tool_trash),
         // Bei mehreren Profilen führt "Zurück" zuerst zur Profilauswahl
         onBack = { if (chosen != null && eligible.size > 1) chosen = null else onBack() },
         actions = {
@@ -102,7 +106,7 @@ fun TrashScreen(onBack: () -> Unit) {
             if (profile != null && eligible.size > 1) Box {
                 TextButton(onClick = { menu = true }) {
                     Text(profile.name, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 140.dp))
-                    Icon(Icons.Filled.ArrowDropDown, "Profil wechseln")
+                    Icon(Icons.Filled.ArrowDropDown, str(R.string.trash_switch_profile))
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     eligible.forEach { p ->
@@ -117,13 +121,13 @@ fun TrashScreen(onBack: () -> Unit) {
                 CircularProgressIndicator(Modifier.padding(24.dp))
             }
             eligible.isEmpty() -> Column(Modifier.padding(pad).padding(16.dp)) {
-                SectionCard { Text("Den Papierkorb gibt es nur bei Ordner-Profilen."); PhotosHint(hasPhotos) }
+                SectionCard { Text(str(R.string.home_tool_trash_hint)); PhotosHint(hasPhotos) }
             }
             profile == null -> LazyColumn(
                 Modifier.fillMaxSize().padding(pad), contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item { Hint("Welchen Papierkorb möchtest du öffnen?") }
+                item { Hint(str(R.string.trash_choose_profile)) }
                 items(eligible, key = { it.id }) { p ->
                     Card(Modifier.fillMaxWidth().clickable { chosen = p.id }) {
                         Column(Modifier.padding(16.dp)) {
@@ -141,8 +145,7 @@ fun TrashScreen(onBack: () -> Unit) {
 
 @Composable
 private fun PhotosHint(show: Boolean) {
-    if (show) Hint("Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie " +
-        "und werden in der Galerie-App geleert.")
+    if (show) Hint(str(R.string.trash_photos_hint))
 }
 
 @Composable
@@ -163,7 +166,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
 
     // Löschen wartet auf einen laufenden Ordner-Sync (0.7.0)
     fun startWork() {
-        working = if (MirrorLock.busy) "Wartet, bis der laufende Sync fertig ist…\nDiese Ansicht bitte offen lassen." else "Lösche…"
+        working = str(if (MirrorLock.busy) R.string.trash_waiting_for_sync else R.string.trash_deleting)
     }
 
     val data = loaded
@@ -172,7 +175,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CircularProgressIndicator()
-            Hint(busyText ?: "Lese den Papierkorb auf Handy und PC…")
+            Hint(busyText ?: str(R.string.trash_reading))
         }
         return
     }
@@ -202,40 +205,36 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                 SectionCard(profile.name) {
                     val local = data.entries.filter { it.side == Side.LOCAL }
                     val remote = data.entries.filter { it.side == Side.REMOTE }
-                    Text("Handy: ${local.size} Dateien, ${Notifications.formatBytes(TrashPurge.bytes(local))}")
-                    Text(if (data.pcAvailable) "PC: ${remote.size} Dateien, ${Notifications.formatBytes(TrashPurge.bytes(remote))}"
-                        else "PC: nicht erreichbar")
+                    Text(plural(R.plurals.trash_phone_summary, local.size, local.size, Notifications.formatBytes(TrashPurge.bytes(local))))
+                    Text(if (data.pcAvailable) plural(R.plurals.trash_pc_summary, remote.size, remote.size, Notifications.formatBytes(TrashPurge.bytes(remote)))
+                        else str(R.string.trash_pc_unreachable))
                     if (!data.pcAvailable) Text(
-                        "Einträge aus dem PC-Papierkorb fehlen in der Liste. Wiederherstellen und Löschen auf dem PC " +
-                            "werden vorgemerkt und beim nächsten Sync mit erreichbarem PC ausgeführt.",
+                        str(R.string.trash_pc_unreachable_hint),
                         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         OutlinedButton(
                             onClick = { showCleanup = true },
                             enabled = data.entries.isNotEmpty() || !data.pcAvailable,
-                        ) { Text("Aufräumen…") }
-                        TextButton(onClick = { reload++ }) { Text("Neu einlesen") }
+                        ) { Text(str(R.string.trash_cleanup_button)) }
+                        TextButton(onClick = { reload++ }) { Text(str(R.string.trash_reload)) }
                     }
                 }
             }
             if (data.entries.isEmpty()) {
-                item { Hint("Der Papierkorb ist leer.") }
+                item { Hint(str(R.string.trash_empty)) }
                 item { PhotosHint(hasPhotos) }
                 return@LazyColumn
             }
-            item {
-                Hint("Hier liegen gelöschte Dateien und ältere Versionen. Markiere Einträge, um sie wiederherzustellen " +
-                    "oder endgültig zu löschen.")
-            }
+            item { Hint(str(R.string.trash_intro)) }
             // Filter nach Datum (0.6.4: ein Wertfeld statt einer Chip-Reihe pro Tag)
             item {
-                ValueField("Tag", day?.let(::dayLabel) ?: "Alle Tage") { pickDay = true }
+                ValueField(str(R.string.trash_day), day?.let(::dayLabel) ?: str(R.string.trash_all_days)) { pickDay = true }
             }
             day?.let { d ->
                 item {
                     OutlinedButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.ofDate(data.entries, d))) },
-                        modifier = Modifier.fillMaxWidth()) { Text("Alles vom ${dayLabel(d)} auswählen") }
+                        modifier = Modifier.fillMaxWidth()) { Text(str(R.string.trash_select_day, dayLabel(d))) }
                 }
             }
             // Nach Ordnern gruppiert, darin je Datei alle Versionen (neueste zuerst)
@@ -243,10 +242,10 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
             for ((folder, inFolder) in byFolder) {
                 item(key = "folder-$folder") {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-                        Text("📁 " + folder.ifEmpty { "(Hauptordner)" }, style = MaterialTheme.typography.titleSmall,
+                        Text("📁 " + folder.ifEmpty { str(R.string.free_main_folder) }, style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                         TextButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.inFolder(visible, folder))) }) {
-                            Text("Ganzer Ordner")
+                            Text(str(R.string.trash_whole_folder))
                         }
                     }
                 }
@@ -256,7 +255,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                                 Text(first.name, style = MaterialTheme.typography.bodyLarge)
-                                Hint(if (first.origPath.lowercase() in data.existing) "ältere Version" else "gelöscht")
+                                Hint(str(if (first.origPath.lowercase() in data.existing) R.string.trash_older_version else R.string.trash_deleted))
                                 for (v in versions) {
                                     // Zum Wiederherstellen vorgemerkt -> nicht nochmals wählbar, wird nie gelöscht (0.7.0)
                                     val reserved = TrashPurge.key(v) in data.reserved
@@ -267,11 +266,11 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                                         Checkbox(checked = isSel(v), onCheckedChange = { toggle(v) }, enabled = !reserved)
                                         Column {
                                             Text(
-                                                dayLabel(v.date) + " · " + (if (v.side == Side.LOCAL) "Handy" else "PC") +
+                                                dayLabel(v.date) + " · " + str(if (v.side == Side.LOCAL) R.string.side_phone else R.string.side_pc) +
                                                     " · " + Notifications.formatBytes(v.size),
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
-                                            if (reserved) Hint("zum Wiederherstellen vorgemerkt")
+                                            if (reserved) Hint(str(R.string.trash_reserved))
                                         }
                                     }
                                 }
@@ -288,17 +287,16 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("${selected.size} ausgewählt · ${Notifications.formatBytes(TrashPurge.bytes(selected))}",
+                    Text(str(R.string.trash_selected, selected.size, Notifications.formatBytes(TrashPurge.bytes(selected))),
                         style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { selected = emptyList() }) { Text("Aufheben") }
+                    TextButton(onClick = { selected = emptyList() }) { Text(str(R.string.trash_clear_selection)) }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { confirmRestore = true }, modifier = Modifier.weight(1f)) {
-                        Text("Wiederherstellen", maxLines = 1)
-                    }
-                    OutlinedButton(onClick = { confirmDelete = true }, modifier = Modifier.weight(1f)) {
-                        Text("Endgültig löschen", maxLines = 1, color = MaterialTheme.colorScheme.error)
-                    }
+                // Je Knopf eine Zeile (0.7.1): nebeneinander wurden die Texte abgeschnitten
+                Button(onClick = { confirmRestore = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(str(R.string.trash_restore))
+                }
+                OutlinedButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(str(R.string.delete_mode_delete), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -311,8 +309,8 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                 showCleanup = false; startWork()
                 scope.launch {
                     val r = try { TrashCleaner.purge(ctx, profile, rule, sides) } finally { working = null }
-                    Toast.makeText(ctx, if (r.remotePending) "Handy geleert – PC wird beim nächsten Sync mit PC geleert"
-                        else "Papierkorb aufgeräumt", Toast.LENGTH_LONG).show()
+                    Toast.makeText(ctx, str(if (r.remotePending) R.string.trash_purged_pc_pending else R.string.trash_purged),
+                        Toast.LENGTH_LONG).show()
                     selected = emptyList()
                     reload++
                 }
@@ -322,11 +320,10 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
 
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
-        title = { Text("${selected.size} Datei(en) endgültig löschen?") },
+        title = { Text(plural(R.plurals.trash_delete_title, selected.size)) },
         text = {
-            Text("Die markierten Einträge werden aus dem Papierkorb gelöscht und lassen sich danach nicht mehr " +
-                "wiederherstellen." + if (!data.pcAvailable && selected.any { it.side == Side.REMOTE })
-                    " Der PC ist nicht erreichbar: Dort wird beim nächsten Sync mit PC gelöscht." else "")
+            Text(str(R.string.trash_delete_text) + if (!data.pcAvailable && selected.any { it.side == Side.REMOTE })
+                " " + str(R.string.trash_delete_pc_later) else "")
         },
         confirmButton = {
             TextButton(onClick = {
@@ -334,35 +331,34 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                 startWork()
                 scope.launch {
                     val r = try { TrashCleaner.deleteEntries(ctx, profile, selected) } finally { working = null }
-                    Toast.makeText(ctx, if (r.remotePending) "Gelöscht – PC folgt beim nächsten Sync mit PC"
-                        else "Endgültig gelöscht", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, str(if (r.remotePending) R.string.trash_deleted_pc_pending else R.string.trash_deleted_done),
+                        Toast.LENGTH_SHORT).show()
                     selected = emptyList()
                     reload++
                 }
-            }) { Text("Endgültig löschen", color = MaterialTheme.colorScheme.error) }
+            }) { Text(str(R.string.delete_mode_delete), color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.common_cancel)) } },
     )
 
     if (confirmRestore) AlertDialog(
         onDismissRequest = { confirmRestore = false },
-        title = { Text("${selected.size} Datei(en) wiederherstellen?") },
+        title = { Text(plural(R.plurals.trash_restore_title, selected.size)) },
         text = {
-            Text("Die aktuellen Versionen kommen zuerst in den Papierkorb. Die gewählten Versionen werden auf Handy und PC " +
-                "zurückgeschrieben. " + if (data.pcAvailable) "Das passiert gleich mit einem Sync."
-                else "Der PC ist nicht erreichbar: Das passiert beim nächsten Sync mit PC.")
+            Text(str(R.string.trash_restore_text) + " " +
+                str(if (data.pcAvailable) R.string.trash_restore_now else R.string.trash_restore_later))
         },
         confirmButton = {
             TextButton(onClick = {
                 confirmRestore = false
                 scope.launch {
                     RestoreManager.request(ctx, profile.id, selected)
-                    Toast.makeText(ctx, "Wiederherstellung vorgemerkt", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, str(R.string.home_restore_pending_title), Toast.LENGTH_SHORT).show()
                     onDone()
                 }
-            }) { Text("Wiederherstellen") }
+            }) { Text(str(R.string.trash_restore)) }
         },
-        dismissButton = { TextButton(onClick = { confirmRestore = false }) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = { confirmRestore = false }) { Text(str(R.string.common_cancel)) } },
     )
 }
 
@@ -388,49 +384,50 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
     // PC nicht erreichbar: dort ist unbekannt, was betroffen ist -> trotzdem vormerken können
     val pcUnknown = sides.remote && !data.pcAvailable
     val canRun = rule != null && (affected.isNotEmpty() || pcUnknown)
+    val affectedBytes = Notifications.formatBytes(TrashPurge.bytes(affected))
 
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Aufräumen", style = MaterialTheme.typography.titleLarge)
-        Hint("Endgültig gelöschte Dateien lassen sich nicht mehr wiederherstellen.")
+        Text(str(R.string.trash_cleanup), style = MaterialTheme.typography.titleLarge)
+        Hint(str(R.string.trash_cleanup_hint))
 
-        Text("Was?", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        ModeRow("Älter als … Tage", mode == PurgeRule.Mode.OLDER) { mode = PurgeRule.Mode.OLDER }
+        Text(str(R.string.trash_what), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        ModeRow(str(R.string.trash_mode_older), mode == PurgeRule.Mode.OLDER) { mode = PurgeRule.Mode.OLDER }
         if (mode == PurgeRule.Mode.OLDER) OutlinedTextField(
             daysText, { v -> daysText = v.filter { it.isDigit() }.take(4) },
-            label = { Text("Tage") }, isError = days == null, singleLine = true,
+            label = { Text(str(R.string.unit_days)) }, isError = days == null, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
         )
-        ModeRow("Einzelne Tage", mode == PurgeRule.Mode.DATES) { mode = PurgeRule.Mode.DATES }
+        ModeRow(str(R.string.trash_mode_dates), mode == PurgeRule.Mode.DATES) { mode = PurgeRule.Mode.DATES }
         if (mode == PurgeRule.Mode.DATES) {
-            if (data.entries.isEmpty()) Hint("Keine Tage im Papierkorb.")
-            else ValueField("Tage", when (dates.size) {
-                0 -> "Keine gewählt"
+            if (data.entries.isEmpty()) Hint(str(R.string.trash_no_days))
+            else ValueField(str(R.string.unit_days), when (dates.size) {
+                0 -> str(R.string.trash_none_chosen)
                 1 -> dayLabel(dates.first())
-                else -> "${dates.size} Tage gewählt"
+                else -> plural(R.plurals.trash_days_chosen, dates.size)
             }) { pickDays = true }
         }
-        ModeRow("Alles", mode == PurgeRule.Mode.ALL) { mode = PurgeRule.Mode.ALL }
+        ModeRow(str(R.string.trash_mode_all), mode == PurgeRule.Mode.ALL) { mode = PurgeRule.Mode.ALL }
 
-        Text("Wo?", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(str(R.string.trash_where), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         PurgeSides.entries.forEach { s -> ModeRow(s.label, sides == s) { sides = s } }
-        Hint("„Nur Handy“ schafft Platz auf dem Telefon; die Kopien im PC-Papierkorb bleiben erhalten.")
+        Hint(str(R.string.trash_phone_only_hint, PurgeSides.LOCAL.label))
 
         Text(
-            if (rule == null) "Bitte auswählen, was geleert werden soll."
-            else "Betrifft ${affected.size} Dateien (${Notifications.formatBytes(TrashPurge.bytes(affected))})" +
-                if (pcUnknown) " – dazu der PC-Papierkorb, sobald der PC erreichbar ist" else "",
+            if (rule == null) str(R.string.trash_choose_what)
+            else plural(R.plurals.trash_affects, affected.size, affected.size, affectedBytes) +
+                if (pcUnknown) " " + str(R.string.trash_affects_pc_later) else "",
         )
-        if (pcUnknown) Hint("Der PC ist nicht erreichbar. Das Handy wird sofort geleert, der PC beim nächsten Sync mit PC.")
-        if (kept > 0) Hint("$kept Datei(en) sind zum Wiederherstellen vorgemerkt und bleiben.")
+        if (pcUnknown) Hint(str(R.string.trash_pc_later_hint))
+        if (kept > 0) Hint(plural(R.plurals.trash_kept_reserved, kept))
         Button(
             onClick = { confirm = true }, enabled = canRun, modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError),
-        ) { Text("Endgültig löschen") }
+        ) { Text(str(R.string.delete_mode_delete)) }
     }
 
     if (pickDays) DayPickerDialog(
@@ -441,19 +438,19 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
 
     if (confirm && rule != null) AlertDialog(
         onDismissRequest = { confirm = false },
-        title = { Text("Endgültig löschen?") },
+        title = { Text(str(R.string.free_direct_title)) },
         text = {
-            Text("${affected.size} Dateien (${Notifications.formatBytes(TrashPurge.bytes(affected))}) werden endgültig " +
-                "gelöscht (${sides.label})" + (if (pcUnknown) ", auf dem PC beim nächsten Sync mit PC" else "") +
-                ". Das lässt sich nicht rückgängig machen." +
-                if (kept > 0) " $kept Datei(en) sind zum Wiederherstellen vorgemerkt und bleiben." else "")
+            Text(plural(R.plurals.trash_purge_confirm, affected.size, affected.size, affectedBytes, sides.label) +
+                (if (pcUnknown) " " + str(R.string.trash_purge_confirm_pc) else "") +
+                " " + str(R.string.trash_purge_irreversible) +
+                if (kept > 0) " " + plural(R.plurals.trash_kept_reserved, kept) else "")
         },
         confirmButton = {
             TextButton(onClick = { confirm = false; onPurge(rule, sides) }) {
-                Text("Endgültig löschen", color = MaterialTheme.colorScheme.error)
+                Text(str(R.string.delete_mode_delete), color = MaterialTheme.colorScheme.error)
             }
         },
-        dismissButton = { TextButton(onClick = { confirm = false }) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = { confirm = false }) { Text(str(R.string.common_cancel)) } },
     )
 }
 
@@ -494,18 +491,18 @@ private fun DayPickerDialog(
     val days = remember(entries) { TrashIndex.dates(entries) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (multi) "Tage wählen" else "Tag wählen") },
+        title = { Text(str(if (multi) R.string.trash_pick_days else R.string.trash_pick_day)) },
         text = {
             LazyColumn(Modifier.heightIn(max = 420.dp)) {
                 if (multi) item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { chosen = days.toSet() }) { Text("Alle") }
-                        TextButton(onClick = { chosen = emptySet() }) { Text("Keine") }
+                        TextButton(onClick = { chosen = days.toSet() }) { Text(str(R.string.free_all)) }
+                        TextButton(onClick = { chosen = emptySet() }) { Text(str(R.string.trash_none)) }
                     }
                 } else item {
                     Row(Modifier.fillMaxWidth().clickable { onDone(emptySet()) }, verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = initial.isEmpty(), onClick = { onDone(emptySet()) })
-                        Text("Alle Tage", style = MaterialTheme.typography.bodyLarge)
+                        Text(str(R.string.trash_all_days), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 items(days, key = { it }) { d ->
@@ -518,21 +515,21 @@ private fun DayPickerDialog(
                         else RadioButton(selected = d in initial, onClick = toggle)
                         Column {
                             Text(dayLabel(d), style = MaterialTheme.typography.bodyLarge)
-                            Hint("${inDay.size} Dateien · ${Notifications.formatBytes(TrashPurge.bytes(inDay))}")
+                            Hint(plural(R.plurals.trash_day_files, inDay.size, inDay.size, Notifications.formatBytes(TrashPurge.bytes(inDay))))
                         }
                     }
                 }
             }
         },
         confirmButton = {
-            if (multi) TextButton(onClick = { onDone(chosen) }) { Text("Übernehmen") }
+            if (multi) TextButton(onClick = { onDone(chosen) }) { Text(str(R.string.free_apply)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.common_cancel)) } },
     )
 }
 
-/** "2026-11-03" -> "03.11.2026" */
+/** "2026-11-03" -> Deutsch "03.11.2026", Englisch unverändert (ISO, eindeutig) */
 fun dayLabel(d: String): String {
     val p = d.split('-')
-    return if (p.size == 3) "${p[2]}.${p[1]}.${p[0]}" else d
+    return if (p.size == 3 && Texts.isGerman) "${p[2]}.${p[1]}.${p[0]}" else d
 }

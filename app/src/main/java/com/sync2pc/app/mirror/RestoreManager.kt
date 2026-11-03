@@ -53,7 +53,7 @@ object RestoreManager {
     /** Papierkorb auf dem PC (neuer und alter Name) */
     private fun remoteTrash(s: SmbSession): List<TrashEntry> {
         val out = ArrayList<TrashEntry>()
-        for (t in listOf(MirrorEngine.TRASH_DIR, MirrorEngine.OLD_TRASH_DIR)) {
+        for (t in MirrorEngine.TRASH_DIRS) {
             val base = s.path(t)
             if (!s.dirExists(base)) continue
             val files = s.listRecursive(base).filterKeys { !it.endsWith(SmbSession.TEMP_SUFFIX, true) }

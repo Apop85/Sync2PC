@@ -60,7 +60,7 @@ class SmbSession private constructor(
 
         fun open(profile: Profile): SmbSession {
             val target = targetOf(profile)
-                ?: throw IllegalArgumentException("Ungültiger Share-Pfad: '${profile.smbPath}' (erwartet \\\\server\\freigabe)")
+                ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
             val config = SmbConfig.builder()
                 .withTimeout(60, TimeUnit.SECONDS)
                 .withSoTimeout(90, TimeUnit.SECONDS)
@@ -77,7 +77,7 @@ class SmbSession private constructor(
                 )
                 val session = connection.authenticate(auth)
                 val share = session.connectShare(target.share) as? DiskShare
-                    ?: throw IllegalStateException("'${target.share}' ist keine Datei-Freigabe")
+                    ?: throw IllegalStateException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_not_disk, target.share))
                 return SmbSession(client, connection, session, share, target)
             } catch (e: Exception) {
                 try { connection?.close() } catch (ignored: Exception) {}
@@ -101,11 +101,11 @@ class SmbSession private constructor(
         fun test(profile: Profile): String = open(profile).use { s ->
             val base = s.target.basePath
             if (base.isNotEmpty() && !s.share.folderExists(base))
-                "Verbunden, aber Ordner '$base' existiert nicht (wird beim ersten Sync angelegt)."
+                com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_test_missing_folder, base)
             else {
                 val n = s.listDir(base).size
-                "Verbindung OK – ${s.target.host}\\${s.target.share}" +
-                    (if (base.isNotEmpty()) "\\$base" else "") + " ($n Einträge)"
+                com.sync2pc.app.l10n.plural(com.sync2pc.app.R.plurals.smb_test_ok, n,
+                    "${s.target.host}\\${s.target.share}" + (if (base.isNotEmpty()) "\\$base" else ""), n)
             }
         }
     }
@@ -307,13 +307,13 @@ class SmbSession private constructor(
                     if (filled < buf.size) break
                 }
             }
-            if (offset != size) throw java.io.IOException("Upload unvollständig: $offset von $size Bytes")
+            if (offset != size) throw java.io.IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_incomplete, offset, size))
             if (resumedAt > 0 && expectedHash != null) {
                 val h = PartialHash.compute(size) { off, len -> readFully(f, off, len) }
                 if (h != expectedHash()) {
                     // Angefangene Datei gehörte zu einer anderen Version -> verwerfen, nächster Versuch beginnt neu
                     try { f.deleteOnClose() } catch (ignored: Exception) {}
-                    throw java.io.IOException("Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen")
+                    throw java.io.IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_resume))
                 }
             }
             if (modifiedMillis != null && modifiedMillis > 0) {
