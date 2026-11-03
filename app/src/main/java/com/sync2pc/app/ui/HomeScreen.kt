@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -26,9 +27,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -327,7 +326,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             // Tools (0.5.0): Kacheln statt Textlinks, nur was zu den vorhandenen Profilen passt
             val tools = buildList {
                 if (profiles.any { it.type() == ProfileType.PHOTOS }) add(
-                    ToolTile(Icons.Filled.Phone, "Speicher freigeben",
+                    ToolTile(AppIcons.Smartphone, "Speicher freigeben",
                         "Alte, auf dem PC gesicherte Fotos vom Handy entfernen") { navigate(Screen.FreeSpace) }
                 )
                 if (restoreProfiles(profiles).isNotEmpty()) add(
@@ -356,13 +355,8 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                         onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
                     )
                 }
-                // Zwei Kacheln pro Zeile
-                items(tools.chunked(2)) { row ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        row.forEach { t -> ToolCard(t, Modifier.weight(1f)) }
-                        if (row.size == 1) Spacer(Modifier.weight(1f))
-                    }
-                }
+                // Ein Tool pro Zeile (0.6.1)
+                items(tools, key = { "tool-" + it.title }) { t -> ToolCard(t, Modifier.fillMaxWidth()) }
             }
 
             item {
@@ -532,20 +526,27 @@ private fun StatusCard(
     }
 }
 
-/** Kachel in der Sektion "Tools" (0.5.0) */
+/** Eintrag in der Sektion "Tools" (0.5.0, seit 0.6.1 eine Zeile pro Tool) */
 private class ToolTile(val icon: ImageVector, val title: String, val text: String, val onClick: () -> Unit)
 
 @Composable
 private fun ToolCard(t: ToolTile, modifier: Modifier) {
     Card(
-        modifier = modifier.heightIn(min = 120.dp).clickable(onClick = t.onClick),
+        modifier = modifier.clickable(onClick = t.onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(t.icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(t.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(t.text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(t.icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(t.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer)
+                Text(t.text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
         }
     }
 }

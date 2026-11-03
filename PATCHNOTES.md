@@ -2,6 +2,17 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.6.2 (2026-11-03)
+
+### Behoben
+- Build-Fehler aus 0.6.1: Das Pause-Symbol oben rechts fehlte, weil die Symbol-Datei überschrieben wurde. Es ist wieder da, das Smartphone-Symbol bleibt.
+
+## 0.6.1 (2026-11-03)
+
+### Geändert
+- **Tools:** Jedes Tool hat jetzt eine eigene Zeile, links das Symbol, rechts Titel und Beschreibung.
+- **Speicher freigeben:** zeigt ein Smartphone-Symbol statt des alten Telefonhörers.
+
 ## 0.6.0 (2026-11-03)
 
 ### Neu

@@ -17,4 +17,22 @@ object AppIcons {
             }
             .build()
     }
+
+    /** Smartphone (wie Material "Smartphone", 24 × 24) – seit 0.6.1 für "Speicher freigeben" */
+    val Smartphone: ImageVector by lazy {
+        ImageVector.Builder(name = "Smartphone", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
+            .path(fill = SolidColor(Color.Black)) {
+                moveTo(17f, 1.01f); lineTo(7f, 1f)
+                curveToRelative(-1.1f, 0f, -2f, 0.9f, -2f, 2f)
+                verticalLineToRelative(18f)
+                curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f)
+                horizontalLineToRelative(10f)
+                curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f)
+                verticalLineTo(3f)
+                curveToRelative(0f, -1.1f, -0.9f, -1.99f, -2f, -1.99f)
+                close()
+                moveTo(17f, 19f); horizontalLineTo(7f); verticalLineTo(5f); horizontalLineToRelative(10f); verticalLineToRelative(14f); close()
+            }
+            .build()
+    }
 }
