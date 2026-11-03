@@ -36,8 +36,8 @@
         <item quantity="one">%1$s error – details in the history</item>
         <item quantity="other">%1$s errors – details in the history</item>
     </plurals>
-    <string name="summary_no_space">Not enough storage on the phone – some files were not downloaded.</string>
-    <string name="summary_pc_unreachable">PC not reachable (%1$s). Is it switched on and the share active?</string>
+    <string name="summary_no_space">Not enough storage on the mobile – some files were not downloaded.</string>
+    <string name="summary_pc_unreachable">PC not reachable (%1$s). Is it switched on and the Share active?</string>
     <string name="paused_connection_retry">Connection interrupted – next attempt in %1$s minutes</string>
 
     <!-- Kurztext eines Laufs (RunSummary) -->
@@ -63,10 +63,10 @@
 
     <!-- Schutzbremse (MirrorGuard) -->
     <string name="guard_title_remote">PC folder not found</string>
-    <string name="guard_title_local">Phone folder not found</string>
+    <string name="guard_title_local">Mobile folder not found</string>
     <string name="guard_title_mass">Many files would be deleted</string>
     <string name="guard_text_remote">The PC folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests.</string>
-    <string name="guard_text_local">The phone folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests.</string>
+    <string name="guard_text_local">The mobile folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests.</string>
     <plurals name="guard_text_folder">
         <item quantity="one">In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s file in total). Was it really deleted? Until you decide, this profile rests.</item>
         <item quantity="other">In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s files in total). Was it really deleted? Until you decide, this profile rests.</item>
@@ -86,8 +86,8 @@
     <string name="update_err_package">The APK belongs to “%1$s”, not to this app</string>
     <string name="update_err_debug">(debug builds cannot be updated this way)</string>
     <string name="update_err_not_newer">The APK is not newer than the installed version</string>
-    <string name="smb_err_path">Invalid share path: “%1$s” (expected \\\\server\\share)</string>
-    <string name="smb_err_not_disk">“%1$s” is not a file share</string>
+    <string name="smb_err_path">Invalid Share path: “%1$s” (expected \\\\server\\share)</string>
+    <string name="smb_err_not_disk">“%1$s” is not a file Share</string>
     <string name="smb_err_incomplete">Upload incomplete: %1$s of %2$s bytes</string>
     <string name="smb_err_resume">Resumed upload does not match the file – will be transferred again</string>
     <string name="smb_test_missing_folder">Connected, but folder “%1$s” does not exist (will be created at the first sync).</string>
@@ -106,7 +106,7 @@
     </plurals>
     <string name="stale_last">%1$s: last backup %2$s</string>
     <string name="space_profile_id">Profile %1$s</string>
-    <string name="tree_err_unreadable">Phone folder not readable</string>
+    <string name="tree_err_unreadable">Mobile folder not readable</string>
     <string name="tree_err_mkdir">Folder “%1$s” could not be created</string>
     <string name="tree_err_read">File not readable</string>
     <string name="tree_err_write">File not writable</string>
@@ -119,9 +119,9 @@
     <!-- Ordner-Sync (MirrorEngine) -->
     <string name="eng_start_mirror">Start (%1$s) – folder sync “%2$s” (%3$s)</string>
     <string name="eng_reading_folders">Reading folders…</string>
-    <string name="eng_local_missing">Phone folder not found – please choose it again in the profile</string>
-    <string name="eng_offline_preview">Offline preview (share not reachable): %1$s</string>
-    <string name="eng_counts">Phone: %1$s files, PC: %2$s files</string>
+    <string name="eng_local_missing">Mobile folder not found – please choose it again in the profile</string>
+    <string name="eng_offline_preview">Offline preview (Share not reachable): %1$s</string>
+    <string name="eng_counts">Mobile: %1$s files, PC: %2$s files</string>
     <string name="eng_keep_files">Deletions are not applied in this run (your decision)</string>
     <string name="eng_comparing">Comparing…</string>
     <string name="eng_would_stop">⚠ The run would stop and ask: %1$s</string>
@@ -137,16 +137,16 @@
     <string name="eng_connection_mirror">Connection interrupted – ↑ %1$s / ↓ %2$s transferred, the rest follows at the next sync</string>
     <string name="eng_run_failed">Run failed: %1$s</string>
     <string name="eng_waiting_decision">Waiting for your decision: %1$s</string>
-    <string name="eng_trash_local">🗑 Phone: %1$s (deleted on the PC)</string>
-    <string name="eng_trash_remote">🗑 PC: %1$s (deleted on the phone)</string>
-    <string name="eng_conflict">⚠ Conflict: %1$s was changed on phone and PC</string>
+    <string name="eng_trash_local">🗑 Mobile: %1$s (deleted on the PC)</string>
+    <string name="eng_trash_remote">🗑 PC: %1$s (deleted on the mobile)</string>
+    <string name="eng_conflict">⚠ Conflict: %1$s was changed on mobile and PC</string>
     <plurals name="eng_transfer_mirror">
         <item quantity="one">Transferring %1$s file with %2$s parallel connections</item>
         <item quantity="other">Transferring %1$s files with %2$s parallel connections</item>
     </plurals>
-    <string name="eng_no_space">Not enough storage on the phone – skipped: %1$s</string>
+    <string name="eng_no_space">Not enough storage on the mobile – skipped: %1$s</string>
     <string name="eng_on_pc">on the PC</string>
-    <string name="eng_on_phone">on the phone</string>
+    <string name="eng_on_phone">on the mobile</string>
     <string name="eng_err_renamed_missing">Renamed file not found</string>
     <string name="eng_err_after_upload_missing">File not found after upload</string>
     <string name="eng_err_after_upload_size">Size after upload does not match</string>
@@ -166,14 +166,14 @@
     <string name="eng_purge_pc_failed">✗ Emptying PC trash: %1$s</string>
     <string name="eng_changed_during_run">⏭ %1$s: was changed %2$s during the run – follows at the next sync</string>
     <string name="eng_syncing">Syncing…</string>
-    <string name="eng_purge_local_failed">Trash on the phone not emptied: %1$s</string>
+    <string name="eng_purge_local_failed">Trash on the mobile not emptied: %1$s</string>
     <string name="eng_purge_remote_failed">Trash on the PC not emptied: %1$s</string>
     <string name="eng_purged_expired">🗑 Trash: %1$s folders older than %2$s days permanently deleted</string>
-    <string name="eng_pv_upload_trash">↑ Phone → PC (PC version to trash)</string>
-    <string name="eng_pv_upload">↑ Phone → PC</string>
-    <string name="eng_pv_download_trash">↓ PC → Phone (phone version to trash)</string>
-    <string name="eng_pv_download">↓ PC → Phone</string>
-    <string name="eng_pv_trash_local">🗑 To the trash on the phone</string>
+    <string name="eng_pv_upload_trash">↑ Mobile → PC (PC version to trash)</string>
+    <string name="eng_pv_upload">↑ Mobile → PC</string>
+    <string name="eng_pv_download_trash">↓ PC → Mobile (mobile version to trash)</string>
+    <string name="eng_pv_download">↓ PC → Mobile</string>
+    <string name="eng_pv_trash_local">🗑 To the trash on the mobile</string>
     <string name="eng_pv_trash_remote">🗑 To the trash on the PC</string>
     <string name="eng_pv_conflict">⚠ Conflict – decision needed</string>
     <string name="eng_pv_keep_both">⇄ Keep both versions</string>

@@ -1,13 +1,5 @@
 package com.sync2pc.app.ui
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,13 +16,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -223,13 +218,13 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         title = "LeoSync",
         onBack = null,
         actions = {
-            // Zustand des Dienstes: ▶ läuft (tippen = pausieren), ⏸ pausiert (tippen = fortsetzen)
+            // Symbol = Aktion (0.9.0): Automatik läuft -> ⏸ (tippen = pausieren), pausiert -> ▶ (tippen = fortsetzen)
             if (userPausedUntil > 0) IconButton(onClick = { SyncScheduler.resume(ctx); pauseVersion++ }) {
-                Icon(AppIcons.Pause, str(R.string.home_cd_paused))
+                Icon(Icons.Filled.PlayArrow, str(R.string.home_cd_paused))
             } else IconButton(onClick = { showPauseDialog = true }) {
-                Icon(Icons.Filled.PlayArrow, str(R.string.home_cd_running))
+                Icon(AppIcons.Pause, str(R.string.home_cd_running))
             }
-            IconButton(onClick = { navigate(Screen.Stats) }) { Icon(Icons.Filled.DateRange, str(R.string.home_cd_stats)) }
+            IconButton(onClick = { navigate(Screen.Stats) }) { Icon(AppIcons.BarChart, str(R.string.home_cd_stats)) }
             IconButton(onClick = { navigate(Screen.Log) }) { Icon(Icons.AutoMirrored.Filled.List, str(R.string.home_cd_log)) }
             // Zahnrad -> Menü mit den Rubriken der Einstellungen (je eine eigene Seite)
             Box {
@@ -453,11 +448,19 @@ private fun pauseEndText(until: Long): String {
     }
 }
 
-/** Wie lange pausieren? Schnellwahl 1/4/24 Stunden, eigene Anzahl (1–168) oder "für immer" (nur manuell) */
+/**
+ * Wie lange pausieren? Schnellwahl 1/4/24 Stunden, eigene Anzahl (1–168) oder "für immer" (nur manuell).
+ * Seit 0.9.0 wird zuerst gewählt (sichtbar markiert) und dann mit "Pausieren" bestätigt.
+ */
 @Composable
 private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit, onForever: () -> Unit) {
+    /** Gewählte Schnellwahl in Stunden, FOREVER = für immer, null = nichts bzw. eigene Anzahl */
+    var preset by remember { mutableStateOf<Int?>(null) }
     var hoursText by remember { mutableStateOf("") }
-    val hours = hoursText.toIntOrNull()?.takeIf { it in 1..168 }
+    val custom = hoursText.toIntOrNull()?.takeIf { it in 1..168 }
+    val forever = preset == PAUSE_FOREVER
+    val hours = if (hoursText.isNotEmpty()) custom else preset?.takeIf { it != PAUSE_FOREVER }
+    val valid = forever || hours != null
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(str(R.string.home_pause_title)) },
@@ -465,23 +468,41 @@ private fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit, onForever
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Hint(str(R.string.home_pause_hint))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(1, 4, 24).forEach { h -> OutlinedButton(onClick = { onPause(h) }) { Text("$h h") } }
+                    listOf(1, 4, 24).forEach { h ->
+                        FilterChip(
+                            selected = preset == h && hoursText.isEmpty(),
+                            onClick = { preset = h; hoursText = "" },
+                            label = { Text("$h h") },
+                        )
+                    }
                 }
                 OutlinedTextField(
-                    hoursText, { v -> hoursText = v.filter { it.isDigit() }.take(3) },
+                    hoursText, { v -> hoursText = v.filter { it.isDigit() }.take(3); if (hoursText.isNotEmpty()) preset = null },
                     label = { Text(str(R.string.home_pause_hours)) },
-                    isError = hoursText.isNotEmpty() && hours == null,
+                    isError = hoursText.isNotEmpty() && custom == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedButton(onClick = onForever, modifier = Modifier.fillMaxWidth()) { Text(str(R.string.home_pause_forever)) }
+                FilterChip(
+                    selected = forever,
+                    onClick = { preset = PAUSE_FOREVER; hoursText = "" },
+                    label = { Text(str(R.string.home_pause_forever)) },
+                )
                 Hint(str(R.string.home_pause_forever_hint))
+                if (!valid) Hint(str(R.string.home_pause_choose))
             }
         },
-        confirmButton = { TextButton(enabled = hours != null, onClick = { hours?.let(onPause) }) { Text(str(R.string.common_pause)) } },
+        confirmButton = {
+            TextButton(enabled = valid, onClick = { if (forever) onForever() else hours?.let(onPause) }) {
+                Text(str(R.string.common_pause))
+            }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.common_cancel)) } },
     )
 }
+
+/** Kennung für "für immer" im Pause-Dialog */
+private const val PAUSE_FOREVER = -1
 
 @Composable
 private fun StatusCard(
@@ -516,8 +537,19 @@ private fun StatusCard(
             else -> DogState.WAITING
         }
         DogStatus(dog, Modifier.align(Alignment.CenterHorizontally))
-        if (upToDate) Text(str(R.string.home_all_saved), style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.align(Alignment.CenterHorizontally))
+        // Textbereich mit Mindesthöhe (0.9.0): so gross wie ein laufender Sync mit Fortschritt, damit die Kachel
+        // beim Wechsel des Zustands nicht springt. Nur bei seltenen langen Meldungen wird sie grösser.
+        val typo = MaterialTheme.typography
+        val minText = with(LocalDensity.current) {
+            (typo.bodyLarge.lineHeight * 3).toDp() + typo.bodySmall.lineHeight.toDp() + 28.dp
+        }
+        Column(Modifier.fillMaxWidth().heightIn(min = minText), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (upToDate) {
+            Text(str(R.string.home_all_saved), style = typo.titleSmall,
+                modifier = Modifier.align(Alignment.CenterHorizontally))
+            // Eine Zeile Abstand, damit sich die Meldung abhebt
+            Spacer(Modifier.height(with(LocalDensity.current) { typo.bodySmall.lineHeight.toDp() }))
+        }
         Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)))
         when {
             isRunning -> {
@@ -535,7 +567,7 @@ private fun StatusCard(
             userPaused && userPausedUntil == Long.MAX_VALUE -> {
                 Text(str(R.string.home_manual_only), style = MaterialTheme.typography.titleSmall)
                 Hint(str(R.string.home_manual_only_hint))
-                lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName)) }
+                lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
             }
             userPaused -> {
                 Text(str(R.string.home_paused_until, pauseEndText(userPausedUntil)), style = MaterialTheme.typography.titleSmall)
@@ -551,7 +583,7 @@ private fun StatusCard(
             }
             isQueued -> Text(waitText)
             lastRun != null -> {
-                Text(str(R.string.home_last_sync, formatTime(lastRun.finishedAt ?: lastRun.startedAt), lastRun.profileName))
+                Text(str(R.string.home_last_sync, formatTime(lastRun.finishedAt ?: lastRun.startedAt), lastRun.profileName.trim()))
                 val nothing = lastRun.status == "OK" && lastRun.uploaded == 0 && lastRun.failed == 0
                 Hint(if (nothing) str(R.string.home_nothing_to_do) else lastRun.message)
             }
@@ -564,6 +596,9 @@ private fun StatusCard(
             Text(str(R.string.home_skipped, skipInfo), color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
+        }
+        // Ohne Profil ist "Synchronisieren" ausgegraut – sagen, warum
+        if (!hasProfiles) Hint(str(R.string.home_sync_needs_profile))
         // Zwei gleich breite Knöpfe, Text einzeilig (kein Umbruch wie "Vorsc-hau")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val w = Modifier.weight(1f)
@@ -676,16 +711,21 @@ private fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean, 
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(p.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                if (!p.enabled) Text(str(R.string.home_profile_disabled), color = MaterialTheme.colorScheme.error)
-                else if (ssid != null && p.ssids().contains(ssid)) Text(str(R.string.home_profile_on_wifi), color = MaterialTheme.colorScheme.primary)
+                Text(p.name.trim(), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                // Zustand als neutrales Etikett (nicht in Akzentfarbe, sonst wirkt es wie ein Link)
+                if (!p.enabled) Text(str(R.string.home_profile_disabled), color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelLarge)
+                else if (ssid != null && p.ssids().contains(ssid)) Text(str(R.string.home_profile_on_wifi),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
             }
             val target = p.smbPath.ifBlank { str(R.string.home_profile_no_target) } +
                 (if (p.remoteSubfolder.isNotBlank()) "\\" + p.remoteSubfolder.trim('\\', '/') else "")
             if (p.type() == ProfileType.MIRROR) {
                 val localLabel = p.localTreeUri.takeIf { it.isNotBlank() }
                     ?.let { com.sync2pc.app.mirror.LocalTree.label(android.net.Uri.parse(it)) } ?: str(R.string.home_profile_no_local)
-                Text("📁 $localLabel  ${p.dir().short}  $target")
+                // Handy- und PC-Ordner je auf einer eigenen Zeile (0.9.0), sonst bricht der Pfad mitten im "\\" um
+                Text("📁 $localLabel")
+                Text("${p.dir().short}  $target")
                 Hint(p.dir().label + if (p.propagateDeletes) " · " + str(R.string.home_profile_propagate) else "")
             } else {
                 Text("📷 $target")
@@ -700,13 +740,8 @@ private fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean, 
     }
 }
 
-@SuppressLint("BatteryLife")
 @Composable
 private fun PermissionCard(perms: PermStatus) {
-    val ctx = LocalContext.current
-    val multi = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
-    val single = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
         modifier = Modifier.fillMaxWidth(),
@@ -716,39 +751,7 @@ private fun PermissionCard(perms: PermStatus) {
                 Icon(Icons.Filled.Warning, null); Spacer(Modifier.width(8.dp))
                 Text(str(R.string.perm_incomplete), style = MaterialTheme.typography.titleMedium)
             }
-            val grant = str(R.string.perm_grant)
-            val open = str(R.string.perm_open)
-            if (!perms.media) PermRow(str(R.string.perm_media), grant) {
-                multi.launch(PermStatus.mediaPermissions)
-            }
-            if (perms.media && !perms.mediaLocation) PermRow(str(R.string.perm_media_location), grant) {
-                single.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
-            }
-            if (!perms.notifications && Build.VERSION.SDK_INT >= 33) PermRow(str(R.string.perm_notifications), grant) {
-                single.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-            if (!perms.location) PermRow(str(R.string.perm_location), grant) {
-                multi.launch(PermStatus.locationPermissions)
-            }
-            if (perms.location && !perms.backgroundLocation) PermRow(
-                str(R.string.perm_location_always), open
-            ) { single.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION) }
-            if (!perms.locationServiceOn) PermRow(str(R.string.perm_location_off), str(R.string.perm_turn_on)) {
-                ctx.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            }
-            if (!perms.batteryUnrestricted) PermRow(str(R.string.perm_battery), open) {
-                ctx.startActivity(
-                    Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}"))
-                )
-            }
+            PermissionRows(perms, showDone = false)
         }
-    }
-}
-
-@Composable
-private fun PermRow(text: String, button: String, onClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(text, modifier = Modifier.weight(1f))
-        TextButton(onClick = onClick) { Text(button) }
     }
 }

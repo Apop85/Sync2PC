@@ -20,6 +20,7 @@ import com.sync2pc.app.data.PendingDecision
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.SyncRun
 import com.sync2pc.app.data.SyncedFile
+import com.sync2pc.app.data.VerifyLevel
 import com.sync2pc.app.geo.CountryLookup
 import com.sync2pc.app.media.MediaAnalyzer
 import com.sync2pc.app.media.MediaItem
@@ -506,9 +507,12 @@ class SyncEngine(
         return ParcelFileDescriptor.AutoCloseInputStream(pfd)
     }
 
-    private fun localHash(item: MediaItem): String = openLocal(item).use { ins ->
+    private fun localHash(item: MediaItem): String = localLevelHash(item, PartialHash.LEVEL_LOW)
+
+    /** Prüfsumme der Datei auf dem Handy nach Prüfstufe (0.9.0); "Wenig" = [PartialHash.compute] */
+    private fun localLevelHash(item: MediaItem, level: Int): String = openLocal(item).use { ins ->
         val ch: FileChannel = ins.channel
-        PartialHash.compute(item.size) { off, len ->
+        PartialHash.forLevel(level, item.size) { off, len ->
             val bb = ByteBuffer.allocate(len)
             var pos = off
             while (bb.hasRemaining()) {
@@ -593,16 +597,21 @@ class SyncEngine(
                 expectedHash = { lh() },
             )
 
-            // Prüfung: Grösse + Teil-Hash der Zieldatei (Pflicht, wenn gelöscht werden soll)
+            // Prüfung nach Stufe (0.9.0): immer die Grösse, ab "Wenig" zusätzlich die Prüfsumme der Zieldatei
+            // (Pflicht, wenn gelöscht werden soll). "Aus" gilt nicht als verifiziert.
             var verified = false
-            if (profile.mustVerify()) {
-                val remoteSize = smb.fileSize(finalPath)
-                if (remoteSize != item.size || smb.partialHash(finalPath, item.size) != lh()) {
-                    try { smb.delete(finalPath) } catch (ignored: Exception) {}
-                    throw java.io.IOException(str(R.string.eng_err_verify))
-                }
-                verified = true
+            val level = profile.verify()
+            val remoteSize = smb.fileSize(finalPath)
+            val sameContent = when (level) {
+                VerifyLevel.OFF -> true
+                VerifyLevel.LOW -> smb.partialHash(finalPath, item.size) == lh()
+                else -> smb.levelHash(finalPath, item.size, level.code) == localLevelHash(item, level.code)
             }
+            if (remoteSize != item.size || !sameContent) {
+                try { smb.delete(finalPath) } catch (ignored: Exception) {}
+                throw java.io.IOException(str(R.string.eng_err_verify))
+            }
+            if (level != VerifyLevel.OFF) verified = true
             record(item, finalPath, lHash, verified)
             ok = true
             return true

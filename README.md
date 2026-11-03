@@ -41,8 +41,9 @@ Es gibt zwei Profiltypen:
 - **Erinnerung**, wenn seit 7 Tagen (einstellbar) nichts gesichert wurde, obwohl neue Fotos warten.
 - **Speicher freigeben:** Alte Dateien, die nachweislich auf dem PC liegen, verschwinden vom Handy. Fotos und Videos kommen in den Papierkorb der Galerie. Bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“ werden die Dateien direkt gelöscht; auf dem PC bleiben sie erhalten. Vorher wird jede Datei auf dem PC geprüft. Die Auswahl läuft nach Alter, Ordner, Dateityp, Grösse und Ausnahmen, mit Vorschau.
 - **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
-- **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
-- **Deutsch und Englisch:** Ist das Handy auf Deutsch eingestellt, erscheint die App auf Deutsch, sonst auf Englisch. Unter *Einstellungen → App-Einstellungen → Sprache* lässt sich die Sprache fest wählen (ab Android 13 auch in den Android-Einstellungen der App). Länderordner auf dem PC heissen in der App-Sprache; bestehende Ordner der anderen Sprache werden weiterverwendet.
+- **Filter:** „Nur diese Dateien“ und „Diese Dateien ausschliessen“ mit Mustern wie `*.pdf` oder `Temp/**`.
+- **Prüfung nach dem Hochladen** in Stufen von „Aus“ bis „Komplett“ (Fotos-Profile, Standard „Mittel“).
+- **Deutsch und Englisch:** Ist das Handy auf Deutsch eingestellt, erscheint die App auf Deutsch, sonst auf Englisch. Unter *Einstellungen → Sprache & Sicherung → Sprache* lässt sich die Sprache fest wählen (ab Android 13 auch in den Android-Einstellungen der App). Länderordner auf dem PC heissen in der App-Sprache; bestehende Ordner der anderen Sprache werden weiterverwendet.
 
 ## Download
 

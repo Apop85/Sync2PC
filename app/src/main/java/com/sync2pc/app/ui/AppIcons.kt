@@ -18,6 +18,17 @@ object AppIcons {
             .build()
     }
 
+    /** Balkendiagramm (wie Material "BarChart", 24 × 24) – seit 0.9.0 für die Statistik */
+    val BarChart: ImageVector by lazy {
+        ImageVector.Builder(name = "BarChart", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
+            .path(fill = SolidColor(Color.Black)) {
+                moveTo(5f, 9.2f); horizontalLineTo(8f); verticalLineTo(19f); horizontalLineTo(5f); close()
+                moveTo(10.6f, 5f); horizontalLineToRelative(2.8f); verticalLineToRelative(14f); horizontalLineToRelative(-2.8f); close()
+                moveTo(16.2f, 13f); horizontalLineTo(19f); verticalLineToRelative(6f); horizontalLineToRelative(-2.8f); close()
+            }
+            .build()
+    }
+
     /** Smartphone (wie Material "Smartphone", 24 × 24) – seit 0.6.1 für "Speicher freigeben" */
     val Smartphone: ImageVector by lazy {
         ImageVector.Builder(name = "Smartphone", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)

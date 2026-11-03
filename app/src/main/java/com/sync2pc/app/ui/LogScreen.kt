@@ -128,13 +128,13 @@ fun LogScreen(onBack: () -> Unit) {
 private fun IdleCard(runs: List<SyncRun>, expanded: Boolean, onClick: () -> Unit) {
     val newest = runs.first()
     val oldest = runs.last()
-    val profiles = runs.map { it.profileName }.distinct().joinToString(", ")
+    val profiles = runs.map { it.profileName.trim() }.distinct().joinToString(", ")
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Kein "OK" mehr (0.9.0): hervorgehoben wird nur, was nicht OK ist
                 Text(str(R.string.log_idle_group, runs.size), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall)
-                Text("OK", color = MaterialTheme.colorScheme.primary)
             }
             val end = formatTime(newest.finishedAt ?: newest.startedAt)
             val start = formatTime(oldest.startedAt)
@@ -165,9 +165,9 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("#${r.id} · " + formatTime(r.startedAt) + " · " + r.profileName, modifier = Modifier.weight(1f),
+                Text("#${r.id} · " + formatTime(r.startedAt) + " · " + r.profileName.trim(), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall)
-                Text(label, color = color)
+                if (r.status != "OK") Text(label, color = color)
             }
             Hint(str(R.string.log_trigger, r.trigger))
             Text(r.message)

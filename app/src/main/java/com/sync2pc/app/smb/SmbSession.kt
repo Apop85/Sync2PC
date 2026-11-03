@@ -229,6 +229,13 @@ class SmbSession private constructor(
             SMB2CreateDisposition.FILE_OPEN, null
         ).use { f -> PartialHash.compute(size) { off, len -> readFully(f, off, len) } }
 
+    /** Prüfsumme nach Prüfstufe (0.9.0, siehe [PartialHash.forLevel]) */
+    fun levelHash(path: String, size: Long, level: Int): String =
+        share.openFile(
+            path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
+            SMB2CreateDisposition.FILE_OPEN, null
+        ).use { f -> PartialHash.forLevel(level, size) { off, len -> readFully(f, off, len) } }
+
     /** Gründlicher Inhalts-Hash für den Ordner-Vergleich (0.4.1, siehe [PartialHash.thorough]) */
     fun contentHash(path: String, size: Long): String =
         share.openFile(

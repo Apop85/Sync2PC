@@ -20,7 +20,7 @@
     <string name="conflict_title">Conflicts</string>
     <string name="conflict_all_newer">All: newer</string>
     <string name="conflict_none">No open conflicts.</string>
-    <string name="conflict_hint">These files were changed on the phone and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
+    <string name="conflict_hint">These files were changed on the mobile and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
     <string name="conflict_newer">(newer)</string>
     <string name="conflict_both">Both</string>
 
@@ -47,11 +47,16 @@
     <string name="stats_total">Total</string>
     <string name="stats_photos_videos">%1$s photos · %2$s videos</string>
     <string name="stats_per_year">Per year</string>
+    <string name="stats_bar_hint">Bar length = number of files</string>
+    <plurals name="stats_bucket_value">
+        <item quantity="one">%1$s file · %2$s</item>
+        <item quantity="other">%1$s files · %2$s</item>
+    </plurals>
     <string name="stats_per_country">Per country (from GPS)</string>
 
     <!-- Erste Synchronisierung, Hund -->
     <string name="first_sync_title">First sync</string>
-    <string name="first_sync_text">The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the phone to the charger.</string>
+    <string name="first_sync_text">The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the mobile to the charger.</string>
     <string name="first_sync_start">Start anyway</string>
     <string name="dog_waiting">Waiting</string>
     <string name="dog_idle">Everything backed up</string>

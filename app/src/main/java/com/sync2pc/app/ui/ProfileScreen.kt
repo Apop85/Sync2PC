@@ -7,9 +7,16 @@ import android.provider.DocumentsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Surface
+import com.sync2pc.app.data.VerifyLevel
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -122,6 +129,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var guardText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
+    var confirmFullVerify by remember { mutableStateOf(false) }
     var overlap by remember { mutableStateOf<ProfileOverlap.Hit?>(null) }
     // Ordnerwechsel (0.4.1): Stichprobe läuft / passt nicht
     var checkingFolder by remember { mutableStateOf(false) }
@@ -163,7 +171,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
      */
     fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
         scope.launch {
-            val toSave = withPassword()
+            // Leerzeichen am Rand des Namens entfernen (sonst "(Fotos )" im Verlauf); verifyUpload spiegelt die Stufe
+            val toSave = withPassword().let { it.copy(name = it.name.trim(), verifyUpload = it.mustVerify()) }
             // Doppelte Profile verhindern bzw. bei Überschneidung warnen
             val hit = withContext(Dispatchers.IO) { ProfileOverlap.check(toSave, dao.profiles()) }
             if (hit != null && (hit.kind == ProfileOverlap.Kind.IDENTICAL || !force)) {
@@ -234,7 +243,21 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             if (loaded && typeChosen && (!wizard || step.optional)) IconButton(onClick = { save() }, enabled = p.name.isNotBlank()) {
                 Icon(Icons.Filled.Check, str(R.string.common_save))
             }
-            if (profileId != 0L) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, str(R.string.profile_delete_cd)) }
+            // Löschen liegt seit 0.9.0 unten unter "Wartung" (nicht mehr direkt neben Speichern)
+        },
+        // Beim Bearbeiten: Speichern/Abbrechen fest unten (0.9.0), statt mitten auf der langen Seite
+        bottomBar = {
+            if (loaded && typeChosen && !wizard) Surface(tonalElevation = 3.dp) {
+                Row(
+                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(onClick = { leave() }, modifier = Modifier.weight(1f)) { Text(str(R.string.common_cancel)) }
+                    Button(onClick = { save() }, enabled = p.name.isNotBlank(), modifier = Modifier.weight(1f)) {
+                        Text(str(R.string.common_save))
+                    }
+                }
+            }
         },
     ) { pad ->
         if (!loaded) {
@@ -281,10 +304,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             }
 
             if (show(Step.NAME)) item {
-                SectionCard(str(R.string.profile_general)) {
+                // Im Assistenten ohne Überschrift und ohne "Profil aktiv" (ein neues Profil ist immer aktiv)
+                SectionCard(if (wizard) null else str(R.string.profile_general)) {
                     OutlinedTextField(p.name, { p = p.copy(name = it) }, label = { Text(str(R.string.profile_name)) },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
-                    SwitchRow(str(R.string.profile_active), p.enabled) { p = p.copy(enabled = it) }
+                    if (!wizard) SwitchRow(str(R.string.profile_active), p.enabled) { p = p.copy(enabled = it) }
                     Hint(str(if (isMirror) R.string.profile_type_mirror else R.string.profile_type_photos, p.type().label))
                 }
             }
@@ -356,18 +380,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         singleLine = true, modifier = Modifier.fillMaxWidth()
                     )
                     Hint(str(R.string.profile_share_format))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            p.remoteSubfolder, { p = p.copy(remoteSubfolder = it) },
-                            label = { Text(str(R.string.profile_subfolder)) },
-                            placeholder = { Text(str(if (isMirror) R.string.profile_subfolder_example_mirror else R.string.profile_subfolder_example_photos)) },
-                            singleLine = true, modifier = Modifier.weight(1f)
-                        )
-                        TextButton(
-                            enabled = SmbTarget.parse(p.smbPath) != null,
-                            onClick = { showRemotePicker = true },
-                        ) { Text(str(R.string.profile_browse)) }
-                    }
+                    // Feld über die ganze Breite, "Durchsuchen" darunter (0.9.0; daneben brach die Beschriftung 3× um)
+                    OutlinedTextField(
+                        p.remoteSubfolder, { p = p.copy(remoteSubfolder = it) },
+                        label = { Text(str(R.string.profile_subfolder)) },
+                        placeholder = { Text(str(if (isMirror) R.string.profile_subfolder_example_mirror else R.string.profile_subfolder_example_photos)) },
+                        singleLine = true, modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedButton(
+                        enabled = SmbTarget.parse(p.smbPath) != null,
+                        onClick = { showRemotePicker = true },
+                    ) { Text(str(R.string.profile_browse)) }
                     OutlinedTextField(p.smbUser, { p = p.copy(smbUser = it) }, label = { Text(str(R.string.profile_user)) },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
@@ -485,27 +508,65 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             if (!isMirror && show(Step.OPTIONS)) item {
                 SectionCard(str(R.string.profile_after_upload)) {
                     Hint(str(R.string.profile_after_upload_hint))
+                    // Wer Fotos entfernt, braucht eine Prüfung: "Aus" springt dann auf "Mittel" (0.9.0)
+                    fun setDelete(m: DeleteMode) {
+                        var np = p.copy(deleteMode = m.name)
+                        if (m != DeleteMode.KEEP && VerifyLevel.of(np.verifyLevel) == VerifyLevel.OFF) {
+                            np = np.copy(verifyLevel = VerifyLevel.MEDIUM.code)
+                            Toast.makeText(ctx, str(R.string.verify_raised), Toast.LENGTH_LONG).show()
+                        }
+                        p = np
+                    }
                     DeleteMode.entries.forEach { m ->
                         Row(
-                            Modifier.fillMaxWidth().clickable { p = p.copy(deleteMode = m.name) },
+                            Modifier.fillMaxWidth().clickable { setDelete(m) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            RadioButton(selected = p.delete() == m, onClick = { p = p.copy(deleteMode = m.name) })
+                            RadioButton(selected = p.delete() == m, onClick = { setDelete(m) })
                             Text(m.label)
                         }
                     }
                     if (p.delete() != DeleteMode.KEEP) Hint(str(R.string.profile_delete_hint))
-                    SwitchRow(
-                        str(R.string.profile_verify),
-                        checked = p.mustVerify(),
-                        subtitle = str(if (p.delete() != DeleteMode.KEEP) R.string.profile_verify_required else R.string.profile_verify_sub),
-                        enabled = p.delete() == DeleteMode.KEEP,
-                    ) { p = p.copy(verifyUpload = it) }
+                    if (p.delete() == DeleteMode.DELETE) Text(
+                        str(R.string.profile_delete_final_hint),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                    )
+                    // Prüfstufe nach dem Hochladen (0.9.0)
+                    Text(str(R.string.profile_verify), style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(top = 8.dp))
+                    Hint(str(R.string.profile_verify_hint))
+                    val deleting = p.delete() != DeleteMode.KEEP
+                    fun chooseLevel(lv: VerifyLevel) {
+                        if (lv == VerifyLevel.FULL && p.verify() != VerifyLevel.FULL) confirmFullVerify = true
+                        else p = p.copy(verifyLevel = lv.code)
+                    }
+                    VerifyLevel.entries.forEach { lv ->
+                        val enabled = !(lv == VerifyLevel.OFF && deleting)
+                        Row(
+                            Modifier.fillMaxWidth().clickable(enabled = enabled) { chooseLevel(lv) },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = p.verify() == lv, onClick = { chooseLevel(lv) }, enabled = enabled)
+                            Column(Modifier.padding(vertical = 4.dp)) {
+                                Text(lv.label, color = if (enabled) MaterialTheme.colorScheme.onSurface
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+                                Text(lv.sub, style = MaterialTheme.typography.bodySmall,
+                                    color = if (lv == VerifyLevel.FULL) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    if (deleting) Hint(str(R.string.profile_verify_required))
                 }
             }
 
+            // Optionale Bereiche: beim Bearbeiten zugeklappt, solange nichts eingestellt ist (0.9.0)
             if (show(Step.FILTER)) item {
-                SectionCard(str(R.string.profile_filter)) {
+                OptionalCard(
+                    str(R.string.profile_filter),
+                    startOpen = wizard || p.includePatterns.isNotBlank() || p.excludePatterns.isNotBlank(),
+                    collapsible = !wizard,
+                ) {
                     OutlinedTextField(
                         p.includePatterns, { p = p.copy(includePatterns = it) },
                         label = { Text(str(R.string.profile_filter_include)) },
@@ -524,7 +585,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
             // Schutzbremse (0.4.2): letzte der optionalen Einstellungen (so auch im Profil-Assistenten ab 0.5.0)
             if (isMirror && show(Step.GUARD)) item {
-                SectionCard(str(R.string.profile_guard)) {
+                OptionalCard(
+                    str(R.string.profile_guard),
+                    startOpen = wizard || p.massDeletePercent != Profile().massDeletePercent,
+                    collapsible = !wizard,
+                ) {
                     OutlinedTextField(
                         guardText,
                         { v ->
@@ -573,17 +638,20 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
-            if (!wizard) item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { save() }, enabled = p.name.isNotBlank()) { Text(str(R.string.common_save)) }
-                    OutlinedButton(onClick = { leave() }) { Text(str(R.string.common_cancel)) }
-                }
-            }
-
+            // Wartung (zugeklappt): Sync-Status zurücksetzen und Profil löschen – beides weit weg von "Speichern"
             if (profileId != 0L) item {
-                SectionCard(str(R.string.profile_maintenance)) {
+                OptionalCard(str(R.string.profile_maintenance), startOpen = false, collapsible = true,
+                    closedHint = str(R.string.profile_maintenance_closed)) {
                     Hint(str(R.string.profile_maintenance_hint))
                     OutlinedButton(onClick = { confirmReset = true }) { Text(str(R.string.profile_reset)) }
+                    Hint(str(R.string.profile_delete_section_hint))
+                    OutlinedButton(
+                        onClick = { confirmDelete = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                    ) {
+                        Icon(Icons.Filled.Delete, null); Spacer(Modifier.width(8.dp)); Text(str(R.string.profile_delete_button))
+                    }
                 }
             }
         }
@@ -710,6 +778,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         )
     }
 
+    // Prüfstufe "Komplett" (0.9.0): einmal bestätigen lassen, weil sie viel Zeit und Akku braucht
+    if (confirmFullVerify) AlertDialog(
+        onDismissRequest = { confirmFullVerify = false },
+        title = { Text(str(R.string.verify_full_title)) },
+        text = { Text(str(R.string.verify_full_text)) },
+        confirmButton = {
+            TextButton(onClick = { confirmFullVerify = false; p = p.copy(verifyLevel = VerifyLevel.FULL.code) }) {
+                Text(str(R.string.verify_full_confirm))
+            }
+        },
+        dismissButton = { TextButton(onClick = { confirmFullVerify = false }) { Text(str(R.string.common_cancel)) } },
+    )
+
     if (confirmReset) AlertDialog(
         onDismissRequest = { confirmReset = false },
         title = { Text(str(R.string.profile_reset_title)) },
@@ -728,6 +809,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         },
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(str(R.string.common_cancel)) } },
     )
+}
+
+/** Optionaler Bereich: beim Bearbeiten aufklappbar, im Assistenten eine normale Karte (0.9.0) */
+@Composable
+private fun OptionalCard(
+    title: String,
+    startOpen: Boolean,
+    collapsible: Boolean,
+    closedHint: String = str(R.string.profile_section_unset),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    if (collapsible) CollapsibleCard(title, startOpen, closedHint, content)
+    else SectionCard(title, content = content)
 }
 
 /** Einleitung je Schritt des Assistenten: Was stellt man hier ein und warum? */

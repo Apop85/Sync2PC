@@ -137,11 +137,13 @@ fun StatsScreen(onBack: () -> Unit) {
 private fun BucketCard(title: String, buckets: List<Bucket>) {
     val max = buckets.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
     SectionCard(title) {
+        // Beschriftung (0.9.0): Die Balken richten sich nach der Anzahl, nicht nach der Grösse
+        Hint(str(R.string.stats_bar_hint))
         buckets.forEach { b ->
             Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(b.label, modifier = Modifier.weight(1f))
-                    Text("${b.count} · ${Notifications.formatBytes(b.bytes)}",
+                    Text(plural(R.plurals.stats_bucket_value, b.count, b.count, Notifications.formatBytes(b.bytes)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

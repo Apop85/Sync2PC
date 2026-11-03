@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MediaInfo::class, SyncRun::class, LogEntry::class, MirrorState::class, MirrorConflict::class,
         PendingRestore::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,11 +26,27 @@ abstract class AppDatabase : RoomDatabase() {
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "sync2pc.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .build().also { instance = it }
             }
 
         // Wichtig: Kein fallbackToDestructiveMigration() – fehlt eine Migration, soll die App
         // lieber abstürzen, als still alle Daten zu löschen.
+
+        /**
+         * 0.9.0: Prüfstufe nach dem Hochladen. Bestehende Profile behalten ihr bisheriges Verhalten:
+         * Prüfung an = "Wenig" (wie bisher 192 KB), aus = "Aus" (nur wenn nichts gelöscht wird).
+         * Zusätzlich Leerzeichen am Anfang/Ende der Profilnamen entfernen.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN verifyLevel INTEGER NOT NULL DEFAULT 2")
+                db.execSQL(
+                    "UPDATE profiles SET verifyLevel = CASE WHEN verifyUpload = 0 AND deleteMode = 'KEEP' THEN 0 ELSE 1 END"
+                )
+                db.execSQL("UPDATE profiles SET name = TRIM(name)")
+            }
+        }
 
         /** 0.5.0: Versionsschutz pro Profil + vorgemerkte Wiederherstellungen */
         val MIGRATION_4_5 = object : Migration(4, 5) {

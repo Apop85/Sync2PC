@@ -13,8 +13,8 @@
         <item quantity="other">%1$s Dateien in %2$s warten: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen.</item>
     </plurals>
     <plurals name="notif_delete_text">
-        <item quantity="one">%1$s Datei ist verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.</item>
-        <item quantity="other">%1$s Dateien sind verifiziert gesichert. Tippen, um sie vom Telefon zu entfernen.</item>
+        <item quantity="one">%1$s Datei ist verifiziert gesichert. Tippen, um sie vom Handy zu entfernen.</item>
+        <item quantity="other">%1$s Dateien sind verifiziert gesichert. Tippen, um sie vom Handy zu entfernen.</item>
     </plurals>
     <string name="notif_wait_wifi">Wartet auf WLAN</string>
     <string name="notif_wait_wifi_named">Wartet auf WLAN „%1$s“</string>

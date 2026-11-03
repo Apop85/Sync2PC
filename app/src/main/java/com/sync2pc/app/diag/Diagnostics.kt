@@ -153,7 +153,7 @@ object Diagnostics {
                 if (p.type() == ProfileType.PHOTOS) {
                     kv("  Quellordner", p.folders().joinToString(", ").ifEmpty { "-" })
                     kv("  Fotos/Videos/Unterordner", "${p.includeImages}/${p.includeVideos}/${p.includeSubfolders}")
-                    kv("  Löschen", "${p.delete().name}, Prüfen ${p.mustVerify()}")
+                    kv("  Löschen", "${p.delete().name}, Prüfen ${p.verify().name}")
                     kv("  Gesicherte Dateien", safe { dao.syncedCountNow(p.id) })
                 } else {
                     val uri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }

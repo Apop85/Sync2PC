@@ -22,7 +22,7 @@
     <string name="profile_choose_folder">Ordner wählen…</string>
     <string name="profile_choose_other_folder">Anderen Ordner wählen…</string>
     <string name="profile_local_folder_hint">Alle Dateien in diesem Ordner und seinen Unterordnern werden mit dem PC abgeglichen. Android fragt einmalig, ob LeoSync auf den Ordner zugreifen darf (nötig für alle Dateitypen).</string>
-    <string name="profile_sources">Quellordner auf dem Telefon</string>
+    <string name="profile_sources">Quellordner auf dem Handy</string>
     <string name="profile_sources_empty">Noch kein Ordner gewählt (z. B. DCIM/Camera).</string>
     <string name="profile_remove">Entfernen</string>
     <string name="profile_add_folder">Ordner hinzufügen…</string>
@@ -37,7 +37,7 @@
     <string name="profile_share_path">Freigabe-Pfad</string>
     <string name="profile_share_example">Fotos</string>
     <string name="profile_share_format">Format: \\\\Server\\Freigabe (IP-Adresse oder Name)</string>
-    <string name="profile_subfolder">Unterordner auf dem Share (optional)</string>
+    <string name="profile_subfolder">Unterordner auf der Freigabe (optional)</string>
     <string name="profile_subfolder_example_mirror">Dokumente\\Handy</string>
     <string name="profile_subfolder_example_photos">Handy\\Fotos</string>
     <string name="profile_browse">Durchsuchen</string>
@@ -47,7 +47,7 @@
     <string name="profile_domain_hint">Bei einem lokalen Windows-Konto meist leer lassen. Microsoft-Konto: E-Mail-Adresse als Benutzer.</string>
     <string name="profile_test">Verbindung testen</string>
     <string name="profile_wifi">WLAN (automatischer Sync)</string>
-    <string name="profile_wifi_hint">Optional. Ist das Telefon mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst (z. B. wenn du den PC über VPN erreichst).</string>
+    <string name="profile_wifi_hint">Optional. Ist das Handy mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst (z. B. wenn du den PC über VPN erreichst).</string>
     <string name="profile_wifi_add_current">Aktuelles WLAN „%1$s“ hinzufügen</string>
     <string name="profile_wifi_name">WLAN-Name</string>
     <string name="profile_add">Hinzufügen</string>
@@ -62,17 +62,34 @@
     <string name="profile_conflict_question">Wenn eine Datei auf beiden Seiten geändert wurde:</string>
     <string name="profile_conflict_newer_hint">Die ältere Version wird in den Papierkorb verschoben, nicht gelöscht.</string>
     <string name="profile_poll">Auf Änderungen prüfen alle … Minuten</string>
-    <string name="profile_poll_hint">Nur solange das Telefon im Ziel-WLAN ist (mindestens 15). Zusätzlich sofort beim Verbinden mit dem WLAN.</string>
+    <string name="profile_poll_hint">Nur solange das Handy im Ziel-WLAN ist (mindestens 15). Zusätzlich sofort beim Verbinden mit dem WLAN.</string>
     <string name="profile_after_upload">Nach erfolgreicher Übertragung</string>
-    <string name="profile_after_upload_hint">Was passiert mit den Fotos auf dem Telefon, wenn sie sicher auf dem PC liegen?</string>
+    <string name="profile_after_upload_hint">Was passiert mit den Fotos auf dem Handy, wenn sie sicher auf dem PC liegen?</string>
     <string name="profile_delete_hint">Dateien werden nur entfernt, wenn der Upload geprüft wurde (Grösse + Prüfsumme). Android fragt dabei einmal pro Durchgang nach Bestätigung.</string>
-    <string name="profile_verify">Upload prüfen</string>
-    <string name="profile_verify_required">Pflicht, weil Dateien entfernt werden</string>
-    <string name="profile_verify_sub">Liest 192 KB der Zieldatei zurück und vergleicht die Prüfsumme</string>
+    <string name="profile_delete_final_hint">Achtung: Endgültig gelöschte Fotos kommen nicht in den Papierkorb der Galerie und lassen sich auf dem Handy nicht wiederherstellen. Sie sind danach nur noch auf dem PC.</string>
+    <string name="profile_verify">Prüfung nach dem Hochladen</string>
+    <string name="profile_verify_hint">Liest die Datei auf dem PC zurück und vergleicht sie mit dem Original. Gründlicher heisst sicherer, aber langsamer.</string>
+    <string name="profile_verify_required">Mindestens „Wenig“ ist Pflicht, weil Dateien vom Handy entfernt werden.</string>
+    <string name="verify_off">Aus</string>
+    <string name="verify_off_sub">Nur die Dateigrösse wird verglichen. Nur möglich, wenn die Fotos auf dem Handy bleiben.</string>
+    <string name="verify_low">Wenig</string>
+    <string name="verify_low_sub">Anfang, Mitte und Ende (192 KB pro Datei)</string>
+    <string name="verify_medium">Mittel</string>
+    <string name="verify_medium_sub">Bis 32 MB die ganze Datei, darüber 32 Stichproben (2 MB). Standard</string>
+    <string name="verify_high">Viel</string>
+    <string name="verify_high_sub">Bis 256 MB die ganze Datei, darüber 128 Stichproben (8 MB)</string>
+    <string name="verify_full">Komplett</string>
+    <string name="verify_full_sub">Die ganze Datei. Braucht deutlich mehr Zeit und viel Akku.</string>
+    <string name="verify_full_title">Komplett prüfen?</string>
+    <string name="verify_full_text">Jede Datei wird nach dem Hochladen vollständig vom PC zurückgelesen. Bei Videos dauert die Sicherung dadurch etwa doppelt so lange und braucht deutlich mehr Akku.</string>
+    <string name="verify_full_confirm">Komplett prüfen</string>
+    <string name="verify_raised">Prüfung auf „Mittel“ gestellt: Wer Fotos vom Handy entfernt, braucht eine Prüfung.</string>
     <string name="profile_filter">Filter (optional)</string>
-    <string name="profile_filter_include">Nur diese Dateien (Whitelist)</string>
-    <string name="profile_filter_exclude">Diese Dateien ausschliessen (Blacklist)</string>
-    <string name="profile_filter_hint">Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, Ordner/** = alles in diesem Ordner. Leere Whitelist = alles. Die Blacklist hat Vorrang.</string>
+    <string name="profile_filter_include">Nur diese Dateien</string>
+    <string name="profile_filter_exclude">Diese Dateien ausschliessen</string>
+    <string name="profile_filter_hint">Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, Ordner/** = alles in diesem Ordner. Ist „Nur diese Dateien“ leer, gilt alles. „Ausschliessen“ hat Vorrang.</string>
+    <string name="profile_section_unset">Nicht eingestellt – antippen zum Öffnen</string>
+    <string name="profile_section_collapse">Einklappen</string>
     <string name="profile_guard">Schutzbremse (optional)</string>
     <string name="profile_guard_percent">Nachfragen, wenn mehr als … % gelöscht würden</string>
     <string name="profile_guard_hint">Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält der Sync an und fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.</string>
@@ -83,8 +100,11 @@
     <string name="profile_simulate">Simulieren</string>
     <string name="profile_simulation_save_first">Zuerst speichern – simuliert wird der gespeicherte Stand.</string>
     <string name="profile_maintenance">Wartung</string>
-    <string name="profile_maintenance_hint">Vergisst, welche Dateien bereits übertragen wurden. Beim nächsten Sync wird alles mit dem Share abgeglichen (identische Dateien werden nicht erneut übertragen).</string>
+    <string name="profile_maintenance_hint">Vergisst, welche Dateien bereits übertragen wurden. Beim nächsten Sync wird alles mit der Freigabe abgeglichen (identische Dateien werden nicht erneut übertragen).</string>
     <string name="profile_reset">Sync-Status zurücksetzen</string>
+    <string name="profile_delete_button">Profil löschen</string>
+    <string name="profile_maintenance_closed">Sync-Status zurücksetzen, Profil löschen – antippen zum Öffnen</string>
+    <string name="profile_delete_section_hint">Löscht Einstellungen und Sync-Status dieses Profils. Dateien auf Handy und PC bleiben erhalten.</string>
     <string name="profile_delete_title">Profil löschen?</string>
     <string name="profile_delete_text">Einstellungen und Sync-Status dieses Profils werden gelöscht. Dateien auf dem PC bleiben erhalten.</string>
     <string name="profile_created_title">Profil gespeichert</string>
@@ -101,17 +121,17 @@
     <string name="profile_folder_warning_title">Ist das wirklich der richtige Ordner?</string>
     <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Sync-Stand dieses Profils.</string>
     <string name="profile_reset_title">Sync-Status zurücksetzen?</string>
-    <string name="profile_reset_text">Der nächste Sync gleicht alle Dateien erneut mit dem Share ab. Das kann bei vielen Dateien länger dauern.</string>
+    <string name="profile_reset_text">Der nächste Sync gleicht alle Dateien erneut mit der Freigabe ab. Das kann bei vielen Dateien länger dauern.</string>
     <string name="profile_reset_done">Zurückgesetzt</string>
     <string name="profile_reset_button">Zurücksetzen</string>
 
     <!-- Einleitung je Schritt des Assistenten -->
     <string name="wizard_intro_name">Wie soll das Profil heissen? Der Name erscheint auf der Startseite, im Verlauf und in den Benachrichtigungen, z. B. „Kamera“ oder „Dokumente“.</string>
     <string name="wizard_intro_source_mirror">Welcher Ordner auf dem Handy soll mit dem PC abgeglichen werden? Alle Dateien und Unterordner darin werden synchronisiert.</string>
-    <string name="wizard_intro_source_photos">Welche Fotos und Videos sollen gesichert werden? Wähle die Ordner auf dem Telefon, in denen sie liegen.</string>
+    <string name="wizard_intro_source_photos">Welche Fotos und Videos sollen gesichert werden? Wähle die Ordner auf dem Handy, in denen sie liegen.</string>
     <string name="wizard_intro_target">Wohin auf dem PC? Gib die Windows-Freigabe an und melde dich mit dem Windows-Benutzer an, der darauf zugreifen darf. „Verbindung testen“ zeigt, ob alles stimmt.</string>
     <string name="wizard_intro_options_mirror">Wann wird synchronisiert, in welche Richtung, und was passiert mit gelöschten oder geänderten Dateien?</string>
-    <string name="wizard_intro_options_photos">Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Telefon?</string>
+    <string name="wizard_intro_options_photos">Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Handy?</string>
     <string name="wizard_intro_filter">Optional: Nur bestimmte Dateien synchronisieren oder einzelne ausschliessen. Ohne Angaben wird alles synchronisiert.</string>
     <string name="wizard_intro_guard">Optional: Ab wann LeoSync bei vielen Löschungen zuerst nachfragt. Der Standard passt für die meisten.</string>
 </resources>

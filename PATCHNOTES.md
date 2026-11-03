@@ -2,6 +2,32 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.9.0 (2026-11-03)
+
+### Neu
+- **Prüfung nach dem Hochladen in Stufen** (Fotos-Profile): Aus, Wenig, Mittel, Viel, Komplett. „Mittel“ ist Standard für neue Profile und liest bis 32 MB die ganze Datei zurück, darüber 32 Stichproben. „Aus“ (nur Grösse) geht nur, solange die Fotos auf dem Handy bleiben; wer „In den Papierkorb“ oder „Endgültig löschen“ wählt, wird automatisch auf „Mittel“ gestellt. Bei „Komplett“ gibt es einen Hinweis zu Zeit und Akku. Bestehende Profile behalten ihr Verhalten („Wenig“ bzw. „Aus“).
+- **App-Berechtigungen mit Status:** Jeder Punkt zeigt „✓ erledigt“ oder einen Knopf, wie die Karte auf der Startseite.
+
+### Geändert
+- **Pause-Symbol oben:** Läuft die Automatik, steht dort ⏸ (pausieren), ist sie pausiert, ▶ (fortsetzen). Bisher war es umgekehrt.
+- **Pause-Dialog:** Dauer zuerst auswählen (sichtbar markiert), dann „Pausieren“.
+- **Statuskachel** springt nicht mehr in der Grösse, wenn sich der Zustand ändert. Unter „✓ Alles gesichert und aktuell“ ist etwas Abstand. Ohne Profil steht beim ausgegrauten „Synchronisieren“, warum.
+- **Profilkarte:** Handy- und PC-Ordner je auf einer eigenen Zeile; „im WLAN ✓“ ist ein neutrales Etikett statt in Linkfarbe.
+- **Statistik:** neues Balken-Symbol oben; die Balken sind beschriftet („Balkenlänge = Anzahl Dateien“).
+- **Profil bearbeiten:** „Speichern“ und „Abbrechen“ stehen fest unten. „Profil löschen“ ist von oben rechts in den Bereich „Wartung“ gewandert. „Filter“, „Schutzbremse“ und „Wartung“ sind zugeklappt, solange darin nichts eingestellt ist. Das Feld „Unterordner auf der Freigabe“ nutzt die ganze Breite, „Durchsuchen“ steht darunter. Bei „Endgültig löschen“ erscheint eine Warnung.
+- **Profil-Assistent:** Schritt 1 ohne Überschrift „Allgemein“ und ohne „Profil aktiv“.
+- **Speicher freigeben:** „Vorschau“ ist der Hauptknopf, Entfernen ist umrandet und rot.
+- **Auswahlfelder** sehen in „Speicher freigeben“ und im Papierkorb gleich aus.
+- **Verlauf:** „OK“ steht nicht mehr auf jeder Karte, nur abweichende Zustände sind markiert.
+- **Einstellungen:** „App-Einstellungen“ heisst „Sprache & Sicherung“ und enthält jetzt auch Export/Import (vorher unter „Diagnose“). Bei „Benachrichtigungen“ fällt die doppelte Überschrift weg.
+- **Begriffe:** Deutsch „Handy“ und „Freigabe“ (statt „Telefon“/„Share“), Englisch „Mobile“ und „Share“. Filter heissen „Nur diese Dateien“ und „Diese Dateien ausschliessen“ (ohne Whitelist/Blacklist).
+- Leerzeichen am Anfang und Ende von Profilnamen werden entfernt (vorher z. B. „(OrdnerTest )“).
+
+### Intern
+- **DB-Version 6** (`MIGRATION_5_6`): `profiles.verifyLevel INTEGER NOT NULL DEFAULT 2`, bestehende Profile = 1 (Prüfung an) bzw. 0 (aus, nur ohne Löschen); Profilnamen per `TRIM`. `6.json` entsteht beim Build und muss committet werden.
+- `VerifyLevel` (Entities), `Profile.verify()`, `PartialHash.levelRegions/forLevel`, `SmbSession.levelHash`. „Wenig“ ist identisch mit der bisherigen Prüfung. Sicherung: `verifyLevel`, ältere Sicherungen über `verifyUpload`.
+- Neu: `ui/PermissionRows.kt`, `CollapsibleCard` und `bottomBar` in `ScreenScaffold`, `AppIcons.BarChart`.
+
 ## 0.8.0 (2026-11-03)
 
 ### Neu

@@ -80,7 +80,8 @@
     <string name="home_pause_hint">Ein laufender Sync wird angehalten. Bis zum Ende der Pause startet nichts automatisch.</string>
     <string name="home_pause_hours">Eigene Anzahl Stunden (1–168)</string>
     <string name="home_pause_forever">Für immer (nur manuell)</string>
-    <string name="home_pause_forever_hint">Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Synchronisieren“, bis du über ⏸ wieder einschaltest.</string>
+    <string name="home_pause_forever_hint">Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Synchronisieren“, bis du sie über ▶ oben rechts wieder einschaltest.</string>
+    <string name="home_pause_choose">Wähle eine Dauer.</string>
     <string name="home_status">Status</string>
     <string name="home_all_saved">✓ Alles gesichert und aktuell</string>
     <string name="home_wifi">WLAN: %1$s</string>
@@ -88,7 +89,7 @@
     <string name="home_progress">%1$s: %2$s / %3$s Dateien – %4$s von %5$s</string>
     <string name="home_running">Synchronisierung läuft…</string>
     <string name="home_manual_only">⏸ Automatik aus – nur manuelle Syncs</string>
-    <string name="home_manual_only_hint">Es wird nur synchronisiert, wenn du „Synchronisieren“ tippst. ⏸ oben rechts schaltet die Automatik wieder ein.</string>
+    <string name="home_manual_only_hint">Es wird nur synchronisiert, wenn du „Synchronisieren“ tippst. ▶ oben rechts schaltet die Automatik wieder ein.</string>
     <string name="home_last_sync">Letzter Sync: %1$s (%2$s)</string>
     <string name="home_paused_until">⏸ Pausiert bis %1$s</string>
     <string name="home_paused_until_hint">Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Synchronisieren“ beendet die Pause sofort.</string>
@@ -101,6 +102,7 @@
     <string name="home_skipped">⚠ Automatischer Start übersprungen – %1$s</string>
     <string name="home_resume">Fortsetzen</string>
     <string name="home_sync">Synchronisieren</string>
+    <string name="home_sync_needs_profile">Lege zuerst ein Profil an.</string>
     <string name="home_profile_disabled">deaktiviert</string>
     <string name="home_profile_on_wifi">im WLAN ✓</string>
     <string name="home_profile_no_target">Kein Ziel festgelegt</string>
@@ -126,6 +128,7 @@
     <!-- Berechtigungen (PermissionCard) -->
     <string name="perm_incomplete">Einrichtung unvollständig</string>
     <string name="perm_grant">Erteilen</string>
+    <string name="perm_granted">✓ erledigt</string>
     <string name="perm_open">Öffnen</string>
     <string name="perm_turn_on">Einschalten</string>
     <string name="perm_media">Zugriff auf Fotos &amp; Videos</string>
@@ -134,5 +137,6 @@
     <string name="perm_location">Standort (Android braucht ihn, um den WLAN-Namen zu lesen)</string>
     <string name="perm_location_always">Standort „Immer zulassen“ (WLAN-Erkennung im Hintergrund)</string>
     <string name="perm_location_off">Standortdienst ist ausgeschaltet</string>
+    <string name="perm_location_service">Standortdienst eingeschaltet</string>
     <string name="perm_battery">Akku-Optimierung deaktivieren (zuverlässiger Hintergrund-Sync)</string>
 </resources>

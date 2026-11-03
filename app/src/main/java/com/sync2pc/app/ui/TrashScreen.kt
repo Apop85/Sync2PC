@@ -30,6 +30,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -465,7 +467,11 @@ private fun ModeRow(label: String, selected: Boolean, onClick: () -> Unit) {
 /** Auswahl als Zeile: Name oben klein, aktueller Wert darunter; Tippen öffnet die Auswahl (0.6.4) */
 @Composable
 fun ValueField(label: String, value: String, onClick: () -> Unit) {
-    OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    // Durchsichtig (0.9.0): sieht in Karten und auf dem Hintergrund gleich aus wie ein umrandetes Eingabefeld
+    OutlinedCard(
+        onClick = onClick, modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+    ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

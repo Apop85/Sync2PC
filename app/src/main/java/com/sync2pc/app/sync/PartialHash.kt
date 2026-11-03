@@ -35,9 +35,12 @@ object PartialHash {
      * Bereiche für [thorough]: bis 32 MB die ganze Datei in Blöcken à 1 MB, darüber 32 Stichproben
      * (erste am Anfang, letzte am Ende).
      */
-    fun thoroughRegions(size: Long): List<Pair<Long, Int>> {
+    fun thoroughRegions(size: Long): List<Pair<Long, Int>> = sampledRegions(size, FULL_LIMIT, SAMPLES)
+
+    /** Bis [fullLimit] die ganze Datei in Blöcken à 1 MB, darüber [samples] Stichproben à 64 KB */
+    private fun sampledRegions(size: Long, fullLimit: Long, samples: Int): List<Pair<Long, Int>> {
         if (size <= 0) return emptyList()
-        if (size <= FULL_LIMIT) {
+        if (size <= fullLimit) {
             val out = ArrayList<Pair<Long, Int>>()
             var off = 0L
             while (off < size) {
@@ -48,12 +51,35 @@ object PartialHash {
             return out
         }
         val last = size - CHUNK
-        return (0 until SAMPLES).map { i -> (last * i / (SAMPLES - 1)) to CHUNK }
+        return (0 until samples).map { i -> (last * i / (samples - 1)) to CHUNK }
     }
 
     /** Inhaltsvergleich beim Erstabgleich bzw. bei auf beiden Seiten geänderten Dateien (Ordner-Sync) */
     fun thorough(size: Long, read: (offset: Long, length: Int) -> ByteArray): String =
         hash(size, thoroughRegions(size), read)
+
+    // ---- Prüfstufen nach dem Hochladen (0.9.0, Code wie VerifyLevel.code) ----------------------
+    const val LEVEL_OFF = 0
+    const val LEVEL_LOW = 1
+    const val LEVEL_MEDIUM = 2
+    const val LEVEL_HIGH = 3
+    const val LEVEL_FULL = 4
+    /** Stufe "Viel": bis 256 MB ganz, darüber 128 Stichproben (8 MB) */
+    const val HIGH_LIMIT = 256L * 1024 * 1024
+    const val HIGH_SAMPLES = 128
+
+    /** Zu lesende Bereiche je Prüfstufe (Aus = keine) */
+    fun levelRegions(level: Int, size: Long): List<Pair<Long, Int>> = when (level) {
+        LEVEL_OFF -> emptyList()
+        LEVEL_LOW -> regions(size)
+        LEVEL_MEDIUM -> thoroughRegions(size)
+        LEVEL_HIGH -> sampledRegions(size, HIGH_LIMIT, HIGH_SAMPLES)
+        else -> sampledRegions(size, Long.MAX_VALUE, 0)
+    }
+
+    /** Prüfsumme je Stufe; "Wenig" ist identisch mit [compute] */
+    fun forLevel(level: Int, size: Long, read: (offset: Long, length: Int) -> ByteArray): String =
+        hash(size, levelRegions(level, size), read)
 
     private fun hash(size: Long, regions: List<Pair<Long, Int>>, read: (Long, Int) -> ByteArray): String {
         val md = MessageDigest.getInstance("SHA-256")

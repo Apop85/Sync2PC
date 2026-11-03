@@ -86,7 +86,7 @@
     <string name="update_err_package">Die APK gehört zu „%1$s“, nicht zu dieser App</string>
     <string name="update_err_debug">(Debug-Builds lassen sich nicht per Update aktualisieren)</string>
     <string name="update_err_not_newer">Die APK ist nicht neuer als die installierte Version</string>
-    <string name="smb_err_path">Ungültiger Share-Pfad: „%1$s“ (erwartet \\\\server\\freigabe)</string>
+    <string name="smb_err_path">Ungültiger Freigabe-Pfad: „%1$s“ (erwartet \\\\server\\freigabe)</string>
     <string name="smb_err_not_disk">„%1$s“ ist keine Datei-Freigabe</string>
     <string name="smb_err_incomplete">Upload unvollständig: %1$s von %2$s Bytes</string>
     <string name="smb_err_resume">Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen</string>
@@ -120,7 +120,7 @@
     <string name="eng_start_mirror">Start (%1$s) – Ordner-Sync „%2$s“ (%3$s)</string>
     <string name="eng_reading_folders">Lese Ordner…</string>
     <string name="eng_local_missing">Handy-Ordner nicht gefunden – bitte im Profil neu auswählen</string>
-    <string name="eng_offline_preview">Offline-Vorschau (Share nicht erreichbar): %1$s</string>
+    <string name="eng_offline_preview">Offline-Vorschau (Freigabe nicht erreichbar): %1$s</string>
     <string name="eng_counts">Handy: %1$s Dateien, PC: %2$s Dateien</string>
     <string name="eng_keep_files">Löschungen werden in diesem Lauf nicht übernommen (deine Entscheidung)</string>
     <string name="eng_comparing">Vergleiche…</string>

@@ -192,12 +192,20 @@ object BackupCodec {
         put("trashRetentionDays", p.trashRetentionDays)
         put("massDeletePercent", p.massDeletePercent)
         put("keepVersions", p.keepVersions)
+        put("verifyLevel", p.verifyLevel)
+    }
+
+    /** Prüfstufe (0.9.0); ältere Sicherungen kennen nur verifyUpload: an = "Wenig" (wie bisher), aus = "Aus" */
+    private fun verifyLevelFromJson(o: JSONObject, d: Profile): Int = when {
+        o.has("verifyLevel") -> o.optInt("verifyLevel", d.verifyLevel).coerceIn(0, 4)
+        o.has("verifyUpload") -> if (o.optBoolean("verifyUpload", true)) 1 else 0
+        else -> d.verifyLevel
     }
 
     private fun profileFromJson(o: JSONObject): Profile {
         val d = Profile()
         return Profile(
-            id = o.optLong("id", 0), name = o.optString("name", d.name), enabled = o.optBoolean("enabled", d.enabled),
+            id = o.optLong("id", 0), name = o.optString("name", d.name).trim(), enabled = o.optBoolean("enabled", d.enabled),
             smbPath = o.optString("smbPath", d.smbPath), smbUser = o.optString("smbUser", d.smbUser),
             smbDomain = o.optString("smbDomain", d.smbDomain), smbPasswordEnc = "",
             sourceFolders = o.optString("sourceFolders", d.sourceFolders), wifiSsids = o.optString("wifiSsids", d.wifiSsids),
@@ -214,6 +222,7 @@ object BackupCodec {
             trashRetentionDays = o.optInt("trashRetentionDays", d.trashRetentionDays),
             massDeletePercent = o.optInt("massDeletePercent", d.massDeletePercent).coerceIn(1, 100),
             keepVersions = o.optBoolean("keepVersions", d.keepVersions),
+            verifyLevel = verifyLevelFromJson(o, d),
         )
     }
 

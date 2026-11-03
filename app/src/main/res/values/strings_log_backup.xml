@@ -47,10 +47,10 @@
     <string name="backup_skipped_identical">Skipped because already present (same target and same sources): %1$s</string>
     <string name="backup_overlapping">Note: overlaps with an existing profile (same target, shared source folders): %1$s</string>
     <string name="backup_without_password">Enter the password again for: %1$s</string>
-    <string name="backup_need_folder">Choose the phone folder again for: %1$s (Android does not transfer the folder permission).</string>
+    <string name="backup_need_folder">Choose the mobile folder again for: %1$s (Android does not transfer the folder permission).</string>
     <string name="backup_import_failed">Import failed: %1$s</string>
     <string name="backup_title">Backup</string>
-    <string name="backup_hint">Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing phones or reinstalling.</string>
+    <string name="backup_hint">Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing mobiles or reinstalling.</string>
     <string name="backup_export">Export…</string>
     <string name="backup_import">Import…</string>
     <string name="backup_export_title">Export backup</string>

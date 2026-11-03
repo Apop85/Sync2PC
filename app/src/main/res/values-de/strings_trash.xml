@@ -63,7 +63,7 @@
     </plurals>
     <string name="trash_mode_all">Alles</string>
     <string name="trash_where">Wo?</string>
-    <string name="trash_phone_only_hint">„%1$s“ schafft Platz auf dem Telefon; die Kopien im PC-Papierkorb bleiben erhalten.</string>
+    <string name="trash_phone_only_hint">„%1$s“ schafft Platz auf dem Handy; die Kopien im PC-Papierkorb bleiben erhalten.</string>
     <string name="trash_choose_what">Bitte auswählen, was geleert werden soll.</string>
     <plurals name="trash_affects">
         <item quantity="one">Betrifft %1$s Datei (%2$s)</item>

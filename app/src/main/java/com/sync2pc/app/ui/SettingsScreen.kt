@@ -1,6 +1,5 @@
 package com.sync2pc.app.ui
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -90,7 +89,8 @@ private fun LazyListScope.notificationsPage() {
         var summary by remember { mutableStateOf(s.notifySummary) }
         var update by remember { mutableStateOf(s.notifyUpdate) }
         var hints by remember { mutableStateOf(s.notifyHints) }
-        SectionCard(str(R.string.settings_notifications)) {
+        // Ohne eigene Überschrift: die Seite heisst schon "Benachrichtigungen" (0.9.0)
+        SectionCard {
             SwitchRow(str(R.string.settings_notify_summary), summary, subtitle = str(R.string.settings_notify_summary_sub)) {
                 summary = it; s.notifySummary = it
             }
@@ -184,23 +184,24 @@ private fun LazyListScope.transferPage() {
 }
 
 // ---- 3. App-Berechtigungen ------------------------------------------------------------
-@SuppressLint("BatteryLife")
 private fun LazyListScope.permissionsPage() {
+    // 0.9.0: jeder Punkt mit Status (✓ erledigt bzw. Knopf), wie die Karte auf der Startseite
     item {
         val ctx = LocalContext.current
-        SectionCard(str(R.string.settings_background)) {
-            Hint(str(R.string.settings_background_hint))
+        val tick = rememberResumeTick()
+        val perms = remember(tick) { PermStatus.read(ctx) }
+        SectionCard(str(R.string.settings_perm_title)) {
+            Hint(str(R.string.settings_perm_hint))
+            PermissionRows(perms, showDone = true)
             OutlinedButton(onClick = {
                 ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")))
-            }) { Text(str(R.string.settings_permissions)) }
+            }) { Text(str(R.string.settings_perm_app_info)) }
         }
     }
     item {
         val ctx = LocalContext.current
         SectionCard(str(R.string.settings_battery)) {
-            OutlinedButton(onClick = {
-                ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")))
-            }) { Text(str(R.string.settings_battery_off)) }
+            Hint(str(R.string.settings_background_hint))
             val vendor = remember { VendorHints.forDevice() }
             if (vendor != null) {
                 Text(str(R.string.settings_vendor_extra, vendor.vendor), style = MaterialTheme.typography.bodyMedium)
@@ -216,9 +217,11 @@ private fun LazyListScope.permissionsPage() {
     }
 }
 
-// ---- 4. App-Einstellungen -------------------------------------------------------------
+// ---- 4. Sprache & Sicherung (bis 0.8.x "App-Einstellungen") ---------------------------------
 private fun LazyListScope.appPage() {
     item { LanguageCard() }
+    // Sicherung (Export/Import) seit 0.9.0 hier statt unter "Diagnose"
+    item { BackupSection() }
     item {
         val ctx = LocalContext.current
         val s = remember { GlobalSettings(ctx) }
@@ -272,7 +275,6 @@ private fun LanguageCard() {
 
 // ---- 6. Diagnose ----------------------------------------------------------------------
 private fun LazyListScope.diagnosePage() {
-    item { BackupSection() }
     item {
         val ctx = LocalContext.current
         val s = remember { GlobalSettings(ctx) }

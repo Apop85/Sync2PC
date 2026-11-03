@@ -24,7 +24,7 @@
     <string name="wizard_step_guard">Schutzbremse</string>
     <string name="wizard_missing_name">Bitte gib dem Profil einen Namen.</string>
     <string name="wizard_missing_local">Bitte wähle den Ordner auf dem Handy.</string>
-    <string name="wizard_missing_sources">Bitte wähle mindestens einen Ordner auf dem Telefon.</string>
+    <string name="wizard_missing_sources">Bitte wähle mindestens einen Ordner auf dem Handy.</string>
     <string name="wizard_missing_media">Bitte schalte Fotos, Videos oder beides ein.</string>
     <string name="wizard_missing_target">Bitte gib den Freigabe-Pfad ein, z. B. \\\\192.168.1.20\\Fotos.</string>
 
@@ -34,11 +34,11 @@
     <string name="overlap_shared_folders">Gleiches Ziel wie Profil „%1$s“ und gemeinsame Quellordner: %2$s. Diese Dateien würden von beiden Profilen geprüft und übertragen.</string>
     <string name="overlap_same_target">Gleiches Ziel wie Profil „%1$s“. Diese Dateien würden von beiden Profilen geprüft und übertragen.</string>
 
-    <!-- Typwahl und Ordnerauswahl auf dem Share (ProfileParts) -->
+    <!-- Typwahl und Ordnerauswahl auf der Freigabe (ProfileParts) -->
     <string name="type_chooser_title">Was möchtest du synchronisieren?</string>
     <string name="type_chooser_photos">Fotos und Videos vom Handy auf den PC. Ablage sortiert nach Jahr, Monat und Reiseland, z. B. 2026\\06 - Ägypten. Optional danach vom Handy entfernen.</string>
     <string name="type_chooser_mirror">Einen beliebigen Ordner 1:1 spiegeln, mit Unterordnern und allen Dateitypen. Richtung wählbar: Handy → PC, PC → Handy oder beidseitig.</string>
-    <string name="remote_picker_title">Ordner auf dem Share</string>
+    <string name="remote_picker_title">Ordner auf der Freigabe</string>
     <string name="remote_picker_empty">Keine Unterordner</string>
     <string name="remote_picker_use">Diesen Ordner verwenden</string>
 </resources>

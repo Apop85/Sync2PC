@@ -78,10 +78,10 @@ Vor jedem GitHub-Release:
 5. Ordner-Profil: Je eine Datei auf dem Handy und auf dem PC ändern → beide werden abgeglichen.
 6. WLAN während eines Syncs trennen → „Pausiert“ erscheint. WLAN wieder verbinden → der Sync setzt fort.
 7. *Einstellungen → Diagnose → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
-8. *Einstellungen → Diagnose → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
+8. *Einstellungen → Sprache & Sicherung → Sicherung* (bis 0.8.x unter „Diagnose“): Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
 9. *Speicher freigeben* mit grosser Monatszahl (z. B. 120) und kleiner Auswahl: Die Prüfung auf dem PC läuft, der Android-Dialog erscheint, und im Papierkorb der Galerie sind die Dateien wiederherstellbar.
 10. Ordner-Sync (siehe „Test Ordner-Sync“ und „Test Schutzbremse“ unten), wenn sich daran etwas geändert hat.
-10a. Sprache (seit 0.8.0): *Einstellungen → App-Einstellungen → Sprache* auf „English“ → alle Seiten, Benachrichtigungen und neue Verlaufseinträge englisch. Zurück auf „Systemsprache“. Neue oder geänderte Texte stehen in beiden `strings_*.xml`, `.claude/translations.md` ist neu erzeugt (`tools/make-translations.ps1`).
+10a. Sprache (seit 0.8.0): *Einstellungen → Sprache & Sicherung → Sprache* auf „English“ → alle Seiten, Benachrichtigungen und neue Verlaufseinträge englisch. Zurück auf „Systemsprache“. Neue oder geänderte Texte stehen in beiden `strings_*.xml`, `.claude/translations.md` ist neu erzeugt (`tools/make-translations.ps1`).
 11. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
 12. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
 
@@ -145,6 +145,15 @@ Mit dem Test-Profil von oben, **Löschungen übernehmen** eingeschaltet, nach ei
 8. **Vorgemerkte Wiederherstellung geschützt:** PC aus, eine PC-Version wiederherstellen (vorgemerkt) – oder eine Handy-Version, dann sofort Aufräumen… „Alles“ → Rückfrage nennt „1 Datei(en) … bleiben“, der Eintrag ist als „zum Wiederherstellen vorgemerkt“ markiert. PC an → Wiederherstellung klappt.
 9. **Namen:** Dieselbe Datei am selben Tag zweimal ersetzen → im Papierkorb `Name (HH-mm-ss).ext`; in der App erscheinen beide als Versionen derselben Datei.
 10. **Schutzbremse:** Bei vorgemerkter Wiederherstellung die Schutzbremse auslösen (z. B. PC-Ordner umbenennen) → die Karte sagt „Wartet auf deine Entscheidung (Schutzbremse)“.
+
+### Test UX-Überarbeitung und Prüfstufen (seit 0.9.0)
+
+1. **Update 0.8.0 → 0.9.0** über die bestehende App (DB-Version 5 → 6): Profile und Verlauf sind noch da. Fotos-Profil mit „Upload prüfen“ an → Prüfung „Wenig“; Profilnamen ohne Leerzeichen am Rand.
+2. **Pause:** Oben steht ⏸. Antippen → Dauer wählen (markiert) → „Pausieren“ → oben steht ▶, Antippen setzt fort.
+3. **Statuskachel:** Synchronisieren starten und warten, bis es fertig ist → die Kachel ändert die Höhe nicht (ausser bei langen Fehlermeldungen).
+4. **Prüfstufen:** Profil → „Nach erfolgreicher Übertragung“ → „Komplett“ fragt nach. „In den Papierkorb verschieben“ bei Stufe „Aus“ → springt auf „Mittel“ mit Hinweis; „Aus“ ist dann ausgegraut. Synchronisieren mit „Viel“ oder „Komplett“ → Dateien landen korrekt auf dem PC (Verlauf ohne Prüffehler).
+5. **Profil bearbeiten:** Speichern/Abbrechen fest unten; „Wartung“ zugeklappt, darin „Profil löschen“ mit Rückfrage.
+6. **Einstellungen:** „App-Berechtigungen“ zeigt für jeden Punkt „✓ erledigt“ oder einen Knopf. „Sprache & Sicherung“ enthält Sprache, Länderordner und die Sicherung.
 
 ### Test Profil-Assistent (seit 0.5.0)
 

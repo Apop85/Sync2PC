@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -291,17 +292,21 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 if (deselected.isNotEmpty()) Hint(str(R.string.free_deselected, selection.candidates.size - final.size))
                 if (selection.notBackedUp > 0) Hint(plural(R.plurals.free_not_backed_up, selection.notBackedUp))
                 if (selection.favoritesKept > 0) Hint(plural(R.plurals.free_favorites_kept, selection.favoritesKept))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(enabled = selection.candidates.isNotEmpty(), onClick = { showPreview = !showPreview }) {
-                        Text(str(if (showPreview) R.string.free_preview_hide else R.string.free_preview))
-                    }
-                }
+                // 0.9.0: Vorschau ist der Hauptschritt, Entfernen bewusst zurückhaltend (umrandet, Warnfarbe)
                 Button(
+                    enabled = selection.candidates.isNotEmpty(), onClick = { showPreview = !showPreview },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(str(if (showPreview) R.string.free_preview_hide else R.string.free_preview))
+                }
+                OutlinedButton(
                     enabled = busy == null && final.isNotEmpty(),
                     onClick = { if (photos) runPhotos() else confirmFolder = true },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = if (photos) ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    border = BorderStroke(1.dp,
+                        if (busy == null && final.isNotEmpty()) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
                 ) {
                     Text(str(if (photos && hasTrash) R.string.free_run_trash else R.string.free_run_delete))
                 }

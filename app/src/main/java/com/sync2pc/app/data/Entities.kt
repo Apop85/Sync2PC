@@ -49,6 +49,26 @@ enum class SyncDirection(@StringRes private val labelRes: Int, @StringRes privat
     }
 }
 
+/**
+ * Prüfung nach dem Hochladen (0.9.0, nur Fotos-Profile). [code] steht in der DB (`profiles.verifyLevel`).
+ * OFF vergleicht nur die Grösse und ist nur erlaubt, solange die Fotos auf dem Handy bleiben.
+ * Bereiche je Stufe: [com.sync2pc.app.sync.PartialHash.levelRegions].
+ */
+enum class VerifyLevel(val code: Int, @StringRes private val labelRes: Int, @StringRes private val subRes: Int) {
+    OFF(0, R.string.verify_off, R.string.verify_off_sub),
+    LOW(1, R.string.verify_low, R.string.verify_low_sub),
+    MEDIUM(2, R.string.verify_medium, R.string.verify_medium_sub),
+    HIGH(3, R.string.verify_high, R.string.verify_high_sub),
+    FULL(4, R.string.verify_full, R.string.verify_full_sub);
+
+    val label: String get() = str(labelRes)
+    val sub: String get() = str(subRes)
+
+    companion object {
+        fun of(code: Int): VerifyLevel = entries.firstOrNull { it.code == code } ?: MEDIUM
+    }
+}
+
 /** Verhalten bei Konflikt (Datei auf beiden Seiten geändert, nur beidseitig). */
 enum class ConflictMode(@StringRes private val labelRes: Int) {
     ASK(R.string.conflict_mode_ask),
@@ -81,6 +101,7 @@ data class Profile(
     val includeVideos: Boolean = true,
     val includeSubfolders: Boolean = true,
     val deleteMode: String = DeleteMode.KEEP.name,
+    /** Bis 0.8.x die einzige Prüf-Einstellung; seit 0.9.0 nur noch Spiegel von [verifyLevel] != OFF */
     val verifyUpload: Boolean = true,
     // ---- seit DB v2 (0.0.7) ----
     val profileType: String = ProfileType.PHOTOS.name,
@@ -107,12 +128,19 @@ data class Profile(
     // ---- seit DB v5 (0.5.0) ----
     /** Versionsschutz (nur MIRROR): überschriebene Versionen kommen in den Papierkorb statt gelöscht zu werden */
     val keepVersions: Boolean = true,
+    // ---- seit DB v6 (0.9.0) ----
+    /** Prüfstufe nach dem Hochladen ([VerifyLevel.code]), Standard Mittel */
+    val verifyLevel: Int = 2,
 ) {
     fun folders(): List<String> = splitLines(sourceFolders)
     fun ssids(): List<String> = splitLines(wifiSsids)
     fun delete(): DeleteMode = if (type() == ProfileType.PHOTOS) DeleteMode.of(deleteMode) else DeleteMode.KEEP
+    /** Wirksame Prüfstufe: Wer Fotos vom Handy entfernt, prüft immer (mindestens Mittel, wie in der Oberfläche). */
+    fun verify(): VerifyLevel = VerifyLevel.of(verifyLevel).let {
+        if (it == VerifyLevel.OFF && delete() != DeleteMode.KEEP) VerifyLevel.MEDIUM else it
+    }
     /** Beim Löschen ist die Prüfung immer Pflicht. */
-    fun mustVerify(): Boolean = verifyUpload || delete() != DeleteMode.KEEP
+    fun mustVerify(): Boolean = verify() != VerifyLevel.OFF
     fun type(): ProfileType = ProfileType.of(profileType)
     /** Bildordner sind immer Handy → PC */
     fun dir(): SyncDirection = if (type() == ProfileType.PHOTOS) SyncDirection.UPLOAD else SyncDirection.of(direction)

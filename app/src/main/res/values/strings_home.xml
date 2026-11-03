@@ -14,7 +14,7 @@
     <string name="home_wait_charger">Waiting for the charger (“Only while charging” is on).</string>
     <string name="home_starting">Sync is starting…</string>
     <string name="home_tool_trash_text">Restore files or delete them permanently</string>
-    <string name="home_tool_trash_used">Used: phone %1$s · PC %2$s</string>
+    <string name="home_tool_trash_used">Used: mobile %1$s · PC %2$s</string>
     <string name="home_guard_note_all">Waiting for your decision (safety brake) – it continues only after that.</string>
     <string name="home_guard_note_some">One profile is waiting for your decision (safety brake).</string>
     <string name="home_pc_unreachable">PC not reachable (%1$s) – next check at %2$s</string>
@@ -29,8 +29,8 @@
     <string name="home_update_button">View</string>
     <string name="home_conflicts_title">Folder sync conflicts</string>
     <plurals name="home_conflicts_text">
-        <item quantity="one">%1$s file was changed on both phone and PC. Choose which version wins.</item>
-        <item quantity="other">%1$s files were changed on both phone and PC. Choose which version wins.</item>
+        <item quantity="one">%1$s file was changed on both mobile and PC. Choose which version wins.</item>
+        <item quantity="other">%1$s files were changed on both mobile and PC. Choose which version wins.</item>
     </plurals>
     <string name="home_conflicts_button">Decide</string>
     <string name="home_decisions_title">Folder selection needed</string>
@@ -51,11 +51,11 @@
     <string name="home_delete_button">Confirm removal</string>
     <string name="home_profiles">Profiles</string>
     <string name="home_add_profile">Add profile</string>
-    <string name="home_no_profile">No profile yet. Create a profile with a target share, Wi-Fi and source folders.</string>
+    <string name="home_no_profile">No profile yet. Create a profile with a target Share, Wi-Fi and source folders.</string>
     <string name="home_first_profile">Create first profile</string>
     <string name="home_tool_free">Free up space</string>
-    <string name="home_tool_free_text">Remove old files from the phone that are backed up on the PC</string>
-    <string name="home_tool_free_disabled">Only for photo profiles and folder profiles phone → PC</string>
+    <string name="home_tool_free_text">Remove old files from the mobile that are backed up on the PC</string>
+    <string name="home_tool_free_disabled">Only for photo profiles and folder profiles mobile → PC</string>
     <string name="home_tool_trash">Trash</string>
     <string name="home_tool_trash_disabled">Only for folder profiles</string>
     <string name="home_tool_trash_hint">The trash is only available for folder profiles.</string>
@@ -80,7 +80,8 @@
     <string name="home_pause_hint">A running sync is stopped. Nothing starts automatically until the pause ends.</string>
     <string name="home_pause_hours">Custom number of hours (1–168)</string>
     <string name="home_pause_forever">Forever (manual only)</string>
-    <string name="home_pause_forever_hint">Turns automatic syncing off completely: syncing only happens with “Sync” until you turn it back on with ⏸.</string>
+    <string name="home_pause_forever_hint">Turns automatic syncing off completely: syncing only happens with “Sync” until you turn it back on with ▶ at the top right.</string>
+    <string name="home_pause_choose">Choose a duration.</string>
     <string name="home_status">Status</string>
     <string name="home_all_saved">✓ Everything backed up and up to date</string>
     <string name="home_wifi">Wi-Fi: %1$s</string>
@@ -88,23 +89,24 @@
     <string name="home_progress">%1$s: %2$s / %3$s files – %4$s of %5$s</string>
     <string name="home_running">Sync running…</string>
     <string name="home_manual_only">⏸ Automatic off – manual syncs only</string>
-    <string name="home_manual_only_hint">Syncing only happens when you tap “Sync”. ⏸ at the top right turns automatic syncing back on.</string>
+    <string name="home_manual_only_hint">Syncing only happens when you tap “Sync”. ▶ at the top right turns automatic syncing back on.</string>
     <string name="home_last_sync">Last sync: %1$s (%2$s)</string>
     <string name="home_paused_until">⏸ Paused until %1$s</string>
     <string name="home_paused_until_hint">Automatic syncs rest until then. “Resume” or “Sync” ends the pause immediately.</string>
     <string name="home_paused_wifi">⏸ Paused – waiting for the home Wi-Fi</string>
     <string name="home_paused_wifi_hint">The sync was stopped by a Wi-Fi interruption and continues automatically as soon as the Wi-Fi is connected again.</string>
-    <string name="home_pc_unreachable_hint">Is the PC switched on and the share active? “Sync” checks right away.</string>
+    <string name="home_pc_unreachable_hint">Is the PC switched on and the Share active? “Sync” checks right away.</string>
     <string name="home_nothing_to_do">Nothing to do – everything up to date</string>
     <string name="home_no_sync_yet">No sync yet.</string>
     <string name="home_next_check">Next check at %1$s</string>
     <string name="home_skipped">⚠ Automatic start skipped – %1$s</string>
     <string name="home_resume">Resume</string>
     <string name="home_sync">Sync</string>
+    <string name="home_sync_needs_profile">Create a profile first.</string>
     <string name="home_profile_disabled">disabled</string>
     <string name="home_profile_on_wifi">on Wi-Fi ✓</string>
     <string name="home_profile_no_target">No target set</string>
-    <string name="home_profile_no_local">no phone folder</string>
+    <string name="home_profile_no_local">no mobile folder</string>
     <string name="home_profile_propagate">apply deletions</string>
     <string name="home_profile_sources">Sources: %1$s</string>
     <string name="home_profile_none">none</string>
@@ -126,6 +128,7 @@
     <!-- Berechtigungen (PermissionCard) -->
     <string name="perm_incomplete">Setup incomplete</string>
     <string name="perm_grant">Grant</string>
+    <string name="perm_granted">✓ done</string>
     <string name="perm_open">Open</string>
     <string name="perm_turn_on">Turn on</string>
     <string name="perm_media">Access to photos &amp; videos</string>
@@ -134,5 +137,6 @@
     <string name="perm_location">Location (Android needs it to read the Wi-Fi name)</string>
     <string name="perm_location_always">Location “Allow all the time” (Wi-Fi detection in the background)</string>
     <string name="perm_location_off">Location service is turned off</string>
+    <string name="perm_location_service">Location service turned on</string>
     <string name="perm_battery">Disable battery optimization (reliable background sync)</string>
 </resources>

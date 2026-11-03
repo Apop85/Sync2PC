@@ -47,11 +47,16 @@
     <string name="stats_total">Gesamt</string>
     <string name="stats_photos_videos">%1$s Fotos · %2$s Videos</string>
     <string name="stats_per_year">Pro Jahr</string>
+    <string name="stats_bar_hint">Balkenlänge = Anzahl Dateien</string>
+    <plurals name="stats_bucket_value">
+        <item quantity="one">%1$s Datei · %2$s</item>
+        <item quantity="other">%1$s Dateien · %2$s</item>
+    </plurals>
     <string name="stats_per_country">Pro Land (aus GPS)</string>
 
     <!-- Erste Synchronisierung, Hund -->
     <string name="first_sync_title">Erste Synchronisierung</string>
-    <string name="first_sync_text">Die erste Synchronisierung überträgt alle vorhandenen Dateien. Je nach Menge dauert sie lange und braucht viel Akku. Schliesse das Telefon am besten ans Ladegerät an.</string>
+    <string name="first_sync_text">Die erste Synchronisierung überträgt alle vorhandenen Dateien. Je nach Menge dauert sie lange und braucht viel Akku. Schliesse das Handy am besten ans Ladegerät an.</string>
     <string name="first_sync_start">Trotzdem starten</string>
     <string name="dog_waiting">Wartet</string>
     <string name="dog_idle">Alles gesichert</string>
