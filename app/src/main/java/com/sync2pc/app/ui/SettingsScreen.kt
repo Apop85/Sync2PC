@@ -219,9 +219,8 @@ private fun LazyListScope.permissionsPage() {
 
 // ---- 4. Sprache & Sicherung (bis 0.8.x "App-Einstellungen") ---------------------------------
 private fun LazyListScope.appPage() {
+    // Reihenfolge (0.9.1): Sprache, Länderordner, Sicherung
     item { LanguageCard() }
-    // Sicherung (Export/Import) seit 0.9.0 hier statt unter "Diagnose"
-    item { BackupSection() }
     item {
         val ctx = LocalContext.current
         val s = remember { GlobalSettings(ctx) }
@@ -245,6 +244,8 @@ private fun LazyListScope.appPage() {
             Hint(geoInfo)
         }
     }
+    // Sicherung (Export/Import) seit 0.9.0 hier statt unter "Diagnose"
+    item { BackupSection() }
 }
 
 /** Sprachwahl (0.8.0): Systemsprache / Deutsch / English. Die Sprachnamen stehen bewusst in der eigenen Sprache. */

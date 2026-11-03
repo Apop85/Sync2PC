@@ -281,7 +281,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // --- Abschluss-Benachrichtigungen ----------------------------------------
         // Verbindungsabbrüche sind erwartbar: keine Meldung, der Rest folgt automatisch
         if (hardFailure != null) {
-            Notifications.summary(ctx, str(R.string.summary_failed, hardFailure ?: ""), error = true)
+            Notifications.summary(ctx, str(R.string.summary_failed, hardFailure), error = true)
         } else if (interruptedMidRun) {
             // still – Anzeige "Pausiert" bzw. erneuter Versuch übernimmt
         } else if (uploaded > 0 || failed > 0) {

@@ -2,6 +2,14 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.9.1 (2026-11-03)
+
+### Geändert
+- **Sprache & Sicherung:** Die Länderordner (Heimatland) stehen jetzt direkt unter der Sprache, die Sicherung kommt danach.
+
+### Intern
+- Kotlin-Warnung in `SyncWorker` behoben (überflüssiger Elvis-Operator bei der Fehlermeldung).
+
 ## 0.9.0 (2026-11-03)
 
 ### Neu
