@@ -538,20 +538,20 @@ private fun StatusCard(
             else -> DogState.WAITING
         }
         DogStatus(dog, Modifier.align(Alignment.CenterHorizontally))
-        // Textbereich mit Mindesthöhe (0.9.0): so gross wie ein laufender Sync mit Fortschritt, damit die Kachel
-        // beim Wechsel des Zustands nicht springt. Nur bei seltenen langen Meldungen wird sie grösser.
+        // Feste Plätze für alle Zustände (0.9.3), damit WLAN-Zeile und Knopf nie verrutschen:
+        // 1. Überschrift (nur "✓ Alles gesichert" sichtbar, sonst leere Zeile) + eine Zeile Abstand,
+        // 2. WLAN (einzeilig), 3. Zustandsbereich mit Mindesthöhe für die üblichen Fälle
+        // (2 Zeilen Haupttext + Balken bzw. Hinweis + 2 kleine Zeilen). Nur lange Fehlermeldungen machen ihn grösser.
         val typo = MaterialTheme.typography
-        val minText = with(LocalDensity.current) {
-            (typo.bodyLarge.lineHeight * 3).toDp() + typo.bodySmall.lineHeight.toDp() + 28.dp
+        val density = LocalDensity.current
+        val statusMin = with(density) {
+            (typo.bodyLarge.lineHeight * 2).toDp() + (typo.bodySmall.lineHeight * 2).toDp() + 24.dp
         }
-        Column(Modifier.fillMaxWidth().heightIn(min = minText), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (upToDate) {
-            Text(str(R.string.home_all_saved), style = typo.titleSmall,
-                modifier = Modifier.align(Alignment.CenterHorizontally))
-            // Eine Zeile Abstand, damit sich die Meldung abhebt
-            Spacer(Modifier.height(with(LocalDensity.current) { typo.bodySmall.lineHeight.toDp() }))
-        }
-        Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)))
+        Text(if (upToDate) str(R.string.home_all_saved) else "", style = typo.titleSmall, minLines = 1, maxLines = 1,
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(Modifier.height(with(density) { typo.bodySmall.lineHeight.toDp() }))
+        Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(Modifier.fillMaxWidth().heightIn(min = statusMin), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when {
             isRunning -> {
                 // Feste Zeilenzahl während des Laufs (0.9.2), damit die Kachel nicht springt: Fortschritt bzw. Phase
@@ -603,9 +603,9 @@ private fun StatusCard(
             Text(str(R.string.home_skipped, skipInfo), color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
-        }
-        // Ohne Profil ist "Synchronisieren" ausgegraut – sagen, warum
+        // Ohne Profil ist "Synchronisieren" ausgegraut – sagen, warum (im Zustandsbereich, damit nichts verrutscht)
         if (!hasProfiles) Hint(str(R.string.home_sync_needs_profile))
+        }
         // Zwei gleich breite Knöpfe, Text einzeilig (kein Umbruch wie "Vorsc-hau")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val w = Modifier.weight(1f)

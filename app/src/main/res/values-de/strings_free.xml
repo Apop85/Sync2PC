@@ -23,7 +23,7 @@
     </plurals>
     <string name="free_unreachable_hosts">PC nicht erreichbar: %1$s.</string>
     <string name="free_check_failed">Prüfung fehlgeschlagen: %1$s</string>
-    <string name="free_waiting_for_sync">Wartet, bis der laufende Sync fertig ist… Diese Ansicht bitte offen lassen.</string>
+    <string name="free_waiting_for_sync">Wartet, bis die laufende Synchronisierung fertig ist… Diese Ansicht bitte offen lassen.</string>
     <string name="free_checking_deleting">Prüfe auf dem PC und lösche…</string>
     <plurals name="free_deleted">
         <item quantity="one">%1$s Datei gelöscht, %2$s frei.</item>

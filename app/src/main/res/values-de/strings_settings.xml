@@ -8,13 +8,13 @@
     <string name="settings_updates">Updates</string>
     <string name="settings_diagnose">Diagnose</string>
 
-    <string name="settings_notify_summary">Meldung nach jedem Sync</string>
+    <string name="settings_notify_summary">Meldung nach jeder Synchronisierung</string>
     <string name="settings_notify_summary_sub">z. B. „3 Dateien übertragen“</string>
     <string name="settings_notify_update">Update verfügbar</string>
     <string name="settings_notify_update_sub">Neue Version gefunden bzw. installiert</string>
     <string name="settings_notify_hints">Hinweise</string>
     <string name="settings_notify_hints_sub">Ordnerauswahl nötig, Konflikte, Dateien entfernen, Fehler. Erscheinen auch ohne Benachrichtigung auf der Startseite.</string>
-    <string name="settings_notify_fixed">Die Fortschrittsanzeige während eines Syncs und „Pausiert – wartet auf WLAN“ lassen sich nicht abschalten: Android verlangt sie, damit der Sync im Hintergrund weiterlaufen bzw. fortgesetzt werden kann.</string>
+    <string name="settings_notify_fixed">Die Fortschrittsanzeige während einer Synchronisierung und „Pausiert – wartet auf WLAN“ lassen sich nicht abschalten: Android verlangt sie, damit die Synchronisierung im Hintergrund weiterlaufen bzw. fortgesetzt werden kann.</string>
     <string name="settings_notify_android">Android-Einstellungen für Benachrichtigungen</string>
 
     <string name="settings_stale">Erinnerung</string>
@@ -23,12 +23,12 @@
     <string name="settings_stale_days">Nach … Tagen ohne Sicherung</string>
 
     <string name="settings_auto">Automatik</string>
-    <string name="settings_auto_wifi">Sync beim Verbinden mit Heim-WLAN</string>
+    <string name="settings_auto_wifi">Synchronisieren beim Verbinden mit Heim-WLAN</string>
     <string name="settings_auto_wifi_sub">Startet sofort, wenn ein WLAN eines Profils verbunden wird</string>
     <string name="settings_auto_new">Neue Fotos/Videos sofort übertragen</string>
     <string name="settings_auto_new_sub">Nur, wenn gerade ein Heim-WLAN verbunden ist</string>
     <string name="settings_auto_charging">Nur beim Laden</string>
-    <string name="settings_auto_charging_sub">Automatische Syncs nur am Ladegerät (manueller Sync immer möglich)</string>
+    <string name="settings_auto_charging_sub">Automatische Synchronisierungen nur am Ladegerät (manuelles Synchronisieren immer möglich)</string>
     <string name="settings_min_age">Mindestalter einer Datei (Minuten)</string>
     <string name="settings_min_age_hint">Verhindert, dass Fotos übertragen werden, die gerade noch bearbeitet werden.</string>
 
@@ -37,9 +37,9 @@
     <string name="settings_parallel_hint">Mehr Verbindungen beschleunigen viele kleine Dateien. Bei grossen Videos bringt es wenig. Standard: 3</string>
 
     <string name="settings_perm_title">Berechtigungen</string>
-    <string name="settings_perm_hint">Diese Berechtigungen braucht LeoSync für den automatischen Sync im Hintergrund.</string>
+    <string name="settings_perm_hint">Diese Berechtigungen braucht LeoSync für die automatische Synchronisierung im Hintergrund.</string>
     <string name="settings_perm_app_info">App-Info öffnen</string>
-    <string name="settings_background_hint">Damit Android den Sync nicht verzögert oder abbricht, sollte die Akku-Optimierung für LeoSync aus sein.</string>
+    <string name="settings_background_hint">Damit Android die Synchronisierung nicht verzögert oder abbricht, sollte die Akku-Optimierung für LeoSync aus sein.</string>
     <string name="settings_battery">Akku-Optimierungen</string>
     <string name="settings_battery_off">Akku-Optimierung ausschalten</string>
     <string name="settings_vendor_extra">Zusätzlich bei %1$s:</string>

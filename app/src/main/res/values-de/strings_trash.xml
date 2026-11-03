@@ -6,7 +6,7 @@
     <string name="trash_switch_profile">Profil wechseln</string>
     <string name="trash_choose_profile">Welchen Papierkorb möchtest du öffnen?</string>
     <string name="trash_photos_hint">Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie und werden in der Galerie-App geleert.</string>
-    <string name="trash_waiting_for_sync">Wartet, bis der laufende Sync fertig ist…\nDiese Ansicht bitte offen lassen.</string>
+    <string name="trash_waiting_for_sync">Wartet, bis die laufende Synchronisierung fertig ist…\nDiese Ansicht bitte offen lassen.</string>
     <string name="trash_deleting">Lösche…</string>
     <string name="trash_reading">Lese den Papierkorb auf Handy und PC…</string>
     <plurals name="trash_phone_summary">
@@ -18,7 +18,7 @@
         <item quantity="other">PC: %1$s Dateien, %2$s</item>
     </plurals>
     <string name="trash_pc_unreachable">PC: nicht erreichbar</string>
-    <string name="trash_pc_unreachable_hint">Einträge aus dem PC-Papierkorb fehlen in der Liste. Wiederherstellen und Löschen auf dem PC werden vorgemerkt und beim nächsten Sync mit erreichbarem PC ausgeführt.</string>
+    <string name="trash_pc_unreachable_hint">Einträge aus dem PC-Papierkorb fehlen in der Liste. Wiederherstellen und Löschen auf dem PC werden vorgemerkt und bei der nächsten Synchronisierung mit erreichbarem PC ausgeführt.</string>
     <string name="trash_cleanup_button">Aufräumen…</string>
     <string name="trash_reload">Neu einlesen</string>
     <string name="trash_empty">Der Papierkorb ist leer.</string>
@@ -33,23 +33,23 @@
     <string name="trash_selected">%1$s ausgewählt · %2$s</string>
     <string name="trash_clear_selection">Aufheben</string>
     <string name="trash_restore">Wiederherstellen</string>
-    <string name="trash_purged_pc_pending">Handy geleert – PC wird beim nächsten Sync mit PC geleert</string>
+    <string name="trash_purged_pc_pending">Handy geleert – PC wird bei der nächsten Synchronisierung mit PC geleert</string>
     <string name="trash_purged">Papierkorb aufgeräumt</string>
     <plurals name="trash_delete_title">
         <item quantity="one">%1$s Datei endgültig löschen?</item>
         <item quantity="other">%1$s Dateien endgültig löschen?</item>
     </plurals>
     <string name="trash_delete_text">Die markierten Einträge werden aus dem Papierkorb gelöscht und lassen sich danach nicht mehr wiederherstellen.</string>
-    <string name="trash_delete_pc_later">Der PC ist nicht erreichbar: Dort wird beim nächsten Sync mit PC gelöscht.</string>
-    <string name="trash_deleted_pc_pending">Gelöscht – PC folgt beim nächsten Sync mit PC</string>
+    <string name="trash_delete_pc_later">Der PC ist nicht erreichbar: Dort wird bei der nächsten Synchronisierung mit PC gelöscht.</string>
+    <string name="trash_deleted_pc_pending">Gelöscht – PC folgt bei der nächsten Synchronisierung mit PC</string>
     <string name="trash_deleted_done">Endgültig gelöscht</string>
     <plurals name="trash_restore_title">
         <item quantity="one">%1$s Datei wiederherstellen?</item>
         <item quantity="other">%1$s Dateien wiederherstellen?</item>
     </plurals>
     <string name="trash_restore_text">Die aktuellen Versionen kommen zuerst in den Papierkorb. Die gewählten Versionen werden auf Handy und PC zurückgeschrieben.</string>
-    <string name="trash_restore_now">Das passiert gleich mit einem Sync.</string>
-    <string name="trash_restore_later">Der PC ist nicht erreichbar: Das passiert beim nächsten Sync mit PC.</string>
+    <string name="trash_restore_now">Das passiert gleich mit einer Synchronisierung.</string>
+    <string name="trash_restore_later">Der PC ist nicht erreichbar: Das passiert bei der nächsten Synchronisierung mit PC.</string>
     <string name="trash_cleanup">Aufräumen</string>
     <string name="trash_cleanup_hint">Endgültig gelöschte Dateien lassen sich nicht mehr wiederherstellen.</string>
     <string name="trash_what">Was?</string>
@@ -70,7 +70,7 @@
         <item quantity="other">Betrifft %1$s Dateien (%2$s)</item>
     </plurals>
     <string name="trash_affects_pc_later">– dazu der PC-Papierkorb, sobald der PC erreichbar ist</string>
-    <string name="trash_pc_later_hint">Der PC ist nicht erreichbar. Das Handy wird sofort geleert, der PC beim nächsten Sync mit PC.</string>
+    <string name="trash_pc_later_hint">Der PC ist nicht erreichbar. Das Handy wird sofort geleert, der PC bei der nächsten Synchronisierung mit PC.</string>
     <plurals name="trash_kept_reserved">
         <item quantity="one">%1$s Datei ist zum Wiederherstellen vorgemerkt und bleibt.</item>
         <item quantity="other">%1$s Dateien sind zum Wiederherstellen vorgemerkt und bleiben.</item>
@@ -79,7 +79,7 @@
         <item quantity="one">%1$s Datei (%2$s) wird endgültig gelöscht (%3$s)</item>
         <item quantity="other">%1$s Dateien (%2$s) werden endgültig gelöscht (%3$s)</item>
     </plurals>
-    <string name="trash_purge_confirm_pc">– auf dem PC beim nächsten Sync mit PC</string>
+    <string name="trash_purge_confirm_pc">– auf dem PC bei der nächsten Synchronisierung mit PC</string>
     <string name="trash_purge_irreversible">Das lässt sich nicht rückgängig machen.</string>
     <string name="trash_pick_days">Tage wählen</string>
     <string name="trash_pick_day">Tag wählen</string>

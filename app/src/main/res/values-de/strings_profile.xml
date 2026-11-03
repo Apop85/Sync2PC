@@ -46,7 +46,7 @@
     <string name="profile_domain">Domäne / PC-Name (optional)</string>
     <string name="profile_domain_hint">Bei einem lokalen Windows-Konto meist leer lassen. Microsoft-Konto: E-Mail-Adresse als Benutzer.</string>
     <string name="profile_test">Verbindung testen</string>
-    <string name="profile_wifi">WLAN (automatischer Sync)</string>
+    <string name="profile_wifi">WLAN (automatische Synchronisierung)</string>
     <string name="profile_wifi_hint">Optional. Ist das Handy mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst (z. B. wenn du den PC über VPN erreichst).</string>
     <string name="profile_wifi_add_current">Aktuelles WLAN „%1$s“ hinzufügen</string>
     <string name="profile_wifi_name">WLAN-Name</string>
@@ -92,7 +92,7 @@
     <string name="profile_section_collapse">Einklappen</string>
     <string name="profile_guard">Schutzbremse (optional)</string>
     <string name="profile_guard_percent">Nachfragen, wenn mehr als … % gelöscht würden</string>
-    <string name="profile_guard_hint">Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält der Sync an und fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.</string>
+    <string name="profile_guard_hint">Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält die Synchronisierung an und fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.</string>
     <string name="profile_next">Weiter</string>
     <string name="profile_optional_hint">Die weiteren Schritte sind optional – du kannst jetzt schon speichern.</string>
     <string name="profile_simulation">Simulation</string>
@@ -100,13 +100,13 @@
     <string name="profile_simulate">Simulieren</string>
     <string name="profile_simulation_save_first">Zuerst speichern – simuliert wird der gespeicherte Stand.</string>
     <string name="profile_maintenance">Wartung</string>
-    <string name="profile_maintenance_hint">Vergisst, welche Dateien bereits übertragen wurden. Beim nächsten Sync wird alles mit der Freigabe abgeglichen (identische Dateien werden nicht erneut übertragen).</string>
-    <string name="profile_reset">Sync-Status zurücksetzen</string>
+    <string name="profile_maintenance_hint">Vergisst, welche Dateien bereits übertragen wurden. Bei der nächsten Synchronisierung wird alles mit der Freigabe abgeglichen (identische Dateien werden nicht erneut übertragen).</string>
+    <string name="profile_reset">Synchronisierungsstatus zurücksetzen</string>
     <string name="profile_delete_button">Profil löschen</string>
-    <string name="profile_maintenance_closed">Sync-Status zurücksetzen, Profil löschen – antippen zum Öffnen</string>
-    <string name="profile_delete_section_hint">Löscht Einstellungen und Sync-Status dieses Profils. Dateien auf Handy und PC bleiben erhalten.</string>
+    <string name="profile_maintenance_closed">Synchronisierungsstatus zurücksetzen, Profil löschen – antippen zum Öffnen</string>
+    <string name="profile_delete_section_hint">Löscht Einstellungen und Synchronisierungsstatus dieses Profils. Dateien auf Handy und PC bleiben erhalten.</string>
     <string name="profile_delete_title">Profil löschen?</string>
-    <string name="profile_delete_text">Einstellungen und Sync-Status dieses Profils werden gelöscht. Dateien auf dem PC bleiben erhalten.</string>
+    <string name="profile_delete_text">Einstellungen und Synchronisierungsstatus dieses Profils werden gelöscht. Dateien auf dem PC bleiben erhalten.</string>
     <string name="profile_created_title">Profil gespeichert</string>
     <string name="profile_created_text">Wie weiter? Bis du dieses Profil einmal synchronisierst, startet es nicht automatisch. So kannst du zuerst in Ruhe simulieren.</string>
     <string name="profile_later">Später</string>
@@ -117,11 +117,11 @@
     <string name="profile_not_saved">Das Profil wurde nicht gespeichert.</string>
     <string name="profile_save_anyway">Trotzdem speichern</string>
     <string name="profile_checking_folder">Prüfe Ordner…</string>
-    <string name="profile_checking_folder_text">Passt der neue Ordner zum bisherigen Sync-Stand?</string>
+    <string name="profile_checking_folder_text">Passt der neue Ordner zum bisherigen Synchronisierungsstand?</string>
     <string name="profile_folder_warning_title">Ist das wirklich der richtige Ordner?</string>
-    <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Sync-Stand dieses Profils.</string>
-    <string name="profile_reset_title">Sync-Status zurücksetzen?</string>
-    <string name="profile_reset_text">Der nächste Sync gleicht alle Dateien erneut mit der Freigabe ab. Das kann bei vielen Dateien länger dauern.</string>
+    <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Synchronisierungsstand dieses Profils.</string>
+    <string name="profile_reset_title">Synchronisierungsstatus zurücksetzen?</string>
+    <string name="profile_reset_text">Die nächste Synchronisierung gleicht alle Dateien erneut mit der Freigabe ab. Das kann bei vielen Dateien länger dauern.</string>
     <string name="profile_reset_done">Zurückgesetzt</string>
     <string name="profile_reset_button">Zurücksetzen</string>
 

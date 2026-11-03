@@ -8,7 +8,7 @@
     <string name="trigger_resume_wifi">Fortsetzen nach WLAN-Unterbruch (%1$s)</string>
     <string name="trigger_retry">Erneute Prüfung (PC war nicht erreichbar)</string>
     <string name="trigger_poll">Ordner-Prüfung (Intervall)</string>
-    <string name="trigger_safety">Sicherheitsnetz (%1$s h ohne Sync)</string>
+    <string name="trigger_safety">Sicherheitsnetz (%1$s h ohne Synchronisierung)</string>
     <string name="trigger_followup">Nachholen (Mindestalter)</string>
     <string name="trigger_new_media">Neue Fotos/Videos</string>
     <string name="trigger_pause_end">Pause beendet</string>
@@ -21,13 +21,13 @@
     <string name="stop_timeout">Zeitlimit von Android</string>
     <string name="stop_system">vom System gestoppt (%1$s)</string>
     <string name="stop_android">von Android gestoppt (%1$s)</string>
-    <string name="skip_manual_only">Automatische Syncs ausgeschaltet (nur manuell)</string>
+    <string name="skip_manual_only">Automatische Synchronisierungen ausgeschaltet (nur manuell)</string>
     <string name="skip_paused_until">Pausiert bis %1$s</string>
     <string name="skip_ssid_unreadable">WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen</string>
     <string name="skip_ssid_unknown">WLAN „%1$s“ ist in keinem Profil eingetragen</string>
     <string name="skip_pc_unreachable">PC nicht erreichbar: %1$s</string>
     <string name="wait_for_pc">Warte auf PC (%1$s) – Versuch %2$s/%3$s…</string>
-    <string name="summary_failed">Sync fehlgeschlagen – %1$s</string>
+    <string name="summary_failed">Synchronisierung fehlgeschlagen – %1$s</string>
     <plurals name="summary_transferred">
         <item quantity="one">%1$s Datei übertragen (%2$s)</item>
         <item quantity="other">%1$s Dateien übertragen (%2$s)</item>
@@ -72,7 +72,7 @@
         <item quantity="other">In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Dateien). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil.</item>
     </plurals>
     <string name="guard_text_mass">In „%1$s“ würden %2$s von %3$s Dateien in den Papierkorb verschoben. Wurde wirklich so viel gelöscht? Bis du entscheidest, ruht dieses Profil.</string>
-    <string name="guard_text_check">Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Sync-Stand. Bis du entscheidest, ruht dieses Profil.</string>
+    <string name="guard_text_check">Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Synchronisierungsstand. Bis du entscheidest, ruht dieses Profil.</string>
 
     <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
     <string name="delete_log_done">Gelöscht: %1$s</string>
@@ -90,7 +90,7 @@
     <string name="smb_err_not_disk">„%1$s“ ist keine Datei-Freigabe</string>
     <string name="smb_err_incomplete">Upload unvollständig: %1$s von %2$s Bytes</string>
     <string name="smb_err_resume">Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen</string>
-    <string name="smb_test_missing_folder">Verbunden, aber Ordner „%1$s“ existiert nicht (wird beim ersten Sync angelegt).</string>
+    <string name="smb_test_missing_folder">Verbunden, aber Ordner „%1$s“ existiert nicht (wird bei der ersten Synchronisierung angelegt).</string>
     <plurals name="smb_test_ok">
         <item quantity="one">Verbindung OK – %1$s (%2$s Eintrag)</item>
         <item quantity="other">Verbindung OK – %1$s (%2$s Einträge)</item>
@@ -116,8 +116,8 @@
     <string name="tree_err_changed">Datei wurde während des Laufs geändert</string>
     <string name="tree_err_create">Datei „%1$s“ konnte nicht angelegt werden</string>
 
-    <!-- Ordner-Sync (MirrorEngine) -->
-    <string name="eng_start_mirror">Start (%1$s) – Ordner-Sync „%2$s“ (%3$s)</string>
+    <!-- Ordner-Synchronisierung (MirrorEngine) -->
+    <string name="eng_start_mirror">Start (%1$s) – Ordner-Synchronisierung „%2$s“ (%3$s)</string>
     <string name="eng_reading_folders">Lese Ordner…</string>
     <string name="eng_local_missing">Handy-Ordner nicht gefunden – bitte im Profil neu auswählen</string>
     <string name="eng_offline_preview">Offline-Vorschau (Freigabe nicht erreichbar): %1$s</string>
@@ -133,8 +133,8 @@
     <string name="eng_interrupted_log">Unterbrochen (%1$s) – wird automatisch fortgesetzt</string>
     <string name="eng_interrupted_mirror">Unterbrochen (%1$s) – ↑ %2$s / ↓ %3$s übertragen, Rest folgt automatisch</string>
     <string name="eng_paused_log">Pausiert (von dir) – läuft beim nächsten automatischen Start weiter</string>
-    <string name="eng_connection_log_mirror">Verbindung unterbrochen (%1$s) – wird beim nächsten Sync fortgesetzt</string>
-    <string name="eng_connection_mirror">Verbindung unterbrochen – ↑ %1$s / ↓ %2$s übertragen, Rest folgt beim nächsten Sync</string>
+    <string name="eng_connection_log_mirror">Verbindung unterbrochen (%1$s) – wird bei der nächsten Synchronisierung fortgesetzt</string>
+    <string name="eng_connection_mirror">Verbindung unterbrochen – ↑ %1$s / ↓ %2$s übertragen, Rest folgt bei der nächsten Synchronisierung</string>
     <string name="eng_run_failed">Lauf fehlgeschlagen: %1$s</string>
     <string name="eng_waiting_decision">Wartet auf deine Entscheidung: %1$s</string>
     <string name="eng_trash_local">🗑 Handy: %1$s (auf dem PC gelöscht)</string>
@@ -160,11 +160,11 @@
     <string name="eng_restore_gone">↺ %1$s: Version im Papierkorb nicht mehr vorhanden – übersprungen</string>
     <string name="eng_err_restored_missing">Wiederhergestellte Datei nicht gefunden</string>
     <string name="eng_restored">↺ %1$s wiederhergestellt (Version vom %2$s)</string>
-    <string name="eng_restore_failed_rolled_back">✗ Wiederherstellen %1$s: %2$s – zurückgerollt, wird beim nächsten Sync erneut versucht</string>
+    <string name="eng_restore_failed_rolled_back">✗ Wiederherstellen %1$s: %2$s – zurückgerollt, wird bei der nächsten Synchronisierung erneut versucht</string>
     <string name="eng_restore_failed_partial">✗ Wiederherstellen %1$s: %2$s – nicht vollständig zurückgerollt, siehe Papierkorb</string>
     <string name="eng_purged_pc">🗑 PC-Papierkorb geleert (vorgemerkt): %1$s Tagesordner, %2$s einzelne Dateien endgültig gelöscht</string>
     <string name="eng_purge_pc_failed">✗ PC-Papierkorb leeren: %1$s</string>
-    <string name="eng_changed_during_run">⏭ %1$s: wurde während des Laufs %2$s geändert – folgt beim nächsten Sync</string>
+    <string name="eng_changed_during_run">⏭ %1$s: wurde während des Laufs %2$s geändert – folgt bei der nächsten Synchronisierung</string>
     <string name="eng_syncing">Synchronisiere…</string>
     <string name="eng_purge_local_failed">Papierkorb auf dem Handy nicht geleert: %1$s</string>
     <string name="eng_purge_remote_failed">Papierkorb auf dem PC nicht geleert: %1$s</string>
@@ -215,8 +215,8 @@
     </plurals>
     <string name="eng_interrupted_photos">Unterbrochen (%1$s) – %2$s übertragen, Rest folgt automatisch</string>
     <string name="eng_paused_photos">Pausiert (von dir) – %1$s übertragen, Rest beim nächsten automatischen Start</string>
-    <string name="eng_connection_log_photos">Verbindung unterbrochen (%1$s) – offene Dateien werden beim nächsten Sync übertragen</string>
-    <string name="eng_connection_photos">Verbindung unterbrochen – %1$s übertragen, Rest folgt beim nächsten Sync</string>
+    <string name="eng_connection_log_photos">Verbindung unterbrochen (%1$s) – offene Dateien werden bei der nächsten Synchronisierung übertragen</string>
+    <string name="eng_connection_photos">Verbindung unterbrochen – %1$s übertragen, Rest folgt bei der nächsten Synchronisierung</string>
     <string name="eng_transferring">Übertrage…</string>
     <string name="eng_err_unreadable">Datei nicht lesbar: %1$s</string>
     <string name="eng_err_verify">Prüfung nach Upload fehlgeschlagen – Datei wird beim nächsten Lauf erneut übertragen</string>

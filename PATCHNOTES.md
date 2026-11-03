@@ -2,6 +2,14 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.9.3 (2026-11-04)
+
+### Behoben
+- **Statuskachel:** Bild, WLAN-Zeile und Knopf stehen jetzt in jedem Zustand an derselben Stelle. Die Zeile für „✓ Alles gesichert und aktuell“ samt Abstand ist immer reserviert, der Bereich darunter hat eine feste Mindesthöhe. Grösser wird die Kachel nur noch bei langen Fehlermeldungen.
+
+### Geändert
+- **„Sync“ ausgeschrieben:** In allen deutschen Texten steht jetzt „Synchronisierung“ bzw. „Synchronisieren“ (z. B. „Letzte Synchronisierung“, „Synchronisierungsstatus zurücksetzen“). Der App-Name LeoSync bleibt.
+
 ## 0.9.2 (2026-11-03)
 
 ### Behoben

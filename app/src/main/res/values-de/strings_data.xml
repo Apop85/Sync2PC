@@ -19,7 +19,7 @@
     <string name="wizard_step_name">Profilname</string>
     <string name="wizard_step_source">Quelle</string>
     <string name="wizard_step_target">Ziel</string>
-    <string name="wizard_step_options">Sync-Optionen</string>
+    <string name="wizard_step_options">Synchronisierungsoptionen</string>
     <string name="wizard_step_filter">Filter</string>
     <string name="wizard_step_guard">Schutzbremse</string>
     <string name="wizard_missing_name">Bitte gib dem Profil einen Namen.</string>

@@ -12,7 +12,7 @@
     <!-- Startseite (HomeScreen) -->
     <string name="home_wait_wifi">Wartet auf das Heim-WLAN.</string>
     <string name="home_wait_charger">Wartet auf das Ladegerät („Nur beim Laden“ ist eingeschaltet).</string>
-    <string name="home_starting">Sync startet gleich…</string>
+    <string name="home_starting">Synchronisierung startet gleich…</string>
     <string name="home_tool_trash_text">Dateien zurückholen oder endgültig löschen</string>
     <string name="home_tool_trash_used">Belegt: Handy %1$s · PC %2$s</string>
     <string name="home_guard_note_all">Wartet auf deine Entscheidung (Schutzbremse) – erst danach geht es weiter.</string>
@@ -27,7 +27,7 @@
     <string name="home_update_title">Update verfügbar</string>
     <string name="home_update_text">Version %1$s ist verfügbar (installiert: %2$s).</string>
     <string name="home_update_button">Ansehen</string>
-    <string name="home_conflicts_title">Konflikte beim Ordner-Sync</string>
+    <string name="home_conflicts_title">Konflikte bei der Ordner-Synchronisierung</string>
     <plurals name="home_conflicts_text">
         <item quantity="one">%1$s Datei wurde auf Handy und PC geändert. Wähle, welche Version gilt.</item>
         <item quantity="other">%1$s Dateien wurden auf Handy und PC geändert. Wähle, welche Version gilt.</item>
@@ -61,23 +61,23 @@
     <string name="home_tool_trash_hint">Den Papierkorb gibt es nur bei Ordner-Profilen.</string>
     <string name="home_tools">Tools</string>
     <string name="home_purge_pending_title">Papierkorb leeren vorgemerkt</string>
-    <string name="home_purge_pending_text">Der PC-Papierkorb wird beim nächsten Sync mit erreichbarem PC geleert.</string>
+    <string name="home_purge_pending_text">Der PC-Papierkorb wird bei der nächsten Synchronisierung mit erreichbarem PC geleert.</string>
     <string name="home_restore_failed_title">Wiederherstellen fehlgeschlagen</string>
     <plurals name="home_restore_failed_text">
-        <item quantity="one">%1$s Datei konnte nicht wiederhergestellt werden. Es wurde alles zurückgerollt; der nächste Sync versucht es erneut. Details stehen im Verlauf.</item>
-        <item quantity="other">%1$s Dateien konnten nicht wiederhergestellt werden. Es wurde alles zurückgerollt; der nächste Sync versucht es erneut. Details stehen im Verlauf.</item>
+        <item quantity="one">%1$s Datei konnte nicht wiederhergestellt werden. Es wurde alles zurückgerollt; die nächste Synchronisierung versucht es erneut. Details stehen im Verlauf.</item>
+        <item quantity="other">%1$s Dateien konnten nicht wiederhergestellt werden. Es wurde alles zurückgerollt; die nächste Synchronisierung versucht es erneut. Details stehen im Verlauf.</item>
     </plurals>
     <string name="home_retry">Erneut versuchen</string>
     <string name="home_discard">Verwerfen</string>
     <string name="home_restore_pending_title">Wiederherstellung vorgemerkt</string>
     <plurals name="home_restore_pending_text">
-        <item quantity="one">%1$s Datei wird beim nächsten Sync mit erreichbarem PC wiederhergestellt.</item>
-        <item quantity="other">%1$s Dateien werden beim nächsten Sync mit erreichbarem PC wiederhergestellt.</item>
+        <item quantity="one">%1$s Datei wird bei der nächsten Synchronisierung mit erreichbarem PC wiederhergestellt.</item>
+        <item quantity="other">%1$s Dateien werden bei der nächsten Synchronisierung mit erreichbarem PC wiederhergestellt.</item>
     </plurals>
     <string name="home_version">Version %1$s</string>
     <string name="home_tomorrow">morgen %1$s</string>
     <string name="home_pause_title">Wie lange pausieren?</string>
-    <string name="home_pause_hint">Ein laufender Sync wird angehalten. Bis zum Ende der Pause startet nichts automatisch.</string>
+    <string name="home_pause_hint">Eine laufende Synchronisierung wird angehalten. Bis zum Ende der Pause startet nichts automatisch.</string>
     <string name="home_pause_hours">Eigene Anzahl Stunden (1–168)</string>
     <string name="home_pause_forever">Für immer (nur manuell)</string>
     <string name="home_pause_forever_hint">Schaltet die Automatik ganz ab: Synchronisiert wird nur noch mit „Synchronisieren“, bis du sie über ▶ oben rechts wieder einschaltest.</string>
@@ -88,16 +88,16 @@
     <string name="home_wifi_none">nicht verbunden / nicht lesbar</string>
     <string name="home_progress">%1$s: %2$s / %3$s Dateien – %4$s von %5$s</string>
     <string name="home_running">Synchronisierung läuft…</string>
-    <string name="home_manual_only">⏸ Automatik aus – nur manuelle Syncs</string>
+    <string name="home_manual_only">⏸ Automatik aus – nur manuelle Synchronisierungen</string>
     <string name="home_manual_only_hint">Es wird nur synchronisiert, wenn du „Synchronisieren“ tippst. ▶ oben rechts schaltet die Automatik wieder ein.</string>
-    <string name="home_last_sync">Letzter Sync: %1$s (%2$s)</string>
+    <string name="home_last_sync">Letzte Synchronisierung: %1$s (%2$s)</string>
     <string name="home_paused_until">⏸ Pausiert bis %1$s</string>
-    <string name="home_paused_until_hint">Automatische Syncs ruhen bis dahin. „Fortsetzen“ oder „Synchronisieren“ beendet die Pause sofort.</string>
+    <string name="home_paused_until_hint">Automatische Synchronisierungen ruhen bis dahin. „Fortsetzen“ oder „Synchronisieren“ beendet die Pause sofort.</string>
     <string name="home_paused_wifi">⏸ Pausiert – wartet auf das Heim-WLAN</string>
-    <string name="home_paused_wifi_hint">Der Sync wurde durch einen WLAN-Unterbruch angehalten und läuft automatisch weiter, sobald das WLAN wieder verbunden ist.</string>
+    <string name="home_paused_wifi_hint">Die Synchronisierung wurde durch einen WLAN-Unterbruch angehalten und läuft automatisch weiter, sobald das WLAN wieder verbunden ist.</string>
     <string name="home_pc_unreachable_hint">Ist der PC eingeschaltet und die Freigabe aktiv? „Synchronisieren“ prüft sofort.</string>
     <string name="home_nothing_to_do">Nichts zu tun – alles aktuell</string>
-    <string name="home_no_sync_yet">Noch kein Sync durchgeführt.</string>
+    <string name="home_no_sync_yet">Noch keine Synchronisierung durchgeführt.</string>
     <string name="home_next_check">Nächste Prüfung um %1$s</string>
     <string name="home_skipped">⚠ Automatischer Start übersprungen – %1$s</string>
     <string name="home_resume">Fortsetzen</string>
@@ -110,7 +110,7 @@
     <string name="home_profile_propagate">Löschungen übernehmen</string>
     <string name="home_profile_sources">Quellen: %1$s</string>
     <string name="home_profile_none">keine</string>
-    <string name="home_profile_no_wifi">keines – nur manueller Sync</string>
+    <string name="home_profile_no_wifi">keines – nur manuelle Synchronisierung</string>
     <string name="home_profile_awaiting">Wartet auf den ersten Start – zuerst im Profil simulieren oder „Synchronisieren“ tippen</string>
 
     <!-- Schutzbremse: Knoepfe der Karte auf der Startseite -->
@@ -138,5 +138,5 @@
     <string name="perm_location_always">Standort „Immer zulassen“ (WLAN-Erkennung im Hintergrund)</string>
     <string name="perm_location_off">Standortdienst ist ausgeschaltet</string>
     <string name="perm_location_service">Standortdienst eingeschaltet</string>
-    <string name="perm_battery">Akku-Optimierung deaktivieren (zuverlässiger Hintergrund-Sync)</string>
+    <string name="perm_battery">Akku-Optimierung deaktivieren (zuverlässige Hintergrund-Synchronisierung)</string>
 </resources>

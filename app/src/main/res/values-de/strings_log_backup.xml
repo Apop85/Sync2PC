@@ -27,8 +27,8 @@
         <item quantity="other">Gesichert: %1$s Profile</item>
     </plurals>
     <plurals name="backup_exported_sync">
-        <item quantity="one">%1$s Datei Sync-Status</item>
-        <item quantity="other">%1$s Dateien Sync-Status</item>
+        <item quantity="one">%1$s Datei Synchronisierungsstatus</item>
+        <item quantity="other">%1$s Dateien Synchronisierungsstatus</item>
     </plurals>
     <string name="backup_passwords_encrypted">Passwörter verschlüsselt</string>
     <string name="backup_without_passwords">ohne Passwörter</string>
@@ -41,8 +41,8 @@
         <item quantity="other">%1$s Profile importiert</item>
     </plurals>
     <plurals name="backup_imported_sync">
-        <item quantity="one">Sync-Status für %1$s Datei</item>
-        <item quantity="other">Sync-Status für %1$s Dateien</item>
+        <item quantity="one">Synchronisierungsstatus für %1$s Datei</item>
+        <item quantity="other">Synchronisierungsstatus für %1$s Dateien</item>
     </plurals>
     <string name="backup_skipped_identical">Übersprungen, weil schon vorhanden (gleiches Ziel und gleiche Quellen): %1$s</string>
     <string name="backup_overlapping">Hinweis: Überschneidet sich mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner): %1$s</string>
@@ -50,11 +50,11 @@
     <string name="backup_need_folder">Handy-Ordner neu wählen bei: %1$s (Android überträgt die Ordner-Freigabe nicht).</string>
     <string name="backup_import_failed">Import fehlgeschlagen: %1$s</string>
     <string name="backup_title">Sicherung</string>
-    <string name="backup_hint">Sichert Profile, Einstellungen, Ordner-Zuordnungen und auf Wunsch den Sync-Status in eine Datei – z. B. vor einem Handywechsel oder einer Neuinstallation.</string>
+    <string name="backup_hint">Sichert Profile, Einstellungen, Ordner-Zuordnungen und auf Wunsch den Synchronisierungsstatus in eine Datei – z. B. vor einem Handywechsel oder einer Neuinstallation.</string>
     <string name="backup_export">Exportieren…</string>
     <string name="backup_import">Importieren…</string>
     <string name="backup_export_title">Sicherung exportieren</string>
-    <string name="backup_include_sync">Sync-Status mitsichern</string>
+    <string name="backup_include_sync">Synchronisierungsstatus mitsichern</string>
     <string name="backup_include_sync_sub">Nach dem Import ist sofort bekannt, welche Dateien schon auf dem PC sind.</string>
     <string name="backup_password_optional">Export-Passwort (optional)</string>
     <string name="backup_password_repeat">Export-Passwort wiederholen</string>
@@ -68,13 +68,13 @@
     <string name="backup_created">Erstellt: %1$s (LeoSync %2$s)</string>
     <string name="backup_profiles">Profile: %1$s</string>
     <plurals name="backup_sync_status">
-        <item quantity="one">Sync-Status: %1$s Datei</item>
-        <item quantity="other">Sync-Status: %1$s Dateien</item>
+        <item quantity="one">Synchronisierungsstatus: %1$s Datei</item>
+        <item quantity="other">Synchronisierungsstatus: %1$s Dateien</item>
     </plurals>
     <string name="backup_pw_taken">SMB-Passwörter: werden übernommen</string>
     <string name="backup_pw_wrong">SMB-Passwörter: Export-Passwort fehlt oder ist falsch – Passwörter werden nicht übernommen</string>
     <string name="backup_pw_none">SMB-Passwörter: nicht enthalten</string>
-    <string name="backup_replace_hint">„Ersetzen“ löscht alle bisherigen Profile samt Sync-Status und übernimmt auch die Einstellungen. „Hinzufügen“ legt die Profile zusätzlich an.</string>
+    <string name="backup_replace_hint">„Ersetzen“ löscht alle bisherigen Profile samt Synchronisierungsstatus und übernimmt auch die Einstellungen. „Hinzufügen“ legt die Profile zusätzlich an.</string>
     <string name="backup_replace">Ersetzen</string>
     <string name="backup_import_done">Import abgeschlossen</string>
 </resources>

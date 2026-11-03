@@ -24,7 +24,7 @@
         <item quantity="other">%1$s Dateien wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.</item>
     </plurals>
     <string name="notif_guard_title">LeoSync wartet auf dich</string>
-    <string name="notif_guard_text">Der Ordner-Sync „%1$s“ wurde zur Sicherheit angehalten. Tippen, um zu entscheiden.</string>
+    <string name="notif_guard_text">Die Ordner-Synchronisierung „%1$s“ wurde zur Sicherheit angehalten. Tippen, um zu entscheiden.</string>
     <plurals name="notif_stale_title">
         <item quantity="one">Seit %1$s Tag nicht gesichert</item>
         <item quantity="other">Seit %1$s Tagen nicht gesichert</item>

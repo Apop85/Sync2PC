@@ -20,13 +20,13 @@
     <string name="conflict_title">Konflikte</string>
     <string name="conflict_all_newer">Alle: neuere</string>
     <string name="conflict_none">Keine offenen Konflikte.</string>
-    <string name="conflict_hint">Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. Die andere Version wird in den Ordner „%1$s“ verschoben, nicht gelöscht. Die Auswahl wird beim nächsten Sync im WLAN angewendet.</string>
+    <string name="conflict_hint">Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. Die andere Version wird in den Ordner „%1$s“ verschoben, nicht gelöscht. Die Auswahl wird bei der nächsten Synchronisierung im WLAN angewendet.</string>
     <string name="conflict_newer">(neuer)</string>
     <string name="conflict_both">Beide</string>
 
     <!-- Simulation (PreviewScreen) -->
     <string name="preview_starting">Starte…</string>
-    <string name="preview_hint">Zeigt, was beim Synchronisieren passieren würde (Bildordner: Zielordner; Ordner-Sync: Aktion je Datei). Es wird nichts kopiert, angelegt oder gelöscht.</string>
+    <string name="preview_hint">Zeigt, was beim Synchronisieren passieren würde (Bildordner: Zielordner; Ordner-Synchronisierung: Aktion je Datei). Es wird nichts kopiert, angelegt oder gelöscht.</string>
     <string name="preview_only_first">Nur die ersten</string>
     <string name="preview_files">Dateien</string>
     <string name="preview_all_files">Alle Dateien</string>
@@ -81,6 +81,6 @@
     <string name="update_install_hint">Android fragt zur Bestätigung. Nach dem Update startet LeoSync neu.</string>
 
     <!-- Datenbank (SyncDao) -->
-    <string name="run_dangling_log">Unterbrochen – die App wurde beendet (z. B. durch ein Update). Der Rest folgt beim nächsten Sync.</string>
-    <string name="run_dangling">Unterbrochen – App wurde beendet (z. B. Update), Rest folgt beim nächsten Sync</string>
+    <string name="run_dangling_log">Unterbrochen – die App wurde beendet (z. B. durch ein Update). Der Rest folgt bei der nächsten Synchronisierung.</string>
+    <string name="run_dangling">Unterbrochen – App wurde beendet (z. B. Update), Rest folgt bei der nächsten Synchronisierung</string>
 </resources>
