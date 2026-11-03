@@ -157,6 +157,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
         "FAILED" -> "Fehler" to MaterialTheme.colorScheme.error
         "CANCELLED" -> "Pausiert" to MaterialTheme.colorScheme.onSurfaceVariant
         "INTERRUPTED" -> "Unterbrochen" to MaterialTheme.colorScheme.onSurfaceVariant
+        "WAITING" -> "Wartet auf dich" to MaterialTheme.colorScheme.tertiary
         else -> "Läuft" to MaterialTheme.colorScheme.tertiary
     }
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {

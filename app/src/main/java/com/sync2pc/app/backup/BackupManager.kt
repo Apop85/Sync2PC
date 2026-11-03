@@ -84,6 +84,9 @@ object BackupManager {
                 for (old in dao.profiles()) {
                     dao.clearSynced(old.id); dao.clearMappings(old.id); dao.clearDecisions(old.id)
                     dao.clearMirrorState(old.id); dao.clearConflicts(old.id); dao.deleteProfileRow(old.id)
+                    dao.clearRestores(old.id)
+                    com.sync2pc.app.mirror.GuardStore(context).forget(old.id)
+                    GlobalSettings(context).setAwaitingFirstStart(old.id, false)
                 }
             }
             // Bestehende (bei "Ersetzen" keine) + bereits importierte Profile -> doppelte erkennen
@@ -103,12 +106,19 @@ object BackupManager {
                 if (p.type() == ProfileType.MIRROR &&
                     (p.localTreeUri.isBlank() || !LocalTree.hasPermission(context, Uri.parse(p.localTreeUri)))
                 ) needFolder += p.name
+                // Ordner-Profile (0.4.1) starten wie neue Profile erst nach dem ersten Start von Hand: Der importierte
+                // Sync-Stand passt evtl. nicht zum Ordner auf diesem Handy (die Schutzbremse prüft zusätzlich)
+                if (p.type() == ProfileType.MIRROR) GlobalSettings(context).setAwaitingFirstStart(newId, true)
                 dao.upsertMappings(c.mappings.filter { it.profileId == p.id }.map { it.copy(profileId = newId) })
                 val files = c.synced.filter { it.profileId == p.id }.map { it.copy(profileId = newId) }
                 files.chunked(500).forEach { dao.upsertSyncedAll(it) }
                 synced += files.size
-                c.mirrorStates.filter { it.profileId == p.id }.map { it.copy(profileId = newId) }
-                    .chunked(500).forEach { dao.upsertMirrorStates(it) }
+                val states = c.mirrorStates.filter { it.profileId == p.id }.map { it.copy(profileId = newId) }
+                states.chunked(500).forEach { dao.upsertMirrorStates(it) }
+                // Mit Sync-Stand importiert: Stichprobe beim ersten Lauf, ob die Ordner auf diesem Gerät passen
+                if (states.isNotEmpty()) com.sync2pc.app.mirror.GuardStore(context).setPendingCheck(
+                    newId, setOf(com.sync2pc.app.mirror.Side.LOCAL, com.sync2pc.app.mirror.Side.REMOTE)
+                )
             }
         }
         if (replace) GlobalSettings(context).importFrom(c.settings)

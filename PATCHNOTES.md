@@ -2,6 +2,56 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.5.0 (2026-11-03)
+
+### Neu
+- **Alte Versionen behalten (Ordner-Profile):** Wird eine Datei auf Handy oder PC überschrieben, kommt die alte Version in den Ordner „.LeoSync-Papierkorb“, statt verloren zu gehen. Schalter „Alte Versionen im Papierkorb behalten“ im Profil, Standard an. Gelöscht wird erst nach der Papierkorb-Frist.
+- **Papierkorb & alte Versionen:** Gelöschte Dateien und ältere Versionen zurückholen – einzeln, einen ganzen Ordner oder alles von einem bestimmten Tag. Zuerst wählst du das Profil (bei nur einem öffnet es direkt). Beim Wiederherstellen kommt die aktuelle Version zuerst in den Papierkorb, die gewählte Version wird auf Handy und PC zurückgeschrieben. Ist der PC nicht erreichbar, wird die Wiederherstellung vorgemerkt und beim nächsten Sync mit PC ausgeführt.
+- **Startseite – Tools:** Unter den Profilen gibt es neu Kacheln für „Speicher freigeben“ und „Wiederherstellen“.
+- **Profil-Assistent:** Neue Profile werden Schritt für Schritt eingerichtet: Profilname → Quelle → Ziel → Sync-Optionen → Filter (optional) → Schutzbremse (optional, nur Ordner). Jeder Schritt erklärt, was man dort einstellt. Ab den optionalen Schritten lässt sich direkt speichern.
+
+### Geändert
+- **Profil bearbeiten:** Die Karten stehen in derselben Reihenfolge wie die Schritte des Assistenten. Die Erklärungen sind präziser, z. B. beim WLAN: Ohne WLAN-Namen synchronisiert ein Profil nur von Hand (praktisch für VPN).
+
+### Technik
+- Datenbank-Version 5 (Versionsschutz, vorgemerkte Wiederherstellungen). Die Umstellung passiert beim ersten Start automatisch.
+
+## 0.4.2 (2026-11-03)
+
+### Neu
+- **Schutzbremse einstellbar:** Im Ordner-Profil gibt es ganz unten „Schutzbremse (optional)“. Dort legst du fest, ab wie viel Prozent gelöschter Dateien LeoSync nachfragt (Standard 20 %).
+- **Ganzer Unterordner verschwunden:** Würde ein ganzer Unterordner mit mehr als 5 Dateien in den Papierkorb kommen (z. B. „Steuern 2024“), fragt LeoSync nach, auch wenn das nur ein kleiner Teil des ganzen Profils ist.
+- **Ab 100 Löschungen immer nachfragen:** Unabhängig von der Prozent-Grenze hält der Sync an, wenn auf einmal 100 oder mehr Dateien in den Papierkorb kämen.
+
+### Geändert
+- **Schutzbremse bei kleinen Ordnern:** Hat ein Ordner-Profil höchstens 5 synchronisierte Dateien, fragt LeoSync nur noch nach, wenn **alle** Dateien gelöscht würden. Einzelne Löschungen laufen ohne Rückfrage durch.
+
+### Technik
+- Datenbank-Version 4 (neue Profil-Einstellung). Die Umstellung passiert beim ersten Start automatisch, Profile und Verlauf bleiben erhalten.
+- Build: Die beiden Übersetzungsschritte für das Datenbank-Schema (Debug und Release) laufen nacheinander. Gleichzeitig konnte einer eine halb geschriebene Schema-Datei lesen und abbrechen.
+
+## 0.4.1 (2026-11-03)
+
+### Sicherheit: Schutz vor Datenverlust beim Ordner-Sync
+- **Schutzbremse:** Fehlt der PC-Ordner oder der Handy-Ordner eines Profils, das schon synchronisiert hat (z. B. umbenannt oder verschoben), hält der Sync an, statt alles als „gelöscht“ anzusehen. Ein leerer PC-Ordner wird nicht mehr neu angelegt. Auf der Startseite wählst du: **Neuen Ordner wählen**, **Erneut prüfen** oder **Neu anlegen und abgleichen** (ohne Löschen).
+- **Viele Löschungen:** Würden mehr als 20 % der synchronisierten Dateien in den Papierkorb kommen, hält der Sync vor dem Löschen an. Du wählst **Nicht löschen** (Dateien bleiben bzw. werden wiederhergestellt) oder **Trotzdem in den Papierkorb**.
+- **Ordnerwechsel:** Änderst du im Profil den Handy- oder PC-Ordner, prüft LeoSync stichprobenartig, ob der neue Ordner zum bisherigen Stand passt. Passt er nicht, fragt es: „Ist das wirklich der richtige Ordner?“ mit **Anderen Ordner wählen**, **Trotzdem übernehmen**, **Als neuen Ordner behandeln** oder **Abbrechen**. Ist der PC gerade nicht erreichbar, prüft der nächste Sync.
+- Ein Profil, das auf dich wartet, ruht. Alle anderen Profile laufen normal weiter. Es gibt einen Hinweis, und im Verlauf steht „Wartet auf dich“.
+- **Import:** Importierte Ordner-Profile starten erst, wenn du sie einmal von Hand synchronisierst. Mit Sync-Status importierte Ordner werden beim ersten Lauf zusätzlich stichprobenartig geprüft.
+- **Ersetzen sicherer:**
+  - Scheitert eine Übertragung, nachdem die alte Version in den Papierkorb kam, überträgt der nächste Sync neu, statt die andere Seite zu löschen.
+  - Wird eine Datei während eines Laufs geändert, überschreibt LeoSync sie nicht mehr; der nächste Sync entscheidet.
+  - Auf dem Handy wird die alte Version erst gelöscht, wenn die neue fertig an ihrem Platz ist (Zwischenname `.s2pold`). Bricht die App mittendrin ab, räumt der nächste Sync auf.
+- **Genauerer Vergleich:** Beim ersten Abgleich und bei auf beiden Seiten geänderten Dateien vergleicht LeoSync Dateien bis 32 MB vollständig, grössere an 32 Stellen statt an 3.
+- **Doppelte Ordner-Profile:** Warnung, wenn ein Ordner-Profil denselben oder einen verschachtelten PC- bzw. Handy-Ordner wie ein anderes Profil nutzt.
+
+### Sicherheit: Fotos und „Speicher freigeben“
+- **Fortgesetzte Uploads** (alle Profile): Eine angefangene Datei auf dem PC wird nur weitergeschrieben, wenn sie zur aktuellen Datei passt, und vor dem Fertigstellen immer geprüft. Sonst beginnt der Upload neu.
+- **Speicher freigeben:** Wurde ein Foto auf dem PC in einen anderen Monatsordner verschoben, genügen Name und Grösse nicht mehr – zusätzlich muss der Inhalt (Teil-Hash) übereinstimmen.
+
+### Neu
+- **Neues Zustandsbild:** Ein stehender Hund zeigt an, dass LeoSync auf eine Entscheidung von dir wartet (Schutzbremse, Ordnerauswahl, Konflikte, Dateien entfernen).
+
 ## 0.4.0 (2026-11-02)
 
 ### Neu

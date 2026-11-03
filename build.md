@@ -80,7 +80,7 @@ Vor jedem GitHub-Release:
 7. *Einstellungen → Diagnose → Diagnosedaten kopieren* und *Verlauf → Teilen* funktionieren.
 8. *Einstellungen → Diagnose → Sicherung*: Export mit und ohne Export-Passwort. Import mit „Hinzufügen“ ergibt doppelte Profile, die danach gelöscht werden.
 9. *Speicher freigeben* mit grosser Monatszahl (z. B. 120) und kleiner Auswahl: Die Prüfung auf dem PC läuft, der Android-Dialog erscheint, und im Papierkorb der Galerie sind die Dateien wiederherstellbar.
-10. Ordner-Sync (siehe „Test Ordner-Sync“ unten), wenn sich daran etwas geändert hat.
+10. Ordner-Sync (siehe „Test Ordner-Sync“ und „Test Schutzbremse“ unten), wenn sich daran etwas geändert hat.
 11. `PATCHNOTES.md` ist ergänzt. Release `v<version>` mit der APK anlegen (siehe unten).
 12. Nach dem Release: Das Selbst-Update auf einem Gerät mit der Vorversion prüfen.
 
@@ -99,6 +99,32 @@ Auf dem Handy:
 6. **Rückweg:** Auf dem Handy eine Datei ändern oder neu anlegen → nächster Sync lädt sie hoch („↑ …“).
 7. Es gibt auf dem Handy keine doppelten Ordner wie „Ordner (1)“.
 8. Zum Schluss das Test-Profil löschen. Die Dateien auf PC und Handy bleiben erhalten und können von Hand entfernt werden.
+
+### Test Schutzbremse (seit 0.4.1)
+
+Mit dem Test-Profil von oben, **Löschungen übernehmen** eingeschaltet, nach einem erfolgreichen Sync:
+1. **PC-Ordner umbenannt:** `_Test-Ordnersync` auf dem PC umbenennen → *Synchronisieren*. Auf der Startseite erscheint „PC-Ordner nicht gefunden“ mit dem stehenden Hund, auf dem Handy wird **nichts** gelöscht, auf dem PC kein leerer Ordner angelegt. Ordner zurückbenennen → *Erneut prüfen* → der Sync läuft normal.
+2. **Neuer Ordner gewählt:** Im Profil einen anderen, ungleichen PC-Unterordner wählen und speichern → „Ist das wirklich der richtige Ordner?“. *Abbrechen* lässt alles, wie es war.
+3. **Viele Löschungen:** Auf dem PC mehr als 20 % der Testdateien löschen → *Synchronisieren* → „Viele Dateien würden gelöscht“. *Nicht löschen* → die Dateien kommen wieder auf den PC. Nochmals löschen, *Trotzdem in den Papierkorb* → sie landen auf dem Handy in `.LeoSync-Papierkorb`.
+4. Im Verlauf steht bei den angehaltenen Läufen „Wartet auf dich“. Andere Profile laufen in der Zeit normal weiter.
+5. **Ganzer Unterordner (seit 0.4.2):** Auf dem PC einen Unterordner mit mehr als 5 Dateien löschen (aber weniger als 20 % aller Dateien) → „Viele Dateien würden gelöscht“ nennt den Ordner.
+6. **Grenze im Profil:** „Schutzbremse (optional)“ z. B. auf 50 % stellen → 30 % Löschungen laufen ohne Rückfrage durch.
+7. **Update 0.4.1 → 0.4.2** über die bestehende App installieren (DB-Version 3 → 4): Profile, Verlauf und Sync-Stand sind noch da, die Schutzbremse steht auf 20 %.
+
+### Test Versionsschutz und Wiederherstellen (seit 0.5.0)
+
+1. **Update 0.4.2 → 0.5.0** über die bestehende App (DB-Version 4 → 5): Profile und Verlauf sind noch da, im Ordner-Profil ist „Alte Versionen im Papierkorb behalten“ eingeschaltet.
+2. Im Test-Ordner auf dem PC eine Textdatei ändern → *Synchronisieren*. Auf dem Handy liegt die alte Version in `.LeoSync-Papierkorb/<heute>/…`. Umgekehrt (auf dem Handy ändern) landet die alte Version im PC-Papierkorb.
+3. Startseite → Tools → **Wiederherstellen**. Bei mehreren Ordner-Profilen zuerst das Profil wählen. Die Datei erscheint mit „ältere Version“, eine gelöschte mit „gelöscht“.
+4. Eine Version wählen → *Wiederherstellen* → der Sync läuft. Danach ist die alte Version auf Handy **und** PC, die bisherige liegt im Papierkorb.
+5. „Alles vom … auswählen“ und „Ganzer Ordner“ ausprobieren: pro Datei wird nur eine Version gewählt.
+6. **PC aus:** PC ausschalten, eine Wiederherstellung auslösen → Startseite zeigt „Wiederherstellung vorgemerkt“. PC einschalten → nächster Sync führt sie aus.
+
+### Test Profil-Assistent (seit 0.5.0)
+
+1. *Profil hinzufügen* → Typ wählen → Schritt 1–4 erscheinen einzeln mit Fortschrittsbalken. „Weiter“ ohne Pflichtangabe (Name, Ordner, Freigabe-Pfad) zeigt einen roten Hinweis.
+2. Ab „Filter“ gibt es „Speichern“ direkt; die Zurück-Geste geht einen Schritt zurück.
+3. Nach dem Speichern erscheint „Wie weiter?“. *Profil bearbeiten* zeigt alle Karten auf einer Seite in derselben Reihenfolge.
 
 ## Manuell bauen (ohne Builder)
 

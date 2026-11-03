@@ -10,10 +10,17 @@ package com.sync2pc.app.data
 object ProfileOverlap {
     enum class Kind { IDENTICAL, PARTIAL }
 
-    data class Hit(val other: Profile, val kind: Kind, val sharedFolders: List<String>) {
-        fun message(): String = when (kind) {
-            Kind.IDENTICAL -> "Profil „${other.name}“ hat bereits dasselbe Ziel und dieselben Quellen."
-            Kind.PARTIAL -> "Gleiches Ziel wie Profil „${other.name}“" +
+    data class Hit(
+        val other: Profile, val kind: Kind, val sharedFolders: List<String>,
+        /** Ordner-Profile (0.4.1): ein Ordner liegt innerhalb des Ordners des anderen Profils */
+        val nested: Boolean = false,
+    ) {
+        fun message(): String = when {
+            kind == Kind.IDENTICAL -> "Profil „${other.name}“ hat bereits dasselbe Ziel und dieselben Quellen."
+            nested -> "Ein Ordner dieses Profils liegt innerhalb eines Ordners von Profil „${other.name}“ (oder umgekehrt). " +
+                "Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, " +
+                "Konflikten oder ungewollten Löschungen führen."
+            else -> "Gleiches Ziel wie Profil „${other.name}“" +
                 (if (sharedFolders.isNotEmpty()) " und gemeinsame Quellordner: ${sharedFolders.joinToString(", ")}" else "") +
                 ". Diese Dateien würden von beiden Profilen geprüft und übertragen."
         }
@@ -34,18 +41,46 @@ object ProfileOverlap {
         if (t.isEmpty()) return null
         var partial: Hit? = null
         for (o in others) {
-            if (o.id == p.id || o.type() != p.type() || target(o) != t) continue
+            if (o.id == p.id || o.type() != p.type()) continue
             val hit = when (p.type()) {
-                ProfileType.MIRROR -> {
-                    if (p.localTreeUri.isNotBlank() && p.localTreeUri.equals(o.localTreeUri, ignoreCase = true))
-                        Hit(o, Kind.IDENTICAL, emptyList()) else null
-                }
-                ProfileType.PHOTOS -> photosHit(p, o)
+                ProfileType.MIRROR -> mirrorHit(p, o, t)
+                ProfileType.PHOTOS -> if (target(o) == t) photosHit(p, o) else null
             } ?: continue
             if (hit.kind == Kind.IDENTICAL) return hit
             if (partial == null) partial = hit
         }
         return partial
+    }
+
+    /**
+     * Ordner-Profile: gleiches Ziel + gleicher Handy-Ordner -> IDENTICAL.
+     * Ein PC-Ordner oder Handy-Ordner liegt im anderen (verschachtelt) -> PARTIAL mit Warnung (0.4.1).
+     */
+    private fun mirrorHit(p: Profile, o: Profile, t: String): Hit? {
+        val ot = target(o)
+        val lp = treePath(p.localTreeUri)
+        val lo = treePath(o.localTreeUri)
+        if (ot == t && lp != null && lp == lo) return Hit(o, Kind.IDENTICAL, emptyList())
+        // Gleicher PC-Ordner mit anderem Handy-Ordner zählt auch: beide Profile sähen die Dateien des anderen
+        val remoteNested = ot.isNotEmpty() && (ot == t || inside(t, ot, '\\') || inside(ot, t, '\\'))
+        val localNested = lp != null && lo != null && lp != lo && (inside(lp, lo, '/') || inside(lo, lp, '/'))
+        return if (remoteNested || localNested) Hit(o, Kind.PARTIAL, emptyList(), nested = true) else null
+    }
+
+    /** Liegt [child] innerhalb von [parent]? (Pfade in Kleinbuchstaben, ohne abschliessenden Trenner) */
+    private fun inside(child: String, parent: String, sep: Char): Boolean =
+        parent.isNotEmpty() && child.startsWith(parent + sep)
+
+    /**
+     * Vergleichbarer Pfad eines SAF-Baums: "content://…/tree/primary%3ADocuments%2FScans" -> "primary:documents/scans".
+     * null = kein Ordner gewählt.
+     */
+    fun treePath(uri: String): String? {
+        if (uri.isBlank()) return null
+        val raw = uri.substringAfter("/tree/", uri).substringBefore("/document/")
+        val decoded = try { java.net.URLDecoder.decode(raw.replace("+", "%2B"), "UTF-8") } catch (e: Exception) { raw }
+        val authority = uri.substringAfter("://", "").substringBefore('/')
+        return (authority + "|" + decoded.trimEnd('/')).lowercase()
     }
 
     private fun photosHit(a: Profile, b: Profile): Hit? {

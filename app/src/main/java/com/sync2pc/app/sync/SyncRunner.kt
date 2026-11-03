@@ -16,6 +16,8 @@ interface SyncRunner {
     val newConflicts: Int get() = 0
     /** Downloads wegen zu wenig Speicher übersprungen */
     val spaceShortage: Boolean get() = false
+    /** Schutzbremse (0.4.1): Lauf hat angehalten und wartet auf eine Entscheidung des Benutzers */
+    val blocked: Boolean get() = false
 
     suspend fun run(): SyncRun
 }

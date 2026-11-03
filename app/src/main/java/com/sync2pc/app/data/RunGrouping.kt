@@ -33,7 +33,8 @@ object RunGrouping {
     }
 
     /** Lauf mit Fehler (fehlgeschlagen, teilweise oder einzelne Dateien mit Fehler) */
-    fun hasError(r: SyncRun): Boolean = r.status == "FAILED" || r.status == "PARTIAL" || r.failed > 0
+    fun hasError(r: SyncRun): Boolean =
+        r.status == "FAILED" || r.status == "PARTIAL" || r.status == "WAITING" || r.failed > 0
 
     /** Lauf, der mindestens eine Datei übertragen hat (Ordner-Sync: hoch- oder heruntergeladen) */
     fun hasTransfer(r: SyncRun): Boolean = r.uploaded > 0

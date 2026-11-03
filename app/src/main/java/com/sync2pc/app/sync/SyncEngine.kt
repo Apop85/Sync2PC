@@ -583,6 +583,8 @@ class SyncEngine(
                 onProgress = { b -> sh.inflight[item.id] = b; emitShared(sh, item.displayName) },
                 checkCancel = { ctx.ensureActive() },
                 modifiedMillis = item.dateModifiedSec * 1000,
+                // Fortsetzen einer angefangenen .s2ptmp nur mit Prüfung gegen die Datei auf dem Handy (0.4.1)
+                expectedHash = { lh() },
             )
 
             // Prüfung: Grösse + Teil-Hash der Zieldatei (Pflicht, wenn gelöscht werden soll)

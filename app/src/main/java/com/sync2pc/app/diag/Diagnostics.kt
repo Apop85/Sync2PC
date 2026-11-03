@@ -133,6 +133,10 @@ object Diagnostics {
             kv("pausedUntil (Benutzer)", t(s.pausedUntil))
             kv("manualOnly (für immer pausiert)", s.manualOnly)
             kv("Profile warten auf ersten Start", s.awaitingFirstStart().joinToString(", ").ifEmpty { "-" })
+            val guards = com.sync2pc.app.mirror.GuardStore(context)
+            kv("Schutzbremse (wartet auf dich)", guards.all().joinToString(", ") {
+                "#${it.profileId} ${it.kind}" + if (it.kind == com.sync2pc.app.mirror.GuardKind.MASS_DELETE) " ${it.count}/${it.total}" else ""
+            }.ifEmpty { "-" })
             kv("staleWarn", if (s.staleWarnEnabled) "an, ${s.staleWarnDays} Tage, zuletzt ${t(s.lastStaleWarnAt)}" else "aus")
             kv("freeSpace", "${s.freeSpaceMonths} Monate, Favoriten behalten ${s.freeSpaceKeepFavorites}")
             kv("lastSkip", if (s.lastSkipAt > 0) "${t(s.lastSkipAt)} – ${s.lastSkipInfo}" else "-")
@@ -158,6 +162,8 @@ object Diagnostics {
                     kv("  Konflikte", p.conflict().name)
                     kv("  Prüfintervall", "${p.remotePollMinutes} min")
                     kv("  Papierkorb-Frist", if (p.trashRetentionDays > 0) "${p.trashRetentionDays} Tage" else "nie")
+                    kv("  Schutzbremse ab", "${p.massDeletePercent} %")
+                    kv("  Alte Versionen behalten", p.keepVersions)
                     kv("  Abgeglichene Dateien", safe { dao.mirrorStateCount(p.id) })
                 }
                 if (p.includePatterns.isNotBlank()) kv("  Whitelist", p.includePatterns.replace('\n', ' '))

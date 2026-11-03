@@ -30,7 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /** Zustandsbild auf der Startseite */
-enum class DogState { RUNNING, WAITING, SLEEPING, PAUSED }
+enum class DogState { RUNNING, WAITING, SLEEPING, PAUSED, ATTENTION }
 
 /**
  * Dauer einer Schleife wie im Video (37 Bilder bei 24 fps, siehe tools/make-anim-video.ps1).
@@ -48,6 +48,8 @@ private val SLEEPING_HEIGHT = 50.dp
 private val PAUSED_HEIGHT = 72.dp
 /** Laufender Hund: Das Bild ist quadratisch, der Hund darin ca. 86 % hoch -> etwa so hoch wie der sitzende Hund */
 private val RUNNING_HEIGHT = 112.dp
+/** Wartet auf dich (0.4.1): stehender Hund, Hochformat -> so hoch wie der Bildbereich */
+private val ATTENTION_HEIGHT = 112.dp
 /** Bildbereich: immer gleich hoch, damit die Startseite beim Zustandswechsel nicht springt */
 private val AREA_HEIGHT = RUNNING_HEIGHT
 
@@ -59,6 +61,7 @@ fun DogStatus(state: DogState, modifier: Modifier = Modifier) {
             DogState.WAITING -> Image(painterResource(R.drawable.dog_wait), "Wartet", sized(SITTING_HEIGHT))
             DogState.SLEEPING -> Image(painterResource(R.drawable.dog_idle), "Alles gesichert", sized(SLEEPING_HEIGHT))
             DogState.PAUSED -> Image(painterResource(R.drawable.dog_pause), "Pausiert", sized(PAUSED_HEIGHT))
+            DogState.ATTENTION -> Image(painterResource(R.drawable.dog_attention), "Wartet auf dich", sized(ATTENTION_HEIGHT))
         }
     }
 }

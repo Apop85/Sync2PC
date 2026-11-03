@@ -11,8 +11,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         Profile::class, SyncedFile::class, FolderMapping::class, PendingDecision::class,
         MediaInfo::class, SyncRun::class, LogEntry::class, MirrorState::class, MirrorConflict::class,
+        PendingRestore::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -25,11 +26,30 @@ abstract class AppDatabase : RoomDatabase() {
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "sync2pc.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
             }
 
         // Wichtig: Kein fallbackToDestructiveMigration() – fehlt eine Migration, soll die App
         // lieber abstürzen, als still alle Daten zu löschen.
+
+        /** 0.5.0: Versionsschutz pro Profil + vorgemerkte Wiederherstellungen */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN keepVersions INTEGER NOT NULL DEFAULT 1")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `pending_restores` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`profileId` INTEGER NOT NULL, `side` TEXT NOT NULL, `trashPath` TEXT NOT NULL, " +
+                        "`origPath` TEXT NOT NULL, `requestedAt` INTEGER NOT NULL)"
+                )
+            }
+        }
+
+        /** 0.4.2: Schutzbremse – Grenze für viele Löschungen pro Profil (Prozent) */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN massDeletePercent INTEGER NOT NULL DEFAULT 20")
+            }
+        }
 
         /** 0.1.0: Papierkorb-Frist pro Profil */
         val MIGRATION_2_3 = object : Migration(2, 3) {

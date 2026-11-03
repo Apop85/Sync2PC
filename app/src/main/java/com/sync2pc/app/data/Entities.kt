@@ -89,6 +89,12 @@ data class Profile(
     // ---- seit DB v3 (0.1.0) ----
     /** Papierkorb-Ordner älter als so viele Tage endgültig löschen (nur MIRROR), 0 = nie */
     val trashRetentionDays: Int = 30,
+    // ---- seit DB v4 (0.4.2) ----
+    /** Schutzbremse (nur MIRROR): ab diesem Anteil gelöschter Dateien (Prozent) nachfragen, Standard 20 */
+    val massDeletePercent: Int = 20,
+    // ---- seit DB v5 (0.5.0) ----
+    /** Versionsschutz (nur MIRROR): überschriebene Versionen kommen in den Papierkorb statt gelöscht zu werden */
+    val keepVersions: Boolean = true,
 ) {
     fun folders(): List<String> = splitLines(sourceFolders)
     fun ssids(): List<String> = splitLines(wifiSsids)
@@ -165,6 +171,23 @@ data class MirrorState(
     val remoteSize: Long,
     val remoteModified: Long,
     val syncedAt: Long,
+)
+
+/**
+ * Vorgemerkte Wiederherstellung aus dem Papierkorb (0.5.0). Der nächste Ordner-Sync mit erreichbarem PC führt sie
+ * aus: aktuelle Version in den Papierkorb, alte Version an den ursprünglichen Ort, auf beide Seiten kopieren.
+ */
+@androidx.room.Entity(tableName = "pending_restores")
+data class PendingRestore(
+    @androidx.room.PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
+    /** "LOCAL" (Handy) oder "REMOTE" (PC): wo die alte Version im Papierkorb liegt */
+    val side: String,
+    /** Pfad der alten Version relativ zum Profilordner, z. B. ".LeoSync-Papierkorb/2026-11-03/Docs/a.txt" */
+    val trashPath: String,
+    /** Ursprünglicher Pfad relativ zum Profilordner, z. B. "Docs/a.txt" */
+    val origPath: String,
+    val requestedAt: Long,
 )
 
 object ConflictResolution {

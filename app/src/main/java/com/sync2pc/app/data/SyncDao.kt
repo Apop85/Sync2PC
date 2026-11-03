@@ -102,6 +102,22 @@ interface SyncDao {
     @Query("DELETE FROM pending_decisions WHERE profileId = :profileId")
     suspend fun deleteDecisionsOfProfile(profileId: Long)
 
+    // ---- Vorgemerkte Wiederherstellungen (0.5.0) ------------------------------
+    @Query("SELECT * FROM pending_restores WHERE profileId = :profileId ORDER BY id")
+    suspend fun pendingRestores(profileId: Long): List<PendingRestore>
+
+    @Query("SELECT COUNT(*) FROM pending_restores")
+    fun pendingRestoreCount(): Flow<Int>
+
+    @Insert
+    suspend fun insertRestores(r: List<PendingRestore>)
+
+    @Query("DELETE FROM pending_restores WHERE id = :id")
+    suspend fun deleteRestore(id: Long)
+
+    @Query("DELETE FROM pending_restores WHERE profileId = :profileId")
+    suspend fun clearRestores(profileId: Long)
+
     // ---- Ordner-Spiegelung ---------------------------------------------------
     @Query("SELECT * FROM mirror_state WHERE profileId = :profileId")
     suspend fun mirrorStates(profileId: Long): List<MirrorState>

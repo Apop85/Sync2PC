@@ -117,6 +117,9 @@ class SmbSession private constructor(
     fun path(vararg parts: String): String =
         (listOf(target.basePath) + parts).filter { it.isNotEmpty() }.joinToString("\\")
 
+    /** Existiert der Ordner? Die Wurzel der Freigabe ("") existiert immer */
+    fun dirExists(path: String): Boolean = path.isEmpty() || share.folderExists(path)
+
     fun listDir(path: String): List<RemoteEntry> {
         if (path.isNotEmpty() && !share.folderExists(path)) return emptyList()
         val dirFlag = FileAttributes.FILE_ATTRIBUTE_DIRECTORY.value
@@ -224,26 +227,37 @@ class SmbSession private constructor(
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, null
-        ).use { f ->
-            PartialHash.compute(size) { off, len ->
-                val buf = ByteArray(len)
-                var read = 0
-                while (read < len) {
-                    val n = f.read(buf, off + read, read, len - read)
-                    if (n <= 0) break
-                    read += n
-                }
-                if (read == len) buf else buf.copyOf(read)
-            }
+        ).use { f -> PartialHash.compute(size) { off, len -> readFully(f, off, len) } }
+
+    /** Gründlicher Inhalts-Hash für den Ordner-Vergleich (0.4.1, siehe [PartialHash.thorough]) */
+    fun contentHash(path: String, size: Long): String =
+        share.openFile(
+            path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
+            SMB2CreateDisposition.FILE_OPEN, null
+        ).use { f -> PartialHash.thorough(size) { off, len -> readFully(f, off, len) } }
+
+    private fun readFully(f: com.hierynomus.smbj.share.File, off: Long, len: Int): ByteArray {
+        val buf = ByteArray(len)
+        var read = 0
+        while (read < len) {
+            val n = f.read(buf, off + read, read, len - read)
+            if (n <= 0) break
+            read += n
         }
+        return if (read == len) buf else buf.copyOf(read)
+    }
 
     /**
      * Lädt eine Datei hoch: zuerst in "<name>.s2ptmp", danach Umbenennung.
-     * Existiert bereits eine angefangene Temp-Datei, wird dort fortgesetzt.
+     * Eine angefangene Temp-Datei wird nur fortgesetzt, wenn sie zur aktuellen Version passt (seit 0.4.1:
+     * kleiner als die Datei und die Datei seit dem letzten Schreiben der Temp-Datei nicht geändert, siehe
+     * [com.sync2pc.app.mirror.TransferPlan.resumeOffset]). Nach einem Fortsetzen wird die Temp-Datei vor dem
+     * Umbenennen mit [expectedHash] (Teil-Hash) geprüft; passt er nicht, wird sie verworfen.
      * @param openInput liefert einen Stream ab dem gegebenen Offset
      * @param onProgress Bytes dieser Datei bisher
      * @param checkCancel wirft eine Exception, wenn abgebrochen werden soll
-     * @param modifiedMillis ursprüngliches Änderungsdatum, wird auf der Zieldatei gesetzt
+     * @param modifiedMillis ursprüngliches Änderungsdatum, wird auf der Zieldatei gesetzt und für das Fortsetzen geprüft
+     * @return Stelle, ab der fortgesetzt wurde (0 = neu)
      */
     fun upload(
         finalPath: String,
@@ -254,10 +268,17 @@ class SmbSession private constructor(
         modifiedMillis: Long? = null,
         /** Vorhandene Zieldatei ersetzen (Ordner-Spiegelung) */
         replaceExisting: Boolean = false,
-    ) {
+        /** Teil-Hash der Quelldatei (PartialHash.compute) – Pflichtprüfung nach dem Fortsetzen */
+        expectedHash: (() -> String)? = null,
+    ): Long {
         val tempPath = finalPath + TEMP_SUFFIX
-        val existing = fileSize(tempPath) ?: 0L
-        var offset = if (existing in 1 until size) existing else 0L
+        val tmp = stat(tempPath)
+        var offset = if (tmp == null) 0L else com.sync2pc.app.mirror.TransferPlan.resumeOffset(
+            tmp.size, tmp.modified, size, modifiedMillis ?: 0L
+        )
+        // Ohne Prüfmöglichkeit nie fortsetzen (sonst könnte eine Mischung aus zwei Versionen entstehen)
+        if (expectedHash == null) offset = 0L
+        val resumedAt = offset
         val disposition = if (offset > 0) SMB2CreateDisposition.FILE_OPEN else SMB2CreateDisposition.FILE_OVERWRITE_IF
         share.openFile(
             tempPath,
@@ -287,6 +308,14 @@ class SmbSession private constructor(
                 }
             }
             if (offset != size) throw java.io.IOException("Upload unvollständig: $offset von $size Bytes")
+            if (resumedAt > 0 && expectedHash != null) {
+                val h = PartialHash.compute(size) { off, len -> readFully(f, off, len) }
+                if (h != expectedHash()) {
+                    // Angefangene Datei gehörte zu einer anderen Version -> verwerfen, nächster Versuch beginnt neu
+                    try { f.deleteOnClose() } catch (ignored: Exception) {}
+                    throw java.io.IOException("Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen")
+                }
+            }
             if (modifiedMillis != null && modifiedMillis > 0) {
                 // Erstell- und Änderungsdatum = Original. Nach explizitem Setzen ändert Windows es beim Schliessen nicht mehr.
                 val t = FileTime.ofEpochMillis(modifiedMillis)
@@ -300,6 +329,7 @@ class SmbSession private constructor(
             }
             f.rename(finalPath, replaceExisting)
         }
+        return resumedAt
     }
 
     override fun close() {

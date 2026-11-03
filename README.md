@@ -35,6 +35,8 @@ Es gibt zwei Profiltypen:
 - **Profile** für mehrere Ziele, eine **Simulation** (Trockenlauf) und einen **Verlauf** mit Log.
 - **Selbst-Update** über GitHub Releases: Die App prüft täglich, ein Tippen installiert, danach startet sie neu.
 - **Ordner-Sync:** 3-Wege-Abgleich (Handy, PC, letzter Stand) mit Konflikterkennung. Ersetzte und gelöschte Dateien landen im `.LeoSync-Papierkorb`, nicht im Nirgendwo. Der Papierkorb leert sich nach einer pro Profil einstellbaren Frist (Standard 30 Tage, 0 = nie).
+- **Alte Versionen und Wiederherstellen:** Überschriebene Versionen bleiben im Papierkorb. Über „Wiederherstellen“ holst du einzelne Dateien, ganze Ordner oder alles von einem Tag zurück – auf Handy und PC.
+- **Schutzbremse:** Fehlt ein Ordner, passt ein neu gewählter Ordner nicht zum bisherigen Stand oder würden mehr als 20 % der Dateien gelöscht, hält der Ordner-Sync an und fragt nach.
 - **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
 - **Erinnerung**, wenn seit 7 Tagen (einstellbar) nichts gesichert wurde, obwohl neue Fotos warten.
 - **Speicher freigeben:** Alte Fotos und Videos, die nachweislich auf dem PC liegen, kommen in den Android-Papierkorb. Vorher wird jede Datei auf dem PC geprüft.

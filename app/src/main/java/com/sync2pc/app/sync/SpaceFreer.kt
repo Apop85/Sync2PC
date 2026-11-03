@@ -37,6 +37,8 @@ object SpaceFreer {
         val remotePath: String,
         /** Gruppe für Live-Foto-Paare: Ordner + Name ohne Endung */
         val group: String,
+        /** Teil-Hash beim Sichern (null = nicht gespeichert -> wird bei Bedarf neu berechnet) */
+        val hash: String? = null,
     )
 
     data class ScanResult(
@@ -90,7 +92,7 @@ object SpaceFreer {
             val matches = members.map { m -> m to synced[m.sourceKey]?.firstOrNull { it.size == m.size } }
             if (matches.any { it.second == null }) { notBackedUp += members.size; continue }
             for ((m, s) in matches) {
-                result += Candidate(m.uri, m.sourceKey, m.name, m.size, s!!.profileId, s.remotePath, group)
+                result += Candidate(m.uri, m.sourceKey, m.name, m.size, s!!.profileId, s.remotePath, group, s.partialHash)
             }
         }
         ScanResult(result, result.sumOf { it.size }, favoritesKept, notBackedUp)
@@ -119,7 +121,7 @@ object SpaceFreer {
                 val finder = RemoteFinder(s)
                 for (c in list) {
                     currentCoroutineContext().ensureActive()
-                    if (finder.exists(c.remotePath, c.size)) ok += c.sourceKey
+                    if (finder.exists(c.remotePath, c.size) { c.hash ?: localHash(context, c) }) ok += c.sourceKey
                     done++
                     if (done % 10 == 0 || done == candidates.size) onProgress(done, candidates.size)
                 }
@@ -145,12 +147,35 @@ object SpaceFreer {
         n
     }
 
+    /** Teil-Hash der Datei auf dem Handy (null = nicht lesbar) */
+    private fun localHash(context: Context, c: Candidate): String? = try {
+        context.contentResolver.openFileDescriptor(c.uri, "r")?.let { pfd ->
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).use { ins ->
+                val ch = ins.channel
+                PartialHash.compute(c.size) { off, len ->
+                    val bb = java.nio.ByteBuffer.allocate(len)
+                    var pos = off
+                    while (bb.hasRemaining()) {
+                        val n = ch.read(bb, pos)
+                        if (n < 0) break
+                        pos += n
+                    }
+                    if (bb.position() == len) bb.array() else bb.array().copyOf(bb.position())
+                }
+            }
+        }
+    } catch (e: Exception) { null }
+
     /** Sucht eine Datei auf dem PC: zuerst am gespeicherten Pfad, dann in allen Ordnern desselben Monats */
     private class RemoteFinder(private val s: SmbSession) {
         private val yearListings = HashMap<String, List<RemoteEntry>>()
         private val folderListings = HashMap<String, Map<String, RemoteEntry>>()
 
-        fun exists(remotePath: String, size: Long): Boolean {
+        /**
+         * [hash] liefert den Teil-Hash der Handy-Datei. Er wird nur für die Suche in anderen Monatsordnern
+         * gebraucht: Dort reichen Name und Grösse nicht als Beweis (0.4.1).
+         */
+        fun exists(remotePath: String, size: Long, hash: () -> String?): Boolean {
             if (remotePath.isBlank()) return false
             s.stat(remotePath)?.let { if (it.size == size) return true }
             // Vom Benutzer umsortiert (z. B. "10" -> "10 - Ägypten")?
@@ -164,7 +189,10 @@ object SpaceFreer {
                 val path = if (yearPath.isEmpty()) d.name else "$yearPath\\${d.name}"
                 if (path.equals(folder, ignoreCase = true)) continue
                 val files = folderListings.getOrPut(path) { s.listDir(path).associateBy { it.name.lowercase() } }
-                if (files[name.lowercase()]?.size == size) return true
+                val e = files[name.lowercase()] ?: continue
+                if (e.size != size) continue
+                val h = hash() ?: return false // Handy-Datei nicht lesbar -> sicherheitshalber behalten
+                if (s.partialHash("$path\\${e.name}", size) == h) return true
             }
             return false
         }

@@ -190,6 +190,8 @@ object BackupCodec {
         put("conflictMode", p.conflictMode); put("includePatterns", p.includePatterns)
         put("excludePatterns", p.excludePatterns); put("remotePollMinutes", p.remotePollMinutes)
         put("trashRetentionDays", p.trashRetentionDays)
+        put("massDeletePercent", p.massDeletePercent)
+        put("keepVersions", p.keepVersions)
     }
 
     private fun profileFromJson(o: JSONObject): Profile {
@@ -210,6 +212,8 @@ object BackupCodec {
             excludePatterns = o.optString("excludePatterns", d.excludePatterns),
             remotePollMinutes = o.optInt("remotePollMinutes", d.remotePollMinutes),
             trashRetentionDays = o.optInt("trashRetentionDays", d.trashRetentionDays),
+            massDeletePercent = o.optInt("massDeletePercent", d.massDeletePercent).coerceIn(1, 100),
+            keepVersions = o.optBoolean("keepVersions", d.keepVersions),
         )
     }
 

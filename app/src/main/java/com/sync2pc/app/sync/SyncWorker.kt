@@ -124,7 +124,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         // Neue Profile laufen erst automatisch, nachdem sie einmal von Hand gestartet wurden (Simulation zuerst möglich)
         val awaiting = settings.awaitingFirstStart()
-        val all = dao.profiles().filter { it.enabled && it.isConfigured() && (manual || it.id !in awaiting) }
+        // Schutzbremse (0.4.1): Profile mit offener Entscheidung ruhen – auch bei "Synchronisieren"
+        val blocked = com.sync2pc.app.mirror.GuardStore(ctx).blockedIds()
+        val all = dao.profiles().filter {
+            it.enabled && it.isConfigured() && (manual || it.id !in awaiting) && it.id !in blocked
+        }
         if (all.isEmpty()) return Result.success()
         targetWifi = all.flatMap { it.ssids() }.distinct().joinToString(", ")
 
@@ -250,6 +254,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     SyncEngine(ctx, p, trigger, shouldContinue = shouldContinue, onProgress = onProgress,
                         interruptReason = ::interruptReason)
                 val r = engine.run()
+                if (engine.blocked) {
+                    Notifications.guardNeeded(ctx, p.name)
+                    continue
+                }
                 // Erster manueller Start eines neuen Profils -> ab jetzt auch automatisch
                 if (manual && p.id in awaiting && r.status != "FAILED") settings.setAwaitingFirstStart(p.id, false)
                 uploaded += r.uploaded; failed += r.failed; bytes += r.bytes

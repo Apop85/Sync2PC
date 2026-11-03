@@ -37,6 +37,7 @@ object Notifications {
     const val ID_INTERRUPTED = 1007
     const val ID_PAUSED = 1008
     const val ID_STALE = 1009
+    const val ID_GUARD = 1010
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -217,6 +218,16 @@ object Notifications {
             "$count Datei(en) wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt.",
             OPEN_CONFLICTS)
     }
+
+    /** Schutzbremse (0.4.1): Ordner-Profil ruht, bis der Benutzer auf der Startseite entscheidet */
+    fun guardNeeded(context: Context, profileName: String) {
+        if (!s(context).notifyHints) return // steht auch auf der Startseite
+        post(context, ID_GUARD, CH_ALERTS, "LeoSync wartet auf dich",
+            "Der Ordner-Sync „$profileName“ wurde zur Sicherheit angehalten. Tippen, um zu entscheiden.",
+            null, largeImage = R.drawable.dog_attention)
+    }
+
+    fun cancelGuard(context: Context) = NotificationManagerCompat.from(context).cancel(ID_GUARD)
 
     /** Erinnerung: seit [days] Tagen keine erfolgreiche Sicherung (0.2.0) */
     fun staleWarning(context: Context, days: Int, lines: List<String>) =

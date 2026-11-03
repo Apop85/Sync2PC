@@ -58,9 +58,18 @@ import com.sync2pc.app.data.DeleteMode
 import com.sync2pc.app.data.ConflictMode
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileOverlap
+import com.sync2pc.app.data.ProfileWizard
+import com.sync2pc.app.data.ProfileWizard.Step
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncDirection
+import com.sync2pc.app.mirror.FolderCheck
+import com.sync2pc.app.mirror.GuardStore
 import com.sync2pc.app.mirror.LocalTree
+import com.sync2pc.app.mirror.MirrorGuard
+import com.sync2pc.app.mirror.Side
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import com.sync2pc.app.sync.SyncScheduler
@@ -107,9 +116,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var showRemotePicker by remember { mutableStateOf(false) }
     var pollText by remember { mutableStateOf("") }
     var trashText by remember { mutableStateOf("") }
+    var guardText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     var overlap by remember { mutableStateOf<ProfileOverlap.Hit?>(null) }
+    // Ordnerwechsel (0.4.1): Stichprobe läuft / passt nicht
+    var checkingFolder by remember { mutableStateOf(false) }
+    var folderWarning by remember { mutableStateOf<FolderWarning?>(null) }
     // Stand beim Öffnen -> ungespeicherte Änderungen erkennen (0.3.1)
     var baseline by remember { mutableStateOf<Profile?>(null) }
     var basePassword by remember { mutableStateOf("") }
@@ -132,6 +145,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     basePassword = password
                     pollText = it.remotePollMinutes.toString()
                     trashText = it.trashRetentionDays.toString()
+                    guardText = it.massDeletePercent.toString()
                 }
             }
             loaded = true
@@ -140,7 +154,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     fun withPassword(): Profile = p.copy(smbPasswordEnc = CredentialCrypto.encrypt(password))
 
-    fun save(force: Boolean = false) {
+    /**
+     * Speichern. [force] = Überschneidung bestätigt. [folderChoice] = Antwort auf "Ist das wirklich der richtige
+     * Ordner?" (null = Stichprobe noch nicht gemacht).
+     */
+    fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
         scope.launch {
             val toSave = withPassword()
             // Doppelte Profile verhindern bzw. bei Überschneidung warnen
@@ -150,8 +168,29 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 return@launch
             }
             val isNew = toSave.id == 0L
+            // Ordner-Profil mit gewechseltem Ordner (0.4.1): Stichprobe, ob der neue Ordner zum Sync-Stand passt
+            val base = baseline
+            val changedSides: Set<Side> = if (isNew || base == null || toSave.type() != ProfileType.MIRROR) emptySet() else buildSet {
+                if (toSave.localTreeUri != base.localTreeUri) add(Side.LOCAL)
+                if (ProfileOverlap.target(toSave) != ProfileOverlap.target(base)) add(Side.REMOTE)
+            }
+            var checked = false
+            if (changedSides.isNotEmpty() && folderChoice == null) {
+                checkingFolder = true
+                val result = FolderCheck.check(ctx, toSave, changedSides)
+                checkingFolder = false
+                when (result) {
+                    FolderCheck.Result.MISMATCH -> { folderWarning = FolderWarning(changedSides, force); return@launch }
+                    FolderCheck.Result.OK -> checked = true
+                    FolderCheck.Result.UNAVAILABLE -> {} // prüft der nächste Lauf
+                }
+            }
+            if (folderChoice == FolderChoice.ACCEPT) checked = true
             val savedId = withContext(Dispatchers.IO) {
                 val id = if (isNew) dao.insertProfile(toSave) else { dao.updateProfile(toSave); toSave.id }
+                if (changedSides.isNotEmpty()) MirrorGuard.afterFolderChange(
+                    ctx, id, changedSides, resetState = folderChoice == FolderChoice.RESET, checked = checked,
+                )
                 // Neues Profil: erst nach dem ersten manuellen Start automatisch (VOR setupAll, sonst startet
                 // der WLAN-Auslöser sofort einen Sync)
                 if (isNew) com.sync2pc.app.data.GlobalSettings(ctx).setAwaitingFirstStart(id, true)
@@ -173,11 +212,21 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     fun leave() { if (dirty) askLeave = true else onBack() }
     BackHandler(enabled = dirty) { askLeave = true }
 
+    // Profil-Assistent (0.5.0): neues Profil Schritt für Schritt
+    val wizard = profileId == 0L
+    var step by rememberSaveable { mutableStateOf(Step.NAME) }
+    var showMissing by remember { mutableStateOf(false) }
+    val steps = ProfileWizard.steps(p)
+    val stepIndex = steps.indexOf(step).coerceAtLeast(0)
+    // Zurück-Geste im Assistenten: einen Schritt zurück (später registriert -> hat Vorrang)
+    BackHandler(enabled = wizard && typeChosen && stepIndex > 0) { showMissing = false; step = steps[stepIndex - 1] }
+
     ScreenScaffold(
         title = if (profileId == 0L) "Neues Profil" else "Profil bearbeiten",
-        onBack = { leave() },
+        onBack = { if (wizard && typeChosen && stepIndex > 0) { showMissing = false; step = steps[stepIndex - 1] } else leave() },
         actions = {
-            if (loaded && typeChosen) IconButton(onClick = { save() }, enabled = p.name.isNotBlank()) {
+            // Im Assistenten erst ab den optionalen Schritten speichern (vorher fehlen Pflichtangaben)
+            if (loaded && typeChosen && (!wizard || step.optional)) IconButton(onClick = { save() }, enabled = p.name.isNotBlank()) {
                 Icon(Icons.Filled.Check, "Speichern")
             }
             if (profileId != 0L) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Profil löschen") }
@@ -196,6 +245,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 )
                 pollText = p.remotePollMinutes.toString()
                 trashText = p.trashRetentionDays.toString()
+                guardText = p.massDeletePercent.toString()
                 baseline = p
                 basePassword = password
                 typeChosen = true
@@ -203,12 +253,28 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             return@ScreenScaffold
         }
         val isMirror = p.type() == ProfileType.MIRROR
+        // Assistent (0.5.0): nur der aktuelle Schritt; beim Bearbeiten alle Karten in derselben Reihenfolge
+        fun show(s: Step) = !wizard || step == s
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
+            if (wizard) item {
+                Column {
+                    LinearProgressIndicator(
+                        progress = { (stepIndex + 1f) / steps.size }, modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Schritt ${stepIndex + 1} von ${steps.size}: ${step.title}" + if (step.optional) " (optional)" else "",
+                        style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp),
+                    )
+                    Text(stepIntro(step, isMirror), style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+
+            if (show(Step.NAME)) item {
                 SectionCard("Allgemein") {
                     OutlinedTextField(p.name, { p = p.copy(name = it) }, label = { Text("Profilname") },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -218,7 +284,45 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
-            item {
+            if (isMirror && show(Step.SOURCE)) item {
+                SectionCard("Ordner auf dem Handy") {
+                    val treeUri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
+                    if (treeUri == null) Hint("Noch kein Ordner gewählt.")
+                    else {
+                        Text(LocalTree.label(treeUri))
+                        if (!LocalTree.hasPermission(ctx, treeUri))
+                            Text("Zugriff verloren – bitte erneut wählen.", color = MaterialTheme.colorScheme.error)
+                    }
+                    OutlinedButton(onClick = { treePicker.launch(null) }) {
+                        Text(if (treeUri == null) "Ordner wählen…" else "Anderen Ordner wählen…")
+                    }
+                    Hint("Alle Dateien in diesem Ordner und seinen Unterordnern werden mit dem PC abgeglichen. " +
+                        "Android fragt einmalig, ob LeoSync auf den Ordner zugreifen darf (nötig für alle Dateitypen).")
+                }
+            }
+
+            if (!isMirror && show(Step.SOURCE)) item {
+                SectionCard("Quellordner auf dem Telefon") {
+                    if (p.folders().isEmpty()) Hint("Noch kein Ordner gewählt (z. B. DCIM/Camera).")
+                    p.folders().forEach { f ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(f, Modifier.weight(1f))
+                            IconButton(onClick = { p = p.copy(sourceFolders = Profile.joinLines(p.folders() - f)) }) {
+                                Icon(Icons.Filled.Close, "Entfernen")
+                            }
+                        }
+                    }
+                    OutlinedButton(onClick = { folderPicker.launch(null) }) { Text("Ordner hinzufügen…") }
+                    Hint("Öffnet die Android-Dateiauswahl: Ordner wählen und „Diesen Ordner verwenden“ tippen. " +
+                        "Kamera-Fotos liegen meist in „DCIM/Camera“, Bildschirmfotos in „Pictures/Screenshots“.")
+                    SwitchRow("Unterordner einbeziehen", p.includeSubfolders,
+                        subtitle = "Auch Fotos in Ordnern innerhalb der gewählten Ordner sichern") { p = p.copy(includeSubfolders = it) }
+                    SwitchRow("Fotos", p.includeImages) { p = p.copy(includeImages = it) }
+                    SwitchRow("Videos", p.includeVideos) { p = p.copy(includeVideos = it) }
+                }
+            }
+
+            if (show(Step.TARGET)) item {
                 SectionCard("Ziel (Windows-Freigabe)") {
                     if (credentialSources.isNotEmpty()) {
                         Hint("Zugangsdaten von einem anderen Profil übernehmen:")
@@ -291,9 +395,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
-            item {
+            if (show(Step.OPTIONS)) item {
                 SectionCard("WLAN (automatischer Sync)") {
-                    Hint("Sobald das Telefon mit einem dieser WLANs verbunden ist, wird synchronisiert.")
+                    Hint("Optional. Ist das Telefon mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch " +
+                        "im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst " +
+                        "(z. B. wenn du den PC über VPN erreichst).")
                     p.ssids().forEach { s ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(s, Modifier.weight(1f))
@@ -317,24 +423,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
-            if (isMirror) item {
-                SectionCard("Ordner auf dem Handy") {
-                    val treeUri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
-                    if (treeUri == null) Hint("Noch kein Ordner gewählt.")
-                    else {
-                        Text(LocalTree.label(treeUri))
-                        if (!LocalTree.hasPermission(ctx, treeUri))
-                            Text("Zugriff verloren – bitte erneut wählen.", color = MaterialTheme.colorScheme.error)
-                    }
-                    OutlinedButton(onClick = { treePicker.launch(null) }) {
-                        Text(if (treeUri == null) "Ordner wählen…" else "Anderen Ordner wählen…")
-                    }
-                    Hint("Android fragt einmalig, ob LeoSync auf diesen Ordner zugreifen darf (für alle Dateitypen).")
-                }
-            }
-
-            if (isMirror) item {
-                SectionCard("Richtung") {
+            if (isMirror && show(Step.OPTIONS)) item {
+                SectionCard("Richtung und Änderungen") {
+                    Hint("In welche Richtung wird abgeglichen?")
                     SyncDirection.entries.forEach { d ->
                         Row(
                             Modifier.fillMaxWidth().clickable { p = p.copy(direction = d.name) },
@@ -349,6 +440,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         subtitle = "Wird eine Datei auf einer Seite gelöscht, kommt sie auf der anderen Seite in den " +
                             "Ordner „.LeoSync-Papierkorb“. Aus: gelöschte Dateien werden wiederhergestellt.",
                     ) { p = p.copy(propagateDeletes = it) }
+                    SwitchRow(
+                        "Alte Versionen im Papierkorb behalten", p.keepVersions,
+                        subtitle = "Wird eine Datei überschrieben, kommt die alte Version in den Ordner „.LeoSync-Papierkorb“ " +
+                            "und lässt sich über „Wiederherstellen“ zurückholen. Braucht etwas mehr Speicher.",
+                    ) { p = p.copy(keepVersions = it) }
                     OutlinedTextField(
                         trashText,
                         { v ->
@@ -387,46 +483,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
-            if (!isMirror) item {
-                SectionCard("Quellordner auf dem Telefon") {
-                    if (p.folders().isEmpty()) Hint("Noch kein Ordner gewählt (z. B. DCIM/Camera).")
-                    p.folders().forEach { f ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(f, Modifier.weight(1f))
-                            IconButton(onClick = { p = p.copy(sourceFolders = Profile.joinLines(p.folders() - f)) }) {
-                                Icon(Icons.Filled.Close, "Entfernen")
-                            }
-                        }
-                    }
-                    OutlinedButton(onClick = { folderPicker.launch(null) }) { Text("Ordner hinzufügen…") }
-                    Hint("Öffnet die Android-Dateiauswahl. Ordner wählen und „Diesen Ordner verwenden“ tippen.")
-                    SwitchRow("Unterordner einbeziehen", p.includeSubfolders) { p = p.copy(includeSubfolders = it) }
-                    SwitchRow("Fotos", p.includeImages) { p = p.copy(includeImages = it) }
-                    SwitchRow("Videos", p.includeVideos) { p = p.copy(includeVideos = it) }
-                }
-            }
-
-            item {
-                SectionCard("Filter (optional)") {
-                    OutlinedTextField(
-                        p.includePatterns, { p = p.copy(includePatterns = it) },
-                        label = { Text("Nur diese Dateien (Whitelist)") },
-                        placeholder = { Text("*.pdf, *.docx") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        p.excludePatterns, { p = p.copy(excludePatterns = it) },
-                        label = { Text("Diese Dateien ausschliessen (Blacklist)") },
-                        placeholder = { Text("Thumbs.db, *.tmp, Temp/**") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Hint("Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, " +
-                        "Ordner/** = alles in diesem Ordner. Leere Whitelist = alles. Die Blacklist hat Vorrang.")
-                }
-            }
-
-            if (!isMirror) item {
+            if (!isMirror && show(Step.OPTIONS)) item {
                 SectionCard("Nach erfolgreicher Übertragung") {
+                    Hint("Was passiert mit den Fotos auf dem Telefon, wenn sie sicher auf dem PC liegen?")
                     DeleteMode.entries.forEach { m ->
                         Row(
                             Modifier.fillMaxWidth().clickable { p = p.copy(deleteMode = m.name) },
@@ -450,6 +509,70 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
+            if (show(Step.FILTER)) item {
+                SectionCard("Filter (optional)") {
+                    OutlinedTextField(
+                        p.includePatterns, { p = p.copy(includePatterns = it) },
+                        label = { Text("Nur diese Dateien (Whitelist)") },
+                        placeholder = { Text("*.pdf, *.docx") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        p.excludePatterns, { p = p.copy(excludePatterns = it) },
+                        label = { Text("Diese Dateien ausschliessen (Blacklist)") },
+                        placeholder = { Text("Thumbs.db, *.tmp, Temp/**") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Hint("Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, " +
+                        "Ordner/** = alles in diesem Ordner. Leere Whitelist = alles. Die Blacklist hat Vorrang.")
+                }
+            }
+
+            // Schutzbremse (0.4.2): letzte der optionalen Einstellungen (so auch im Profil-Assistenten ab 0.5.0)
+            if (isMirror && show(Step.GUARD)) item {
+                SectionCard("Schutzbremse (optional)") {
+                    OutlinedTextField(
+                        guardText,
+                        { v ->
+                            guardText = v.filter { it.isDigit() }.take(3)
+                            guardText.toIntOrNull()?.let { p = p.copy(massDeletePercent = it.coerceIn(1, 100)) }
+                        },
+                        label = { Text("Nachfragen, wenn mehr als … % gelöscht würden") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    )
+                    Hint("Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält der Sync an und " +
+                        "fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal " +
+                        "und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. " +
+                        "Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.")
+                }
+            }
+
+            // Assistent: Zurück / Weiter, ab dem ersten optionalen Schritt direkt "Speichern"
+            if (wizard) item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val missingText = ProfileWizard.missing(p, step)
+                    if (showMissing && missingText != null) Text(missingText, color = MaterialTheme.colorScheme.error)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (stepIndex > 0) OutlinedButton(onClick = { showMissing = false; step = steps[stepIndex - 1] }) {
+                            Text("Zurück")
+                        }
+                        Spacer(Modifier.weight(1f))
+                        if (stepIndex < steps.lastIndex) {
+                            val next: () -> Unit = {
+                                if (missingText != null) { showMissing = true }
+                                else { showMissing = false; step = steps[stepIndex + 1] }
+                            }
+                            if (step.optional) OutlinedButton(onClick = next) { Text("Weiter") }
+                            else Button(onClick = next) { Text("Weiter") }
+                        }
+                        if (step.optional || stepIndex == steps.lastIndex) Button(onClick = { save() }) { Text("Speichern") }
+                    }
+                    if (step.optional && stepIndex < steps.lastIndex)
+                        Hint("Die weiteren Schritte sind optional – du kannst jetzt schon speichern.")
+                }
+            }
+
             // Simulation dieses Profils (nur gespeicherte Profile; simuliert wird der gespeicherte Stand)
             if (profileId != 0L) item {
                 SectionCard("Simulation") {
@@ -459,7 +582,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
-            item {
+            if (!wizard) item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { save() }, enabled = p.name.isNotBlank()) { Text("Speichern") }
                     OutlinedButton(onClick = { leave() }) { Text("Abbrechen") }
@@ -493,7 +616,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     withContext(Dispatchers.IO) {
                         dao.clearSynced(profileId); dao.clearMappings(profileId)
                         dao.clearDecisions(profileId); dao.clearMirrorState(profileId)
-                        dao.clearConflicts(profileId); dao.deleteProfileRow(profileId)
+                        dao.clearConflicts(profileId); dao.deleteProfileRow(profileId); dao.clearRestores(profileId)
+                        GuardStore(ctx).forget(profileId)
                         com.sync2pc.app.data.GlobalSettings(ctx).setAwaitingFirstStart(profileId, false)
                         SyncScheduler.updateRemotePoll(ctx, dao.profiles())
                     }
@@ -565,6 +689,38 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         )
     }
 
+    if (checkingFolder) AlertDialog(
+        onDismissRequest = {},
+        title = { Text("Prüfe Ordner…") },
+        text = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularProgressIndicator()
+                Text("Passt der neue Ordner zum bisherigen Sync-Stand?")
+            }
+        },
+        confirmButton = {},
+    )
+
+    // Stichprobe nach einem Ordnerwechsel passt nicht (0.4.1) – bewusst ohne Zahlen
+    folderWarning?.let { w ->
+        AlertDialog(
+            onDismissRequest = { folderWarning = null },
+            title = { Text("Ist das wirklich der richtige Ordner?") },
+            text = { Text("Der gewählte Ordner passt nicht zum bisherigen Sync-Stand dieses Profils.") },
+            confirmButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(onClick = {
+                        folderWarning = null
+                        if (Side.LOCAL in w.sides) treePicker.launch(null) else showRemotePicker = true
+                    }) { Text("Anderen Ordner wählen") }
+                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.ACCEPT) }) { Text("Trotzdem übernehmen") }
+                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.RESET) }) { Text("Als neuen Ordner behandeln") }
+                    TextButton(onClick = { folderWarning = null }) { Text("Abbrechen") }
+                }
+            },
+        )
+    }
+
     if (confirmReset) AlertDialog(
         onDismissRequest = { confirmReset = false },
         title = { Text("Sync-Status zurücksetzen?") },
@@ -574,6 +730,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 scope.launch {
                     withContext(Dispatchers.IO) {
                         dao.clearSynced(profileId); dao.clearMirrorState(profileId); dao.clearConflicts(profileId)
+                        GuardStore(ctx).forget(profileId)
                     }
                     confirmReset = false
                     Toast.makeText(ctx, "Zurückgesetzt", Toast.LENGTH_SHORT).show()
@@ -583,6 +740,29 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Abbrechen") } },
     )
 }
+
+/** Einleitung je Schritt des Assistenten: Was stellt man hier ein und warum? */
+private fun stepIntro(step: Step, mirror: Boolean): String = when (step) {
+    Step.NAME -> "Wie soll das Profil heissen? Der Name erscheint auf der Startseite, im Verlauf und in den " +
+        "Benachrichtigungen, z. B. „Kamera“ oder „Dokumente“."
+    Step.SOURCE -> if (mirror) "Welcher Ordner auf dem Handy soll mit dem PC abgeglichen werden? Alle Dateien und " +
+        "Unterordner darin werden synchronisiert."
+    else "Welche Fotos und Videos sollen gesichert werden? Wähle die Ordner auf dem Telefon, in denen sie liegen."
+    Step.TARGET -> "Wohin auf dem PC? Gib die Windows-Freigabe an und melde dich mit dem Windows-Benutzer an, der " +
+        "darauf zugreifen darf. „Verbindung testen“ zeigt, ob alles stimmt."
+    Step.OPTIONS -> if (mirror) "Wann wird synchronisiert, in welche Richtung, und was passiert mit gelöschten oder " +
+        "geänderten Dateien?"
+    else "Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Telefon?"
+    Step.FILTER -> "Optional: Nur bestimmte Dateien synchronisieren oder einzelne ausschliessen. Ohne Angaben wird alles " +
+        "synchronisiert."
+    Step.GUARD -> "Optional: Ab wann LeoSync bei vielen Löschungen zuerst nachfragt. Der Standard passt für die meisten."
+}
+
+/** Antwort auf "Ist das wirklich der richtige Ordner?" */
+enum class FolderChoice { ACCEPT, RESET }
+
+/** Offene Ordner-Warnung: betroffene Seiten und ob eine Überschneidung schon bestätigt war */
+data class FolderWarning(val sides: Set<Side>, val force: Boolean)
 
 /**
  * Wandelt eine Ordner-URI des Systemdialogs in einen MediaStore-Pfad um.

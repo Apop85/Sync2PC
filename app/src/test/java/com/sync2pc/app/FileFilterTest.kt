@@ -10,6 +10,7 @@ class FileFilterTest {
         val f = FileFilter("", "")
         assertTrue(f.accepts("a/b/c.pdf"))
         assertFalse(f.accepts("a/b/c.pdf.s2ptmp"))
+        assertFalse(f.accepts("a/b/c.pdf.s2pold")) // alte Version beim Ersetzen (0.4.1)
         assertFalse(f.accepts(".LeoSync-Papierkorb/2026-11-01/x.txt"))
         assertFalse(f.accepts(".Sync2PC-Papierkorb/2026-11-01/x.txt")) // alter Name bis 0.0.11
     }

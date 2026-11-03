@@ -24,6 +24,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -72,6 +76,10 @@ import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncRun
+import com.sync2pc.app.mirror.Guard
+import com.sync2pc.app.mirror.GuardKind
+import com.sync2pc.app.mirror.GuardStore
+import com.sync2pc.app.mirror.MirrorGuard
 import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.sync.SyncProgress
 import com.sync2pc.app.sync.SyncScheduler
@@ -107,6 +115,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val conflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
     val deleteCount by remember { dao.queuedDeleteCount() }.collectAsState(initial = 0)
     val lastRun by remember { dao.lastRunFlow() }.collectAsState(initial = null)
+    val pendingRestores by remember { dao.pendingRestoreCount() }.collectAsState(initial = 0)
 
     val wm = remember { WorkManager.getInstance(ctx) }
     val workFlow = remember {
@@ -157,6 +166,13 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     var settingsMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val awaitingStart = remember(tick, works) { GlobalSettings(ctx).awaitingFirstStart() }
+    // Schutzbremse (0.4.1): offene Entscheidungen der Ordner-Profile; guardVersion = nach einer Antwort neu lesen
+    var guardVersion by remember { mutableIntStateOf(0) }
+    val guards = remember(tick, works, guardVersion, profiles) {
+        val ids = profiles.map { it.id }.toSet()
+        GuardStore(ctx).all().filter { it.profileId in ids }
+    }
+    LaunchedEffect(guards.isEmpty()) { if (guards.isEmpty()) Notifications.cancelGuard(ctx) }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
         val s = GlobalSettings(ctx)
@@ -214,7 +230,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     userPausedUntil = userPausedUntil,
                     // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
                     allUpToDate = lastRun?.status == "OK" && !queued && skipInfo == null &&
-                        decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0,
+                        decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0 && guards.isEmpty(),
+                    // LeoSync wartet auf eine Entscheidung von dir (Bild "Aufmerksamkeit")
+                    needsYou = guards.isNotEmpty() || decisions.isNotEmpty() || conflicts.isNotEmpty() || deleteCount > 0,
                     onSync = {
                         // Erste Synchronisierung ohne Ladegerät -> vorher warnen
                         scope.launch {
@@ -225,6 +243,17 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onResume = { SyncScheduler.resume(ctx); pauseVersion++ },
                     hasProfiles = profiles.isNotEmpty(),
+                )
+            }
+
+            items(guards, key = { "guard-${it.profileId}" }) { g ->
+                val profile = profiles.firstOrNull { it.id == g.profileId }
+                GuardCard(
+                    g, profile?.name ?: "Profil",
+                    onChooseFolder = { navigate(Screen.ProfileEdit(g.profileId)) },
+                    onChoice = { choice ->
+                        scope.launch { MirrorGuard.resolve(ctx, g.profileId, choice); guardVersion++ }
+                    },
                 )
             }
 
@@ -279,8 +308,34 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             items(profiles, key = { it.id }) { p ->
                 ProfileCard(p, ssid, awaitingFirstStart = p.id in awaitingStart) { navigate(Screen.ProfileEdit(p.id)) }
             }
-            if (profiles.any { it.type() == ProfileType.PHOTOS }) item {
-                TextButton(onClick = { navigate(Screen.FreeSpace) }) { Text("Speicher freigeben…") }
+            // Tools (0.5.0): Kacheln statt Textlinks, nur was zu den vorhandenen Profilen passt
+            val tools = buildList {
+                if (profiles.any { it.type() == ProfileType.PHOTOS }) add(
+                    ToolTile(Icons.Filled.Delete, "Speicher freigeben",
+                        "Alte, auf dem PC gesicherte Fotos vom Handy entfernen") { navigate(Screen.FreeSpace) }
+                )
+                if (restoreProfiles(profiles).isNotEmpty()) add(
+                    ToolTile(Icons.Filled.Refresh, "Wiederherstellen",
+                        "Gelöschte Dateien und alte Versionen zurückholen") { navigate(Screen.Restore) }
+                )
+            }
+            if (tools.isNotEmpty()) {
+                item { Text("Tools", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 4.dp)) }
+                if (pendingRestores > 0) item {
+                    ActionCard(
+                        title = "Wiederherstellung vorgemerkt",
+                        text = "$pendingRestores Datei(en) werden beim nächsten Sync mit erreichbarem PC wiederhergestellt.",
+                        button = "Jetzt synchronisieren",
+                        onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+                    )
+                }
+                // Zwei Kacheln pro Zeile
+                items(tools.chunked(2)) { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        row.forEach { t -> ToolCard(t, Modifier.weight(1f)) }
+                        if (row.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
             }
 
             item {
@@ -370,6 +425,7 @@ private fun StatusCard(
     paused: Boolean,
     userPausedUntil: Long,
     allUpToDate: Boolean,
+    needsYou: Boolean,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onResume: () -> Unit,
@@ -377,10 +433,12 @@ private fun StatusCard(
 ) {
     val userPaused = userPausedUntil > 0
     SectionCard(title = "Status") {
-        // Zustandsbild: laufender Hund = Sync läuft, schlafender Hund = alles gesichert, sonst sitzender Hund
+        // Zustandsbild: laufender Hund = Sync läuft, stehender Hund = wartet auf dich, schlafender Hund =
+        // alles gesichert, sonst sitzender Hund. Vorrang: läuft > wartet auf dich > pausiert > alles gesichert > wartet
         val upToDate = !isRunning && !paused && !userPaused && shareWait == null && allUpToDate
         val dog = when {
             isRunning -> DogState.RUNNING
+            needsYou -> DogState.ATTENTION
             userPaused -> DogState.PAUSED
             upToDate -> DogState.SLEEPING
             else -> DogState.WAITING
@@ -443,6 +501,70 @@ private fun StatusCard(
             else if (userPaused && userPausedUntil != Long.MAX_VALUE) Button(onClick = onResume, modifier = w) { Text("Fortsetzen", maxLines = 1) }
             else Button(onClick = onSync, enabled = hasProfiles, modifier = w) { Text("Synchronisieren", maxLines = 1) }
             // "Simulieren" ist seit 0.3.6 pro Profil im Profil-Bildschirm
+        }
+    }
+}
+
+/** Kachel in der Sektion "Tools" (0.5.0) */
+private class ToolTile(val icon: ImageVector, val title: String, val text: String, val onClick: () -> Unit)
+
+@Composable
+private fun ToolCard(t: ToolTile, modifier: Modifier) {
+    Card(
+        modifier = modifier.heightIn(min = 120.dp).clickable(onClick = t.onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(t.icon, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(t.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(t.text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+    }
+}
+
+/** Schutzbremse (0.4.1): Ordner-Profil ruht, bis du entscheidest */
+@Composable
+private fun GuardCard(g: Guard, profileName: String, onChooseFolder: () -> Unit, onChoice: (MirrorGuard.Choice) -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Warning, null); Spacer(Modifier.width(8.dp))
+                Text(MirrorGuard.title(g), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
+            Text(MirrorGuard.text(g, profileName))
+            val full = Modifier.fillMaxWidth()
+            when (g.kind) {
+                GuardKind.REMOTE_MISSING, GuardKind.LOCAL_MISSING -> {
+                    Button(onClick = onChooseFolder, modifier = full) { Text("Neuen Ordner wählen") }
+                    OutlinedButton(onClick = { onChoice(MirrorGuard.Choice.ACCEPT_FOLDER) }, modifier = full) {
+                        Text("Erneut prüfen (Ordner wiederhergestellt)")
+                    }
+                    OutlinedButton(onClick = { onChoice(MirrorGuard.Choice.RESET_AS_NEW) }, modifier = full) {
+                        Text("Neu anlegen und abgleichen")
+                    }
+                    Hint("„Neu anlegen“ gleicht alles neu ab, ohne etwas zu löschen. Bis du entscheidest, ruht nur dieses Profil.")
+                }
+                GuardKind.MASS_DELETE -> {
+                    Button(onClick = { onChoice(MirrorGuard.Choice.KEEP_FILES) }, modifier = full) { Text("Nicht löschen") }
+                    OutlinedButton(onClick = { onChoice(MirrorGuard.Choice.DELETE_ANYWAY) }, modifier = full) {
+                        Text("Trotzdem in den Papierkorb")
+                    }
+                    Hint("„Nicht löschen“ behält die Dateien bzw. stellt sie auf der anderen Seite wieder her.")
+                }
+                GuardKind.CHECK_FOLDER -> {
+                    Button(onClick = onChooseFolder, modifier = full) { Text("Anderen Ordner wählen") }
+                    OutlinedButton(onClick = { onChoice(MirrorGuard.Choice.ACCEPT_FOLDER) }, modifier = full) {
+                        Text("Trotzdem übernehmen")
+                    }
+                    OutlinedButton(onClick = { onChoice(MirrorGuard.Choice.RESET_AS_NEW) }, modifier = full) {
+                        Text("Als neuen Ordner behandeln")
+                    }
+                }
+            }
         }
     }
 }

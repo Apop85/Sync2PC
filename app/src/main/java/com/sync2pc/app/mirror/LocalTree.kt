@@ -74,10 +74,16 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         Document.COLUMN_SIZE, Document.COLUMN_LAST_MODIFIED,
     )
 
+    /**
+     * Inhalt eines Ordners. Liefert Android keine Antwort (Abfrage = null), ist das ein Fehler und nicht
+     * "leer" – sonst sähe ein Lauf alle Dateien als gelöscht an (0.4.1).
+     */
     fun children(docId: String): List<LocalEntry> {
         val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
         val out = ArrayList<LocalEntry>()
-        resolver.query(uri, projection, null, null, null)?.use { c ->
+        val cursor = resolver.query(uri, projection, null, null, null)
+            ?: throw IOException("Handy-Ordner nicht lesbar")
+        cursor.use { c ->
             while (c.moveToNext()) {
                 val mime = c.getString(2) ?: ""
                 out += LocalEntry(
@@ -92,21 +98,72 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         return out
     }
 
-    /** Alle Dateien rekursiv, Schlüssel = relativer Pfad. [skipDir] lässt Zweige aus. */
-    fun listRecursive(skipDir: (String) -> Boolean = { false }): Map<String, LocalEntry> {
+    /**
+     * Alle Dateien rekursiv, Schlüssel = relativer Pfad. [skipDir] lässt Zweige aus.
+     * Liegengebliebene "<name>.s2pold" (Abbruch beim Ersetzen, siehe [replaceWith]):
+     * fehlt "<name>", ist sie die gültige Datei -> mit [recover] zurückbenennen; sonst ist sie überholt
+     * -> mit [recover] löschen. Ohne [recover] (Simulation) wird nichts verändert.
+     */
+    fun listRecursive(skipDir: (String) -> Boolean = { false }, recover: Boolean = false): Map<String, LocalEntry> {
         val out = LinkedHashMap<String, LocalEntry>()
         fun walk(rel: String, docId: String) {
-            for (e in children(docId)) {
+            val all = children(docId)
+            val names = all.filter { !it.isDir }.map { it.name.lowercase() }.toSet()
+            for (e in all) {
                 val childRel = if (rel.isEmpty()) e.name else "$rel/${e.name}"
                 if (e.isDir) {
                     dirIds[childRel.lowercase()] = e.docId
                     if (!skipDir(childRel)) walk(childRel, e.docId)
+                } else if (e.name.endsWith(OLD, ignoreCase = true)) {
+                    val base = e.name.dropLast(OLD.length)
+                    val baseRel = if (rel.isEmpty()) base else "$rel/$base"
+                    if (base.lowercase() in names) {
+                        if (recover) try { delete(e.docId) } catch (ignored: Exception) {}
+                    } else if (recover) {
+                        val id = rename(e.docId, base)
+                        out[baseRel] = stat(id) ?: e.copy(docId = id, name = base)
+                    } else out[baseRel] = e.copy(name = base)
                 } else out[childRel] = e
             }
         }
         walk("", rootDocId)
         return out
     }
+
+    /** Datei unter einem relativen Pfad suchen (Gross-/Kleinschreibung egal), null = nicht vorhanden */
+    fun find(relPath: String): LocalEntry? {
+        val parentRel = relPath.substringBeforeLast('/', "")
+        val name = relPath.substringAfterLast('/')
+        val parentId = findDir(parentRel) ?: return null
+        return children(parentId).firstOrNull { !it.isDir && it.name.equals(name, ignoreCase = true) }
+    }
+
+    /** Dokument-ID eines Ordners (ohne ihn anzulegen), null = nicht vorhanden */
+    fun findDir(relDir: String): String? {
+        if (relDir.isEmpty()) return rootDocId
+        dirIds[relDir.lowercase()]?.let { return it }
+        var id = rootDocId
+        for (part in relDir.split('/')) {
+            id = children(id).firstOrNull { it.isDir && it.name.equals(part, ignoreCase = true) }?.docId ?: return null
+        }
+        dirIds[relDir.lowercase()] = id
+        return id
+    }
+
+    /** Gründlicher Inhalts-Hash für den Ordner-Vergleich (siehe [com.sync2pc.app.sync.PartialHash.thorough]) */
+    fun contentHash(docId: String, size: Long): String =
+        (openInput(docId) as ParcelFileDescriptor.AutoCloseInputStream).use { ins ->
+            com.sync2pc.app.sync.PartialHash.thorough(size) { off, len ->
+                val bb = java.nio.ByteBuffer.allocate(len)
+                var pos = off
+                while (bb.hasRemaining()) {
+                    val n = ins.channel.read(bb, pos)
+                    if (n < 0) break
+                    pos += n
+                }
+                if (bb.position() == len) bb.array() else bb.array().copyOf(bb.position())
+            }
+        }
 
     fun stat(docId: String): LocalEntry? =
         resolver.query(docUri(docId), projection, null, null, null)?.use { c ->
@@ -178,10 +235,32 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             try { DocumentsContract.deleteDocument(resolver, tmpUri) } catch (ignored: Exception) {}
             throw e
         }
-        // Alte Version ersetzen
-        siblings.firstOrNull { !it.isDir && it.name.equals(name, ignoreCase = true) }?.let { delete(it.docId) }
-        val finalUri = DocumentsContract.renameDocument(resolver, tmpUri, name)
-            ?: throw IOException("Umbenennen von '$relPath' fehlgeschlagen")
+        return replaceWith(tmpUri, siblings, name, relPath)
+    }
+
+    /**
+     * Ersetzt "<name>" durch die fertige Temp-Datei, ohne dass die alte Version vorher verloren geht (0.4.1):
+     * alte Datei -> "<name>.s2pold", Temp -> "<name>", erst danach "<name>.s2pold" löschen.
+     * Scheitert das Umbenennen der Temp-Datei, wird die alte Version zurückbenannt. Bricht die App mittendrin ab,
+     * räumt der nächste Lauf auf ([listRecursive] mit recover = true).
+     */
+    private fun replaceWith(tmpUri: Uri, siblings: List<LocalEntry>, name: String, relPath: String): String {
+        val old = siblings.firstOrNull { !it.isDir && it.name.equals(name, ignoreCase = true) }
+        var backupId: String? = null
+        if (old != null) {
+            siblings.firstOrNull { !it.isDir && it.name.equals(name + OLD, ignoreCase = true) }
+                ?.let { try { delete(it.docId) } catch (ignored: Exception) {} }
+            backupId = rename(old.docId, name + OLD)
+        }
+        val finalUri = try {
+            DocumentsContract.renameDocument(resolver, tmpUri, name)
+                ?: throw IOException("Umbenennen von '$relPath' fehlgeschlagen")
+        } catch (e: Exception) {
+            // Alte Version wiederherstellen; die Temp-Datei bleibt liegen (wird nie synchronisiert)
+            backupId?.let { try { rename(it, name) } catch (ignored: Exception) {} }
+            throw e
+        }
+        backupId?.let { try { delete(it) } catch (ignored: Exception) {} }
         return DocumentsContract.getDocumentId(finalUri)
     }
 
@@ -193,12 +272,16 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
      */
     fun writeFileResumable(
         relPath: String, expectedSize: Long, remoteModified: Long,
+        /** Die Datei gab es beim Einlesen nicht: ist sie inzwischen entstanden -> [ChangedDuringRunException] */
+        expectNew: Boolean = false,
         write: (OutputStream, Long) -> Unit,
     ): Pair<String, Long> {
         val parentRel = relPath.substringBeforeLast('/', "")
         val name = relPath.substringAfterLast('/')
         val parentId = ensureDir(parentRel)
         val siblings = children(parentId)
+        if (expectNew && siblings.any { !it.isDir && it.name.equals(name, ignoreCase = true) })
+            throw ChangedDuringRunException()
         var offset = 0L
         var tmpUri: Uri? = null
         val tmp = siblings.firstOrNull { !it.isDir && it.name == name + TEMP }
@@ -229,10 +312,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             try { DocumentsContract.deleteDocument(resolver, uri) } catch (ignored: Exception) {}
             throw IOException("Grösse nach Download stimmt nicht ($written statt $expectedSize Bytes)")
         }
-        siblings.firstOrNull { !it.isDir && it.name.equals(name, ignoreCase = true) }?.let { delete(it.docId) }
-        val finalUri = DocumentsContract.renameDocument(resolver, uri, name)
-            ?: throw IOException("Umbenennen von '$relPath' fehlgeschlagen")
-        return DocumentsContract.getDocumentId(finalUri) to offset
+        return replaceWith(uri, siblings, name, relPath) to offset
     }
 
     fun rename(docId: String, newName: String): String {
@@ -271,6 +351,45 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         }
     }
 
+    /** Alle Dateien im Papierkorb (neuer und alter Name) als Einträge für die Wiederherstellung (0.5.0) */
+    fun listTrash(): List<TrashEntry> {
+        val out = ArrayList<TrashEntry>()
+        fun walk(rel: String, docId: String) {
+            val all = children(docId)
+            val names = all.filter { !it.isDir }.map { it.name.lowercase() }.toSet()
+            for (e in all) {
+                val r = "$rel/${e.name}"
+                if (e.isDir) walk(r, e.docId)
+                else if (!e.name.endsWith(TEMP, true) && !e.name.endsWith(OLD, true))
+                    TrashIndex.entry(Side.LOCAL, r, e.size, e.modified, names)?.let { out += it }
+            }
+        }
+        children(rootDocId).filter {
+            it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
+        }.forEach { walk(it.name, it.docId) }
+        return out
+    }
+
+    /**
+     * Verschiebt eine Datei von [fromRel] nach [toRel] (Wiederherstellen aus dem Papierkorb, 0.5.0) und benennt sie
+     * dabei um. Kann der Anbieter nicht verschieben: kopieren + löschen. Liefert die Dokument-ID am neuen Ort.
+     */
+    fun moveFile(fromRel: String, entry: LocalEntry, toRel: String): String {
+        val sourceParent = ensureDir(fromRel.substringBeforeLast('/', ""))
+        val targetParent = ensureDir(toRel.substringBeforeLast('/', ""))
+        val name = toRel.substringAfterLast('/')
+        val moved = try {
+            DocumentsContract.moveDocument(resolver, docUri(entry.docId), docUri(sourceParent), docUri(targetParent))
+                ?.let { DocumentsContract.getDocumentId(it) }
+        } catch (e: Exception) { null }
+        if (moved == null) {
+            val id = writeFile(toRel) { out -> openInput(entry.docId).use { it.copyTo(out, 1 shl 16) } }
+            delete(entry.docId)
+            return id
+        }
+        return if (entry.name != name) rename(moved, name) else moved
+    }
+
     /**
      * Löscht im Papierkorb (neuer und alter Name) alle Datumsordner "yyyy-MM-dd", die vor [cutoff] liegen.
      * Liefert die Anzahl gelöschter Ordner.
@@ -289,4 +408,11 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     }
 
     private val TEMP = com.sync2pc.app.smb.SmbSession.TEMP_SUFFIX
+    private val OLD = OLD_SUFFIX
 }
+
+/** Alte Version während des Ersetzens auf dem Handy (0.4.1), wird nie synchronisiert */
+const val OLD_SUFFIX = ".s2pold"
+
+/** Zieldatei wurde seit dem Einlesen geändert bzw. ist neu entstanden -> nicht überschreiben (0.4.1) */
+class ChangedDuringRunException : IOException("Datei wurde während des Laufs geändert")

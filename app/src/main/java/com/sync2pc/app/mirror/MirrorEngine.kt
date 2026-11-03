@@ -80,9 +80,14 @@ class MirrorEngine(
         private set
     @Volatile override var spaceShortage = false
         private set
+    override var blocked = false
+        private set
 
     private val dao = AppDatabase.get(context).dao()
+    private val guards = GuardStore(context)
     private val dir: SyncDirection = profile.dir()
+    /** Löschungen übernehmen? (einmal aus nach "Nicht löschen" bei der Schutzbremse) */
+    private var propagate = profile.propagateDeletes
     private val today = SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).format(Date())
 
     private enum class Kind { UPLOAD, DOWNLOAD, TRASH_LOCAL, TRASH_REMOTE, RECORD, DROP, CONFLICT, KEEP_BOTH }
@@ -126,6 +131,7 @@ class MirrorEngine(
         run = run.copy(id = dao.insertRun(run))
         var status = "OK"
         var message = ""
+        var massWarn: String? = null
         try {
             if (!dryRun) {
                 val day = 24L * 3600 * 1000
@@ -133,6 +139,8 @@ class MirrorEngine(
                 dao.pruneLogs(now - 30 * day); dao.pruneRuns(now - 90 * day)
             }
             log("I", "Start ($trigger) – Ordner-Sync '${profile.name}' (${dir.label})")
+            // Offene Entscheidung der Schutzbremse -> nichts tun, bis der Benutzer entschieden hat
+            if (!dryRun) guards.get(profile.id)?.let { return block(it) }
             emit("Lese Ordner…", 0, 0, 0, 0, null)
 
             // --- 1. Beide Seiten einlesen ---------------------------------------
@@ -140,11 +148,15 @@ class MirrorEngine(
             if (!LocalTree.hasPermission(context, treeUri))
                 throw IOException("Kein Zugriff mehr auf den Handy-Ordner – bitte im Profil neu auswählen")
             tree = LocalTree(context, treeUri)
+            var states = dao.mirrorStates(profile.id).associateBy { it.relPath }
+            // Handy-Ordner gelöscht oder verschoben? (Schutzbremse statt "alles gelöscht")
+            val localRootOk = try { tree.stat(tree.rootDocId) != null } catch (e: Exception) { false }
+            if (!localRootOk) {
+                if (states.isNotEmpty()) return block(Guard(profile.id, GuardKind.LOCAL_MISSING))
+                throw IOException("Handy-Ordner nicht gefunden – bitte im Profil neu auswählen")
+            }
             val filter = FileFilter(profile.includePatterns, profile.excludePatterns)
             val skipTrash: (String) -> Boolean = { it.equals(TRASH_DIR, ignoreCase = true) || it.equals(OLD_TRASH_DIR, ignoreCase = true) }
-            local = tree.listRecursive(skipTrash).filterKeys { filter.accepts(it) }
-                .entries.associate { it.key.lowercase() to (it.key to it.value) }
-
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {
@@ -152,19 +164,50 @@ class MirrorEngine(
                 else { if (isNetworkError(e)) connectionFailed = true; throw e }
             }
             val s = smb
+            var baseExists = false
             if (s != null) {
-                if (!dryRun) s.ensureDir(s.path())
-                remote = s.listRecursive(s.path(), skipTrash).filterKeys { filter.accepts(it) }
-                    .entries.associate { it.key.lowercase() to (it.key to it.value) }
+                val base = s.path()
+                baseExists = s.dirExists(base)
+                if (!baseExists && states.isNotEmpty()) {
+                    // Schon synchronisiert, aber der PC-Ordner fehlt: nicht leer neu anlegen (sonst gälte alles als gelöscht)
+                    return block(Guard(profile.id, GuardKind.REMOTE_MISSING))
+                }
+                if (!baseExists && !dryRun) { s.ensureDir(base); baseExists = true } // Erstabgleich: Ordner anlegen
             }
-            val states = dao.mirrorStates(profile.id).associateBy { it.relPath }
+            // Vorgemerkte Wiederherstellungen (0.5.0) vor dem Einlesen: Der Abgleich sieht danach den neuen Stand
+            // (nicht, solange nach einem Ordnerwechsel die Stichprobe aussteht – erst muss der Ordner bestätigt sein)
+            if (!dryRun && s != null && guards.pendingCheck(profile.id).isEmpty() && runRestores(s))
+                states = dao.mirrorStates(profile.id).associateBy { it.relPath }
+
+            // recover: liegengebliebene ".s2pold" aufräumen bzw. zurückholen (nicht in der Simulation)
+            local = tree.listRecursive(skipTrash, recover = !dryRun).filterKeys { filter.accepts(it) }
+                .entries.associate { it.key.lowercase() to (it.key to it.value) }
+            if (s != null) {
+                remote = if (baseExists) s.listRecursive(s.path(), skipTrash).filterKeys { filter.accepts(it) }
+                    .entries.associate { it.key.lowercase() to (it.key to it.value) } else emptyMap()
+            }
             val conflicts = dao.conflicts(profile.id).associateBy { it.relPath.lowercase() }
             log("I", "Handy: ${local.size} Dateien, PC: ${remote.size} Dateien")
+
+            // Nach einem Ordnerwechsel: Stichprobe, ob der neue Ordner zum Sync-Stand passt
+            val pending = guards.pendingCheck(profile.id)
+            if (pending.isNotEmpty() && s != null) {
+                if (states.isNotEmpty() && !folderMatches(pending, states.values.toList()))
+                    return block(Guard(profile.id, GuardKind.CHECK_FOLDER))
+                if (!dryRun) guards.setPendingCheck(profile.id, emptySet())
+            }
+            // "Nicht löschen" bei der Schutzbremse: dieser Lauf übernimmt keine Löschungen
+            if (!dryRun && guards.takeKeepFiles(profile.id)) {
+                propagate = false
+                log("I", "Löschungen werden in diesem Lauf nicht übernommen (deine Entscheidung)")
+            }
             if (!dryRun) purgeTrash()
 
             // --- 2. Planen -------------------------------------------------------
             emit("Vergleiche…", 0, 0, 0, 0, null)
             val actions = ArrayList<Action>()
+            // Erledigte Konflikte erst nach der Schutzbremse entfernen (sonst ginge die Entscheidung verloren)
+            val doneConflicts = ArrayList<String>()
             val keys = (local.keys + remote.keys + states.keys).toSortedSet()
             for (k in keys) {
                 currentCoroutineContext().ensureActive()
@@ -179,14 +222,29 @@ class MirrorEngine(
                             ConflictResolution.KEEP_REMOTE -> actions += Action(k, rel, Kind.DOWNLOAD, trashOther = true)
                             else -> actions += Action(k, rel, Kind.KEEP_BOTH)
                         }
-                        if (!dryRun) dao.deleteConflict(profile.id, c.relPath)
+                        doneConflicts += c.relPath
                         continue
                     }
                     // Eine Seite ist inzwischen weg -> Konflikt erledigt, normal weiter
-                    if (!dryRun) dao.deleteConflict(profile.id, c.relPath)
+                    doneConflicts += c.relPath
                 }
                 plan(k, rel, l?.second, r?.second, st)?.let { actions += it }
             }
+
+            // Schutzbremse: zu viele Löschungen (Anteil pro Profil, ab 100 Dateien immer) oder ein ganzer Unterordner
+            val trashRels = actions.filter { it.kind == Kind.TRASH_LOCAL || it.kind == Kind.TRASH_REMOTE }.map { it.rel }
+            val toTrash = trashRels.size
+            val allowed = !dryRun && guards.takeAllowDelete(profile.id) // einmalige Freigabe immer verbrauchen
+            val vanished = GuardPolicy.vanishedFolder(trashRels, states.keys)
+            if ((GuardPolicy.massDelete(toTrash, states.size, profile.massDeletePercent) || vanished != null) && !allowed) {
+                val g = Guard(profile.id, GuardKind.MASS_DELETE, toTrash, states.size,
+                    folder = if (GuardPolicy.massDelete(toTrash, states.size, profile.massDeletePercent)) "" else vanished.orEmpty())
+                if (!dryRun) return block(g)
+                massWarn = "⚠ Der Lauf würde anhalten und nachfragen: " + (
+                    if (g.folder.isNotEmpty()) "Der Ordner „${g.folder}“ käme ganz in den Papierkorb"
+                    else "$toTrash von ${states.size} Dateien kämen in den Papierkorb")
+            }
+            if (!dryRun) for (p in doneConflicts) dao.deleteConflict(profile.id, p)
 
             // --- 3. Ausführen -----------------------------------------------------
             // Phase A (nacheinander): Verwaltung – Papierkorb, Stand merken, Konflikte, Aufräumen
@@ -197,6 +255,7 @@ class MirrorEngine(
                 val visible = actions.count { it.kind != Kind.RECORD && it.kind != Kind.DROP }
                 if (message.isEmpty()) message = "$visible Aktionen" +
                     (if (preview.size < visible) " – die ersten ${preview.size} simuliert" else " simuliert")
+                massWarn?.let { message = "$it\n$message" }
             } else {
                 val admin = actions.filter { it !in transfers }
                 for ((index, a) in admin.withIndex()) {
@@ -259,7 +318,7 @@ class MirrorEngine(
             // war synchron, auf dem PC gelöscht
             return when {
                 dir == SyncDirection.UPLOAD -> Action(k, rel, Kind.UPLOAD)            // Ziel wiederherstellen
-                profile.propagateDeletes -> Action(k, rel, Kind.TRASH_LOCAL)
+                propagate -> Action(k, rel, Kind.TRASH_LOCAL)
                 dir == SyncDirection.BOTH -> Action(k, rel, Kind.UPLOAD)              // nichts verlieren
                 else -> Action(k, rel, Kind.DROP)                                     // PC → Handy: Handy-Kopie behalten
             }
@@ -268,7 +327,7 @@ class MirrorEngine(
             if (st == null) return if (dir.down) Action(k, rel, Kind.DOWNLOAD) else null // neu auf dem PC
             return when {
                 dir == SyncDirection.DOWNLOAD -> Action(k, rel, Kind.DOWNLOAD)
-                profile.propagateDeletes -> Action(k, rel, Kind.TRASH_REMOTE)
+                propagate -> Action(k, rel, Kind.TRASH_REMOTE)
                 dir == SyncDirection.BOTH -> Action(k, rel, Kind.DOWNLOAD)
                 else -> Action(k, rel, Kind.DROP)
             }
@@ -290,17 +349,53 @@ class MirrorEngine(
                     } else Action(k, rel, Kind.CONFLICT)
             }
         }
-        if (changedL) return if (dir.up) Action(k, rel, Kind.UPLOAD) else null
-        return if (dir.down) Action(k, rel, Kind.DOWNLOAD) else null
+        // Nur eine Seite geändert: Versionsschutz (0.5.0) -> die überschriebene Version kommt in den Papierkorb
+        if (changedL) return if (dir.up) Action(k, rel, Kind.UPLOAD, trashOther = profile.keepVersions) else null
+        return if (dir.down) Action(k, rel, Kind.DOWNLOAD, trashOther = profile.keepVersions) else null
     }
 
+    /**
+     * Gleicher Inhalt? Nur beim Erstabgleich und bei auf beiden Seiten geänderten Dateien nötig, darum
+     * gründlich (0.4.1): bis 32 MB die ganze Datei, darüber 32 Stichproben (PartialHash.thorough).
+     */
     private fun sameContent(l: LocalEntry, rel: String, r: RemoteEntry): Boolean {
         val s = smb ?: return false
         if (l.size != r.size) return false
-        val lh = PartialHash.compute(l.size) { off, len -> tree.readAt(l.docId, off, len) }
-        val rh = s.partialHash(remotePath(rel), r.size)
-        return lh == rh
+        return tree.contentHash(l.docId, l.size) == s.contentHash(remotePath(rel), r.size)
     }
+
+    /** Stichprobe nach einem Ordnerwechsel: passt der Ordner auf den gewechselten Seiten zum Sync-Stand? */
+    private fun folderMatches(sides: Set<Side>, states: List<MirrorState>): Boolean {
+        val sample = GuardPolicy.sample(states)
+        val dirs = GuardPolicy.topDirs(states.map { it.relPath })
+        return sides.all { side ->
+            val sizes: Map<String, Long> =
+                if (side == Side.LOCAL) local.mapValues { it.value.second.size } else remote.mapValues { it.value.second.size }
+            val existingDirs = sizes.keys.filter { '/' in it }.map { it.substringBefore('/') }.toSet()
+            GuardPolicy.matches(sample, dirs, side, { sizes[it] }, { it in existingDirs })
+        }
+    }
+
+    /**
+     * Schutzbremse: Lauf anhalten und auf den Benutzer warten (Startseite + Hinweis).
+     * In der Simulation wird nur gemeldet, dass der Lauf anhalten würde.
+     */
+    private suspend fun block(g: Guard): SyncRun {
+        val msg = if (dryRun) "⚠ Der Lauf würde anhalten und nachfragen: ${MirrorGuard.title(g)}"
+        else "Wartet auf deine Entscheidung: ${MirrorGuard.title(g)}"
+        if (!dryRun) { guards.set(g); blocked = true }
+        log("W", msg)
+        return finish("WAITING", msg)
+    }
+
+    /** Ist die PC-Datei noch so wie beim Einlesen? (beide null = weiterhin nicht vorhanden) */
+    private fun unchanged(now: RemoteEntry?, listed: RemoteEntry?): Boolean =
+        if (now == null || listed == null) now == null && listed == null
+        else now.size == listed.size && now.modified == listed.modified
+
+    private fun unchanged(now: LocalEntry?, listed: LocalEntry?): Boolean =
+        if (now == null || listed == null) now == null && listed == null
+        else now.size == listed.size && now.modified == listed.modified
 
     // ---- Ausführung ------------------------------------------------------------------
     private fun remotePath(s: SmbSession, rel: String): String = s.path(rel.replace('/', '\\'))
@@ -423,12 +518,27 @@ class MirrorEngine(
         when (a.kind) {
             Kind.UPLOAD -> {
                 l ?: return
-                if (a.trashOther && r != null) trashRemote(s, a.rel)
+                // Während des Laufs auf dem PC geändert? Dann nicht überschreiben – der nächste Lauf entscheidet
+                if (!unchanged(s.stat(remotePath(s, a.rel)), r)) return skipChanged(a.rel, "auf dem PC")
+                if (a.trashOther && r != null) {
+                    // Zuerst den Sync-Stand vergessen: Scheitert der Upload, gilt die Datei beim nächsten Lauf
+                    // als neu (wird übertragen) statt als "auf dem PC gelöscht" (würde sonst auch das Handy löschen)
+                    dao.deleteMirrorState(profile.id, a.key)
+                    trashRemote(s, a.rel)
+                }
                 upload(s, a.key, a.rel, l, onBytes)
             }
             Kind.DOWNLOAD -> {
                 r ?: return
-                if (a.trashOther && l != null) { tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet() }
+                // Vorhandene Handy-Datei seit dem Einlesen geändert? (Neu entstandene prüft writeFileResumable)
+                if (l != null) {
+                    val nowLocal = try { tree.stat(l.docId) } catch (e: Exception) { null }
+                    if (!unchanged(nowLocal, l)) return skipChanged(a.rel, "auf dem Handy")
+                }
+                if (a.trashOther && l != null) {
+                    dao.deleteMirrorState(profile.id, a.key)
+                    tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet()
+                }
                 download(s, a.key, a.rel, r, onBytes)
             }
             Kind.KEEP_BOTH -> {
@@ -458,6 +568,8 @@ class MirrorEngine(
             openInput = { off -> tree.openInput(l.docId, off) },
             onProgress = onBytes, checkCancel = { ctx.ensureActive() },
             modifiedMillis = l.modified, replaceExisting = true,
+            // Fortsetzen einer angefangenen .s2ptmp nur mit Prüfung gegen die Handy-Datei (0.4.1)
+            expectedHash = { PartialHash.compute(l.size) { off, len -> tree.readAt(l.docId, off, len) } },
         )
         val rs = s.stat(path) ?: throw IOException("Datei nach Upload nicht gefunden")
         if (rs.size != l.size) throw IOException("Grösse nach Upload stimmt nicht")
@@ -469,14 +581,78 @@ class MirrorEngine(
     private suspend fun download(s: SmbSession, key: String, rel: String, r: RemoteEntry, onBytes: (Long) -> Unit) {
         val ctx = currentCoroutineContext()
         // Abgebrochene Downloads setzen an der Abbruchstelle fort (angefangene .s2ptmp auf dem Handy)
-        val (docId, resumedAt) = tree.writeFileResumable(rel, r.size, r.modified) { out, offset ->
-            s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
+        // Gab es die Datei beim Einlesen nicht, ist sie inzwischen aber auf dem Handy entstanden -> nicht überschreiben
+        val expectNew = local[key] == null
+        val (docId, resumedAt) = try {
+            tree.writeFileResumable(rel, r.size, r.modified, expectNew = expectNew) { out, offset ->
+                s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
+            }
+        } catch (e: ChangedDuringRunException) {
+            return skipChanged(rel, "auf dem Handy")
         }
         val ls = tree.stat(docId) ?: throw IOException("Datei nach Download nicht gefunden")
         if (ls.size != r.size) throw IOException("Grösse nach Download stimmt nicht")
         record(key, ls, r)
         down.incrementAndGet(); bytes.addAndGet(r.size)
         log("I", "↓ $rel" + if (resumedAt > 0) " (fortgesetzt ab ${com.sync2pc.app.sync.Notifications.formatBytes(resumedAt)})" else "")
+    }
+
+    /**
+     * Vorgemerkte Wiederherstellungen ausführen (0.5.0): aktuelle Version auf beiden Seiten in den Papierkorb,
+     * alte Version an den ursprünglichen Ort zurück und auf die andere Seite kopieren, Sync-Stand setzen.
+     * Netzwerkfehler -> Vormerkung bleibt, der Lauf wird wie üblich unterbrochen. Liefert true, wenn etwas geschah.
+     */
+    private suspend fun runRestores(s: SmbSession): Boolean {
+        val list = dao.pendingRestores(profile.id)
+        if (list.isEmpty()) return false
+        log("I", "Stelle ${list.size} Datei(en) aus dem Papierkorb wieder her")
+        for (r in list) {
+            currentCoroutineContext().ensureActive()
+            val key = r.origPath.lowercase()
+            try {
+                val fromPc = r.side == Side.REMOTE.name
+                val trashFull = s.path(r.trashPath.replace('/', '\\'))
+                val localSource = if (fromPc) null else tree.find(r.trashPath)
+                val remoteSource = if (fromPc) s.stat(trashFull) else null
+                if (localSource == null && remoteSource == null) {
+                    log("W", "↺ ${r.origPath}: Version im Papierkorb nicht mehr vorhanden – übersprungen")
+                    dao.deleteRestore(r.id)
+                    continue
+                }
+                // 1. Aktuelle Versionen (falls vorhanden) in den Papierkorb – so ist auch das Wiederherstellen umkehrbar
+                dao.deleteMirrorState(profile.id, key)
+                tree.find(r.origPath)?.let { tree.moveToTrash(r.origPath, it, today); trashed.incrementAndGet() }
+                if (s.stat(remotePath(s, r.origPath)) != null) trashRemote(s, r.origPath)
+                // 2. Alte Version zurück an ihren Ort, 3. auf die andere Seite kopieren (setzt den Sync-Stand)
+                if (localSource != null) {
+                    val id = tree.moveFile(r.trashPath, localSource, r.origPath)
+                    val l = tree.stat(id) ?: throw IOException("Wiederhergestellte Datei nicht gefunden")
+                    upload(s, key, r.origPath, l) {}
+                } else {
+                    val dest = remotePath(s, r.origPath)
+                    s.ensureDir(dest.substringBeforeLast('\\', ""))
+                    s.move(trashFull, dest)
+                    val re = s.stat(dest) ?: throw IOException("Wiederhergestellte Datei nicht gefunden")
+                    download(s, key, r.origPath, re) {}
+                }
+                dao.deleteConflict(profile.id, r.origPath)
+                dao.deleteRestore(r.id)
+                log("I", "↺ ${r.origPath} wiederhergestellt (Version vom ${r.trashPath.split('/').getOrNull(1) ?: "?"})")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (isNetworkError(e)) { connectionFailed = true; throw e } // bleibt vorgemerkt
+                failed.incrementAndGet()
+                log("E", "✗ Wiederherstellen ${r.origPath}: ${com.sync2pc.app.sync.shortError(e)}")
+                dao.deleteRestore(r.id)
+            }
+        }
+        return true
+    }
+
+    /** Datei wurde seit dem Einlesen geändert -> nicht überschreiben; der nächste Lauf sieht beide Stände */
+    private suspend fun skipChanged(rel: String, where: String) {
+        log("W", "⏭ $rel: wurde während des Laufs $where geändert – folgt beim nächsten Sync")
     }
 
     /** PC-Datei nach "<Basis>\.LeoSync-Papierkorb\<Datum>\<Pfad>" verschieben */

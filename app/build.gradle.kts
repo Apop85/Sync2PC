@@ -87,6 +87,11 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// Room liest und schreibt das Schema (app/schemas/…/<Version>.json) in Debug UND Release. Laufen beide KSP-Schritte
+// gleichzeitig, liest der eine evtl. eine gerade erst angelegte, noch leere Datei
+// ("Expected start of the object '{', but had 'EOF'", so beim ersten Build von DB-Version 4). Darum nacheinander.
+tasks.matching { it.name == "kspReleaseKotlin" }.configureEach { mustRunAfter("kspDebugKotlin") }
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
