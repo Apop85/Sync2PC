@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,7 +29,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -156,6 +156,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     var confirmDelete by remember { mutableStateOf(false) }
     var showCleanup by remember { mutableStateOf(false) }
     var working by remember { mutableStateOf(false) }
+    var pickDay by remember { mutableStateOf(false) }
     LaunchedEffect(profile.id, reload) { loaded = null; loaded = RestoreManager.load(ctx, profile) }
 
     val data = loaded
@@ -167,7 +168,14 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         }
         return
     }
-    val visible = if (date == null) data.entries else data.entries.filter { it.date == date }
+    // Gewählter Tag nach "Neu einlesen" nicht mehr vorhanden -> wieder alle Tage
+    val day = date?.takeIf { d -> data.entries.any { it.date == d } }
+    if (pickDay) DayPickerDialog(
+        entries = data.entries, initial = setOfNotNull(day), multi = false,
+        onDismiss = { pickDay = false },
+        onDone = { date = it.firstOrNull(); pickDay = false },
+    )
+    val visible = if (day == null) data.entries else data.entries.filter { it.date == day }
     fun isSel(e: TrashEntry) = selected.any { it.side == e.side && it.trashPath == e.trashPath }
     fun toggle(e: TrashEntry) {
         selected = if (isSel(e)) selected.filterNot { it.side == e.side && it.trashPath == e.trashPath }
@@ -210,16 +218,11 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                 Hint("Hier liegen gelöschte Dateien und ältere Versionen. Markiere Einträge, um sie wiederherzustellen " +
                     "oder endgültig zu löschen.")
             }
-            // Filter nach Datum
+            // Filter nach Datum (0.6.4: ein Wertfeld statt einer Chip-Reihe pro Tag)
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    item { FilterChip(selected = date == null, onClick = { date = null }, label = { Text("Alle Tage") }) }
-                    items(TrashIndex.dates(data.entries)) { d ->
-                        FilterChip(selected = date == d, onClick = { date = d }, label = { Text(dayLabel(d)) })
-                    }
-                }
+                ValueField("Tag", day?.let(::dayLabel) ?: "Alle Tage") { pickDay = true }
             }
-            date?.let { d ->
+            day?.let { d ->
                 item {
                     OutlinedButton(onClick = { selected = TrashIndex.select(selected, TrashIndex.ofDate(data.entries, d)) },
                         modifier = Modifier.fillMaxWidth()) { Text("Alles vom ${dayLabel(d)} auswählen") }
@@ -356,6 +359,7 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
     var dates by remember { mutableStateOf<Set<String>>(emptySet()) }
     var sides by remember { mutableStateOf(PurgeSides.BOTH) }
     var confirm by remember { mutableStateOf(false) }
+    var pickDays by remember { mutableStateOf(false) }
 
     val days = daysText.toIntOrNull()?.coerceIn(0, 3650)
     val rule: PurgeRule? = when (mode) {
@@ -385,14 +389,12 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
         )
         ModeRow("Einzelne Tage", mode == PurgeRule.Mode.DATES) { mode = PurgeRule.Mode.DATES }
         if (mode == PurgeRule.Mode.DATES) {
-            val all = TrashIndex.dates(data.entries)
-            if (all.isEmpty()) Hint("Keine Tage im Papierkorb.")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(all) { d ->
-                    FilterChip(selected = d in dates, onClick = { dates = if (d in dates) dates - d else dates + d },
-                        label = { Text(dayLabel(d)) })
-                }
-            }
+            if (data.entries.isEmpty()) Hint("Keine Tage im Papierkorb.")
+            else ValueField("Tage", when (dates.size) {
+                0 -> "Keine gewählt"
+                1 -> dayLabel(dates.first())
+                else -> "${dates.size} Tage gewählt"
+            }) { pickDays = true }
         }
         ModeRow("Alles", mode == PurgeRule.Mode.ALL) { mode = PurgeRule.Mode.ALL }
 
@@ -412,6 +414,12 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
                 contentColor = MaterialTheme.colorScheme.onError),
         ) { Text("Endgültig löschen") }
     }
+
+    if (pickDays) DayPickerDialog(
+        entries = data.entries, initial = dates, multi = true,
+        onDismiss = { pickDays = false },
+        onDone = { dates = it; pickDays = false },
+    )
 
     if (confirm && rule != null) AlertDialog(
         onDismissRequest = { confirm = false },
@@ -436,6 +444,72 @@ private fun ModeRow(label: String, selected: Boolean, onClick: () -> Unit) {
         RadioButton(selected = selected, onClick = onClick)
         Text(label)
     }
+}
+
+/** Auswahl als Zeile: Name oben klein, aktueller Wert darunter; Tippen öffnet die Auswahl (0.6.4) */
+@Composable
+fun ValueField(label: String, value: String, onClick: () -> Unit) {
+    OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.bodyLarge)
+            }
+            Icon(Icons.Filled.ArrowDropDown, null)
+        }
+    }
+}
+
+/**
+ * Tage im Papierkorb als Liste (neueste zuerst) mit Anzahl und Grösse pro Tag.
+ * multi = false: "Alle Tage" + ein Tag, Tippen übernimmt sofort (leere Menge = alle Tage).
+ * multi = true: Häkchen, "Übernehmen".
+ */
+@Composable
+private fun DayPickerDialog(
+    entries: List<TrashEntry>, initial: Set<String>, multi: Boolean,
+    onDismiss: () -> Unit, onDone: (Set<String>) -> Unit,
+) {
+    var chosen by remember { mutableStateOf(initial) }
+    val byDay = remember(entries) { entries.groupBy { it.date } }
+    val days = remember(entries) { TrashIndex.dates(entries) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (multi) "Tage wählen" else "Tag wählen") },
+        text = {
+            LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                if (multi) item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { chosen = days.toSet() }) { Text("Alle") }
+                        TextButton(onClick = { chosen = emptySet() }) { Text("Keine") }
+                    }
+                } else item {
+                    Row(Modifier.fillMaxWidth().clickable { onDone(emptySet()) }, verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = initial.isEmpty(), onClick = { onDone(emptySet()) })
+                        Text("Alle Tage", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+                items(days, key = { it }) { d ->
+                    val inDay = byDay[d].orEmpty()
+                    val toggle: () -> Unit = {
+                        if (multi) { chosen = if (d in chosen) chosen - d else chosen + d } else { onDone(setOf(d)) }
+                    }
+                    Row(Modifier.fillMaxWidth().clickable(onClick = toggle), verticalAlignment = Alignment.CenterVertically) {
+                        if (multi) Checkbox(checked = d in chosen, onCheckedChange = { toggle() })
+                        else RadioButton(selected = d in initial, onClick = toggle)
+                        Column {
+                            Text(dayLabel(d), style = MaterialTheme.typography.bodyLarge)
+                            Hint("${inDay.size} Dateien · ${Notifications.formatBytes(TrashPurge.bytes(inDay))}")
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (multi) TextButton(onClick = { onDone(chosen) }) { Text("Übernehmen") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+    )
 }
 
 /** "2026-11-03" -> "03.11.2026" */
