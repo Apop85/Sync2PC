@@ -115,18 +115,21 @@ Mit dem Test-Profil von oben, **Löschungen übernehmen** eingeschaltet, nach ei
 
 1. **Update 0.4.2 → 0.5.0** über die bestehende App (DB-Version 4 → 5): Profile und Verlauf sind noch da, im Ordner-Profil ist „Alte Versionen im Papierkorb behalten“ eingeschaltet.
 2. Im Test-Ordner auf dem PC eine Textdatei ändern → *Synchronisieren*. Auf dem Handy liegt die alte Version in `.LeoSync-Papierkorb/<heute>/…`. Umgekehrt (auf dem Handy ändern) landet die alte Version im PC-Papierkorb.
-3. Startseite → Tools → **Wiederherstellen**. Bei mehreren Ordner-Profilen zuerst das Profil wählen. Die Datei erscheint mit „ältere Version“, eine gelöschte mit „gelöscht“.
-4. Eine Version wählen → *Wiederherstellen* → der Sync läuft. Danach ist die alte Version auf Handy **und** PC, die bisherige liegt im Papierkorb.
+3. Startseite → Tools → **Papierkorb** (seit 0.6.3). Bei mehreren Ordner-Profilen zuerst das Profil wählen. Die Datei erscheint mit „ältere Version“, eine gelöschte mit „gelöscht“.
+4. Eine Version wählen → in der Leiste unten *Wiederherstellen* → der Sync läuft. Danach ist die alte Version auf Handy **und** PC, die bisherige liegt im Papierkorb.
 5. „Alles vom … auswählen“ und „Ganzer Ordner“ ausprobieren: pro Datei wird nur eine Version gewählt.
 6. **PC aus:** PC ausschalten, eine Wiederherstellung auslösen → Startseite zeigt „Wiederherstellung vorgemerkt“. PC einschalten → nächster Sync führt sie aus.
 
-### Test Papierkorb leeren (seit 0.6.0)
+### Test Papierkorb aufräumen (seit 0.6.0, seit 0.6.3 im Tool „Papierkorb“)
 
-1. Startseite → Tools → **Papierkorb leeren**. Die Kachel zeigt nach dem ersten Öffnen die belegte Grösse.
+1. Startseite → Tools → **Papierkorb** → **Aufräumen…** (Fenster von unten). Die Kachel zeigt nach dem ersten Öffnen die belegte Grösse.
 2. „Älter als 0 Tage“, „Nur Handy“ → Anzahl und Grösse stimmen mit dem Handy-Papierkorb überein; nach dem Löschen ist `.LeoSync-Papierkorb` auf dem Handy leer, auf dem PC unverändert.
 3. „Einzelne Tage“ mit einem Tag, „Handy und PC“ → nur dieser Tagesordner verschwindet auf beiden Seiten.
 4. **PC aus:** „Alles“, „Nur PC“ → Startseite zeigt „Papierkorb leeren vorgemerkt“. PC an → nächster Sync leert ihn (Verlauf: „PC-Papierkorb geleert (vorgemerkt)“).
-5. In **Wiederherstellen** eine Version markieren → *Endgültig löschen* → sie ist weg.
+5. Im **Papierkorb** eine Version markieren → in der Leiste unten *Endgültig löschen* → sie ist weg.
+6. Mehrere Ordner-Profile: oben rechts über den Profilnamen wechseln → die Liste lädt das andere Profil.
+7. Ordner-Profil mit „Alte Versionen behalten“ **aus**: eine Datei auf dem PC löschen (mit „Löschungen übernehmen“) → sie erscheint trotzdem im Papierkorb und lässt sich wiederherstellen.
+8. Nur Fotos-Profile (oder gar keine): Kachel „Papierkorb“ ist ausgegraut; Tippen zeigt „Den Papierkorb gibt es nur bei Ordner-Profilen.“ Ohne Fotos-Profil ist „Speicher freigeben“ ausgegraut.
 
 ### Test Profil-Assistent (seit 0.5.0)
 

@@ -2,6 +2,16 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.6.3 (2026-11-03)
+
+### Geändert
+- **Papierkorb:** „Wiederherstellen“ und „Papierkorb leeren“ sind jetzt ein Tool namens „Papierkorb“.
+  - Oben zeigt eine Übersicht den belegten Platz auf Handy und PC. Der Knopf **„Aufräumen…“** öffnet die Regeln zum Leeren (älter als … Tage, einzelne Tage, alles; Handy, PC oder beide).
+  - Darunter steht der Inhalt. Sobald Einträge markiert sind, erscheint unten eine Leiste mit **„Wiederherstellen“** und **„Endgültig löschen“**.
+  - Bei mehreren Ordner-Profilen lässt sich das Profil oben rechts wechseln.
+  - Der Papierkorb gilt jetzt für alle Ordner-Profile, auch ohne „Alte Versionen behalten“. Gelöschte Dateien liegen ja trotzdem dort.
+- **Tools:** „Speicher freigeben“ und „Papierkorb“ sind immer sichtbar. Ohne passendes Profil sind sie ausgegraut, und ein Tippen erklärt, wofür sie gedacht sind.
+
 ## 0.6.2 (2026-11-03)
 
 ### Behoben

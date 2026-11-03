@@ -26,7 +26,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
@@ -63,6 +62,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.alpha
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -177,12 +178,13 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     // Papierkorb (0.6.0): zuletzt gemessene Grösse und vorgemerktes Leeren auf dem PC
     val trashSizeText = remember(tick, works, profiles) {
         val store = PurgeStore(ctx)
-        val sizes = purgeProfiles(profiles).map { store.sizes(it.id) }
+        val sizes = trashProfiles(profiles).map { store.sizes(it.id) }
         val local = sizes.map { it.first }.filter { it >= 0 }
         val remote = sizes.map { it.second }.filter { it >= 0 }
-        if (local.isEmpty() && remote.isEmpty()) "Endgültig Platz schaffen auf Handy und PC"
-        else "Belegt: Handy " + (if (local.isEmpty()) "?" else Notifications.formatBytes(local.sum())) +
-            " · PC " + (if (remote.isEmpty()) "?" else Notifications.formatBytes(remote.sum()))
+        "Dateien zurückholen oder endgültig löschen" +
+            if (local.isEmpty() && remote.isEmpty()) ""
+            else "\nBelegt: Handy " + (if (local.isEmpty()) "?" else Notifications.formatBytes(local.sum())) +
+                " · PC " + (if (remote.isEmpty()) "?" else Notifications.formatBytes(remote.sum()))
     }
     val pendingPurges = remember(tick, works, profiles) {
         val ids = profiles.map { it.id }.toSet()
@@ -323,21 +325,22 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             items(profiles, key = { it.id }) { p ->
                 ProfileCard(p, ssid, awaitingFirstStart = p.id in awaitingStart) { navigate(Screen.ProfileEdit(p.id)) }
             }
-            // Tools (0.5.0): Kacheln statt Textlinks, nur was zu den vorhandenen Profilen passt
-            val tools = buildList {
-                if (profiles.any { it.type() == ProfileType.PHOTOS }) add(
-                    ToolTile(AppIcons.Smartphone, "Speicher freigeben",
-                        "Alte, auf dem PC gesicherte Fotos vom Handy entfernen") { navigate(Screen.FreeSpace) }
-                )
-                if (restoreProfiles(profiles).isNotEmpty()) add(
-                    ToolTile(Icons.Filled.Refresh, "Wiederherstellen",
-                        "Gelöschte Dateien und alte Versionen zurückholen") { navigate(Screen.Restore) }
-                )
-                if (purgeProfiles(profiles).isNotEmpty()) add(
-                    ToolTile(Icons.Filled.Delete, "Papierkorb leeren", trashSizeText) { navigate(Screen.Purge) }
-                )
-            }
-            if (tools.isNotEmpty()) {
+            // Tools (0.6.3): immer sichtbar; ohne passendes Profil ausgegraut, Tippen zeigt einen Hinweis
+            val hasPhotos = profiles.any { it.type() == ProfileType.PHOTOS }
+            val hasMirror = trashProfiles(profiles).isNotEmpty()
+            val tools = listOf(
+                ToolTile(AppIcons.Smartphone, "Speicher freigeben",
+                    if (hasPhotos) "Alte, auf dem PC gesicherte Fotos vom Handy entfernen" else "Nur bei Fotos-Profilen",
+                    enabled = hasPhotos,
+                    disabledHint = "Speicher freigeben gibt es nur bei Fotos-Profilen.",
+                ) { navigate(Screen.FreeSpace) },
+                ToolTile(Icons.Filled.Delete, "Papierkorb",
+                    if (hasMirror) trashSizeText else "Nur bei Ordner-Profilen",
+                    enabled = hasMirror,
+                    disabledHint = "Den Papierkorb gibt es nur bei Ordner-Profilen.",
+                ) { navigate(Screen.Trash) },
+            )
+            run {
                 item { Text("Tools", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 4.dp)) }
                 if (pendingPurges > 0) item {
                     ActionCard(
@@ -526,14 +529,23 @@ private fun StatusCard(
     }
 }
 
-/** Eintrag in der Sektion "Tools" (0.5.0, seit 0.6.1 eine Zeile pro Tool) */
-private class ToolTile(val icon: ImageVector, val title: String, val text: String, val onClick: () -> Unit)
+/** Eintrag in der Sektion "Tools" (0.5.0, seit 0.6.1 eine Zeile pro Tool, seit 0.6.3 ausgegraut möglich) */
+private class ToolTile(
+    val icon: ImageVector, val title: String, val text: String,
+    val enabled: Boolean = true, val disabledHint: String? = null,
+    val onClick: () -> Unit,
+)
 
 @Composable
 private fun ToolCard(t: ToolTile, modifier: Modifier) {
+    val ctx = LocalContext.current
     Card(
-        modifier = modifier.clickable(onClick = t.onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = modifier.alpha(if (t.enabled) 1f else 0.45f).clickable {
+            if (t.enabled) t.onClick()
+            else t.disabledHint?.let { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show() }
+        },
+        colors = CardDefaults.cardColors(containerColor =
+            if (t.enabled) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
