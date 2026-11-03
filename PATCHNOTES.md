@@ -2,6 +2,11 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.5.2 (2026-11-03)
+
+### Behoben
+- **Warnung „Erste Synchronisierung“ kam immer wieder:** Waren die Ordner eines Profils auf beiden Seiten leer, hielt LeoSync jeden Start für die erste Synchronisierung. Jetzt gilt ein Profil nach dem ersten erfolgreichen Lauf nicht mehr als neu, auch wenn es nichts zu übertragen gab.
+
 ## 0.5.1 (2026-11-03)
 
 ### Behoben

@@ -17,10 +17,14 @@ object FirstSync {
     fun isCharging(ctx: Context): Boolean =
         ctx.getSystemService(BatteryManager::class.java)?.isCharging == true
 
-    /** Wurde mit diesem Profil noch nie etwas gesichert bzw. abgeglichen? */
+    /**
+     * Erste Synchronisierung dieses Profils? Noch nichts gesichert bzw. abgeglichen UND noch nie ein erfolgreicher
+     * Lauf. Ohne die zweite Bedingung galt ein Profil mit leeren Ordnern bei jedem Start als "erstes Mal" (0.5.2).
+     */
     suspend fun isFirst(ctx: Context, p: Profile): Boolean = withContext(Dispatchers.IO) {
         val dao = AppDatabase.get(ctx).dao()
-        if (p.type() == ProfileType.MIRROR) dao.mirrorStateCount(p.id) == 0 else dao.syncedCountNow(p.id) == 0
+        val nothingYet = if (p.type() == ProfileType.MIRROR) dao.mirrorStateCount(p.id) == 0 else dao.syncedCountNow(p.id) == 0
+        nothingYet && dao.lastSuccessAt(p.id) == null
     }
 
     /** Warnen, wenn nicht am Strom und mindestens eines der Profile zum ersten Mal synchronisiert */
