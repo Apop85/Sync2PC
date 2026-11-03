@@ -2,6 +2,11 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.9.2 (2026-11-03)
+
+### Behoben
+- **Statuskachel während des Syncs:** Die Höhe ändert sich nicht mehr. Die Fortschrittszeile hat immer zwei Zeilen, der aktuelle Dateiname immer genau eine (lange Namen enden mit „…“), auch bevor der erste Dateiname bekannt ist.
+
 ## 0.9.1 (2026-11-03)
 
 ### Geändert

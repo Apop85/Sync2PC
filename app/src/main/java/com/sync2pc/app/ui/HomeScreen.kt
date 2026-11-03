@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.alpha
 import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -553,16 +554,22 @@ private fun StatusCard(
         Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)))
         when {
             isRunning -> {
-                if (progress != null && progress.totalFiles > 0) {
-                    val f = if (progress.totalBytes > 0) progress.doneBytes.toFloat() / progress.totalBytes else 0f
-                    Text(str(R.string.home_progress, progress.profileName, progress.doneFiles, progress.totalFiles,
-                        Notifications.formatBytes(progress.doneBytes), Notifications.formatBytes(progress.totalBytes)))
+                // Feste Zeilenzahl während des Laufs (0.9.2), damit die Kachel nicht springt: Fortschritt bzw. Phase
+                // immer 2 Zeilen, Dateiname immer genau 1 Zeile (auch wenn noch keiner bekannt ist)
+                val withFiles = progress?.takeIf { it.totalFiles > 0 }
+                val mainText = if (withFiles != null) str(R.string.home_progress, withFiles.profileName.trim(),
+                    withFiles.doneFiles, withFiles.totalFiles, Notifications.formatBytes(withFiles.doneBytes),
+                    Notifications.formatBytes(withFiles.totalBytes))
+                    else progress?.phase ?: str(R.string.home_running)
+                Text(mainText, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (withFiles != null) {
+                    val f = if (withFiles.totalBytes > 0) withFiles.doneBytes.toFloat() / withFiles.totalBytes else 0f
                     LinearProgressIndicator(progress = { f.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
-                    progress.currentFile?.let { Hint(it) }
-                } else {
-                    Text(progress?.phase ?: str(R.string.home_running))
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
+                } else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Text(
+                    progress?.currentFile.orEmpty(), minLines = 1, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             userPaused && userPausedUntil == Long.MAX_VALUE -> {
                 Text(str(R.string.home_manual_only), style = MaterialTheme.typography.titleSmall)
