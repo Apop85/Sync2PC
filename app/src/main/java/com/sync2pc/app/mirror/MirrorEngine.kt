@@ -349,6 +349,11 @@ class MirrorEngine(
                     } else Action(k, rel, Kind.CONFLICT)
             }
         }
+        // Nur eine Seite "geändert", Grösse aber gleich wie auf der anderen Seite: Ist der Inhalt gleich, hat sich nur
+        // der Zeitstempel verschoben (z. B. vom Speicherort nachträglich gesetzt) -> Stand merken statt übertragen (0.5.1)
+        // (nur prüfen, wenn sonst wirklich übertragen würde – sonst würde bei Einweg-Profilen jeder Lauf neu hashen)
+        val wouldTransfer = if (changedL) dir.up else dir.down
+        if (wouldTransfer && l.size == r.size && sameContent(l, rel, r)) return Action(k, rel, Kind.RECORD)
         // Nur eine Seite geändert: Versionsschutz (0.5.0) -> die überschriebene Version kommt in den Papierkorb
         if (changedL) return if (dir.up) Action(k, rel, Kind.UPLOAD, trashOther = profile.keepVersions) else null
         return if (dir.down) Action(k, rel, Kind.DOWNLOAD, trashOther = profile.keepVersions) else null
@@ -532,7 +537,8 @@ class MirrorEngine(
                 r ?: return
                 // Vorhandene Handy-Datei seit dem Einlesen geändert? (Neu entstandene prüft writeFileResumable)
                 if (l != null) {
-                    val nowLocal = try { tree.stat(l.docId) } catch (e: Exception) { null }
+                    // Per Ordnerliste lesen wie beim Einlesen (stat() liefert bei manchen Speicherorten andere Werte)
+                    val nowLocal = try { tree.find(a.rel) } catch (e: Exception) { null }
                     if (!unchanged(nowLocal, l)) return skipChanged(a.rel, "auf dem Handy")
                 }
                 if (a.trashOther && l != null) {
@@ -590,7 +596,10 @@ class MirrorEngine(
         } catch (e: ChangedDuringRunException) {
             return skipChanged(rel, "auf dem Handy")
         }
-        val ls = tree.stat(docId) ?: throw IOException("Datei nach Download nicht gefunden")
+        // Stand so lesen wie beim nächsten Einlesen (Ordnerliste statt Einzelabfrage): Manche Speicherorte (z. B.
+        // "Downloads") liefern sonst andere Zeitstempel -> der nächste Lauf hielte die Datei für geändert (0.5.1)
+        val ls = (try { tree.find(rel) } catch (e: Exception) { null }) ?: tree.stat(docId)
+            ?: throw IOException("Datei nach Download nicht gefunden")
         if (ls.size != r.size) throw IOException("Grösse nach Download stimmt nicht")
         record(key, ls, r)
         down.incrementAndGet(); bytes.addAndGet(r.size)

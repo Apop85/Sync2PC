@@ -2,6 +2,14 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.5.1 (2026-11-03)
+
+### Behoben
+- **Ordner-Sync: Unveränderte Datei wurde zurückgeschickt.** Direkt nach einem Download vom PC hielt LeoSync die Datei auf dem Handy beim nächsten Lauf für geändert, lud sie wieder hoch und legte mit dem Versionsschutz eine unveränderte Kopie in den PC-Papierkorb. Betroffen waren vor allem Ordner unter „Downloads“, deren Zeitstempel je nach Abfrage anders ausfallen. Jetzt:
+  - Nach dem Download wird der Stand genau so gelesen wie beim späteren Einlesen.
+  - Ist eine Datei nur scheinbar geändert (gleiche Grösse, gleicher Inhalt auf beiden Seiten), merkt sich LeoSync nur den neuen Stand, statt zu übertragen.
+  - Die Prüfung „während des Laufs geändert?“ vor einem Download liest die Handy-Datei ebenfalls wie beim Einlesen. Sonst hätte LeoSync auf solchen Speicherorten Änderungen vom PC fälschlich überspringen können.
+
 ## 0.5.0 (2026-11-03)
 
 ### Neu
