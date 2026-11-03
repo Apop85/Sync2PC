@@ -132,6 +132,19 @@ Mit dem Test-Profil von oben, **Löschungen übernehmen** eingeschaltet, nach ei
 8. Nur Fotos-Profile (oder gar keine): Kachel „Papierkorb“ ist ausgegraut; Tippen zeigt „Den Papierkorb gibt es nur bei Ordner-Profilen.“ Ohne Fotos-Profil ist „Speicher freigeben“ ausgegraut.
 9. **Hochformat (seit 0.6.4):** Automatisches Drehen einschalten, Handy quer halten → LeoSync bleibt im Hochformat.
 
+### Test Speicher freigeben für Ordner und Papierkorb-Fixes (seit 0.7.0)
+
+1. **Kachel:** Nur ein Ordner-Profil mit „Löschungen übernehmen“ an (oder Richtung beidseitig) → „Speicher freigeben“ ist ausgegraut, Tippen zeigt den Hinweis. Ordner-Profil Handy → PC ohne „Löschungen übernehmen“ → Kachel aktiv.
+2. **Auswahl:** Profil öffnen → „Älter als“ auf „Alter egal“, „Ordner“ auf einen Unterordner → „Passend: N Dateien“ stimmt. „Weitere Kriterien…“ → Dateitypen, Grösse ab, Ausnehmen (`*.pdf`) ausprobieren; zuklappen → geänderte Zeilen bleiben sichtbar.
+3. **Vorschau:** einzelne Dateien und einen ganzen Ordner abwählen → die Zahl sinkt.
+4. **Löschen:** *Auf dem PC prüfen und löschen* → Rückfrage → Dateien sind auf dem Handy weg, auf dem PC noch da. Danach *Synchronisieren*: nichts wird gelöscht oder zurückgeholt (Verlauf).
+5. **Sicherheit:** Eine Datei auf dem PC vorher ändern → sie bleibt auf dem Handy („… Dateien bleiben“). Danach im Profil „Löschungen übernehmen“ einschalten und synchronisieren → die freigegebenen Dateien bleiben auf dem PC.
+6. **Fotos:** Dieselbe Ansicht mit Fotos-Profil; Favoriten behalten; Galerie-Papierkorb wie bisher.
+7. **Sperre:** Grossen Sync starten, währenddessen Papierkorb → Aufräumen… → „Alles“ → Anzeige „Wartet, bis der laufende Sync fertig ist…“, danach wird geleert.
+8. **Vorgemerkte Wiederherstellung geschützt:** PC aus, eine PC-Version wiederherstellen (vorgemerkt) – oder eine Handy-Version, dann sofort Aufräumen… „Alles“ → Rückfrage nennt „1 Datei(en) … bleiben“, der Eintrag ist als „zum Wiederherstellen vorgemerkt“ markiert. PC an → Wiederherstellung klappt.
+9. **Namen:** Dieselbe Datei am selben Tag zweimal ersetzen → im Papierkorb `Name (HH-mm-ss).ext`; in der App erscheinen beide als Versionen derselben Datei.
+10. **Schutzbremse:** Bei vorgemerkter Wiederherstellung die Schutzbremse auslösen (z. B. PC-Ordner umbenennen) → die Karte sagt „Wartet auf deine Entscheidung (Schutzbremse)“.
+
 ### Test Profil-Assistent (seit 0.5.0)
 
 1. *Profil hinzufügen* → Typ wählen → Schritt 1–4 erscheinen einzeln mit Fortschrittsbalken. „Weiter“ ohne Pflichtangabe (Name, Ordner, Freigabe-Pfad) zeigt einen roten Hinweis.

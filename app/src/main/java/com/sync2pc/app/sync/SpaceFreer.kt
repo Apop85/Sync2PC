@@ -41,12 +41,8 @@ object SpaceFreer {
         val hash: String? = null,
     )
 
-    data class ScanResult(
-        val candidates: List<Candidate>,
-        val bytes: Long,
-        val favoritesKept: Int,
-        val notBackedUp: Int,
-    )
+    /** Fotos eines Profils als Auswahl-Einträge (0.7.0) + die nötigen Daten für Prüfung und Papierkorb */
+    data class PhotoItems(val items: List<FreeItem>, val candidates: Map<String, Candidate>)
 
     data class VerifyResult(
         val confirmed: List<Candidate>,
@@ -72,30 +68,26 @@ object SpaceFreer {
     fun <T> wholeGroups(all: List<T>, group: (T) -> String, ok: (T) -> Boolean): List<T> =
         all.groupBy(group).values.filter { members -> members.all(ok) }.flatten()
 
-    suspend fun scan(context: Context, months: Int, keepFavorites: Boolean): ScanResult = withContext(Dispatchers.IO) {
+    /**
+     * Alle Fotos/Videos eines Fotos-Profils (0.7.0). Gesichert = in der Datenbank mit gleicher Grösse (geprüft wird
+     * vor dem Löschen auf dem PC). Live-Foto-Paare haben dieselbe Gruppe; FreeRules trennt sie nie.
+     */
+    suspend fun photoItems(context: Context, profile: Profile): PhotoItems = withContext(Dispatchers.IO) {
         val dao = AppDatabase.get(context).dao()
-        val profiles = dao.profiles().filter { it.enabled && it.type() == ProfileType.PHOTOS && it.folders().isNotEmpty() }
-        val media = query(context, profiles)
+        val media = query(context, listOf(profile))
         val synced = dao.verifiedSynced().groupBy { it.sourceKey }
-        val cutoff = cutoffMillis(months)
-
-        var favoritesKept = 0
-        var notBackedUp = 0
-        val old = media.filter { it.takenMs in 1 until cutoff }
-        val byGroup = old.groupBy { it.group }
-        val result = ArrayList<Candidate>()
-        // Auch Gruppenmitglieder, die (noch) zu neu sind, verhindern das Löschen des Partners
-        val tooNewGroups = media.filter { it.takenMs >= cutoff }.map { it.group }.toSet()
-        for ((group, members) in byGroup) {
-            if (group in tooNewGroups) continue
-            if (keepFavorites && members.any { it.favorite }) { favoritesKept += members.size; continue }
-            val matches = members.map { m -> m to synced[m.sourceKey]?.firstOrNull { it.size == m.size } }
-            if (matches.any { it.second == null }) { notBackedUp += members.size; continue }
-            for ((m, s) in matches) {
-                result += Candidate(m.uri, m.sourceKey, m.name, m.size, s!!.profileId, s.remotePath, group, s.partialHash)
-            }
+        val items = ArrayList<FreeItem>()
+        val candidates = HashMap<String, Candidate>()
+        for (m in media) {
+            val s = synced[m.sourceKey]?.firstOrNull { it.size == m.size }
+            items += FreeItem(
+                key = m.sourceKey, folder = m.relPath.trimEnd('/'), name = m.name, size = m.size, time = m.takenMs,
+                backedUp = s != null, favorite = m.favorite, group = m.group,
+            )
+            if (s != null) candidates[m.sourceKey] =
+                Candidate(m.uri, m.sourceKey, m.name, m.size, s.profileId, s.remotePath, m.group, s.partialHash)
         }
-        ScanResult(result, result.sumOf { it.size }, favoritesKept, notBackedUp)
+        PhotoItems(items, candidates)
     }
 
     /** Prüft jede Datei auf dem PC. [onProgress](geprüft, gesamt) */

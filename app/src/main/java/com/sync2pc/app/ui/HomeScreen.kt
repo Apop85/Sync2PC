@@ -82,6 +82,8 @@ import com.sync2pc.app.mirror.GuardKind
 import com.sync2pc.app.mirror.GuardStore
 import com.sync2pc.app.mirror.MirrorGuard
 import com.sync2pc.app.mirror.PurgeStore
+import com.sync2pc.app.mirror.RestoreFailures
+import com.sync2pc.app.mirror.RestoreManager
 import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.sync.SyncProgress
 import com.sync2pc.app.sync.SyncScheduler
@@ -186,9 +188,23 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             else "\nBelegt: Handy " + (if (local.isEmpty()) "?" else Notifications.formatBytes(local.sum())) +
                 " · PC " + (if (remote.isEmpty()) "?" else Notifications.formatBytes(remote.sum()))
     }
-    val pendingPurges = remember(tick, works, profiles) {
+    val purgeProfilesPending = remember(tick, works, profiles) {
         val ids = profiles.map { it.id }.toSet()
-        PurgeStore(ctx).pendingProfiles().count { it in ids }
+        PurgeStore(ctx).pendingProfiles().filter { it in ids }.toSet()
+    }
+    val pendingPurges = purgeProfilesPending.size
+    // 0.7.0: Wiederherstellungen pro Profil, fehlgeschlagene (zurückgerollt) und Wartende hinter der Schutzbremse
+    val restoreProfilesPending by remember { dao.pendingRestoreProfiles() }.collectAsState(initial = emptyList())
+    var restoreFailVersion by remember { mutableIntStateOf(0) }
+    val failedRestores = remember(tick, works, profiles, pendingRestores, restoreFailVersion) {
+        RestoreFailures(ctx).restoreIds(profiles.map { it.id }).size
+    }
+    val guardedIds = guards.map { it.profileId }.toSet()
+    /** Zusatz, wenn ein Teil der vorgemerkten Arbeit hinter der Schutzbremse wartet */
+    fun guardNote(pendingIds: Collection<Long>): String? = when {
+        pendingIds.isEmpty() || pendingIds.none { it in guardedIds } -> null
+        pendingIds.all { it in guardedIds } -> "Wartet auf deine Entscheidung (Schutzbremse) – erst danach geht es weiter."
+        else -> "Bei einem Profil wartet es auf deine Entscheidung (Schutzbremse)."
     }
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, works) {
@@ -326,13 +342,14 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                 ProfileCard(p, ssid, awaitingFirstStart = p.id in awaitingStart) { navigate(Screen.ProfileEdit(p.id)) }
             }
             // Tools (0.6.3): immer sichtbar; ohne passendes Profil ausgegraut, Tippen zeigt einen Hinweis
-            val hasPhotos = profiles.any { it.type() == ProfileType.PHOTOS }
+            val canFree = freeProfiles(profiles).isNotEmpty()
             val hasMirror = trashProfiles(profiles).isNotEmpty()
             val tools = listOf(
                 ToolTile(AppIcons.Smartphone, "Speicher freigeben",
-                    if (hasPhotos) "Alte, auf dem PC gesicherte Fotos vom Handy entfernen" else "Nur bei Fotos-Profilen",
-                    enabled = hasPhotos,
-                    disabledHint = "Speicher freigeben gibt es nur bei Fotos-Profilen.",
+                    if (canFree) "Alte, auf dem PC gesicherte Dateien vom Handy entfernen"
+                    else "Nur bei Fotos-Profilen und Ordner-Profilen Handy → PC",
+                    enabled = canFree,
+                    disabledHint = FREE_HINT,
                 ) { navigate(Screen.FreeSpace) },
                 ToolTile(Icons.Filled.Delete, "Papierkorb",
                     if (hasMirror) trashSizeText else "Nur bei Ordner-Profilen",
@@ -343,17 +360,44 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             run {
                 item { Text("Tools", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 4.dp)) }
                 if (pendingPurges > 0) item {
+                    val note = guardNote(purgeProfilesPending)
                     ActionCard(
                         title = "Papierkorb leeren vorgemerkt",
-                        text = "Der PC-Papierkorb wird beim nächsten Sync mit erreichbarem PC geleert.",
+                        text = "Der PC-Papierkorb wird beim nächsten Sync mit erreichbarem PC geleert." +
+                            (note?.let { "\n$it" } ?: ""),
                         button = "Jetzt synchronisieren",
                         onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
                     )
                 }
-                if (pendingRestores > 0) item {
+                if (failedRestores > 0) item {
+                    // 0.7.0: zurückgerollt, Vormerkung bleibt – erneut versuchen oder verwerfen
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Wiederherstellen fehlgeschlagen", style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold)
+                            Text("$failedRestores Datei(en) konnten nicht wiederhergestellt werden. Es wurde alles " +
+                                "zurückgerollt; der nächste Sync versucht es erneut. Details stehen im Verlauf.")
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ }) { Text("Erneut versuchen") }
+                                OutlinedButton(onClick = {
+                                    scope.launch {
+                                        RestoreManager.discardFailed(ctx, profiles.map { it.id })
+                                        restoreFailVersion++
+                                    }
+                                }) { Text("Verwerfen") }
+                            }
+                        }
+                    }
+                }
+                if (pendingRestores > failedRestores) item {
+                    val note = guardNote(restoreProfilesPending)
                     ActionCard(
                         title = "Wiederherstellung vorgemerkt",
-                        text = "$pendingRestores Datei(en) werden beim nächsten Sync mit erreichbarem PC wiederhergestellt.",
+                        text = "${pendingRestores - failedRestores} Datei(en) werden beim nächsten Sync mit erreichbarem PC " +
+                            "wiederhergestellt." + (note?.let { "\n$it" } ?: ""),
                         button = "Jetzt synchronisieren",
                         onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
                     )

@@ -15,7 +15,6 @@ import com.sync2pc.app.data.SyncDirection
 import com.sync2pc.app.data.SyncRun
 import com.sync2pc.app.smb.RemoteEntry
 import com.sync2pc.app.smb.SmbSession
-import com.sync2pc.app.sync.FolderNames
 import com.sync2pc.app.sync.PartialHash
 import com.sync2pc.app.sync.PreviewEntry
 import com.sync2pc.app.sync.SyncProgress
@@ -29,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -127,7 +127,10 @@ class MirrorEngine(
         @Volatile var lastEmit = 0L
     }
 
-    override suspend fun run(): SyncRun {
+    /** Echte Läufe sperren Eingriffe von Hand in den Papierkorb (0.7.0, [MirrorLock]); die Simulation nicht */
+    override suspend fun run(): SyncRun = if (dryRun) runInner() else MirrorLock.mutex.withLock { runInner() }
+
+    private suspend fun runInner(): SyncRun {
         run = run.copy(id = dao.insertRun(run))
         var status = "OK"
         var message = ""
@@ -560,7 +563,8 @@ class MirrorEngine(
                 val newName = if (dot > 0) name.substring(0, dot) + "_Konflikt-Handy" + name.substring(dot) else name + "_Konflikt-Handy"
                 val newRel = if (parent.isEmpty()) newName else "$parent/$newName"
                 val newDoc = tree.rename(l.docId, newName)
-                val ls = tree.stat(newDoc) ?: throw IOException("Umbenannte Datei nicht gefunden")
+                val ls = (try { tree.find(newRel) } catch (e: Exception) { null }) ?: tree.stat(newDoc)
+                    ?: throw IOException("Umbenannte Datei nicht gefunden")
                 dao.deleteMirrorState(profile.id, a.key)
                 upload(s, newRel.lowercase(), newRel, ls, onBytes)
                 download(s, a.key, a.rel, r) { b -> onBytes(ls.size + b) }
@@ -619,48 +623,90 @@ class MirrorEngine(
         val list = dao.pendingRestores(profile.id)
         if (list.isEmpty()) return false
         log("I", "Stelle ${list.size} Datei(en) aus dem Papierkorb wieder her")
+        val failures = RestoreFailures(context)
+        val oldStates = dao.mirrorStates(profile.id).associateBy { it.relPath }
         for (r in list) {
             currentCoroutineContext().ensureActive()
             val key = r.origPath.lowercase()
+            val fromPc = r.side == Side.REMOTE.name
+            val trashFull = s.path(r.trashPath.replace('/', '\\'))
+            val dest = remotePath(s, r.origPath)
+            // Für das Zurückrollen (0.7.0): wohin die aktuellen Versionen gingen, ob die alte schon am Ziel liegt
+            var localTrashed: String? = null
+            var remoteTrashed: String? = null
+            var sourceMoved = false
             try {
-                val fromPc = r.side == Side.REMOTE.name
-                val trashFull = s.path(r.trashPath.replace('/', '\\'))
                 val localSource = if (fromPc) null else tree.find(r.trashPath)
                 val remoteSource = if (fromPc) s.stat(trashFull) else null
                 if (localSource == null && remoteSource == null) {
                     log("W", "↺ ${r.origPath}: Version im Papierkorb nicht mehr vorhanden – übersprungen")
-                    dao.deleteRestore(r.id)
+                    dao.deleteRestore(r.id); failures.clear(r.id)
                     continue
                 }
                 // 1. Aktuelle Versionen (falls vorhanden) in den Papierkorb – so ist auch das Wiederherstellen umkehrbar
                 dao.deleteMirrorState(profile.id, key)
-                tree.find(r.origPath)?.let { tree.moveToTrash(r.origPath, it, today); trashed.incrementAndGet() }
-                if (s.stat(remotePath(s, r.origPath)) != null) trashRemote(s, r.origPath)
+                tree.find(r.origPath)?.let { localTrashed = tree.moveToTrash(r.origPath, it, today); trashed.incrementAndGet() }
+                if (s.stat(dest) != null) remoteTrashed = trashRemote(s, r.origPath)
                 // 2. Alte Version zurück an ihren Ort, 3. auf die andere Seite kopieren (setzt den Sync-Stand)
                 if (localSource != null) {
                     val id = tree.moveFile(r.trashPath, localSource, r.origPath)
-                    val l = tree.stat(id) ?: throw IOException("Wiederhergestellte Datei nicht gefunden")
+                    sourceMoved = true
+                    // Per Ordnerliste lesen wie beim Einlesen (stat() liefert bei manchen Speicherorten andere Werte, 0.7.0)
+                    val l = (try { tree.find(r.origPath) } catch (e: Exception) { null }) ?: tree.stat(id)
+                        ?: throw IOException("Wiederhergestellte Datei nicht gefunden")
                     upload(s, key, r.origPath, l) {}
                 } else {
-                    val dest = remotePath(s, r.origPath)
                     s.ensureDir(dest.substringBeforeLast('\\', ""))
                     s.move(trashFull, dest)
+                    sourceMoved = true
                     val re = s.stat(dest) ?: throw IOException("Wiederhergestellte Datei nicht gefunden")
                     download(s, key, r.origPath, re) {}
                 }
                 dao.deleteConflict(profile.id, r.origPath)
-                dao.deleteRestore(r.id)
+                dao.deleteRestore(r.id); failures.clear(r.id)
                 log("I", "↺ ${r.origPath} wiederhergestellt (Version vom ${r.trashPath.split('/').getOrNull(1) ?: "?"})")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                // Zurückrollen: alte Version zurück in den Papierkorb, aktuelle Versionen an ihren Platz (0.7.0)
+                val rolledBack = rollbackRestore(s, r.origPath, r.trashPath, trashFull, dest, fromPc, sourceMoved, localTrashed, remoteTrashed)
+                if (rolledBack) oldStates[key]?.let { dao.upsertMirrorState(it) }
                 if (isNetworkError(e)) { connectionFailed = true; throw e } // bleibt vorgemerkt
                 failed.incrementAndGet()
-                log("E", "✗ Wiederherstellen ${r.origPath}: ${com.sync2pc.app.sync.shortError(e)}")
-                dao.deleteRestore(r.id)
+                // Vormerkung bleiben lassen: nächster Sync versucht es erneut, die Startseite zeigt einen Hinweis
+                failures.mark(profile.id, r.id)
+                log("E", "✗ Wiederherstellen ${r.origPath}: ${com.sync2pc.app.sync.shortError(e)}" +
+                    if (rolledBack) " – zurückgerollt, wird beim nächsten Sync erneut versucht" else
+                        " – nicht vollständig zurückgerollt, siehe Papierkorb")
             }
         }
         return true
+    }
+
+    /** Ein fehlgeschlagenes Wiederherstellen rückgängig machen. true = alles wieder wie vorher */
+    private fun rollbackRestore(
+        s: SmbSession, origPath: String, trashPath: String, trashFull: String, dest: String, fromPc: Boolean,
+        sourceMoved: Boolean, localTrashed: String?, remoteTrashed: String?,
+    ): Boolean {
+        var ok = true
+        fun step(what: String, block: () -> Unit) {
+            try { block() } catch (e: Exception) { ok = false; android.util.Log.w("MirrorEngine", "Zurückrollen $what", e) }
+        }
+        if (sourceMoved) {
+            if (fromPc) step("PC-Quelle") { if (s.stat(dest) != null && s.stat(trashFull) == null) s.move(dest, trashFull) }
+            else step("Handy-Quelle") {
+                val back = tree.find(origPath)
+                if (back != null && tree.find(trashPath) == null) tree.moveFile(origPath, back, trashPath)
+            }
+        }
+        remoteTrashed?.let { t -> step("PC-Version") { if (s.stat(dest) == null) s.move(t, dest) else ok = false } }
+        localTrashed?.let { t ->
+            step("Handy-Version") {
+                val e = tree.find(t)
+                if (e != null && tree.find(origPath) == null) tree.moveFile(t, e, origPath) else ok = false
+            }
+        }
+        return ok
     }
 
     /** Vorgemerktes Leeren des PC-Papierkorbs (PC war beim Auslösen nicht erreichbar) */
@@ -669,11 +715,13 @@ class MirrorEngine(
         val rules = store.rules(profile.id)
         val files = store.files(profile.id)
         if (rules.isEmpty() && files.isEmpty()) return
+        // Noch vorgemerkte Wiederherstellungen (z. B. fehlgeschlagene) nie mitlöschen (0.7.0)
+        val keep = TrashPurge.reservedPaths(dao.pendingRestores(profile.id), Side.REMOTE)
         try {
             var dirs = 0
-            for (r in rules) dirs += TrashCleaner.purgeRemote(s, r)
+            for (r in rules) dirs += TrashCleaner.purgeRemote(s, r, keep)
             var n = 0
-            for (f in files) if (TrashCleaner.deleteRemoteFile(s, f)) n++
+            for (f in files) if (f.lowercase() !in keep && TrashCleaner.deleteRemoteFile(s, f)) n++
             store.clear(profile.id)
             log("I", "🗑 PC-Papierkorb geleert (vorgemerkt): $dirs Tagesordner, $n einzelne Dateien endgültig gelöscht")
         } catch (e: CancellationException) {
@@ -690,17 +738,18 @@ class MirrorEngine(
         log("W", "⏭ $rel: wurde während des Laufs $where geändert – folgt beim nächsten Sync")
     }
 
-    /** PC-Datei nach "<Basis>\.LeoSync-Papierkorb\<Datum>\<Pfad>" verschieben */
-    private fun trashRemote(s: SmbSession, rel: String) {
+    /**
+     * PC-Datei nach "<Basis>\.LeoSync-Papierkorb\<Datum>\<Pfad>" verschieben; gleicher Name dort -> Uhrzeit anhängen
+     * ("a (14-32-05).txt", 0.7.0). Liefert den vollen Pfad im Papierkorb.
+     */
+    private fun trashRemote(s: SmbSession, rel: String): String {
         val parent = rel.substringBeforeLast('/', "").replace('/', '\\')
         val trashDir = s.path(listOf(TRASH_DIR, today, parent).filter { it.isNotEmpty() }.joinToString("\\"))
         s.ensureDir(trashDir)
-        val orig = rel.substringAfterLast('/')
-        var name = orig
-        var n = 2
-        while (s.stat("$trashDir\\$name") != null) name = FolderNames.conflictName(orig, n++)
+        val name = TrashIndex.uniqueTrashName(rel.substringAfterLast('/'), TrashIndex.timeNow()) { s.stat("$trashDir\\$it") != null }
         s.move(remotePath(s, rel), "$trashDir\\$name")
         trashed.incrementAndGet()
+        return "$trashDir\\$name"
     }
 
     private fun countDone(sh: Shared, size: Long) {
@@ -721,22 +770,19 @@ class MirrorEngine(
     private suspend fun purgeTrash() {
         val days = profile.trashRetentionDays
         if (days <= 0) return
-        val cutoff = TrashPolicy.cutoff(days)
+        val rule = PurgeRule(PurgeRule.Mode.OLDER, before = TrashPolicy.cutoff(days))
+        // Vorgemerkte Wiederherstellungen bleiben auch nach Ablauf der Frist liegen (0.7.0)
+        val pending = dao.pendingRestores(profile.id)
         var n = 0
         try {
-            n += tree.purgeTrash(cutoff)
+            n += tree.purgeTrash(rule, TrashPurge.reservedPaths(pending, Side.LOCAL))
         } catch (e: Exception) {
             log("W", "Papierkorb auf dem Handy nicht geleert: ${com.sync2pc.app.sync.shortError(e)}")
         }
         val s = smb
         if (s != null) {
             try {
-                for (t in listOf(TRASH_DIR, OLD_TRASH_DIR)) {
-                    val base = s.path(t)
-                    for (e in s.listDir(base)) {
-                        if (e.isDirectory && TrashPolicy.isExpired(e.name, cutoff)) { s.deleteDir("$base\\${e.name}"); n++ }
-                    }
-                }
+                n += TrashCleaner.purgeRemote(s, rule, TrashPurge.reservedPaths(pending, Side.REMOTE))
             } catch (e: Exception) {
                 if (isNetworkError(e)) throw e
                 log("W", "Papierkorb auf dem PC nicht geleert: ${com.sync2pc.app.sync.shortError(e)}")

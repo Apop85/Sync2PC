@@ -109,6 +109,10 @@ interface SyncDao {
     @Query("SELECT COUNT(*) FROM pending_restores")
     fun pendingRestoreCount(): Flow<Int>
 
+    /** Profile mit vorgemerkter Wiederherstellung (Hinweis auf der Startseite, 0.7.0) */
+    @Query("SELECT DISTINCT profileId FROM pending_restores")
+    fun pendingRestoreProfiles(): Flow<List<Long>>
+
     @Insert
     suspend fun insertRestores(r: List<PendingRestore>)
 

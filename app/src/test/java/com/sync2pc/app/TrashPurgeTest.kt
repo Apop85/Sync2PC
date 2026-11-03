@@ -1,5 +1,6 @@
 package com.sync2pc.app
 
+import com.sync2pc.app.data.PendingRestore
 import com.sync2pc.app.mirror.PurgeRule
 import com.sync2pc.app.mirror.PurgeSides
 import com.sync2pc.app.mirror.Side
@@ -53,5 +54,20 @@ class TrashPurgeTest {
         assertEquals(5L, TrashPurge.bytes(TrashPurge.affected(list, rule, PurgeSides.LOCAL)))
         assertEquals(7L, TrashPurge.bytes(TrashPurge.affected(list, rule, PurgeSides.REMOTE)))
         assertEquals(3, TrashPurge.affected(list, PurgeRule(PurgeRule.Mode.ALL), PurgeSides.BOTH).size)
+    }
+
+    /** 0.7.0: zum Wiederherstellen vorgemerkte Einträge bleiben immer liegen */
+    @Test fun reservedEntriesAreKept() {
+        val list = listOf(e("2026-10-01", Side.LOCAL, 5), e("2026-10-01", Side.REMOTE, 7))
+        val pending = listOf(PendingRestore(profileId = 1, side = "REMOTE",
+            trashPath = ".LeoSync-Papierkorb/2026-10-01/A.TXT", origPath = "a.txt", requestedAt = 0))
+        val reserved = TrashPurge.reservedKeys(pending)
+        val all = PurgeRule(PurgeRule.Mode.ALL)
+        val hit = TrashPurge.affected(list, all, PurgeSides.BOTH, reserved)
+        assertEquals(listOf(Side.LOCAL), hit.map { it.side })
+        assertEquals(1, TrashPurge.protectedHits(list, all, PurgeSides.BOTH, reserved))
+        assertEquals(0, TrashPurge.protectedHits(list, all, PurgeSides.LOCAL, reserved))
+        assertEquals(setOf(".leosync-papierkorb/2026-10-01/a.txt"), TrashPurge.reservedPaths(pending, Side.REMOTE))
+        assertTrue(TrashPurge.reservedPaths(pending, Side.LOCAL).isEmpty())
     }
 }

@@ -26,6 +26,24 @@ class TrashIndexTest {
         assertNull(TrashIndex.entry(Side.LOCAL, ".LeoSync-Papierkorb/a.txt", 1, 1, emptySet()))
     }
 
+    /** 0.7.0: weitere Versionen am selben Tag tragen die Uhrzeit – eindeutig zuordenbar */
+    @Test fun versionNamesWithTime() {
+        assertEquals("Foto (14-32-05).jpg", TrashIndex.versionName("Foto.jpg", "14-32-05"))
+        assertEquals("Foto (14-32-05-2).jpg", TrashIndex.versionName("Foto.jpg", "14-32-05", 2))
+        assertEquals("archiv.tar (14-32-05).gz", TrashIndex.versionName("archiv.tar.gz", "14-32-05"))
+        assertEquals("README (14-32-05)", TrashIndex.versionName("README", "14-32-05"))
+        assertEquals(".env (14-32-05)", TrashIndex.versionName(".env", "14-32-05"))
+        // Zurück zum Originalnamen, auch ohne Geschwister
+        for (n in listOf("Foto.jpg", "archiv.tar.gz", "README", ".env", "Foto_2.jpg"))
+            for (i in 1..3) assertEquals(n, TrashIndex.originalName(TrashIndex.versionName(n, "09-00-00", i), emptySet()))
+        // Altbestand bis 0.6.x ("_2") wird weiterhin nach der bisherigen Regel erkannt
+        assertEquals("Foto.jpg", TrashIndex.originalName("Foto_2.jpg", setOf("foto.jpg")))
+        // Freier Name: erst Original, dann Uhrzeit, dann Uhrzeit-2
+        val taken = mutableSetOf<String>()
+        repeat(3) { taken += TrashIndex.uniqueTrashName("a.txt", "10-00-00") { it in taken } }
+        assertEquals(setOf("a.txt", "a (10-00-00).txt", "a (10-00-00-2).txt"), taken)
+    }
+
     @Test fun numberedNamesOnlyStrippedWhenBaseExists() {
         assertEquals("a.txt", TrashIndex.originalName("a_2.txt", setOf("a.txt", "a_2.txt")))
         assertEquals("A.txt", TrashIndex.originalName("A_3.txt", setOf("a.txt"))) // Schreibweise bleibt

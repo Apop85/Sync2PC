@@ -2,6 +2,29 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.7.0 (2026-11-03)
+
+### Neu
+- **Speicher freigeben auch für Ordner-Profile:** Funktioniert jetzt auch bei Ordner-Profilen mit Richtung Handy → PC, wenn „Löschungen übernehmen“ ausgeschaltet ist.
+  - Jede Datei wird zuerst auf dem PC geprüft: vorhanden, gleiche Grösse, gleicher Inhalt. Erst dann wird sie auf dem Handy direkt gelöscht.
+  - Auf dem PC bleibt sie erhalten, auch wenn später „Löschungen übernehmen“ eingeschaltet oder der Sync-Status zurückgesetzt wird.
+  - Infrage kommen nur Dateien, die schon synchronisiert wurden und seither unverändert sind.
+- **Neue Auswahl in Zeilen** (Fotos- und Ordner-Profile). Jede Zeile zeigt ihren Wert; Tippen öffnet die Auswahl:
+  - **Profil**, **Älter als** (Tage, Wochen, Monate, Jahre oder egal; Fotos nach Aufnahmedatum, Ordner nach Änderungsdatum) und **Ordner** (inklusive Unterordner).
+  - Unter **„Weitere Kriterien“**: Dateitypen (Bilder, Videos, Audio, Dokumente, Archive, Andere, eigene Endungen), Grösse ab, Ausnehmen (Muster wie beim Filter) und bei Fotos „Favoriten behalten“.
+  - Eine laufende Anzeige „Passend: N Dateien · Grösse“ zeigt das Ergebnis. In der **Vorschau** lassen sich einzelne Dateien oder ganze Ordner abwählen.
+- **Kachel „Speicher freigeben“:** Sie ist ausgegraut, wenn kein passendes Profil vorhanden ist.
+
+### Geändert
+- **Papierkorb, eindeutige Namen:** Liegt am selben Tag schon eine gleichnamige Datei im Papierkorb, heisst die nächste jetzt `Foto (14-32-05).jpg` (Uhrzeit) statt `Foto_2.jpg`. Ältere Einträge mit „_2“ werden weiter wie bisher erkannt.
+- **Hinweise auf der Startseite:** Wartet ein Profil auf eine Entscheidung der Schutzbremse, sagen „Wiederherstellung vorgemerkt“ und „Papierkorb leeren vorgemerkt“ das jetzt.
+
+### Behoben
+- **Aufräumen während eines Syncs:** Aufräumen, Endgültig löschen und Speicher freigeben (Ordner) warten jetzt, bis ein laufender Ordner-Sync fertig ist. Vorher konnte „Alles leeren“ eine gerade ersetzte Version sofort mitlöschen.
+- **Vorgemerkte Wiederherstellungen sind geschützt:** Aufräumen, Endgültig löschen und das automatische Leeren nach Ablauf der Frist lassen diese Versionen liegen. Die Rückfrage nennt sie, im Papierkorb sind sie als „zum Wiederherstellen vorgemerkt“ markiert.
+- **Wiederherstellen rollt bei Fehlern zurück:** Bricht das Wiederherstellen ab, kommen die aktuellen Versionen an ihren Platz zurück, und die Vormerkung bleibt. Die Startseite zeigt „Wiederherstellen fehlgeschlagen“ mit „Erneut versuchen“ und „Verwerfen“. Vorher konnte die Datei auf Handy und PC fehlen.
+- **Wiederhergestellte Dateien:** Sie werden beim nächsten Sync nicht mehr unnötig neu geprüft. Bei manchen Speicherorten, z. B. „Downloads“, wurde vorher ein falscher Zeitstempel gespeichert.
+
 ## 0.6.4 (2026-11-03)
 
 ### Geändert

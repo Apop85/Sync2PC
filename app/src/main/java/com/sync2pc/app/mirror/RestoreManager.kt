@@ -24,6 +24,8 @@ object RestoreManager {
         val pcAvailable: Boolean,
         /** Schlüssel (Kleinbuchstaben) der Dateien, die es laut Sync-Stand gerade gibt -> "ältere Version" */
         val existing: Set<String>,
+        /** Zum Wiederherstellen vorgemerkte Einträge ([TrashPurge.key]) – werden nie gelöscht (0.7.0) */
+        val reserved: Set<String> = emptySet(),
     )
 
     suspend fun load(context: Context, profile: Profile): Loaded = withContext(Dispatchers.IO) {
@@ -38,12 +40,13 @@ object RestoreManager {
                 SmbSession.open(profile).use { s -> remoteTrash(s).also { pcOk = true } }
             } else emptyList()
         } catch (e: Exception) { emptyList() }
-        val existing = AppDatabase.get(context).dao().mirrorStates(profile.id).map { it.relPath }.toSet()
-        // Grösse für die Kachel "Papierkorb leeren" merken (0.6.0)
+        val dao = AppDatabase.get(context).dao()
+        val existing = dao.mirrorStates(profile.id).map { it.relPath }.toSet()
+        // Grösse für die Kachel "Papierkorb" merken (0.6.0)
         PurgeStore(context).saveSizes(profile.id, local.sumOf { it.size }, if (pcOk) remote.sumOf { it.size } else -1)
         Loaded(
             (local + remote).sortedWith(compareBy<TrashEntry>({ it.origPath.lowercase() }).thenByDescending { it.date }),
-            pcOk, existing,
+            pcOk, existing, TrashPurge.reservedKeys(dao.pendingRestores(profile.id)),
         )
     }
 
@@ -74,5 +77,44 @@ object RestoreManager {
             }
         )
         SyncScheduler.enqueueManual(context)
+    }
+
+    /** Fehlgeschlagene Wiederherstellungen verwerfen (Knopf auf der Startseite) */
+    suspend fun discardFailed(context: Context, profileIds: Collection<Long>) {
+        val dao = AppDatabase.get(context).dao()
+        val f = RestoreFailures(context)
+        for (id in f.restoreIds(profileIds)) { dao.deleteRestore(id); f.clear(id) }
+    }
+}
+
+/**
+ * Wiederherstellungen, die zurückgerollt wurden und beim nächsten Sync erneut versucht werden (0.7.0).
+ * Die Vormerkung selbst bleibt in der Datenbank; hier nur die Markierung für den Hinweis auf der Startseite.
+ */
+class RestoreFailures(context: Context) {
+    private val prefs = context.applicationContext.getSharedPreferences("restore", Context.MODE_PRIVATE)
+
+    /** Einträge "profilId:restoreId" */
+    private fun all(): Set<String> = prefs.getStringSet("failed", emptySet()) ?: emptySet()
+
+    fun mark(profileId: Long, restoreId: Long) {
+        prefs.edit().putStringSet("failed", all() + "$profileId:$restoreId").apply()
+    }
+
+    fun clear(restoreId: Long) {
+        val left = all().filterNot { it.substringAfter(':') == restoreId.toString() }.toSet()
+        prefs.edit().putStringSet("failed", left).apply()
+    }
+
+    fun restoreIds(profileIds: Collection<Long>): List<Long> = all().mapNotNull { e ->
+        val p = e.substringBefore(':').toLongOrNull()
+        if (p != null && p in profileIds) e.substringAfter(':').toLongOrNull() else null
+    }
+
+    /** Profile mit fehlgeschlagener Wiederherstellung */
+    fun profiles(): Set<Long> = all().mapNotNull { it.substringBefore(':').toLongOrNull() }.toSet()
+
+    fun forget(profileId: Long) {
+        prefs.edit().putStringSet("failed", all().filterNot { it.startsWith("$profileId:") }.toSet()).apply()
     }
 }

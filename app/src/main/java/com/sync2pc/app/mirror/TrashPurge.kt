@@ -50,11 +50,34 @@ enum class PurgeSides(val label: String, val local: Boolean, val remote: Boolean
 }
 
 object TrashPurge {
-    /** Einträge, die die Regel auf den gewählten Seiten treffen würde */
-    fun affected(entries: List<TrashEntry>, rule: PurgeRule, sides: PurgeSides): List<TrashEntry> =
-        entries.filter { (if (it.side == Side.LOCAL) sides.local else sides.remote) && rule.matches(it.date) }
+    /**
+     * Einträge, die die Regel auf den gewählten Seiten treffen würde. [reserved] (siehe [key]) sind zum
+     * Wiederherstellen vorgemerkt und bleiben immer liegen (0.7.0).
+     */
+    fun affected(
+        entries: List<TrashEntry>, rule: PurgeRule, sides: PurgeSides, reserved: Set<String> = emptySet(),
+    ): List<TrashEntry> =
+        entries.filter {
+            (if (it.side == Side.LOCAL) sides.local else sides.remote) && rule.matches(it.date) && key(it) !in reserved
+        }
+
+    /** Vorgemerkte Einträge, die die Regel ohne den Schutz treffen würde (für den Hinweis in der Rückfrage) */
+    fun protectedHits(entries: List<TrashEntry>, rule: PurgeRule, sides: PurgeSides, reserved: Set<String>): Int =
+        affected(entries, rule, sides).count { key(it) in reserved }
 
     fun bytes(entries: List<TrashEntry>): Long = entries.sumOf { it.size }
+
+    /** Eindeutiger Schlüssel eines Papierkorb-Eintrags: Seite + Pfad (Kleinbuchstaben) */
+    fun key(e: TrashEntry): String = key(e.side.name, e.trashPath)
+    fun key(side: String, trashPath: String): String = side + "|" + trashPath.lowercase()
+
+    /** Schlüssel aller vorgemerkten Wiederherstellungen */
+    fun reservedKeys(pending: List<com.sync2pc.app.data.PendingRestore>): Set<String> =
+        pending.map { key(it.side, it.trashPath) }.toSet()
+
+    /** Papierkorb-Pfade (Kleinbuchstaben) der vorgemerkten Wiederherstellungen einer Seite */
+    fun reservedPaths(pending: List<com.sync2pc.app.data.PendingRestore>, side: Side): Set<String> =
+        pending.filter { it.side == side.name }.map { it.trashPath.lowercase() }.toSet()
 }
 
 /**

@@ -39,7 +39,7 @@ Es gibt zwei Profiltypen:
 - **Schutzbremse:** Fehlt ein Ordner, passt ein neu gewählter Ordner nicht zum bisherigen Stand oder würden mehr als 20 % der Dateien gelöscht, hält der Ordner-Sync an und fragt nach.
 - **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
 - **Erinnerung**, wenn seit 7 Tagen (einstellbar) nichts gesichert wurde, obwohl neue Fotos warten.
-- **Speicher freigeben:** Alte Fotos und Videos, die nachweislich auf dem PC liegen, kommen in den Android-Papierkorb. Vorher wird jede Datei auf dem PC geprüft.
+- **Speicher freigeben:** Alte Dateien, die nachweislich auf dem PC liegen, verschwinden vom Handy. Fotos und Videos kommen in den Papierkorb der Galerie. Bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“ werden die Dateien direkt gelöscht; auf dem PC bleiben sie erhalten. Vorher wird jede Datei auf dem PC geprüft. Die Auswahl läuft nach Alter, Ordner, Dateityp, Grösse und Ausnahmen, mit Vorschau.
 - **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
 - **Filter:** White- und Blacklist mit Mustern wie `*.pdf` oder `Temp/**`.
 

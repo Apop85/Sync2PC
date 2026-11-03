@@ -86,6 +86,7 @@ object BackupManager {
                     dao.clearMirrorState(old.id); dao.clearConflicts(old.id); dao.deleteProfileRow(old.id)
                     dao.clearRestores(old.id)
                     com.sync2pc.app.mirror.PurgeStore(context).forget(old.id)
+                    com.sync2pc.app.mirror.RestoreFailures(context).forget(old.id)
                     com.sync2pc.app.mirror.GuardStore(context).forget(old.id)
                     GlobalSettings(context).setAwaitingFirstStart(old.id, false)
                 }

@@ -21,13 +21,38 @@ data class TrashEntry(
 object TrashIndex {
     private val DATE = Regex("""\d{4}-\d{2}-\d{2}""")
     private val NUMBERED = Regex("""^(.+)_(\d+)(\.[^.]*)?$""")
+    /** Seit 0.7.0: "Foto (14-32-05).jpg", bei gleicher Sekunde "Foto (14-32-05-2).jpg" */
+    private val VERSIONED = Regex("""^(.+) \(\d{2}-\d{2}-\d{2}(?:-\d+)?\)(\.[^.]*)?$""")
+
+    /** Name einer weiteren Version im Papierkorb: Uhrzeit [time] ("HH-mm-ss") vor der Endung, [n] >= 2 bei gleicher Sekunde */
+    fun versionName(fileName: String, time: String, n: Int = 1): String {
+        val tag = if (n <= 1) time else "$time-$n"
+        val dot = fileName.lastIndexOf('.')
+        return if (dot <= 0) "$fileName ($tag)" else fileName.substring(0, dot) + " ($tag)" + fileName.substring(dot)
+    }
+
+    /** Aktuelle Uhrzeit für [versionName] */
+    fun timeNow(now: Long = System.currentTimeMillis()): String =
+        java.text.SimpleDateFormat("HH-mm-ss", java.util.Locale.GERMANY).format(java.util.Date(now))
+
+    /** Freier Name im Papierkorb-Ordner: Originalname, sonst mit Uhrzeit. [taken] prüft (ohne Gross-/Kleinschreibung) */
+    fun uniqueTrashName(fileName: String, time: String, taken: (String) -> Boolean): String {
+        if (!taken(fileName)) return fileName
+        var n = 1
+        while (true) {
+            val c = versionName(fileName, time, n++)
+            if (!taken(c)) return c
+        }
+    }
 
     /**
-     * Ursprünglicher Name einer Datei im Papierkorb. Gleichnamige Dateien am selben Tag heissen dort
-     * "a.txt", "a_2.txt", "a_3.txt" (FolderNames.conflictName). "_N" wird nur entfernt, wenn es den Grundnamen
+     * Ursprünglicher Name einer Datei im Papierkorb.
+     * Seit 0.7.0 heissen weitere Versionen am selben Tag "a (14-32-05).txt" – eindeutig, wird immer entfernt.
+     * Bis 0.6.x hiessen sie "a_2.txt" (FolderNames.conflictName). "_N" wird nur entfernt, wenn es den Grundnamen
      * im selben Papierkorb-Ordner auch gibt – sonst hiess die Datei wirklich so. [siblings] in Kleinbuchstaben.
      */
     fun originalName(name: String, siblings: Set<String>): String {
+        VERSIONED.matchEntire(name)?.let { v -> return v.groupValues[1] + v.groupValues[2] }
         val m = NUMBERED.matchEntire(name) ?: return name
         val n = m.groupValues[2].toIntOrNull() ?: return name
         if (n < 2) return name

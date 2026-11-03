@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.mirror.MirrorLock
 import com.sync2pc.app.mirror.PurgeRule
 import com.sync2pc.app.mirror.PurgeSides
 import com.sync2pc.app.mirror.RestoreManager
@@ -155,16 +156,23 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     var confirmRestore by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showCleanup by remember { mutableStateOf(false) }
-    var working by remember { mutableStateOf(false) }
+    /** null = nichts läuft, sonst Text der Fortschrittsanzeige */
+    var working by remember { mutableStateOf<String?>(null) }
     var pickDay by remember { mutableStateOf(false) }
     LaunchedEffect(profile.id, reload) { loaded = null; loaded = RestoreManager.load(ctx, profile) }
 
+    // Löschen wartet auf einen laufenden Ordner-Sync (0.7.0)
+    fun startWork() {
+        working = if (MirrorLock.busy) "Wartet, bis der laufende Sync fertig ist…\nDiese Ansicht bitte offen lassen." else "Lösche…"
+    }
+
     val data = loaded
-    if (data == null || working) {
+    val busyText = working
+    if (data == null || busyText != null) {
         Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CircularProgressIndicator()
-            Hint(if (working) "Lösche…" else "Lese den Papierkorb auf Handy und PC…")
+            Hint(busyText ?: "Lese den Papierkorb auf Handy und PC…")
         }
         return
     }
@@ -177,6 +185,8 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     )
     val visible = if (day == null) data.entries else data.entries.filter { it.date == day }
     fun isSel(e: TrashEntry) = selected.any { it.side == e.side && it.trashPath == e.trashPath }
+    /** Ohne vorgemerkte Einträge (die sind schon unterwegs) */
+    fun free(list: List<TrashEntry>) = list.filter { TrashPurge.key(it) !in data.reserved }
     fun toggle(e: TrashEntry) {
         selected = if (isSel(e)) selected.filterNot { it.side == e.side && it.trashPath == e.trashPath }
             else TrashIndex.select(selected, listOf(e))
@@ -224,7 +234,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
             }
             day?.let { d ->
                 item {
-                    OutlinedButton(onClick = { selected = TrashIndex.select(selected, TrashIndex.ofDate(data.entries, d)) },
+                    OutlinedButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.ofDate(data.entries, d))) },
                         modifier = Modifier.fillMaxWidth()) { Text("Alles vom ${dayLabel(d)} auswählen") }
                 }
             }
@@ -235,7 +245,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
                         Text("📁 " + folder.ifEmpty { "(Hauptordner)" }, style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { selected = TrashIndex.select(selected, TrashIndex.inFolder(visible, folder)) }) {
+                        TextButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.inFolder(visible, folder))) }) {
                             Text("Ganzer Ordner")
                         }
                     }
@@ -248,16 +258,21 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                                 Text(first.name, style = MaterialTheme.typography.bodyLarge)
                                 Hint(if (first.origPath.lowercase() in data.existing) "ältere Version" else "gelöscht")
                                 for (v in versions) {
+                                    // Zum Wiederherstellen vorgemerkt -> nicht nochmals wählbar, wird nie gelöscht (0.7.0)
+                                    val reserved = TrashPurge.key(v) in data.reserved
                                     Row(
-                                        Modifier.fillMaxWidth().clickable { toggle(v) },
+                                        Modifier.fillMaxWidth().clickable(enabled = !reserved) { toggle(v) },
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
-                                        Checkbox(checked = isSel(v), onCheckedChange = { toggle(v) })
-                                        Text(
-                                            dayLabel(v.date) + " · " + (if (v.side == Side.LOCAL) "Handy" else "PC") +
-                                                " · " + Notifications.formatBytes(v.size),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
+                                        Checkbox(checked = isSel(v), onCheckedChange = { toggle(v) }, enabled = !reserved)
+                                        Column {
+                                            Text(
+                                                dayLabel(v.date) + " · " + (if (v.side == Side.LOCAL) "Handy" else "PC") +
+                                                    " · " + Notifications.formatBytes(v.size),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                            )
+                                            if (reserved) Hint("zum Wiederherstellen vorgemerkt")
+                                        }
                                     }
                                 }
                             }
@@ -293,10 +308,9 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = { showCleanup = false }, sheetState = sheetState) {
             CleanupSheet(data) { rule, sides ->
-                showCleanup = false; working = true
+                showCleanup = false; startWork()
                 scope.launch {
-                    val r = TrashCleaner.purge(ctx, profile, rule, sides)
-                    working = false
+                    val r = try { TrashCleaner.purge(ctx, profile, rule, sides) } finally { working = null }
                     Toast.makeText(ctx, if (r.remotePending) "Handy geleert – PC wird beim nächsten Sync mit PC geleert"
                         else "Papierkorb aufgeräumt", Toast.LENGTH_LONG).show()
                     selected = emptyList()
@@ -317,8 +331,9 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         confirmButton = {
             TextButton(onClick = {
                 confirmDelete = false
+                startWork()
                 scope.launch {
-                    val r = TrashCleaner.deleteEntries(ctx, profile, selected)
+                    val r = try { TrashCleaner.deleteEntries(ctx, profile, selected) } finally { working = null }
                     Toast.makeText(ctx, if (r.remotePending) "Gelöscht – PC folgt beim nächsten Sync mit PC"
                         else "Endgültig gelöscht", Toast.LENGTH_SHORT).show()
                     selected = emptyList()
@@ -367,7 +382,9 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
         PurgeRule.Mode.OLDER -> days?.let { PurgeRule.older(it) }
         PurgeRule.Mode.DATES -> if (dates.isEmpty()) null else PurgeRule(PurgeRule.Mode.DATES, dates = dates)
     }
-    val affected = rule?.let { TrashPurge.affected(data.entries, it, sides) }.orEmpty()
+    val affected = rule?.let { TrashPurge.affected(data.entries, it, sides, data.reserved) }.orEmpty()
+    // Vorgemerkte Wiederherstellungen bleiben liegen (0.7.0)
+    val kept = rule?.let { TrashPurge.protectedHits(data.entries, it, sides, data.reserved) } ?: 0
     // PC nicht erreichbar: dort ist unbekannt, was betroffen ist -> trotzdem vormerken können
     val pcUnknown = sides.remote && !data.pcAvailable
     val canRun = rule != null && (affected.isNotEmpty() || pcUnknown)
@@ -408,6 +425,7 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
                 if (pcUnknown) " – dazu der PC-Papierkorb, sobald der PC erreichbar ist" else "",
         )
         if (pcUnknown) Hint("Der PC ist nicht erreichbar. Das Handy wird sofort geleert, der PC beim nächsten Sync mit PC.")
+        if (kept > 0) Hint("$kept Datei(en) sind zum Wiederherstellen vorgemerkt und bleiben.")
         Button(
             onClick = { confirm = true }, enabled = canRun, modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
@@ -427,7 +445,8 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
         text = {
             Text("${affected.size} Dateien (${Notifications.formatBytes(TrashPurge.bytes(affected))}) werden endgültig " +
                 "gelöscht (${sides.label})" + (if (pcUnknown) ", auf dem PC beim nächsten Sync mit PC" else "") +
-                ". Das lässt sich nicht rückgängig machen.")
+                ". Das lässt sich nicht rückgängig machen." +
+                if (kept > 0) " $kept Datei(en) sind zum Wiederherstellen vorgemerkt und bleiben." else "")
         },
         confirmButton = {
             TextButton(onClick = { confirm = false; onPurge(rule, sides) }) {

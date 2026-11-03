@@ -325,19 +325,17 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         DocumentsContract.deleteDocument(resolver, docUri(docId))
     }
 
-    /** Verschiebt eine Datei in "<Ordner>/.LeoSync-Papierkorb/<Datum>/<relPath>" */
-    fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String) {
+    /**
+     * Verschiebt eine Datei in "<Ordner>/.LeoSync-Papierkorb/<Datum>/<relPath>". Gibt es den Namen dort schon,
+     * bekommt sie die Uhrzeit angehängt ("a (14-32-05).txt", 0.7.0). Liefert den Pfad im Papierkorb.
+     */
+    fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String {
         val parentRel = relPath.substringBeforeLast('/', "")
         val sourceParent = ensureDir(parentRel)
         val trashDir = listOf(MirrorEngine.TRASH_DIR, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
         val targetParent = ensureDir(trashDir)
-        // Gleicher Name schon im Papierkorb -> vorher umbenennen
-        var name = entry.name
         val existing = children(targetParent).map { it.name.lowercase() }.toSet()
-        var n = 2
-        while (name.lowercase() in existing) {
-            name = com.sync2pc.app.sync.FolderNames.conflictName(entry.name, n++)
-        }
+        val name = TrashIndex.uniqueTrashName(entry.name, TrashIndex.timeNow()) { it.lowercase() in existing }
         var docId = entry.docId
         if (name != entry.name) docId = rename(docId, name)
         try {
@@ -349,6 +347,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             writeFile(target) { out -> openInput(docId).use { it.copyTo(out, 1 shl 16) } }
             delete(docId)
         }
+        return "$trashDir/$name"
     }
 
     /** Alle Dateien im Papierkorb (neuer und alter Name) als Einträge für die Wiederherstellung (0.5.0) */
@@ -394,17 +393,33 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
      * "Papierkorb leeren" (0.6.0): Datumsordner löschen, die [rule] trifft; ALL löscht die ganzen Papierkorb-Ordner.
      * Liefert die Anzahl gelöschter Ordner.
      */
-    fun purgeTrash(rule: PurgeRule): Int {
+    fun purgeTrash(rule: PurgeRule, keep: Set<String> = emptySet()): Int {
         var n = 0
         val trashDirs = children(rootDocId).filter {
             it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
         }
         for (t in trashDirs) {
-            if (rule.mode == PurgeRule.Mode.ALL) { delete(t.docId); n++ }
+            val keepHere = keep.filter { it.startsWith(t.name.lowercase() + "/") }
+            if (rule.mode == PurgeRule.Mode.ALL && keepHere.isEmpty()) { delete(t.docId); n++ }
             else for (d in children(t.docId)) {
-                if (d.isDir && rule.matches(d.name)) { delete(d.docId); n++ }
+                if (!d.isDir || !rule.matches(d.name)) continue
+                val prefix = "${t.name}/${d.name}/".lowercase()
+                // Vorgemerkte Wiederherstellungen darin (0.7.0) -> nur die übrigen Dateien löschen
+                if (keepHere.none { it.startsWith(prefix) }) { delete(d.docId); n++ }
+                else n += deleteExcept(d.docId, "${t.name}/${d.name}", keep)
             }
             forgetDirs(t.name)
+        }
+        return n
+    }
+
+    /** Alle Dateien unterhalb löschen ausser [keep] (Pfade in Kleinbuchstaben). Liefert die Anzahl gelöschter Dateien */
+    private fun deleteExcept(docId: String, rel: String, keep: Set<String>): Int {
+        var n = 0
+        for (e in children(docId)) {
+            val r = "$rel/${e.name}"
+            if (e.isDir) n += deleteExcept(e.docId, r, keep)
+            else if (r.lowercase() !in keep) { delete(e.docId); n++ }
         }
         return n
     }
@@ -420,23 +435,6 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     private fun forgetDirs(relDir: String) {
         val k = relDir.lowercase()
         dirIds.keys.removeIf { it == k || it.startsWith("$k/") }
-    }
-
-    /**
-     * Löscht im Papierkorb (neuer und alter Name) alle Datumsordner "yyyy-MM-dd", die vor [cutoff] liegen.
-     * Liefert die Anzahl gelöschter Ordner.
-     */
-    fun purgeTrash(cutoff: String): Int {
-        var n = 0
-        val trashDirs = children(rootDocId).filter {
-            it.isDir && (it.name.equals(MirrorEngine.TRASH_DIR, true) || it.name.equals(MirrorEngine.OLD_TRASH_DIR, true))
-        }
-        for (t in trashDirs) {
-            for (d in children(t.docId)) {
-                if (d.isDir && TrashPolicy.isExpired(d.name, cutoff)) { delete(d.docId); n++ }
-            }
-        }
-        return n
     }
 
     private val TEMP = com.sync2pc.app.smb.SmbSession.TEMP_SUFFIX
