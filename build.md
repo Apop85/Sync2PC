@@ -53,6 +53,11 @@ build.bat -Debug
 ```
 Baut eine Debug-APK (`com.sync2pc.app.debug`, parallel installierbar).
 
+```bash
+build.bat -NoPause
+```
+Beendet ohne „Taste drücken“ am Schluss, z. B. wenn ein Agent den Build startet (seit 0.9.4).
+
 ## Signatur-Schlüssel sichern
 
 `keystore\sync2pc-release.jks` und `keystore.properties` sind **nicht** in Git (Geheimnisse).

@@ -1,5 +1,7 @@
 package com.sync2pc.app.sync
 
+import com.sync2pc.app.data.RunStatus
+
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -165,7 +167,7 @@ class SyncEngine(
         var skippedKnown = 0
         var waiting = 0
         var shared: Shared? = null
-        var status = "OK"
+        var status = RunStatus.OK
         var message = ""
         fun up() = shared?.uploaded?.get() ?: 0
         fun sk() = skippedKnown + (shared?.skipped?.get() ?: 0)
@@ -211,7 +213,7 @@ class SyncEngine(
             log("I", plural(R.plurals.eng_found, items.size, items.size, todo.size, skippedKnown) +
                 (if (young > 0) ", " + str(R.string.eng_too_young, young, settings.minFileAgeMinutes) else ""))
             if (todo.isEmpty()) {
-                return finish("OK", RunSummary.NOTHING, 0, skippedKnown, 0, 0, 0)
+                return finish(RunStatus.OK, RunSummary.NOTHING, 0, skippedKnown, 0, 0, 0)
             }
 
             // Live-Fotos/Bewegtbilder: Video mit gleichem Basisnamen wie ein Bild -> gleicher Ordner wie Bild
@@ -307,7 +309,7 @@ class SyncEngine(
                             if (index % 20 == 0 && !shouldContinue()) {
                                 sh.stop.set(true)
                                 wifiLost = true
-                                status = "PARTIAL"; message = str(R.string.eng_wifi_lost)
+                                status = RunStatus.PARTIAL; message = str(R.string.eng_wifi_lost)
                                 log("W", message); break
                             }
                             val job = try {
@@ -349,7 +351,7 @@ class SyncEngine(
                 DeletionManager.sweep(context) { log("I", it) }
             }
 
-            if (status == "OK" && fl() > 0) status = "PARTIAL"
+            if (status == RunStatus.OK && fl() > 0) status = RunStatus.PARTIAL
             if (message.isEmpty()) message = RunSummary.photos(up(), shared?.skipped?.get() ?: 0, fl(), waiting)
             return finish(status, message, up(), sk(), fl(), waiting, by())
         } catch (e: CancellationException) {
@@ -358,11 +360,11 @@ class SyncEngine(
                 val reason = interruptReason()
                 if (reason != null) {
                     log("W", str(R.string.eng_interrupted_log, reason))
-                    finish("INTERRUPTED", str(R.string.eng_interrupted_photos, reason, up()),
+                    finish(RunStatus.INTERRUPTED, str(R.string.eng_interrupted_photos, reason, up()),
                         up(), sk(), fl(), waiting, by())
                 } else {
                     log("W", str(R.string.eng_paused_log))
-                    finish("CANCELLED", str(R.string.eng_paused_photos, up()),
+                    finish(RunStatus.CANCELLED, str(R.string.eng_paused_photos, up()),
                         up(), sk(), fl(), waiting, by())
                 }
             }
@@ -375,12 +377,12 @@ class SyncEngine(
                 connectionFailed = true
                 log("W", str(R.string.eng_connection_log_photos, shortError(e)))
                 return finish(
-                    "INTERRUPTED", str(R.string.eng_connection_photos, up()),
+                    RunStatus.INTERRUPTED, str(R.string.eng_connection_photos, up()),
                     up(), sk(), fl(), waiting, by()
                 )
             }
             log("E", str(R.string.eng_run_failed, shortError(e)))
-            return finish("FAILED", shortError(e), up(), sk(), fl(), waiting, by())
+            return finish(RunStatus.FAILED, shortError(e), up(), sk(), fl(), waiting, by())
         } finally {
             smb?.close()
         }

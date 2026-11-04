@@ -2,6 +2,26 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.9.5 (2026-11-04)
+
+### Geändert
+- **Android 16 als Ziel-Version** (targetSdk/compileSdk 36), wie es der Play Store verlangt. Auf Geräten bis Android 15 ändert sich nichts. Getestet im Emulator mit Android 17: Zurück-Geste im Assistenten und Rückfrage bei ungespeicherten Änderungen funktionieren.
+- **Speicher freigeben:** Steht die Prüfung nach dem Hochladen auf „Aus“, erklärt ein Hinweis, warum keine Fotos angeboten werden.
+
+### Intern
+- Startseite liest die Einstellungen nur noch neu, wenn sich der Zustand eines Hintergrundauftrags ändert, nicht bei jedem Fortschritts-Update.
+- Profil bearbeiten: Optionen-Karten für Ordner- und Fotos-Profile in `ui/ProfileCards.kt` ausgelagert.
+- Synchronisierung mit einer Testfreigabe im Emulator geprüft: Hoch- und Herunterladen (inkl. 40 MB), Änderungen auf beiden Seiten mit alter Version im Papierkorb, Konflikt bei beidseitiger Änderung, gelöschte Datei wird ohne „Löschungen übernehmen“ wiederhergestellt.
+
+## 0.9.4 (2026-11-04)
+
+### Intern
+- **Migrationstest:** Neuer instrumentierter Test `MigrationTest` prüft die Datenbank-Migrationen von Version 1 bis 6 gegen die exportierten Schemas und dass Profile richtig übernommen werden (Prüfstufe, Profilname). Er läuft auf einem Gerät oder Emulator mit `gradlew connectedDebugAndroidTest`, nicht im Builder.
+- **Unit-Tests für die Prüfstufen** (`VerifyLevelTest`): gelesene Bereiche je Stufe, „Wenig“ = bisherige Prüfsumme, „Aus“ wird beim Entfernen von Fotos angehoben, Sicherung mit und ohne `verifyLevel`.
+- **Lauf-Zustände als Konstanten** (`RunStatus.OK` usw.) statt freier Texte im Code. In der Datenbank steht derselbe Text, keine Migration.
+- **Startseite aufgeteilt:** Karten und Dialoge stehen in `ui/HomeParts.kt`, `HomeScreen.kt` enthält nur noch den Aufbau der Seite.
+- **`build.bat -NoPause`** beendet ohne „Taste drücken“.
+
 ## 0.9.3 (2026-11-04)
 
 ### Behoben

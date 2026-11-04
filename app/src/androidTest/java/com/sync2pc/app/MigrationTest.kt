@@ -1,0 +1,74 @@
+package com.sync2pc.app
+
+import androidx.room.testing.MigrationTestHelper
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.sync2pc.app.data.AppDatabase
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/**
+ * Datenbank-Migrationen (0.9.4). Läuft auf einem Gerät bzw. Emulator:
+ * `gradlew connectedDebugAndroidTest` (der Builder führt ihn nicht aus).
+ * Prüft, dass jede Migration zum exportierten Schema passt und bestehende Daten richtig übernommen werden.
+ */
+@RunWith(AndroidJUnit4::class)
+class MigrationTest {
+    private val db = "migration-test"
+    private val all = arrayOf(
+        AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4,
+        AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6,
+    )
+
+    @get:Rule
+    val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), AppDatabase::class.java)
+
+    /** Profil aus Version 1 (0.0.x) übersteht alle Migrationen bis zur aktuellen Version */
+    @Test fun fromVersion1ToLatest() {
+        helper.createDatabase(db, 1).apply {
+            execSQL(
+                "INSERT INTO profiles (id, name, enabled, smbPath, smbUser, smbDomain, smbPasswordEnc, sourceFolders, " +
+                    "wifiSsids, includeImages, includeVideos, includeSubfolders, deleteMode, verifyUpload) " +
+                    "VALUES (1, ' Fotos ', 1, '\\\\pc\\Fotos', 'leo', '', '', 'DCIM/Camera/', 'heim', 1, 1, 1, 'KEEP', 1)"
+            )
+            close()
+        }
+        val d = helper.runMigrationsAndValidate(db, 6, true, *all)
+        d.query("SELECT name, profileType, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel FROM profiles").use { c ->
+            c.moveToFirst()
+            assertEquals("Fotos", c.getString(0))
+            assertEquals("PHOTOS", c.getString(1))
+            assertEquals(30, c.getInt(2))
+            assertEquals(20, c.getInt(3))
+            assertEquals(1, c.getInt(4))
+            assertEquals(1, c.getInt(5)) // Prüfung an -> "Wenig" wie bisher
+        }
+        d.close()
+    }
+
+    /** 5 -> 6: Prüfstufe aus verifyUpload und deleteMode */
+    @Test fun verifyLevelFromVersion5() {
+        helper.createDatabase(db, 5).apply {
+            fun insert(id: Int, deleteMode: String, verify: Int) = execSQL(
+                "INSERT INTO profiles (id, name, enabled, smbPath, smbUser, smbDomain, smbPasswordEnc, sourceFolders, " +
+                    "wifiSsids, includeImages, includeVideos, includeSubfolders, deleteMode, verifyUpload, profileType, " +
+                    "direction, localTreeUri, remoteSubfolder, propagateDeletes, conflictMode, includePatterns, " +
+                    "excludePatterns, remotePollMinutes, trashRetentionDays, massDeletePercent, keepVersions) VALUES " +
+                    "($id, 'P$id', 1, '', '', '', '', '', '', 1, 1, 1, '$deleteMode', $verify, 'PHOTOS', 'UPLOAD', '', '', " +
+                    "0, 'ASK', '', '', 60, 30, 20, 1)"
+            )
+            insert(1, "KEEP", 0)   // aus und nichts entfernt -> Aus
+            insert(2, "TRASH", 0)  // aus, aber Fotos werden entfernt -> Wenig (Prüfung war Pflicht)
+            insert(3, "KEEP", 1)   // an -> Wenig
+            close()
+        }
+        val d = helper.runMigrationsAndValidate(db, 6, true, AppDatabase.MIGRATION_5_6)
+        d.query("SELECT id, verifyLevel FROM profiles ORDER BY id").use { c ->
+            val levels = buildMap { while (c.moveToNext()) put(c.getInt(0), c.getInt(1)) }
+            assertEquals(mapOf(1 to 0, 2 to 1, 3 to 1), levels)
+        }
+        d.close()
+    }
+}

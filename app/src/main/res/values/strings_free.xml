@@ -36,6 +36,7 @@
     <string name="free_pc_lost">The PC was not (or no longer) reachable.</string>
     <string name="free_failed">Failed: %1$s</string>
     <string name="free_intro_photos">Moves photos and videos that are verifiably backed up on the PC to the gallery trash. Before that LeoSync checks every file on the PC. Whatever is missing there or different stays.</string>
+    <string name="free_verify_off_hint">The check after upload is set to “Off” for this profile. Unchecked photos are not offered here. Set at least “Low” in the profile; newly backed-up photos appear from the next sync on.</string>
     <string name="free_intro_folder">Deletes files on the mobile that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check.</string>
     <string name="free_selection">Selection</string>
     <string name="free_profile">Profile</string>

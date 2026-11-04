@@ -193,7 +193,7 @@ interface SyncDao {
             insertLog(LogEntry(runId = r.id, time = end, level = "W",
                 message = com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.run_dangling_log)))
             updateRun(r.copy(
-                status = "INTERRUPTED", finishedAt = end,
+                status = RunStatus.INTERRUPTED, finishedAt = end,
                 message = com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.run_dangling),
             ))
         }

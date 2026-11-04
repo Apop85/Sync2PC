@@ -1,5 +1,7 @@
 package com.sync2pc.app.ui
 
+import com.sync2pc.app.data.RunStatus
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -154,12 +156,12 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val (label, color) = when (r.status) {
-        "OK" -> str(R.string.common_ok) to MaterialTheme.colorScheme.primary
-        "PARTIAL" -> str(R.string.log_status_partial) to Color(0xFFB26A00)
-        "FAILED" -> str(R.string.log_status_failed) to MaterialTheme.colorScheme.error
-        "CANCELLED" -> str(R.string.log_status_paused) to MaterialTheme.colorScheme.onSurfaceVariant
-        "INTERRUPTED" -> str(R.string.log_status_interrupted) to MaterialTheme.colorScheme.onSurfaceVariant
-        "WAITING" -> str(R.string.log_status_waiting) to MaterialTheme.colorScheme.tertiary
+        RunStatus.OK -> str(R.string.common_ok) to MaterialTheme.colorScheme.primary
+        RunStatus.PARTIAL -> str(R.string.log_status_partial) to Color(0xFFB26A00)
+        RunStatus.FAILED -> str(R.string.log_status_failed) to MaterialTheme.colorScheme.error
+        RunStatus.CANCELLED -> str(R.string.log_status_paused) to MaterialTheme.colorScheme.onSurfaceVariant
+        RunStatus.INTERRUPTED -> str(R.string.log_status_interrupted) to MaterialTheme.colorScheme.onSurfaceVariant
+        RunStatus.WAITING -> str(R.string.log_status_waiting) to MaterialTheme.colorScheme.tertiary
         else -> str(R.string.log_status_running) to MaterialTheme.colorScheme.tertiary
     }
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
@@ -167,7 +169,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("#${r.id} · " + formatTime(r.startedAt) + " · " + r.profileName.trim(), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall)
-                if (r.status != "OK") Text(label, color = color)
+                if (r.status != RunStatus.OK) Text(label, color = color)
             }
             Hint(str(R.string.log_trigger, r.trigger))
             Text(r.message)

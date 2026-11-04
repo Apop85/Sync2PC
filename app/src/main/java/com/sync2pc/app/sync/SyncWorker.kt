@@ -1,5 +1,7 @@
 package com.sync2pc.app.sync
 
+import com.sync2pc.app.data.RunStatus
+
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.Data
@@ -263,14 +265,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     continue
                 }
                 // Erster manueller Start eines neuen Profils -> ab jetzt auch automatisch
-                if (manual && p.id in awaiting && r.status != "FAILED") settings.setAwaitingFirstStart(p.id, false)
+                if (manual && p.id in awaiting && r.status != RunStatus.FAILED) settings.setAwaitingFirstStart(p.id, false)
                 uploaded += r.uploaded; failed += r.failed; bytes += r.bytes
                 if (p.type() == ProfileType.PHOTOS) waiting += r.waiting
                 conflicts += engine.newConflicts
                 if (engine.spaceShortage) spaceShortage = true
                 if (engine.wifiLost && !manual) markInterrupted()
                 if (engine.connectionFailed) { unreachable += p; interruptedMidRun = true }
-                else if (r.status == "FAILED") hardFailure = "${p.name}: ${r.message}"
+                else if (r.status == RunStatus.FAILED) hardFailure = "${p.name}: ${r.message}"
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
             }
         } finally {

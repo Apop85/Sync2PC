@@ -25,12 +25,13 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.sync2pc.app"
-    compileSdk = 35
+    // 0.9.5: Android 16 (API 36), vom Play Store für neue Apps und Updates verlangt
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.sync2pc.app"
         minSdk = 29
-        targetSdk = 35
+        targetSdk = 36
         versionCode = vMajor * 1_000_000 + vMinor * 1_000 + vPatch
         versionName = "$vMajor.$vMinor.$vPatch"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -70,6 +71,10 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    // Migrationstest (0.9.4): MigrationTestHelper liest die exportierten Schemas aus den Test-Assets
+    sourceSets {
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }
     packaging {
         resources {
@@ -121,4 +126,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // org.json gibt es auf Android eingebaut; für Unit-Tests auf dem PC die echte Bibliothek
     testImplementation("org.json:json:20240303")
+
+    // Instrumentierter Migrationstest (0.9.4, läuft auf Gerät/Emulator: gradlew connectedDebugAndroidTest)
+    androidTestImplementation("androidx.room:room-testing:2.8.5")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }

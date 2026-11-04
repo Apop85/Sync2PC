@@ -1,5 +1,7 @@
 package com.sync2pc.app.mirror
 
+import com.sync2pc.app.data.RunStatus
+
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
@@ -142,7 +144,7 @@ class MirrorEngine(
 
     private suspend fun runInner(): SyncRun {
         run = run.copy(id = dao.insertRun(run))
-        var status = "OK"
+        var status = RunStatus.OK
         var message = ""
         var massWarn: String? = null
         try {
@@ -291,12 +293,12 @@ class MirrorEngine(
                 }
                 if (!wifiLost && transfers.isNotEmpty()) runTransfers(transfers)
                 if (wifiLost) {
-                    status = "PARTIAL"; message = str(R.string.eng_wifi_lost)
+                    status = RunStatus.PARTIAL; message = str(R.string.eng_wifi_lost)
                     log("W", message)
                 }
             }
 
-            if (status == "OK" && (failed.get() > 0 || spaceShortage)) status = "PARTIAL"
+            if (status == RunStatus.OK && (failed.get() > 0 || spaceShortage)) status = RunStatus.PARTIAL
             if (message.isEmpty()) message = com.sync2pc.app.sync.RunSummary.mirror(
                 up.get(), down.get(), trashed.get(), newConflicts, failed.get(), spaceShortage
             )
@@ -306,10 +308,10 @@ class MirrorEngine(
                 val reason = interruptReason()
                 if (reason != null) {
                     log("W", str(R.string.eng_interrupted_log, reason))
-                    finish("INTERRUPTED", str(R.string.eng_interrupted_mirror, reason, up.get(), down.get()))
+                    finish(RunStatus.INTERRUPTED, str(R.string.eng_interrupted_mirror, reason, up.get(), down.get()))
                 } else {
                     log("W", str(R.string.eng_paused_log))
-                    finish("CANCELLED", str(R.string.eng_paused_log))
+                    finish(RunStatus.CANCELLED, str(R.string.eng_paused_log))
                 }
             }
             throw e
@@ -317,10 +319,10 @@ class MirrorEngine(
             if (isNetworkError(e)) {
                 connectionFailed = true
                 log("W", str(R.string.eng_connection_log_mirror, com.sync2pc.app.sync.shortError(e)))
-                return finish("INTERRUPTED", str(R.string.eng_connection_mirror, up.get(), down.get()))
+                return finish(RunStatus.INTERRUPTED, str(R.string.eng_connection_mirror, up.get(), down.get()))
             }
             log("E", str(R.string.eng_run_failed, com.sync2pc.app.sync.shortError(e)))
-            return finish("FAILED", com.sync2pc.app.sync.shortError(e))
+            return finish(RunStatus.FAILED, com.sync2pc.app.sync.shortError(e))
         } finally {
             smb?.close()
         }
@@ -407,7 +409,7 @@ class MirrorEngine(
         else str(R.string.eng_waiting_decision, MirrorGuard.title(g))
         if (!dryRun) { guards.set(g); blocked = true }
         log("W", msg)
-        return finish("WAITING", msg)
+        return finish(RunStatus.WAITING, msg)
     }
 
     /** Ist die PC-Datei noch so wie beim Einlesen? (beide null = weiterhin nicht vorhanden) */

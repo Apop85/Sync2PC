@@ -8,11 +8,13 @@
 #           build.bat -Force         (immer bauen)
 #           build.bat -SkipTests     (Unit-Tests ueberspringen)
 #           build.bat -Debug         (Debug-APK statt Release)
+#           build.bat -NoPause       (am Ende nicht auf eine Taste warten; wertet build.bat aus)
 # ============================================================================
 param(
     [switch]$Force,
     [switch]$SkipTests,
-    [switch]$Debug
+    [switch]$Debug,
+    [switch]$NoPause
 )
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot

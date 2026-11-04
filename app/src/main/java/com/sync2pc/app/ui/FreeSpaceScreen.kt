@@ -248,6 +248,11 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         item {
             SectionCard(profile.name) {
                 Hint(str(if (photos) R.string.free_intro_photos else R.string.free_intro_folder))
+                // 0.9.5: Bei Prüfstufe "Aus" gelten Fotos nicht als geprüft und erscheinen hier nicht – sagen, warum
+                if (photos && profile.verify() == com.sync2pc.app.data.VerifyLevel.OFF) Text(
+                    str(R.string.free_verify_off_hint),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                )
             }
         }
         // Kriterien

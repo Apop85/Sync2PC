@@ -19,7 +19,7 @@ object RunGrouping {
 
     /** Lauf ohne Übertragung, ohne Fehler und ohne offene Punkte? */
     fun isIdle(r: SyncRun): Boolean =
-        r.status == "OK" && r.uploaded == 0 && r.failed == 0 && r.waiting == 0 &&
+        r.status == RunStatus.OK && r.uploaded == 0 && r.failed == 0 && r.waiting == 0 &&
             notIdleMarkers.none { r.message.contains(it, ignoreCase = true) }
 
     /** [runs] neueste zuerst. Aufeinanderfolgende ruhige Läufe (mind. 2) werden zu einem Eintrag. */
@@ -43,7 +43,7 @@ object RunGrouping {
 
     /** Lauf mit Fehler (fehlgeschlagen, teilweise oder einzelne Dateien mit Fehler) */
     fun hasError(r: SyncRun): Boolean =
-        r.status == "FAILED" || r.status == "PARTIAL" || r.status == "WAITING" || r.failed > 0
+        r.status == RunStatus.FAILED || r.status == RunStatus.PARTIAL || r.status == RunStatus.WAITING || r.failed > 0
 
     /** Lauf, der mindestens eine Datei übertragen hat (Ordner-Sync: hoch- oder heruntergeladen) */
     fun hasTransfer(r: SyncRun): Boolean = r.uploaded > 0

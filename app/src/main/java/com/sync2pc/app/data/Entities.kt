@@ -309,6 +309,20 @@ data class MediaInfo(
     val countryName: String?,
 )
 
+/**
+ * Zustand eines Laufs (0.9.4). Feste Konstanten statt freier Texte im Code, damit ein Tippfehler nicht erst zur
+ * Laufzeit auffällt. In der DB steht derselbe Text (keine Migration); SQL-Abfragen nutzen ihn direkt ('OK' …).
+ */
+object RunStatus {
+    const val RUNNING = "RUNNING"
+    const val OK = "OK"
+    const val PARTIAL = "PARTIAL"
+    const val FAILED = "FAILED"
+    const val CANCELLED = "CANCELLED"
+    const val INTERRUPTED = "INTERRUPTED"
+    const val WAITING = "WAITING"
+}
+
 @Entity(tableName = "sync_runs")
 data class SyncRun(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -319,7 +333,7 @@ data class SyncRun(
     val startedAt: Long,
     val finishedAt: Long? = null,
     /** RUNNING, OK, PARTIAL, FAILED, CANCELLED */
-    val status: String = "RUNNING",
+    val status: String = RunStatus.RUNNING,
     val uploaded: Int = 0,
     val skipped: Int = 0,
     val failed: Int = 0,

@@ -36,6 +36,7 @@
     <string name="free_pc_lost">Der PC war nicht (mehr) erreichbar.</string>
     <string name="free_failed">Fehlgeschlagen: %1$s</string>
     <string name="free_intro_photos">Verschiebt Fotos und Videos, die nachweislich auf dem PC gesichert sind, in den Papierkorb der Galerie. Vorher prüft LeoSync jede Datei auf dem PC. Was dort fehlt oder anders ist, bleibt.</string>
+    <string name="free_verify_off_hint">Die Prüfung nach dem Hochladen steht bei diesem Profil auf „Aus“. Ungeprüfte Fotos werden hier nicht angeboten. Stelle im Profil mindestens „Wenig“ ein; ab der nächsten Synchronisierung erscheinen neu gesicherte Fotos.</string>
     <string name="free_intro_folder">Löscht Dateien auf dem Handy, die nachweislich unverändert auf dem PC liegen. Auf dem PC bleiben sie erhalten. Ordner-Dateien kommen nicht in einen Papierkorb, sie werden nach der Prüfung direkt gelöscht.</string>
     <string name="free_selection">Auswahl</string>
     <string name="free_profile">Profil</string>

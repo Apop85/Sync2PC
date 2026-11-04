@@ -95,7 +95,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     val scope = rememberCoroutineScope()
 
     var loaded by remember { mutableStateOf(profileId == 0L) }
-    var p by remember { mutableStateOf(Profile(name = str(R.string.profile_default_photos))) }
+    val pState = remember { mutableStateOf(Profile(name = str(R.string.profile_default_photos))) }
+    var p by pState
     var password by remember { mutableStateOf("") }
     var newSsid by remember { mutableStateOf("") }
     var testResult by remember { mutableStateOf<String?>(null) }
@@ -124,8 +125,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     /** Neues Profil: zuerst Typ wählen (Assistent) */
     var typeChosen by remember { mutableStateOf(profileId != 0L) }
     var showRemotePicker by remember { mutableStateOf(false) }
-    var pollText by remember { mutableStateOf("") }
-    var trashText by remember { mutableStateOf("") }
+    val pollState = remember { mutableStateOf("") }
+    var pollText by pollState
+    val trashState = remember { mutableStateOf("") }
+    var trashText by trashState
     var guardText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
@@ -448,116 +451,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             }
 
             if (isMirror && show(Step.OPTIONS)) item {
-                SectionCard(str(R.string.profile_direction)) {
-                    Hint(str(R.string.profile_direction_hint))
-                    SyncDirection.entries.forEach { d ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { p = p.copy(direction = d.name) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(selected = p.dir() == d, onClick = { p = p.copy(direction = d.name) })
-                            Text(d.label)
-                        }
-                    }
-                    SwitchRow(
-                        str(R.string.profile_propagate), p.propagateDeletes,
-                        subtitle = str(R.string.profile_propagate_sub, trashName),
-                    ) { p = p.copy(propagateDeletes = it) }
-                    SwitchRow(
-                        str(R.string.profile_keep_versions), p.keepVersions,
-                        subtitle = str(R.string.profile_keep_versions_sub, trashName),
-                    ) { p = p.copy(keepVersions = it) }
-                    OutlinedTextField(
-                        trashText,
-                        { v ->
-                            trashText = v.filter { it.isDigit() }.take(4)
-                            trashText.toIntOrNull()?.let { p = p.copy(trashRetentionDays = it.coerceIn(0, 3650)) }
-                        },
-                        label = { Text(str(R.string.profile_trash_days)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    )
-                    Hint(str(R.string.profile_trash_days_hint, trashName))
-                    if (p.dir() == SyncDirection.BOTH) {
-                        Text(str(R.string.profile_conflict_question), style = MaterialTheme.typography.bodyMedium)
-                        ConflictMode.entries.forEach { m ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable { p = p.copy(conflictMode = m.name) },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(selected = p.conflict() == m, onClick = { p = p.copy(conflictMode = m.name) })
-                                Text(m.label)
-                            }
-                        }
-                        if (p.conflict() == ConflictMode.NEWER) Hint(str(R.string.profile_conflict_newer_hint))
-                    }
-                    OutlinedTextField(
-                        pollText,
-                        { v ->
-                            pollText = v.filter { it.isDigit() }.take(4)
-                            pollText.toIntOrNull()?.let { p = p.copy(remotePollMinutes = it.coerceIn(15, 24 * 60)) }
-                        },
-                        label = { Text(str(R.string.profile_poll)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    )
-                    Hint(str(R.string.profile_poll_hint))
-                }
+                MirrorOptionsCard(pState, trashState, pollState, trashName)
             }
 
             if (!isMirror && show(Step.OPTIONS)) item {
-                SectionCard(str(R.string.profile_after_upload)) {
-                    Hint(str(R.string.profile_after_upload_hint))
-                    // Wer Fotos entfernt, braucht eine Prüfung: "Aus" springt dann auf "Mittel" (0.9.0)
-                    fun setDelete(m: DeleteMode) {
-                        var np = p.copy(deleteMode = m.name)
-                        if (m != DeleteMode.KEEP && VerifyLevel.of(np.verifyLevel) == VerifyLevel.OFF) {
-                            np = np.copy(verifyLevel = VerifyLevel.MEDIUM.code)
-                            Toast.makeText(ctx, str(R.string.verify_raised), Toast.LENGTH_LONG).show()
-                        }
-                        p = np
-                    }
-                    DeleteMode.entries.forEach { m ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { setDelete(m) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(selected = p.delete() == m, onClick = { setDelete(m) })
-                            Text(m.label)
-                        }
-                    }
-                    if (p.delete() != DeleteMode.KEEP) Hint(str(R.string.profile_delete_hint))
-                    if (p.delete() == DeleteMode.DELETE) Text(
-                        str(R.string.profile_delete_final_hint),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
-                    )
-                    // Prüfstufe nach dem Hochladen (0.9.0)
-                    Text(str(R.string.profile_verify), style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(top = 8.dp))
-                    Hint(str(R.string.profile_verify_hint))
-                    val deleting = p.delete() != DeleteMode.KEEP
-                    fun chooseLevel(lv: VerifyLevel) {
-                        if (lv == VerifyLevel.FULL && p.verify() != VerifyLevel.FULL) confirmFullVerify = true
-                        else p = p.copy(verifyLevel = lv.code)
-                    }
-                    VerifyLevel.entries.forEach { lv ->
-                        val enabled = !(lv == VerifyLevel.OFF && deleting)
-                        Row(
-                            Modifier.fillMaxWidth().clickable(enabled = enabled) { chooseLevel(lv) },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = p.verify() == lv, onClick = { chooseLevel(lv) }, enabled = enabled)
-                            Column(Modifier.padding(vertical = 4.dp)) {
-                                Text(lv.label, color = if (enabled) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
-                                Text(lv.sub, style = MaterialTheme.typography.bodySmall,
-                                    color = if (lv == VerifyLevel.FULL) MaterialTheme.colorScheme.error
-                                    else MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                    if (deleting) Hint(str(R.string.profile_verify_required))
-                }
+                PhotoOptionsCard(pState) { confirmFullVerify = true }
             }
 
             // Optionale Bereiche: beim Bearbeiten zugeklappt, solange nichts eingestellt ist (0.9.0)
