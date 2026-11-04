@@ -32,8 +32,11 @@
     <string name="profile_photos">Photos</string>
     <string name="profile_videos">Videos</string>
     <string name="profile_target">Target (Windows Share)</string>
-    <string name="profile_copy_credentials">Copy credentials from another profile:</string>
-    <string name="profile_credentials_copied">Credentials copied from “%1$s”</string>
+    <string name="profile_copy_credentials_button">Copy credentials…</string>
+    <string name="profile_copy_credentials_title">Copy credentials</string>
+    <string name="profile_copy_credentials_hint">Copies user, password and domain. The Share path is only filled in if it is still empty.</string>
+    <string name="profile_copy_credentials_profiles">Used in: %1$s</string>
+    <string name="profile_credentials_copied">Credentials of “%1$s” copied</string>
     <string name="profile_share_path">Share path</string>
     <string name="profile_share_example">Photos</string>
     <string name="profile_share_format">Format: \\\\Server\\Share (IP address or name)</string>

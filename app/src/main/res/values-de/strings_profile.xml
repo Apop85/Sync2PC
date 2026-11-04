@@ -32,7 +32,10 @@
     <string name="profile_photos">Fotos</string>
     <string name="profile_videos">Videos</string>
     <string name="profile_target">Ziel (Windows-Freigabe)</string>
-    <string name="profile_copy_credentials">Zugangsdaten von einem anderen Profil übernehmen:</string>
+    <string name="profile_copy_credentials_button">Zugangsdaten übernehmen…</string>
+    <string name="profile_copy_credentials_title">Zugangsdaten übernehmen</string>
+    <string name="profile_copy_credentials_hint">Übernimmt Benutzer, Passwort und Domäne. Der Freigabe-Pfad wird nur eingetragen, wenn er noch leer ist.</string>
+    <string name="profile_copy_credentials_profiles">Verwendet in: %1$s</string>
     <string name="profile_credentials_copied">Zugangsdaten von „%1$s“ übernommen</string>
     <string name="profile_share_path">Freigabe-Pfad</string>
     <string name="profile_share_example">Fotos</string>

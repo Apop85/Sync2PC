@@ -25,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.platform.LocalDensity
@@ -107,6 +108,7 @@ fun rememberResumeTick(): Int {
     return tick
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val ctx = LocalContext.current
@@ -221,6 +223,19 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         else null
     }
 
+    /** Synchronisieren (Knopf und Herunterziehen); erste Synchronisierung ohne Ladegerät -> vorher warnen */
+    val startSync: () -> Unit = {
+        scope.launch {
+            if (FirstSync.warnNeeded(ctx, profiles)) showChargeWarning = true
+            else { SyncScheduler.enqueueManual(ctx); pauseVersion++ }
+        }
+    }
+    // Herunterziehen (0.10.0): Kreis kurz zeigen, danach übernimmt die Statuskachel
+    var pullRefreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(pullRefreshing, running != null) {
+        if (pullRefreshing) { if (running == null) delay(1_500); pullRefreshing = false }
+    }
+
     ScreenScaffold(
         title = "LeoSync",
         onBack = null,
@@ -248,8 +263,15 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             }
         },
     ) { pad ->
+        // Ganz oben weiter nach unten ziehen = Synchronisieren (0.10.0), wie "Neu laden" im Browser.
+        // Ohne Profil oder während einer laufenden Synchronisierung passiert nichts.
+        PullToRefreshBox(
+            isRefreshing = pullRefreshing,
+            onRefresh = { if (profiles.isNotEmpty() && running == null) { pullRefreshing = true; startSync() } },
+            modifier = Modifier.fillMaxSize().padding(pad),
+        ) {
         LazyColumn(
-            Modifier.fillMaxSize().padding(pad),
+            Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -273,13 +295,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                         decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0 && guards.isEmpty(),
                     // LeoSync wartet auf eine Entscheidung von dir (Bild "Aufmerksamkeit")
                     needsYou = guards.isNotEmpty() || decisions.isNotEmpty() || conflicts.isNotEmpty() || deleteCount > 0,
-                    onSync = {
-                        // Erste Synchronisierung ohne Ladegerät -> vorher warnen
-                        scope.launch {
-                            if (FirstSync.warnNeeded(ctx, profiles)) showChargeWarning = true
-                            else { SyncScheduler.enqueueManual(ctx); pauseVersion++ }
-                        }
-                    },
+                    onSync = startSync,
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onResume = { SyncScheduler.resume(ctx); pauseVersion++ },
                     hasProfiles = profiles.isNotEmpty(),
@@ -420,6 +436,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
+        }
         }
     }
 

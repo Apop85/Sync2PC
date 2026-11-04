@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import com.sync2pc.app.data.VerifyLevel
+import com.sync2pc.app.data.CredentialGroups
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -133,6 +136,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     var confirmFullVerify by remember { mutableStateOf(false) }
+    var showCredentialPicker by remember { mutableStateOf(false) }
     var overlap by remember { mutableStateOf<ProfileOverlap.Hit?>(null) }
     // Ordnerwechsel (0.4.1): Stichprobe läuft / passt nicht
     var checkingFolder by remember { mutableStateOf(false) }
@@ -354,26 +358,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
             if (show(Step.TARGET)) item {
                 SectionCard(str(R.string.profile_target)) {
-                    if (credentialSources.isNotEmpty()) {
-                        Hint(str(R.string.profile_copy_credentials))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(credentialSources, key = { it.id }) { src ->
-                                AssistChip(
-                                    onClick = {
-                                        p = p.copy(
-                                            smbUser = src.smbUser,
-                                            smbDomain = src.smbDomain,
-                                            // Server/Freigabe nur vorschlagen, wenn noch leer
-                                            smbPath = p.smbPath.ifBlank { src.smbPath },
-                                        )
-                                        password = CredentialCrypto.decrypt(src.smbPasswordEnc)
-                                        testResult = null
-                                        Toast.makeText(ctx, str(R.string.profile_credentials_copied, src.name), Toast.LENGTH_SHORT).show()
-                                    },
-                                    label = { Text("${src.name} (${src.smbUser})") },
-                                )
-                            }
-                        }
+                    // 0.10.0: ein Knopf statt eines Chips pro Profil; gleiche Zugangsdaten erscheinen nur einmal
+                    if (credentialSources.isNotEmpty()) OutlinedButton(onClick = { showCredentialPicker = true }) {
+                        Text(str(R.string.profile_copy_credentials_button))
                     }
                     OutlinedTextField(
                         p.smbPath, { p = p.copy(smbPath = it) },
@@ -673,6 +660,45 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     TextButton(onClick = { folderWarning = null }) { Text(str(R.string.common_cancel)) }
                 }
             },
+        )
+    }
+
+    // Zugangsdaten übernehmen (0.10.0): Auswahl aus den zusammengefassten Zugangsdaten der anderen Profile
+    if (showCredentialPicker) {
+        val groups = remember(credentialSources) {
+            CredentialGroups.group(credentialSources) { CredentialCrypto.decrypt(it.smbPasswordEnc) }
+        }
+        AlertDialog(
+            onDismissRequest = { showCredentialPicker = false },
+            title = { Text(str(R.string.profile_copy_credentials_title)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Hint(str(R.string.profile_copy_credentials_hint))
+                    groups.forEach { g ->
+                        Column(
+                            Modifier.fillMaxWidth().clickable {
+                                val src = g.source
+                                p = p.copy(
+                                    smbUser = src.smbUser,
+                                    smbDomain = src.smbDomain,
+                                    // Server/Freigabe nur vorschlagen, wenn noch leer
+                                    smbPath = p.smbPath.ifBlank { src.smbPath },
+                                )
+                                password = CredentialCrypto.decrypt(src.smbPasswordEnc)
+                                testResult = null
+                                showCredentialPicker = false
+                                Toast.makeText(ctx, str(R.string.profile_credentials_copied, g.user), Toast.LENGTH_SHORT).show()
+                            }.padding(vertical = 8.dp),
+                        ) {
+                            val who = if (g.domain.isBlank()) g.user else "${g.domain}\\${g.user}"
+                            Text(if (g.host.isBlank()) who else "$who · ${g.host}", style = MaterialTheme.typography.bodyLarge)
+                            Hint(str(R.string.profile_copy_credentials_profiles, g.profileNames.joinToString(", ")))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showCredentialPicker = false }) { Text(str(R.string.common_cancel)) } },
         )
     }
 

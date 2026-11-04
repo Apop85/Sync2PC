@@ -2,6 +2,17 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.10.0 (2026-11-04)
+
+### Neu
+- **Nach unten ziehen zum Synchronisieren:** Steht die Startseite ganz oben, startet weiteres Herunterziehen eine Synchronisierung, wie „Neu laden“ im Browser. Es gelten dieselben Regeln wie beim Knopf (Hinweis zum Ladegerät bei der ersten Synchronisierung). Ohne Profil oder während einer laufenden Synchronisierung passiert nichts.
+
+### Geändert
+- **Zugangsdaten übernehmen:** Statt eines Knopfs pro Profil gibt es im Profil einen einzigen Knopf „Zugangsdaten übernehmen…“. Er öffnet eine Liste, in der gleiche Zugangsdaten (Benutzer, Domäne, Server, Passwort) nur einmal erscheinen, mit den Profilen, die sie verwenden.
+
+### Intern
+- `data/CredentialGroups.kt` mit Unit-Test `CredentialGroupsTest`. Keine Datenbank-Änderung.
+
 ## 0.9.5 (2026-11-04)
 
 ### Geändert
