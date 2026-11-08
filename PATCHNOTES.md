@@ -2,6 +2,27 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.11.0 (2026-11-08)
+
+### Neu
+- **Ordner auf dem PC wählen:** Im Profil genügt der PC (z. B. `\\192.168.1.20`) mit Benutzer und Passwort. „Ordner auf dem PC wählen…“ zeigt die Freigaben des PCs und darin die Ordner. Das separate Feld „Unterordner“ entfällt; bestehende Profile behalten ihr Ziel.
+- **Profil löschen rückgängig machen:** Nach dem Löschen erscheint „Profil gelöscht – Rückgängig“. Endgültig gelöscht wird erst, wenn der Hinweis verschwindet.
+- **Restzeit:** Während einer Synchronisierung zeigt die Statuskachel nach etwa einer Minute die geschätzte Restzeit.
+- **Hilfe & Produktseite** im Zahnrad-Menü (https://apop85.github.io/leosync/).
+
+### Geändert
+- **Verständliche Fehlermeldungen** mit nächstem Schritt (falsches Passwort, Freigabe oder Ordner nicht gefunden, kein Zugriff, PC nicht erreichbar, Speicher voll). Technische Details lassen sich beim Verbindungstest und in der Ordnerauswahl aufklappen und stehen im Verlauf.
+- **Berechtigungen erst bei Bedarf:** Medienzugriff beim Anlegen eines Fotos-Profils, Standort beim WLAN, Benachrichtigungen und Akku nach dem ersten Profil. Ohne Profil fragt die Startseite nichts.
+- **Meldung nach jeder Synchronisierung** ist bei neuen Installationen aus. Bestehende Einstellungen bleiben.
+- **Aufgeräumte Hinweise:** Lange Erklärungen zeigen den ersten Satz, der Rest steht hinter „Mehr dazu“.
+- **Screenreader:** Start und Ende einer Synchronisierung werden angesagt; die Richtungspfeile der Profilkarte werden als Wort vorgelesen.
+- **Tipp** zum Herunterziehen, einmalig unter der Statuskachel.
+
+### Intern
+- Neue Bibliothek `com.rapid7.client:dcerpc:0.12.13` (Freigaben auflisten über `srvsvc`), APK +0,4 MB. R8-Regeln ergänzt.
+- `friendlyError`/`userError` (sync/Errors.kt), `PermNeeds`, `PendingProfileDelete`, `HintMore`/`ErrorDetails`, `SmbSession.listShares`, `SmbTarget.hostOf`. Keine Datenbank-Änderung.
+- Hilfe-Texte für die Produktseite: `docs/hilfe/hilfe-de.md`, `docs/hilfe/help-en.md`.
+
 ## 0.10.0 (2026-11-04)
 
 ### Neu

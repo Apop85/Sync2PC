@@ -322,7 +322,7 @@ class MirrorEngine(
                 return finish(RunStatus.INTERRUPTED, str(R.string.eng_connection_mirror, up.get(), down.get()))
             }
             log("E", str(R.string.eng_run_failed, com.sync2pc.app.sync.shortError(e)))
-            return finish(RunStatus.FAILED, com.sync2pc.app.sync.shortError(e))
+            return finish(RunStatus.FAILED, com.sync2pc.app.sync.userError(e))
         } finally {
             smb?.close()
         }

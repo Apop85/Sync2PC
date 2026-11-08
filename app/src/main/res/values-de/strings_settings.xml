@@ -7,6 +7,7 @@
     <string name="settings_app">Sprache &amp; Sicherung</string>
     <string name="settings_updates">Updates</string>
     <string name="settings_diagnose">Diagnose</string>
+    <string name="settings_help">Hilfe &amp; Produktseite</string>
 
     <string name="settings_notify_summary">Meldung nach jeder Synchronisierung</string>
     <string name="settings_notify_summary_sub">z. B. „3 Dateien übertragen“</string>

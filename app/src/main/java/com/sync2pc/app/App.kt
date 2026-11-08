@@ -12,6 +12,8 @@ class App : Application() {
         super.onCreate()
         // Als Erstes, damit auch Abstürze beim Start festgehalten werden
         CrashReporter.install(this)
+        // Vor allem anderen, das Einstellungen schreibt (erkennt so Neuinstallationen)
+        com.sync2pc.app.data.GlobalSettings(this).applyInstallDefaults()
         Texts.init(this)
         Notifications.createChannels(this)
         SyncScheduler.setupAll(this)

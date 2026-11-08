@@ -26,6 +26,15 @@
 -dontwarn com.hierynomus.**
 -dontwarn net.engio.mbassy.**
 
+# --- dcerpc (Freigaben auflisten, 0.11.0) und seine Hilfsbibliotheken ---------------
+-keep class com.rapid7.client.dcerpc.** { *; }
+-dontwarn com.rapid7.client.dcerpc.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.j2objc.annotations.**
+-dontwarn org.checkerframework.**
+-dontwarn javax.lang.model.**
+-dontwarn sun.misc.**
+
 # --- Eigene Klassen ----------------------------------------------------------------
 # Worker werden von WorkManager per Reflection erzeugt (Regeln kommen aus WorkManager),
 # Receiver/Activity aus dem Manifest bleiben automatisch erhalten.

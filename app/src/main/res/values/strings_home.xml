@@ -7,6 +7,19 @@
     <string name="common_save">Save</string>
     <string name="common_ok">OK</string>
     <string name="common_delete">Delete</string>
+    <string name="common_more">More</string>
+    <string name="common_less">Less</string>
+    <string name="common_details">Technical details</string>
+    <string name="common_details_hide">Hide details</string>
+    <string name="home_profile_deleted">Profile “%1$s” deleted</string>
+    <string name="home_undo">Undo</string>
+    <string name="home_pull_tip">Tip: Pulling down at the very top also starts a sync.</string>
+    <string name="home_eta">about %1$s left</string>
+    <plurals name="eta_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+    </plurals>
+    <string name="eta_hours">%1$s h %2$s min</string>
     <string name="fmt_day_month">MM-dd</string>
 
     <!-- Startseite (HomeScreen) -->

@@ -29,6 +29,7 @@ import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.l10n.str
 import com.sync2pc.app.smb.SmbSession
+import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -59,62 +60,80 @@ private fun TypeCard(title: String, text: String, onClick: () -> Unit) {
 }
 
 /**
- * Ordner auf dem Share durchsuchen und als Unterordner wählen.
- * Pfade relativ zum Freigabe-Pfad des Profils, Trenner "\".
+ * Ziel auf dem PC wählen (seit 0.11.0): oberste Ebene = Freigaben des PCs, darunter die Ordner.
+ * Startet beim bisherigen Pfad, falls einer eingetragen ist. Ergebnis: "\\Server\Freigabe\Ordner…".
  */
 @Composable
 fun RemoteFolderPicker(
     profile: () -> Profile,
-    initial: String,
     onDismiss: () -> Unit,
     onPick: (String) -> Unit,
 ) {
-    var path by remember { mutableStateOf(initial.replace('/', '\\').trim('\\')) }
-    var dirs by remember { mutableStateOf<List<String>?>(null) }
+    val start = remember { profile() }
+    val host = remember { SmbTarget.hostOf(start.smbPath).orEmpty() }
+    // Pfad unter dem Server: [] = Freigaben, [Freigabe, Ordner …]
+    var parts by remember {
+        mutableStateOf(start.smbPath.replace('/', '\\').split('\\').map { it.trim() }.filter { it.isNotEmpty() }.drop(1))
+    }
+    var entries by remember { mutableStateOf<List<String>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var detail by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(path) {
-        dirs = null; error = null
+    LaunchedEffect(parts) {
+        entries = null; error = null; detail = null
         val result = withContext(Dispatchers.IO) {
             try {
-                SmbSession.open(profile().copy(remoteSubfolder = "")).use { s ->
-                    Result.success(s.listDir(s.path(path)).filter { it.isDirectory && !it.name.startsWith(".LeoSync") && !it.name.startsWith(".Sync2PC") }
+                if (parts.isEmpty()) Result.success(SmbSession.listShares(start))
+                else SmbSession.open(start.copy(smbPath = "\\\\$host\\${parts.first()}", remoteSubfolder = "")).use { s ->
+                    Result.success(s.listDir(parts.drop(1).joinToString("\\"))
+                        .filter { it.isDirectory && !it.name.startsWith(".LeoSync") && !it.name.startsWith(".Sync2PC") }
                         .map { it.name }.sortedBy { it.lowercase() })
                 }
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
-        result.onSuccess { dirs = it }.onFailure { error = "${it.javaClass.simpleName}: ${it.message}" }
+        result.onSuccess { entries = it }.onFailure {
+            error = com.sync2pc.app.sync.userError(it); detail = com.sync2pc.app.sync.shortError(it)
+        }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(str(R.string.remote_picker_title)) },
+        title = { Text(str(if (parts.isEmpty()) R.string.remote_picker_title_shares else R.string.remote_picker_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("\\" + path, style = MaterialTheme.typography.bodySmall)
-                val list = dirs
+                Text("\\\\" + (listOf(host) + parts).joinToString("\\"), style = MaterialTheme.typography.bodySmall)
+                val list = entries
                 when {
-                    error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error)
+                    error != null -> {
+                        Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
+                        detail?.let { ErrorDetails(it) }
+                    }
                     list == null -> CircularProgressIndicator()
                     else -> LazyColumn(Modifier.heightIn(max = 360.dp)) {
-                        if (path.isNotEmpty()) item {
-                            Row(Modifier.fillMaxWidth().clickable { path = path.substringBeforeLast('\\', "") }.padding(vertical = 10.dp)) {
+                        if (parts.isNotEmpty()) item {
+                            Row(Modifier.fillMaxWidth().clickable { parts = parts.dropLast(1) }.padding(vertical = 10.dp)) {
                                 Text("⬆  ..")
                             }
                         }
-                        if (list.isEmpty()) item { Hint(str(R.string.remote_picker_empty)) }
+                        if (list.isEmpty()) item {
+                            Hint(str(if (parts.isEmpty()) R.string.remote_picker_no_shares else R.string.remote_picker_empty))
+                        }
                         items(list) { d ->
-                            Row(Modifier.fillMaxWidth().clickable { path = if (path.isEmpty()) d else "$path\\$d" }.padding(vertical = 10.dp)) {
-                                Text("📁  $d")
+                            Row(Modifier.fillMaxWidth().clickable { parts = parts + d }.padding(vertical = 10.dp)) {
+                                Text((if (parts.isEmpty()) "🖧  " else "📁  ") + d)
                             }
                         }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onPick(path) }, enabled = error == null) { Text(str(R.string.remote_picker_use)) } },
+        // Auf der Ebene der Freigaben gibt es noch nichts zu übernehmen
+        confirmButton = {
+            TextButton(onClick = { onPick("\\\\" + (listOf(host) + parts).joinToString("\\")) },
+                enabled = error == null && parts.isNotEmpty()) { Text(str(R.string.remote_picker_use)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.common_cancel)) } },
     )
 }

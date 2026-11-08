@@ -39,7 +39,8 @@
     <string name="profile_credentials_copied">Credentials of “%1$s” copied</string>
     <string name="profile_share_path">Share path</string>
     <string name="profile_share_example">Photos</string>
-    <string name="profile_share_format">Format: \\\\Server\\Share (IP address or name)</string>
+    <string name="profile_share_format">The PC is enough, e.g. \\\\192.168.1.20. Then pick the Share and folder with “Choose folder on the PC…”. Typing works too: \\\\Server\\Share\\Folder (IP address or name).</string>
+    <string name="profile_pick_pc_folder">Choose folder on the PC…</string>
     <string name="profile_subfolder">Subfolder on the Share (optional)</string>
     <string name="profile_subfolder_example_mirror">Documents\\Mobile</string>
     <string name="profile_subfolder_example_photos">Mobile\\Photos</string>

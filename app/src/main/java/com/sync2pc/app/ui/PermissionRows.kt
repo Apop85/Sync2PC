@@ -24,11 +24,11 @@ import com.sync2pc.app.l10n.str
 
 /**
  * Berechtigungen als Zeilen mit Knopf (0.9.0: gemeinsam für die Karte auf der Startseite und die Seite
- * "App-Berechtigungen"). [showDone] = auch erteilte Punkte mit "✓ erledigt" zeigen.
+ * "App-Berechtigungen"). [showDone] = auch erteilte Punkte mit "✓ erledigt" zeigen. [needs] = nur diese Gruppen (0.11.0).
  */
 @SuppressLint("BatteryLife")
 @Composable
-fun PermissionRows(perms: PermStatus, showDone: Boolean) {
+fun PermissionRows(perms: PermStatus, showDone: Boolean, needs: PermNeeds = PermNeeds.ALL) {
     val ctx = LocalContext.current
     val multi = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     val single = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -46,25 +46,29 @@ fun PermissionRows(perms: PermStatus, showDone: Boolean) {
         }
     }
 
-    row(perms.media, str(R.string.perm_media), grant) { multi.launch(PermStatus.mediaPermissions) }
-    // Standort in Fotos erst nach dem Medienzugriff (Android verlangt die Reihenfolge)
-    if (perms.media || showDone) row(perms.mediaLocation, str(R.string.perm_media_location), grant) {
-        if (perms.media) single.launch(Manifest.permission.ACCESS_MEDIA_LOCATION) else multi.launch(PermStatus.mediaPermissions)
+    if (needs.media) {
+        row(perms.media, str(R.string.perm_media), grant) { multi.launch(PermStatus.mediaPermissions) }
+        // Standort in Fotos erst nach dem Medienzugriff (Android verlangt die Reihenfolge)
+        if (perms.media || showDone) row(perms.mediaLocation, str(R.string.perm_media_location), grant) {
+            if (perms.media) single.launch(Manifest.permission.ACCESS_MEDIA_LOCATION) else multi.launch(PermStatus.mediaPermissions)
+        }
     }
-    if (Build.VERSION.SDK_INT >= 33) row(perms.notifications, str(R.string.perm_notifications), grant) {
+    if (needs.base && Build.VERSION.SDK_INT >= 33) row(perms.notifications, str(R.string.perm_notifications), grant) {
         single.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
-    row(perms.location, str(R.string.perm_location), grant) { multi.launch(PermStatus.locationPermissions) }
-    if (perms.location || showDone) row(perms.backgroundLocation, str(R.string.perm_location_always), open) {
-        if (perms.location) single.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        else multi.launch(PermStatus.locationPermissions)
+    if (needs.wifi) {
+        row(perms.location, str(R.string.perm_location), grant) { multi.launch(PermStatus.locationPermissions) }
+        if (perms.location || showDone) row(perms.backgroundLocation, str(R.string.perm_location_always), open) {
+            if (perms.location) single.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            else multi.launch(PermStatus.locationPermissions)
+        }
+        row(perms.locationServiceOn,
+            str(if (perms.locationServiceOn) R.string.perm_location_service else R.string.perm_location_off),
+            str(R.string.perm_turn_on)) {
+            ctx.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+        }
     }
-    row(perms.locationServiceOn,
-        str(if (perms.locationServiceOn) R.string.perm_location_service else R.string.perm_location_off),
-        str(R.string.perm_turn_on)) {
-        ctx.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-    }
-    row(perms.batteryUnrestricted, str(R.string.perm_battery), open) {
+    if (needs.base) row(perms.batteryUnrestricted, str(R.string.perm_battery), open) {
         ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")))
     }
 }

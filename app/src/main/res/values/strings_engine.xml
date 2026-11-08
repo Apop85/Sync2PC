@@ -86,6 +86,14 @@
     <string name="update_err_package">The APK belongs to “%1$s”, not to this app</string>
     <string name="update_err_debug">(debug builds cannot be updated this way)</string>
     <string name="update_err_not_newer">The APK is not newer than the installed version</string>
+    <string name="err_friendly_login">User name or password is wrong. Please check the profile (for a Microsoft account use the e-mail address as user).</string>
+    <string name="err_friendly_share_missing">This Share does not exist on the PC. Check the spelling or pick it with “Choose folder on the PC…”.</string>
+    <string name="err_friendly_folder_missing">The folder was not found on the PC. Was it renamed or moved?</string>
+    <string name="err_friendly_access">No access to this folder. Allow the user to read and write on the PC (Properties → Sharing).</string>
+    <string name="err_friendly_pc_full">The PC has no free storage left.</string>
+    <string name="err_friendly_phone_full">The mobile has no free storage left.</string>
+    <string name="err_friendly_unknown_host">The PC name was not found. Best enter the IP address, e.g. \\\\192.168.1.20.</string>
+    <string name="err_friendly_unreachable">The PC is not reachable. Is it switched on and on the same Wi-Fi?</string>
     <string name="smb_err_path">Invalid Share path: “%1$s” (expected \\\\server\\share)</string>
     <string name="smb_err_not_disk">“%1$s” is not a file Share</string>
     <string name="smb_err_incomplete">Upload incomplete: %1$s of %2$s bytes</string>

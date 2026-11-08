@@ -133,7 +133,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // Schutzbremse (0.4.1): Profile mit offener Entscheidung ruhen – auch bei "Synchronisieren"
         val blocked = com.sync2pc.app.mirror.GuardStore(ctx).blockedIds()
         val all = dao.profiles().filter {
-            it.enabled && it.isConfigured() && (manual || it.id !in awaiting) && it.id !in blocked
+            it.enabled && it.isConfigured() && (manual || it.id !in awaiting) && it.id !in blocked &&
+                // 0.11.0: Profil wird gerade gelöscht (Rückgängig noch möglich) -> nicht synchronisieren
+                it.id != com.sync2pc.app.ui.PendingProfileDelete.pending.value?.id
         }
         if (all.isEmpty()) return Result.success()
         targetWifi = all.flatMap { it.ssids() }.distinct().joinToString(", ")

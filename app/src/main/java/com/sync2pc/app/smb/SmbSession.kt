@@ -32,6 +32,13 @@ data class SmbTarget(val host: String, val share: String, val basePath: String) 
             if (parts.size < 2) return null
             return SmbTarget(parts[0], parts[1], parts.drop(2).joinToString("\\"))
         }
+
+        /** Nur der Server ("\\192.168.1.20" reicht, 0.11.0), null wenn leer */
+        fun hostOf(input: String): String? {
+            var s = input.trim()
+            if (s.lowercase().startsWith("smb:")) s = s.substring(4)
+            return s.replace('/', '\\').split('\\').map { it.trim() }.firstOrNull { it.isNotEmpty() }
+        }
     }
 }
 
@@ -83,6 +90,31 @@ class SmbSession private constructor(
                 try { connection?.close() } catch (ignored: Exception) {}
                 try { client.close() } catch (ignored: Exception) {}
                 throw e
+            }
+        }
+
+        /**
+         * Freigaben des PCs auflisten (0.11.0, über den Windows-Dienst "srvsvc", Bibliothek dcerpc).
+         * Nur normale Datei-Freigaben, keine versteckten/administrativen ("C$", "IPC$" …).
+         */
+        fun listShares(profile: Profile): List<String> {
+            val host = SmbTarget.hostOf(profile.smbPath)
+                ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
+            val client = SMBClient(SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).build())
+            try {
+                client.connect(host).use { connection ->
+                    val session = connection.authenticate(AuthenticationContext(
+                        profile.smbUser, CredentialCrypto.decrypt(profile.smbPasswordEnc).toCharArray(),
+                        profile.smbDomain.ifBlank { null },
+                    ))
+                    val transport = com.rapid7.client.dcerpc.transport.SMBTransportFactories.SRVSVC.getTransport(session)
+                    return com.rapid7.client.dcerpc.mssrvs.ServerService(transport).shares1
+                        .filter { (it.type and 0x0FFFFFFF) == 0 && !it.netName.endsWith("$") }
+                        .map { it.netName }
+                        .sortedBy { it.lowercase() }
+                }
+            } finally {
+                try { client.close() } catch (ignored: Exception) {}
             }
         }
 

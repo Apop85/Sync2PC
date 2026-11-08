@@ -20,6 +20,35 @@ fun isNetworkError(e: Throwable): Boolean {
     return false
 }
 
+/**
+ * Verständliche Meldung mit nächstem Schritt für häufige Fehler (0.11.0), sonst null.
+ * Der technische Text ([shortError]) bleibt im Verlauf (aufklappen) und in der Diagnose.
+ */
+fun friendlyError(e: Throwable): String? {
+    val chain = generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).toList()
+    val text = chain.joinToString(" | ") { "${it.javaClass.name} ${it.message.orEmpty()}" }
+    fun has(vararg keys: String) = keys.any { text.contains(it, ignoreCase = true) }
+    val id = when {
+        has("STATUS_LOGON_FAILURE", "STATUS_WRONG_PASSWORD", "STATUS_ACCOUNT_RESTRICTION",
+            "STATUS_ACCOUNT_LOCKED_OUT", "STATUS_PASSWORD_EXPIRED", "STATUS_ACCOUNT_DISABLED") ->
+            com.sync2pc.app.R.string.err_friendly_login
+        has("STATUS_BAD_NETWORK_NAME") -> com.sync2pc.app.R.string.err_friendly_share_missing
+        has("STATUS_OBJECT_NAME_NOT_FOUND", "STATUS_OBJECT_PATH_NOT_FOUND") -> com.sync2pc.app.R.string.err_friendly_folder_missing
+        has("STATUS_ACCESS_DENIED") -> com.sync2pc.app.R.string.err_friendly_access
+        has("STATUS_DISK_FULL") -> com.sync2pc.app.R.string.err_friendly_pc_full
+        has("ENOSPC", "No space left") -> com.sync2pc.app.R.string.err_friendly_phone_full
+        chain.any { it is java.net.UnknownHostException } -> com.sync2pc.app.R.string.err_friendly_unknown_host
+        chain.any { it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
+            it is java.net.SocketTimeoutException } ||
+            has("ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "ETIMEDOUT") -> com.sync2pc.app.R.string.err_friendly_unreachable
+        else -> return null
+    }
+    return com.sync2pc.app.l10n.str(id)
+}
+
+/** Für Anzeigen (Statuskachel, Verlauf-Karte): verständlich, wenn bekannt, sonst technisch */
+fun userError(e: Throwable): String = friendlyError(e) ?: shortError(e)
+
 /** Kurze, lesbare Fehlermeldung: innerste Ursache statt der ganzen Kette */
 fun shortError(e: Throwable): String {
     var root: Throwable = e

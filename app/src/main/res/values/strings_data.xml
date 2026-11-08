@@ -39,6 +39,8 @@
     <string name="type_chooser_photos">Photos and videos from the mobile to the PC. Stored by year, month and travel country, e.g. 2026\\06 - Egypt. Optionally remove them from the mobile afterwards.</string>
     <string name="type_chooser_mirror">Mirror any folder 1:1, with subfolders and all file types. Direction selectable: mobile → PC, PC → mobile or both ways.</string>
     <string name="remote_picker_title">Folder on the Share</string>
+    <string name="remote_picker_title_shares">Shares on the PC</string>
+    <string name="remote_picker_no_shares">No Shares found. Is a folder shared on the PC (Properties → Sharing)?</string>
     <string name="remote_picker_empty">No subfolders</string>
     <string name="remote_picker_use">Use this folder</string>
 </resources>

@@ -7,6 +7,19 @@
     <string name="common_save">Speichern</string>
     <string name="common_ok">OK</string>
     <string name="common_delete">Löschen</string>
+    <string name="common_more">Mehr dazu</string>
+    <string name="common_less">Weniger</string>
+    <string name="common_details">Technische Details</string>
+    <string name="common_details_hide">Details ausblenden</string>
+    <string name="home_profile_deleted">Profil „%1$s“ gelöscht</string>
+    <string name="home_undo">Rückgängig</string>
+    <string name="home_pull_tip">Tipp: Ganz oben nach unten ziehen startet ebenfalls eine Synchronisierung.</string>
+    <string name="home_eta">noch ca. %1$s</string>
+    <plurals name="eta_minutes">
+        <item quantity="one">%1$s Min.</item>
+        <item quantity="other">%1$s Min.</item>
+    </plurals>
+    <string name="eta_hours">%1$s Std. %2$s Min.</string>
     <string name="fmt_day_month">dd.MM.</string>
 
     <!-- Startseite (HomeScreen) -->

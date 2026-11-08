@@ -26,6 +26,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.platform.LocalDensity
@@ -118,7 +122,19 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val ssid = remember(tick) { WifiHelper.currentSsid(ctx) }
     val update = remember(tick) { UpdateChecker.stored(ctx) }
 
-    val profiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
+    val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
+    // 0.11.0: ein Profil, das gerade gelöscht wird (Rückgängig noch möglich), ist ausgeblendet
+    val pendingDelete by PendingProfileDelete.pending.collectAsState()
+    val profiles = allProfiles.filter { it.id != pendingDelete?.id }
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(pendingDelete) {
+        val pd = pendingDelete ?: return@LaunchedEffect
+        val r = snackbar.showSnackbar(
+            str(R.string.home_profile_deleted, pd.name), actionLabel = str(R.string.home_undo),
+            duration = SnackbarDuration.Long,
+        )
+        if (r == SnackbarResult.ActionPerformed) PendingProfileDelete.undo() else PendingProfileDelete.commit(ctx)
+    }
     val decisions by remember { dao.decisionsFlow() }.collectAsState(initial = emptyList())
     val conflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
     val deleteCount by remember { dao.queuedDeleteCount() }.collectAsState(initial = 0)
@@ -153,6 +169,14 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         }
     }
     val progress = running?.let { SyncWorker.progressFrom(it.progress) }
+    // Restzeit (0.11.0): Tempo seit Beginn dieses Laufs, angezeigt erst nach einer Minute (vorher zu ungenau)
+    val runStart = remember(running?.id) { System.currentTimeMillis() to (progress?.doneBytes ?: 0L) }
+    val etaText = progress?.let { pr ->
+        val elapsed = System.currentTimeMillis() - runStart.first
+        val done = pr.doneBytes - runStart.second
+        if (elapsed < 60_000 || done <= 0 || pr.totalBytes <= pr.doneBytes) null
+        else formatEta(((pr.totalBytes - pr.doneBytes) * elapsed / done) / 1000)
+    }
     // Grund, falls der letzte automatische Start nicht synchronisiert hat (max. 24 h alt)
     val skipInfo = remember(tick, workKey) {
         val s = settings
@@ -232,6 +256,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     }
     // Herunterziehen (0.10.0): Kreis kurz zeigen, danach übernimmt die Statuskachel
     var pullRefreshing by remember { mutableStateOf(false) }
+    // Einmaliger Tipp (0.11.0); weg nach dem ersten Herunterziehen oder nach Antippen
+    var pullTipDone by remember { mutableStateOf(settings.pullTipDone) }
+    fun finishPullTip() { if (!pullTipDone) { settings.pullTipDone = true; pullTipDone = true } }
     LaunchedEffect(pullRefreshing, running != null) {
         if (pullRefreshing) { if (running == null) delay(1_500); pullRefreshing = false }
     }
@@ -239,6 +266,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     ScreenScaffold(
         title = "LeoSync",
         onBack = null,
+        snackbarHost = { SnackbarHost(snackbar) },
         actions = {
             // Symbol = Aktion (0.9.0): Automatik läuft -> ⏸ (tippen = pausieren), pausiert -> ▶ (tippen = fortsetzen)
             if (userPausedUntil > 0) IconButton(onClick = { SyncScheduler.resume(ctx); pauseVersion++ }) {
@@ -259,6 +287,14 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                             navigate(if (sec == SettingsSection.UPDATES) Screen.Update else Screen.Settings(sec))
                         })
                     }
+                    // 0.11.0: Hilfe & Produktseite im Browser
+                    DropdownMenuItem(text = { Text(str(R.string.settings_help)) }, onClick = {
+                        settingsMenu = false
+                        try {
+                            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse(HELP_URL)))
+                        } catch (ignored: Exception) {}
+                    })
                 }
             }
         },
@@ -267,7 +303,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         // Ohne Profil oder während einer laufenden Synchronisierung passiert nichts.
         PullToRefreshBox(
             isRefreshing = pullRefreshing,
-            onRefresh = { if (profiles.isNotEmpty() && running == null) { pullRefreshing = true; startSync() } },
+            onRefresh = { if (profiles.isNotEmpty() && running == null) { pullRefreshing = true; finishPullTip(); startSync() } },
             modifier = Modifier.fillMaxSize().padding(pad),
         ) {
         LazyColumn(
@@ -275,7 +311,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (!perms.allOk) item { PermissionCard(perms) }
+            // 0.11.0: nur fragen, was vorhandene Profile brauchen (ohne Profil gar nichts)
+            val needs = PermNeeds.of(profiles)
+            if (perms.missing(needs)) item { PermissionCard(perms, needs) }
 
             item {
                 StatusCard(
@@ -299,6 +337,14 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onResume = { SyncScheduler.resume(ctx); pauseVersion++ },
                     hasProfiles = profiles.isNotEmpty(),
+                    etaText = etaText,
+                )
+            }
+            if (!pullTipDone && profiles.isNotEmpty()) item {
+                Text(
+                    str(R.string.home_pull_tip), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().clickable { finishPullTip() }.padding(horizontal = 8.dp),
                 )
             }
 

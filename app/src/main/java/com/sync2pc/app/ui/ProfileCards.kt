@@ -101,7 +101,7 @@ internal fun MirrorOptionsCard(
     var trashText by trashState
     var pollText by pollState
                 SectionCard(str(R.string.profile_direction)) {
-                    Hint(str(R.string.profile_direction_hint))
+                    HintMore(str(R.string.profile_direction_hint))
                     SyncDirection.entries.forEach { d ->
                         Row(
                             Modifier.fillMaxWidth().clickable { p = p.copy(direction = d.name) },
@@ -129,7 +129,7 @@ internal fun MirrorOptionsCard(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint(str(R.string.profile_trash_days_hint, trashName))
+                    HintMore(str(R.string.profile_trash_days_hint, trashName))
                     if (p.dir() == SyncDirection.BOTH) {
                         Text(str(R.string.profile_conflict_question), style = MaterialTheme.typography.bodyMedium)
                         ConflictMode.entries.forEach { m ->
@@ -141,7 +141,7 @@ internal fun MirrorOptionsCard(
                                 Text(m.label)
                             }
                         }
-                        if (p.conflict() == ConflictMode.NEWER) Hint(str(R.string.profile_conflict_newer_hint))
+                        if (p.conflict() == ConflictMode.NEWER) HintMore(str(R.string.profile_conflict_newer_hint))
                     }
                     OutlinedTextField(
                         pollText,
@@ -153,7 +153,7 @@ internal fun MirrorOptionsCard(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint(str(R.string.profile_poll_hint))
+                    HintMore(str(R.string.profile_poll_hint))
                 }
 }
 
@@ -163,7 +163,7 @@ internal fun PhotoOptionsCard(pState: MutableState<Profile>, onRequestFull: () -
     val ctx = LocalContext.current
     var p by pState
                 SectionCard(str(R.string.profile_after_upload)) {
-                    Hint(str(R.string.profile_after_upload_hint))
+                    HintMore(str(R.string.profile_after_upload_hint))
                     // Wer Fotos entfernt, braucht eine Prüfung: "Aus" springt dann auf "Mittel" (0.9.0)
                     fun setDelete(m: DeleteMode) {
                         var np = p.copy(deleteMode = m.name)
@@ -182,7 +182,7 @@ internal fun PhotoOptionsCard(pState: MutableState<Profile>, onRequestFull: () -
                             Text(m.label)
                         }
                     }
-                    if (p.delete() != DeleteMode.KEEP) Hint(str(R.string.profile_delete_hint))
+                    if (p.delete() != DeleteMode.KEEP) HintMore(str(R.string.profile_delete_hint))
                     if (p.delete() == DeleteMode.DELETE) Text(
                         str(R.string.profile_delete_final_hint),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
@@ -190,7 +190,7 @@ internal fun PhotoOptionsCard(pState: MutableState<Profile>, onRequestFull: () -
                     // Prüfstufe nach dem Hochladen (0.9.0)
                     Text(str(R.string.profile_verify), style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.padding(top = 8.dp))
-                    Hint(str(R.string.profile_verify_hint))
+                    HintMore(str(R.string.profile_verify_hint))
                     val deleting = p.delete() != DeleteMode.KEEP
                     fun chooseLevel(lv: VerifyLevel) {
                         if (lv == VerifyLevel.FULL && p.verify() != VerifyLevel.FULL) onRequestFull()
@@ -212,6 +212,6 @@ internal fun PhotoOptionsCard(pState: MutableState<Profile>, onRequestFull: () -
                             }
                         }
                     }
-                    if (deleting) Hint(str(R.string.profile_verify_required))
+                    if (deleting) HintMore(str(R.string.profile_verify_required))
                 }
 }

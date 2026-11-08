@@ -39,6 +39,8 @@
     <string name="type_chooser_photos">Fotos und Videos vom Handy auf den PC. Ablage sortiert nach Jahr, Monat und Reiseland, z. B. 2026\\06 - Ägypten. Optional danach vom Handy entfernen.</string>
     <string name="type_chooser_mirror">Einen beliebigen Ordner 1:1 spiegeln, mit Unterordnern und allen Dateitypen. Richtung wählbar: Handy → PC, PC → Handy oder beidseitig.</string>
     <string name="remote_picker_title">Ordner auf der Freigabe</string>
+    <string name="remote_picker_title_shares">Freigaben auf dem PC</string>
+    <string name="remote_picker_no_shares">Keine Freigaben gefunden. Ist ein Ordner auf dem PC freigegeben (Eigenschaften → Freigabe)?</string>
     <string name="remote_picker_empty">Keine Unterordner</string>
     <string name="remote_picker_use">Diesen Ordner verwenden</string>
 </resources>

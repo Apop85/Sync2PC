@@ -104,6 +104,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var newSsid by remember { mutableStateOf("") }
     var testResult by remember { mutableStateOf<String?>(null) }
     var testing by remember { mutableStateOf(false) }
+    var testDetail by remember { mutableStateOf<String?>(null) }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -148,7 +149,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     /** Gerade neu angelegtes Profil -> Dialog "Wie weiter?" */
     var createdId by remember { mutableStateOf<Long?>(null) }
     var chargeWarnFor by remember { mutableStateOf<Long?>(null) }
-    val currentSsid = remember { WifiHelper.currentSsid(ctx) }
+    // Berechtigungen bei Bedarf (0.11.0): nach dem Erteilen neu lesen (onResume), auch den WLAN-Namen
+    val permTick = rememberResumeTick()
+    val perms = remember(permTick) { PermStatus.read(ctx) }
+    val currentSsid = remember(permTick) { WifiHelper.currentSsid(ctx) }
     // Andere Profile mit Zugangsdaten -> zum Übernehmen anbieten
     val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
     val credentialSources = allProfiles.filter { it.id != profileId && it.smbUser.isNotBlank() }
@@ -156,7 +160,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     LaunchedEffect(profileId) {
         if (profileId != 0L) {
             withContext(Dispatchers.IO) {
-                dao.profile(profileId)?.let {
+                dao.profile(profileId)?.let { loadedProfile ->
+                    // 0.11.0: alter Unterordner wird Teil des Freigabe-Pfads (gleiches Ziel, nur ein Feld)
+                    val it = if (loadedProfile.remoteSubfolder.isBlank()) loadedProfile else loadedProfile.copy(
+                        smbPath = loadedProfile.smbPath.trimEnd('\\', '/') + "\\" + loadedProfile.remoteSubfolder.trim('\\', '/'),
+                        remoteSubfolder = "",
+                    )
                     p = it
                     password = CredentialCrypto.decrypt(it.smbPasswordEnc)
                     baseline = it
@@ -323,7 +332,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             if (isMirror && show(Step.SOURCE)) item {
                 SectionCard(str(R.string.profile_local_folder)) {
                     val treeUri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
-                    if (treeUri == null) Hint(str(R.string.profile_no_folder_yet))
+                    if (treeUri == null) HintMore(str(R.string.profile_no_folder_yet))
                     else {
                         Text(LocalTree.label(treeUri))
                         if (!LocalTree.hasPermission(ctx, treeUri))
@@ -332,13 +341,15 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     OutlinedButton(onClick = { treePicker.launch(null) }) {
                         Text(str(if (treeUri == null) R.string.profile_choose_folder else R.string.profile_choose_other_folder))
                     }
-                    Hint(str(R.string.profile_local_folder_hint))
+                    HintMore(str(R.string.profile_local_folder_hint))
                 }
             }
 
             if (!isMirror && show(Step.SOURCE)) item {
                 SectionCard(str(R.string.profile_sources)) {
-                    if (p.folders().isEmpty()) Hint(str(R.string.profile_sources_empty))
+                    // Medienzugriff erst hier erfragen, wo er gebraucht wird (0.11.0)
+                    PermissionRows(perms, showDone = false, needs = PermNeeds(media = true, wifi = false, base = false))
+                    if (p.folders().isEmpty()) HintMore(str(R.string.profile_sources_empty))
                     p.folders().forEach { f ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(f, Modifier.weight(1f))
@@ -348,7 +359,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         }
                     }
                     OutlinedButton(onClick = { folderPicker.launch(null) }) { Text(str(R.string.profile_add_folder)) }
-                    Hint(str(R.string.profile_sources_hint))
+                    HintMore(str(R.string.profile_sources_hint))
                     SwitchRow(str(R.string.profile_subfolders), p.includeSubfolders,
                         subtitle = str(R.string.profile_subfolders_sub)) { p = p.copy(includeSubfolders = it) }
                     SwitchRow(str(R.string.profile_photos), p.includeImages) { p = p.copy(includeImages = it) }
@@ -369,18 +380,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         isError = p.smbPath.isNotBlank() && SmbTarget.parse(p.smbPath) == null,
                         singleLine = true, modifier = Modifier.fillMaxWidth()
                     )
-                    Hint(str(R.string.profile_share_format))
-                    // Feld über die ganze Breite, "Durchsuchen" darunter (0.9.0; daneben brach die Beschriftung 3× um)
-                    OutlinedTextField(
-                        p.remoteSubfolder, { p = p.copy(remoteSubfolder = it) },
-                        label = { Text(str(R.string.profile_subfolder)) },
-                        placeholder = { Text(str(if (isMirror) R.string.profile_subfolder_example_mirror else R.string.profile_subfolder_example_photos)) },
-                        singleLine = true, modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedButton(
-                        enabled = SmbTarget.parse(p.smbPath) != null,
-                        onClick = { showRemotePicker = true },
-                    ) { Text(str(R.string.profile_browse)) }
+                    HintMore(str(R.string.profile_share_format))
+                    // 0.11.0: kein eigenes Unterordner-Feld mehr; Freigabe und Ordner wählt man unten im PC-Browser
                     OutlinedTextField(p.smbUser, { p = p.copy(smbUser = it) }, label = { Text(str(R.string.profile_user)) },
                         singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
@@ -391,15 +392,22 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     )
                     OutlinedTextField(p.smbDomain, { p = p.copy(smbDomain = it) },
                         label = { Text(str(R.string.profile_domain)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    Hint(str(R.string.profile_domain_hint))
+                    HintMore(str(R.string.profile_domain_hint))
+                    // Freigabe und Ordner auf dem PC auswählen (0.11.0): braucht nur Server und Zugangsdaten
+                    OutlinedButton(
+                        enabled = SmbTarget.hostOf(p.smbPath) != null && p.smbUser.isNotBlank(),
+                        onClick = { showRemotePicker = true },
+                    ) { Text(str(R.string.profile_pick_pc_folder)) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedButton(enabled = !testing, onClick = {
-                            testing = true; testResult = null
+                            testing = true; testResult = null; testDetail = null
                             scope.launch {
                                 val prof = withPassword()
-                                testResult = withContext(Dispatchers.IO) {
-                                    try { "✓ " + SmbSession.test(prof) } catch (e: Exception) {
-                                        "✗ ${e.javaClass.simpleName}: ${e.message}"
+                                withContext(Dispatchers.IO) {
+                                    try { testResult = "✓ " + SmbSession.test(prof) } catch (e: Exception) {
+                                        // 0.11.0: verständlich, technischer Text aufklappbar
+                                        testResult = "✗ " + com.sync2pc.app.sync.userError(e)
+                                        testDetail = com.sync2pc.app.sync.shortError(e)
                                     }
                                 }
                                 testing = false
@@ -408,12 +416,15 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         if (testing) CircularProgressIndicator(Modifier.padding(start = 12.dp))
                     }
                     testResult?.let { Text(it) }
+                    testDetail?.let { ErrorDetails(it) }
                 }
             }
 
             if (show(Step.OPTIONS)) item {
                 SectionCard(str(R.string.profile_wifi)) {
-                    Hint(str(R.string.profile_wifi_hint))
+                    // Standort nur, wenn ein WLAN eingetragen ist bzw. werden soll (Android braucht ihn für den WLAN-Namen)
+                    PermissionRows(perms, showDone = false, needs = PermNeeds(media = false, wifi = true, base = false))
+                    HintMore(str(R.string.profile_wifi_hint))
                     p.ssids().forEach { s ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(s, Modifier.weight(1f))
@@ -464,7 +475,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         placeholder = { Text("Thumbs.db, *.tmp, Temp/**") },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint(str(R.string.profile_filter_hint))
+                    HintMore(str(R.string.profile_filter_hint))
                 }
             }
 
@@ -485,7 +496,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    Hint(str(R.string.profile_guard_hint))
+                    HintMore(str(R.string.profile_guard_hint))
                 }
             }
 
@@ -510,16 +521,16 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         if (step.optional || stepIndex == steps.lastIndex) Button(onClick = { save() }) { Text(str(R.string.common_save)) }
                     }
                     if (step.optional && stepIndex < steps.lastIndex)
-                        Hint(str(R.string.profile_optional_hint))
+                        HintMore(str(R.string.profile_optional_hint))
                 }
             }
 
             // Simulation dieses Profils (nur gespeicherte Profile; simuliert wird der gespeicherte Stand)
             if (profileId != 0L) item {
                 SectionCard(str(R.string.profile_simulation)) {
-                    Hint(str(R.string.profile_simulation_hint))
+                    HintMore(str(R.string.profile_simulation_hint))
                     OutlinedButton(onClick = { onSimulate(profileId) }, enabled = !dirty) { Text(str(R.string.profile_simulate)) }
-                    if (dirty) Hint(str(R.string.profile_simulation_save_first))
+                    if (dirty) HintMore(str(R.string.profile_simulation_save_first))
                 }
             }
 
@@ -527,9 +538,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             if (profileId != 0L) item {
                 OptionalCard(str(R.string.profile_maintenance), startOpen = false, collapsible = true,
                     closedHint = str(R.string.profile_maintenance_closed)) {
-                    Hint(str(R.string.profile_maintenance_hint))
+                    HintMore(str(R.string.profile_maintenance_hint))
                     OutlinedButton(onClick = { confirmReset = true }) { Text(str(R.string.profile_reset)) }
-                    Hint(str(R.string.profile_delete_section_hint))
+                    HintMore(str(R.string.profile_delete_section_hint))
                     OutlinedButton(
                         onClick = { confirmDelete = true },
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
@@ -544,9 +555,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     if (showRemotePicker) RemoteFolderPicker(
         profile = { withPassword() },
-        initial = p.remoteSubfolder,
         onDismiss = { showRemotePicker = false },
-        onPick = { p = p.copy(remoteSubfolder = it); showRemotePicker = false },
+        // Ergebnis ist der ganze Pfad \\Server\Freigabe\Ordner (0.11.0, ohne separaten Unterordner)
+        onPick = { p = p.copy(smbPath = it, remoteSubfolder = ""); testResult = null; testDetail = null; showRemotePicker = false },
     )
 
     if (confirmDelete) AlertDialog(
@@ -555,19 +566,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         text = { Text(str(R.string.profile_delete_text)) },
         confirmButton = {
             TextButton(onClick = {
-                scope.launch {
-                    withContext(Dispatchers.IO) {
-                        dao.clearSynced(profileId); dao.clearMappings(profileId)
-                        dao.clearDecisions(profileId); dao.clearMirrorState(profileId)
-                        dao.clearConflicts(profileId); dao.deleteProfileRow(profileId); dao.clearRestores(profileId)
-                        GuardStore(ctx).forget(profileId)
-                        com.sync2pc.app.mirror.PurgeStore(ctx).forget(profileId)
-                        com.sync2pc.app.mirror.RestoreFailures(ctx).forget(profileId)
-                        com.sync2pc.app.data.GlobalSettings(ctx).setAwaitingFirstStart(profileId, false)
-                        SyncScheduler.updateRemotePoll(ctx, dao.profiles())
-                    }
-                    confirmDelete = false; onBack()
-                }
+                // 0.11.0: erst vormerken; die Startseite zeigt "Profil gelöscht – Rückgängig"
+                PendingProfileDelete.request(ctx, profileId, p.name.trim())
+                confirmDelete = false; onBack()
             }) { Text(str(R.string.common_delete)) }
         },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.common_cancel)) } },
@@ -673,7 +674,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             title = { Text(str(R.string.profile_copy_credentials_title)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Hint(str(R.string.profile_copy_credentials_hint))
+                    HintMore(str(R.string.profile_copy_credentials_hint))
                     groups.forEach { g ->
                         Column(
                             Modifier.fillMaxWidth().clickable {
@@ -692,7 +693,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         ) {
                             val who = if (g.domain.isBlank()) g.user else "${g.domain}\\${g.user}"
                             Text(if (g.host.isBlank()) who else "$who · ${g.host}", style = MaterialTheme.typography.bodyLarge)
-                            Hint(str(R.string.profile_copy_credentials_profiles, g.profileNames.joinToString(", ")))
+                            HintMore(str(R.string.profile_copy_credentials_profiles, g.profileNames.joinToString(", ")))
                         }
                     }
                 }

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -65,10 +66,12 @@ fun ScreenScaffold(
     onBack: (() -> Unit)?,
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
         bottomBar = bottomBar,
+        snackbarHost = snackbarHost,
         topBar = {
             TopAppBar(
                 title = { Text(title) },
@@ -149,6 +152,42 @@ fun SwitchRow(
 @Composable
 fun Hint(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+/**
+ * Langer Hinweis, aufgeräumt (0.11.0): sichtbar ist nur der erste Satz, der Rest hinter "Mehr dazu".
+ * Kurze Texte (bis [limit] Zeichen oder nur ein Satz) erscheinen wie [Hint].
+ */
+@Composable
+fun HintMore(text: String, limit: Int = 120) {
+    // Satzende = ". ", "! " oder "? " nach mindestens zwei Zeichen ohne Punkt -> "z. B." und "e.g." trennen nicht
+    val cut = SENTENCE_END.find(text)?.range?.first?.minus(1)?.takeIf { it in 1 until text.length - 2 }
+    if (text.length <= limit || cut == null) { Hint(text); return }
+    var open by rememberSaveable(text) { mutableStateOf(false) }
+    Column {
+        Hint(if (open) text else text.substring(0, cut + 1))
+        Text(
+            str(if (open) R.string.common_less else R.string.common_more),
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clickable { open = !open }.padding(vertical = 6.dp),
+        )
+    }
+}
+
+private val SENTENCE_END = Regex("(?<=[^\\s.]{2}[.!?]) ")
+
+/** Technischer Fehlertext zum Aufklappen unter einer verständlichen Meldung (0.11.0) */
+@Composable
+fun ErrorDetails(technical: String) {
+    var open by remember { mutableStateOf(false) }
+    Column {
+        Text(
+            str(if (open) R.string.common_details_hide else R.string.common_details),
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clickable { open = !open }.padding(vertical = 6.dp),
+        )
+        if (open) Hint(technical)
+    }
 }
 
 /** Datum + Uhrzeit, getrennt durch genau ein Leerzeichen (Aufrufer nutzen substringAfter(' ') für die Uhrzeit) */

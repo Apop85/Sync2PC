@@ -63,6 +63,10 @@ import androidx.compose.ui.draw.alpha
 import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -95,6 +99,17 @@ import com.sync2pc.app.update.UpdateChecker
 import kotlinx.coroutines.flow.combine
 
 // Karten und Dialoge der Startseite (0.9.4 aus HomeScreen.kt ausgelagert)
+
+/** Produktseite mit Hilfe (0.11.0, Inhaber) */
+internal const val HELP_URL = "https://apop85.github.io/leosync/"
+
+/** Geschätzte Restzeit: "noch ca. 5 Min." bzw. "noch ca. 2 Std. 10 Min." (0.11.0) */
+internal fun formatEta(seconds: Long): String {
+    val min = ((seconds + 59) / 60).coerceAtLeast(1)
+    val text = if (min < 60) plural(R.plurals.eta_minutes, min.toInt())
+        else str(R.string.eta_hours, min / 60, min % 60)
+    return str(R.string.home_eta, text)
+}
 
 /** "14:30", "morgen 14:30" oder "05.11. 14:30" */
 internal fun pauseEndText(until: Long): String {
@@ -183,6 +198,7 @@ internal fun StatusCard(
     onCancel: () -> Unit,
     onResume: () -> Unit,
     hasProfiles: Boolean,
+    etaText: String? = null,
 ) {
     val userPaused = userPausedUntil > 0
     SectionCard(title = str(R.string.home_status)) {
@@ -206,8 +222,17 @@ internal fun StatusCard(
         val statusMin = with(density) {
             (typo.bodyLarge.lineHeight * 2).toDp() + (typo.bodySmall.lineHeight * 2).toDp() + 24.dp
         }
+        // Screenreader (0.11.0): Zustandswechsel werden angesagt (Live-Bereich), auch wenn die Zeile sichtbar leer ist
+        val stateLabel = when {
+            isRunning -> str(R.string.home_running)
+            upToDate -> str(R.string.home_all_saved)
+            else -> ""
+        }
         Text(if (upToDate) str(R.string.home_all_saved) else "", style = typo.titleSmall, minLines = 1, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.CenterHorizontally))
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.CenterHorizontally).semantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = stateLabel
+            })
         Spacer(Modifier.height(with(density) { typo.bodySmall.lineHeight.toDp() }))
         Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Column(Modifier.fillMaxWidth().heightIn(min = statusMin), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -226,7 +251,8 @@ internal fun StatusCard(
                     LinearProgressIndicator(progress = { f.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                 } else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Text(
-                    progress?.currentFile.orEmpty(), minLines = 1, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    // Restzeit (0.11.0) vor dem Dateinamen, sobald sie geschätzt werden kann
+                    listOfNotNull(etaText, progress?.currentFile).joinToString(" · "), minLines = 1, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -391,7 +417,8 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                     ?.let { com.sync2pc.app.mirror.LocalTree.label(android.net.Uri.parse(it)) } ?: str(R.string.home_profile_no_local)
                 // Handy- und PC-Ordner je auf einer eigenen Zeile (0.9.0), sonst bricht der Pfad mitten im "\\" um
                 Text("📁 $localLabel")
-                Text("${p.dir().short}  $target")
+                // Pfeil für den Screenreader als Wort (0.11.0): "Beidseitig: \\PC\Freigabe"
+                Text("${p.dir().short}  $target", modifier = Modifier.semantics { contentDescription = "${p.dir().label}: $target" })
                 Hint(p.dir().label + if (p.propagateDeletes) " · " + str(R.string.home_profile_propagate) else "")
             } else {
                 Text("📷 $target")
@@ -407,7 +434,7 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
 }
 
 @Composable
-internal fun PermissionCard(perms: PermStatus) {
+internal fun PermissionCard(perms: PermStatus, needs: PermNeeds) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
         modifier = Modifier.fillMaxWidth(),
@@ -417,7 +444,7 @@ internal fun PermissionCard(perms: PermStatus) {
                 Icon(Icons.Filled.Warning, null); Spacer(Modifier.width(8.dp))
                 Text(str(R.string.perm_incomplete), style = MaterialTheme.typography.titleMedium)
             }
-            PermissionRows(perms, showDone = false)
+            PermissionRows(perms, showDone = false, needs = needs)
         }
     }
 }

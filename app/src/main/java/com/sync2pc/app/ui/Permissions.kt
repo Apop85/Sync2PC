@@ -8,6 +8,27 @@ import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import com.sync2pc.app.sync.WifiHelper
 
+/**
+ * Welche Berechtigungen gerade gebraucht werden (0.11.0: erst bei Bedarf fragen).
+ * [media] = Fotos-Profil, [wifi] = Profil mit WLAN-Namen, [base] = Benachrichtigungen + Akku (sobald es Profile gibt).
+ */
+data class PermNeeds(val media: Boolean, val wifi: Boolean, val base: Boolean) {
+    companion object {
+        val ALL = PermNeeds(media = true, wifi = true, base = true)
+        fun of(profiles: List<com.sync2pc.app.data.Profile>) = PermNeeds(
+            media = profiles.any { it.type() == com.sync2pc.app.data.ProfileType.PHOTOS },
+            wifi = profiles.any { it.ssids().isNotEmpty() },
+            base = profiles.isNotEmpty(),
+        )
+    }
+}
+
+/** Fehlt etwas, das [needs] verlangt? */
+fun PermStatus.missing(needs: PermNeeds): Boolean =
+    (needs.media && (!media || !mediaLocation)) ||
+        (needs.wifi && (!location || !backgroundLocation || !locationServiceOn)) ||
+        (needs.base && (!notifications || !batteryUnrestricted))
+
 /** Überblick über alle Berechtigungen, die die App für den Hintergrund-Sync braucht. */
 data class PermStatus(
     val media: Boolean,

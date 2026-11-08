@@ -122,6 +122,11 @@ dependencies {
 
     // SMB2/SMB3 Client
     implementation("com.hierynomus:smbj:0.13.0")
+    // Freigaben eines PCs auflisten (0.11.0, Windows-Dienst srvsvc über die smbj-Verbindung)
+    implementation("com.rapid7.client:dcerpc:0.12.13") {
+        exclude(group = "com.hierynomus", module = "smbj") // eigene smbj-Version oben
+        exclude(group = "org.bouncycastle")                // kommt schon über smbj
+    }
 
     testImplementation("junit:junit:4.13.2")
     // org.json gibt es auf Android eingebaut; für Unit-Tests auf dem PC die echte Bibliothek

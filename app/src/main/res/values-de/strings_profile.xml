@@ -39,7 +39,8 @@
     <string name="profile_credentials_copied">Zugangsdaten von „%1$s“ übernommen</string>
     <string name="profile_share_path">Freigabe-Pfad</string>
     <string name="profile_share_example">Fotos</string>
-    <string name="profile_share_format">Format: \\\\Server\\Freigabe (IP-Adresse oder Name)</string>
+    <string name="profile_share_format">Es reicht der PC, z. B. \\\\192.168.1.20. Freigabe und Ordner wählst du danach mit „Ordner auf dem PC wählen…“. Eintippen geht auch: \\\\Server\\Freigabe\\Ordner (IP-Adresse oder Name).</string>
+    <string name="profile_pick_pc_folder">Ordner auf dem PC wählen…</string>
     <string name="profile_subfolder">Unterordner auf der Freigabe (optional)</string>
     <string name="profile_subfolder_example_mirror">Dokumente\\Handy</string>
     <string name="profile_subfolder_example_photos">Handy\\Fotos</string>

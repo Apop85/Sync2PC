@@ -382,7 +382,7 @@ class SyncEngine(
                 )
             }
             log("E", str(R.string.eng_run_failed, shortError(e)))
-            return finish(RunStatus.FAILED, shortError(e), up(), sk(), fl(), waiting, by())
+            return finish(RunStatus.FAILED, userError(e), up(), sk(), fl(), waiting, by())
         } finally {
             smb?.close()
         }

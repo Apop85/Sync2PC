@@ -38,6 +38,20 @@ class GlobalSettings(context: Context) {
         get() = prefs.getInt("parallelUploads", 3).coerceIn(1, 4)
         set(v) = prefs.edit().putInt("parallelUploads", v.coerceIn(1, 4)).apply()
 
+    /**
+     * Standards für Neuinstallationen (0.11.0), einmal beim App-Start: "Meldung nach jeder Synchronisierung"
+     * ist bei neuen Installationen aus. Wer die App schon nutzt (Einstellungen vorhanden), behält "an".
+     */
+    fun applyInstallDefaults() {
+        if (prefs.contains("notifySummary")) return
+        prefs.edit().putBoolean("notifySummary", prefs.all.isNotEmpty()).apply()
+    }
+
+    /** Tipp "Herunterziehen startet eine Synchronisierung" schon gezeigt/benutzt? (0.11.0) */
+    var pullTipDone: Boolean
+        get() = prefs.getBoolean("pullTipDone", false)
+        set(v) = prefs.edit().putBoolean("pullTipDone", v).apply()
+
     // ---- Benachrichtigungen (0.4.0) ---------------------------------------------
     /** Meldung nach jedem erfolgreichen Sync ("3 Dateien übertragen") */
     var notifySummary: Boolean

@@ -100,7 +100,7 @@ private fun LazyListScope.notificationsPage() {
             SwitchRow(str(R.string.settings_notify_hints), hints, subtitle = str(R.string.settings_notify_hints_sub)) {
                 hints = it; s.notifyHints = it
             }
-            Hint(str(R.string.settings_notify_fixed))
+            HintMore(str(R.string.settings_notify_fixed))
             OutlinedButton(onClick = {
                 try {
                     ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -163,7 +163,7 @@ private fun LazyListScope.transferPage() {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Hint(str(R.string.settings_min_age_hint))
+            HintMore(str(R.string.settings_min_age_hint))
         }
     }
     item {
@@ -178,7 +178,7 @@ private fun LazyListScope.transferPage() {
                 valueRange = 1f..4f,
                 steps = 2,
             )
-            Hint(str(R.string.settings_parallel_hint))
+            HintMore(str(R.string.settings_parallel_hint))
         }
     }
 }
@@ -191,7 +191,7 @@ private fun LazyListScope.permissionsPage() {
         val tick = rememberResumeTick()
         val perms = remember(tick) { PermStatus.read(ctx) }
         SectionCard(str(R.string.settings_perm_title)) {
-            Hint(str(R.string.settings_perm_hint))
+            HintMore(str(R.string.settings_perm_hint))
             PermissionRows(perms, showDone = true)
             OutlinedButton(onClick = {
                 ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")))
@@ -201,12 +201,12 @@ private fun LazyListScope.permissionsPage() {
     item {
         val ctx = LocalContext.current
         SectionCard(str(R.string.settings_battery)) {
-            Hint(str(R.string.settings_background_hint))
+            HintMore(str(R.string.settings_background_hint))
             val vendor = remember { VendorHints.forDevice() }
             if (vendor != null) {
                 Text(str(R.string.settings_vendor_extra, vendor.vendor), style = MaterialTheme.typography.bodyMedium)
                 vendor.steps.forEach { Hint("• $it") }
-                Hint(str(R.string.settings_vendor_note))
+                HintMore(str(R.string.settings_vendor_note))
             }
             OutlinedButton(onClick = {
                 try {
@@ -240,7 +240,7 @@ private fun LazyListScope.appPage() {
                 label = { Text(str(R.string.settings_home_country)) },
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Hint(str(R.string.settings_home_country_hint))
+            HintMore(str(R.string.settings_home_country_hint))
             Hint(geoInfo)
         }
     }
@@ -270,7 +270,7 @@ private fun LanguageCard() {
                 Text(label, Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp))
             }
         }
-        Hint(str(R.string.settings_language_hint))
+        HintMore(str(R.string.settings_language_hint))
     }
 }
 
@@ -282,7 +282,7 @@ private fun LazyListScope.diagnosePage() {
         val scope = rememberCoroutineScope()
         var diagBusy by remember { mutableStateOf(false) }
         SectionCard(str(R.string.settings_diag_title)) {
-            Hint(str(R.string.settings_diag_hint, s.deviceId))
+            HintMore(str(R.string.settings_diag_hint, s.deviceId))
             OutlinedButton(enabled = !diagBusy, onClick = {
                 diagBusy = true
                 scope.launch {
@@ -297,5 +297,5 @@ private fun LazyListScope.diagnosePage() {
             }) { Text(str(if (diagBusy) R.string.settings_diag_busy else R.string.settings_diag_copy)) }
         }
     }
-    item { Hint(str(R.string.settings_about, BuildConfig.VERSION_NAME)) }
+    item { HintMore(str(R.string.settings_about, BuildConfig.VERSION_NAME)) }
 }
