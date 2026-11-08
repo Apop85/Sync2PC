@@ -153,7 +153,7 @@ Alle automatischen Läufe laufen über **einen** Worker-Typ (`SyncWorker`); `Tri
 | Sicherheitsnetz | `scheduleSafetyNet` | 6 h nach dem letzten Lauf, wird bei jedem Lauf nach hinten geschoben; mit `syncOffWifi` auch ausserhalb des WLAN |
 | PC-Abfrage (Ordner-Profile) | `scheduleRemotePoll` | Periodisch, mindestens 15 min (WorkManager-Minimum), kürzestes Intervall aller aktiven Ordner-Profile |
 | Nachhol-Sync | `enqueueFollowUp` | Für zu junge Dateien, frühestens nach 30 s |
-| PC nicht erreichbar | `enqueueShareRetry` | Nach 30 min (bei Abbruch mitten im Lauf nach 2 min) |
+| PC nicht erreichbar | `enqueueShareRetry` | Nach 30 min (bei Abbruch mitten im Lauf nach 2 min; ausserhalb des WLAN, nur mobile Daten/VPN, nach 2 h; seit 0.11.7) |
 | WLAN-Unterbruch | `enqueueResume` + Receiver | Fortsetzen sobald WLAN da; gibt nach 24 h auf |
 | Manuell | `enqueueManual` | Hebt eine Pause auf; keine WLAN-Bedingung (nur `CONNECTED`) |
 | Benutzerentscheidung | `ConflictScreen.resolve` → `enqueueAuto`; `MirrorGuard.resolve`, `RestoreManager.request` → `enqueueManual` | Entscheidung wird erst im nächsten Lauf angewendet |
@@ -180,11 +180,11 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 3. **Pause:** Nicht-manuell und `settings.isPaused()` → Lauf entfällt (Grund wird notiert).
 4. **Profilauswahl:** aktiv (`enabled`), konfiguriert (`isConfigured`), bei automatischen Läufen nicht in `awaitingFirstStart` (neue Profile warten auf ersten manuellen Start, DEC-103), **nicht durch die Schutzbremse blockiert** (`GuardStore.blockedIds`), nicht gerade zum Löschen vorgemerkt (`PendingProfileDelete`).
 5. **WLAN:** Automatisch nur Profile, deren Ziel-SSID zur aktuellen SSID passt; bei noch unlesbarer SSID bis zu 3× 5 s nachlesen. Manuell: alle. Mit Schalter `syncOffWifi` (seit 0.11.5, DEC-126) entfällt die SSID-Prüfung ausserhalb des WLAN: alle aktiven Profile sind berechtigt; im WLAN (auch VPN über WLAN) gilt weiter die SSID-Regel.
-6. **PC-Erreichbarkeit** (`SmbSession.isReachable`, TCP Port 445, 3 s): automatisch bis 5 Versuche (0, 5, 10, 15, 30 s), manuell 2 (0, 3 s). **Ausnahme:** Foto-Profile ohne übertragungsbereite Dateien (`PendingCheck.readyFiles == 0`) überspringen den Test.
+6. **PC-Erreichbarkeit** (`SmbSession.isReachable`, TCP Port 445, 3 s): automatisch im WLAN bis 5 Versuche (0, 5, 10, 15, 30 s), manuell 2 (0, 3 s), ausserhalb des WLAN (nur mobile Daten/VPN, seit 0.11.7) 2 (0, 5 s) (`NetworkRules.reachabilityWaits`). **Ausnahme:** Foto-Profile ohne übertragungsbereite Dateien (`PendingCheck.readyFiles == 0`) überspringen den Test.
 7. **Vordergrunddienst:** `setForeground(...)`; scheitert das (Android 12+), normale Benachrichtigung. `TransferLocks.acquire` hält WLAN- und CPU-Sperre (max. 4 h).
 8. **Schleife über alle lauffähigen Profile, nacheinander** (nicht parallel): Engine erzeugen (`MIRROR` → `MirrorEngine`, sonst `SyncEngine`), `engine.run()`, danach Flags auswerten:
    `engine.blocked` → Benachrichtigung „Entscheidung nötig“; `wifiLost && !manual` → `markInterrupted()`; `connectionFailed` → Profil zählt als „nicht erreichbar“ und der Lauf als mitten unterbrochen; `FAILED` → harter Fehler.
-9. **Abschluss:** Sperren freigeben, Zusammenfassungs-Benachrichtigungen (Fehler, Übertragen, Entscheidungen, Konflikte, Speichermangel, Löschfreigaben), Nachhol-Sync für während des Laufs entstandene Medien (`MediaScanner.hasAddedSince`), `handleUnreachable` (30-min-Wiederholung bzw. `markInterrupted`).
+9. **Abschluss:** Sperren freigeben, Zusammenfassungs-Benachrichtigungen (Fehler, Übertragen, Entscheidungen, Konflikte, Speichermangel, Löschfreigaben), Nachhol-Sync für während des Laufs entstandene Medien (`MediaScanner.hasAddedSince`), `handleUnreachable` (Wiederholung bzw. `markInterrupted`; Wartezeit nach `NetworkRules.retryMinutes`: 30 min, mitten im Lauf 2 min, ausserhalb des WLAN immer 2 h; die Wartezeit endet durch neue WLAN-Verbindung, manuellen Start oder erfolgreichen Lauf, neue Auslöser (Fotos, Sicherheitsnetz, Ordner-Prüfung) ignorieren sie, DEC-126).
 10. `finally` in `doWork`: Fortschritt entfernen; wenn von Android gestoppt (nicht vom Benutzer) und nicht manuell → `markInterrupted()`; Mutex freigeben; `armContentTrigger`; Sicherheitsnetz neu starten.
 
 `doWork` gibt in allen regulären Pfaden `Result.success()` zurück (Engine-Ausnahmen werden in den Engines abgefangen); es gibt kein `Result.retry()` und kein `Result.failure()` im Code **[IMPL]**. Wiederholungen werden ausschliesslich über eigene Folgeaufträge erzeugt (Abschnitt 12).
@@ -926,8 +926,8 @@ Alle Handy-Zugriffe laufen über `DocumentsContract`/`ContentResolver` mit einer
 
 | Fehlerklasse | Beispiele | Reaktion | Kategorie |
 |---|---|---|---|
-| **Netzwerk** | WLAN weg, PC im Ruhezustand, Leerlauf-Trennung, Timeout | ein Wiederholungsversuch pro Datei (2 s), danach `INTERRUPTED`, kein Dateifehler; Folgeauftrag (2 min bei bestehendem WLAN mitten im Lauf, 30 min bei nicht erreichbarem PC, sofort beim Wiederverbinden bei WLAN-Verlust) | automatisch + erneuter Versuch |
-| **Verbindung beim Start** | `isReachable` scheitert | bis 5 Versuche über ca. 1 min, danach 30-min-Wartezeit | automatisch |
+| **Netzwerk** | WLAN weg, PC im Ruhezustand, Leerlauf-Trennung, Timeout | ein Wiederholungsversuch pro Datei (2 s), danach `INTERRUPTED`, kein Dateifehler; Folgeauftrag (2 min bei bestehendem WLAN mitten im Lauf, 30 min bei nicht erreichbarem PC, sofort beim Wiederverbinden bei WLAN-Verlust; ausserhalb des WLAN jeweils 2 h) | automatisch + erneuter Versuch |
+| **Verbindung beim Start** | `isReachable` scheitert | im WLAN bis 5 Versuche über ca. 1 min, danach 30-min-Wartezeit; ausserhalb des WLAN 2 Versuche, danach 2 h | automatisch |
 | **Anmeldung/Rechte** | `STATUS_LOGON_FAILURE`, `STATUS_ACCESS_DENIED` | Lauf `FAILED`, Fehlertext, Benachrichtigung | **Benutzereingriff** |
 | **Dateifehler** | Name ungültig, Datei gesperrt, PC-Platte voll (`STATUS_DISK_FULL`), Handy-Speicher | `failed`++ , Log `E`, Lauf läuft weiter, Status `PARTIAL`; Datei hat keinen Stand und wird im nächsten Lauf erneut versucht | erneuter Versuch (ggf. Benutzer) |
 | **Speichermangel Download** | Budget (frei − 300 MB) überschritten | Datei übersprungen, `spaceShortage`, `PARTIAL`, Benachrichtigung | Benutzer (Platz schaffen) |

@@ -70,6 +70,20 @@ class BackupCodecTest {
         }
     }
 
+    @Test fun offWifiSwitchRoundTripsAsBoolean() {
+        val c = content().copy(settings = mapOf("syncOffWifi" to true))
+        val p = BackupCodec.parse(BackupCodec.encode(c, exportPassword = null, iterations = fast), null)
+        assertEquals(true, p.content.settings["syncOffWifi"])
+        val off = content().copy(settings = mapOf("syncOffWifi" to false))
+        assertEquals(false, BackupCodec.parse(BackupCodec.encode(off, null, fast), null).content.settings["syncOffWifi"])
+    }
+
+    @Test fun backupWithoutOffWifiKeyLeavesItAbsent() {
+        // Ältere Sicherung ohne den Schlüssel: kein Wert -> GlobalSettings.importFrom ändert die Einstellung nicht
+        val p = BackupCodec.parse(BackupCodec.encode(content(), exportPassword = null, iterations = fast), null)
+        assertFalse(p.content.settings.containsKey("syncOffWifi"))
+    }
+
     @Test fun olderBackupGetsDefaults() {
         val json = """{"format":"leosync-backup","version":1,"profiles":[{"id":1,"name":"Alt","smbPath":"\\\\pc\\x"}]}"""
         val p = BackupCodec.parse(json, null).content.profiles.single()

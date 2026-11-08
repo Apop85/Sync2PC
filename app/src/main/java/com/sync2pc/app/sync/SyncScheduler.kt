@@ -75,6 +75,16 @@ object SyncScheduler {
         WorkManager.getInstance(context).cancelUniqueWork(WORK_RETRY)
     }
 
+    /**
+     * Der Schalter "auch mobile Daten/VPN" (syncOffWifi) hat gewechselt (Einstellungen oder Sicherung einspielen, 0.11.7):
+     * bereits geplante Aufträge tragen die alte Netzwerk-Bedingung -> Sicherheitsnetz neu planen, und die Wartezeit
+     * "PC nicht erreichbar" gehört zur alten Netzwerkregel -> verwerfen (Prüfung beim nächsten Auslöser).
+     */
+    fun onOffWifiChanged(context: Context) {
+        scheduleSafetyNet(context, restart = true)
+        cancelShareRetry(context)
+    }
+
     private fun autoConstraints(context: Context): Constraints =
         Constraints.Builder()
             // 0.11.5 (DEC-126): mit dem Schalter "auch mobile Daten/VPN" genügt irgendeine Verbindung

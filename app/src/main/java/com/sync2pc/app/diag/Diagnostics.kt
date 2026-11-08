@@ -285,7 +285,7 @@ object Diagnostics {
             putExtra(Intent.EXTRA_SUBJECT, fileName)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(send, "Verlauf teilen"))
+        context.startActivity(Intent.createChooser(send, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.log_share)))
     }
 
     /** Kontaktadresse für "Problem melden" (DEC-123) */
@@ -313,7 +313,13 @@ object Diagnostics {
             clipData = ClipData.newRawUri("", uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
+        // 0.11.7: Ein Chooser wirft ohne Mail-App keine Ausnahme (er zeigt nur "Keine Apps") -> vorher prüfen
+        // (<queries> im Manifest nötig). Fällt die Prüfung selbst aus, wird der Chooser trotzdem versucht.
+        val hasMailApp = try {
+            context.packageManager.queryIntentActivities(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")), 0).isNotEmpty()
+        } catch (e: Exception) { true }
         return try {
+            if (!hasMailApp) throw android.content.ActivityNotFoundException()
             context.startActivity(Intent.createChooser(send, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.report_chooser)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             true
         } catch (e: android.content.ActivityNotFoundException) {

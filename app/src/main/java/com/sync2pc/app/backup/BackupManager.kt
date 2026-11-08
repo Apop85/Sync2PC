@@ -123,9 +123,13 @@ object BackupManager {
                 )
             }
         }
-        if (replace) GlobalSettings(context).importFrom(c.settings)
+        val gs = GlobalSettings(context)
+        val offWifiBefore = gs.syncOffWifi
+        if (replace) gs.importFrom(c.settings)
         SyncScheduler.updateRemotePoll(context, dao.profiles())
         SyncScheduler.setupAll(context)
+        // 0.11.7: wechselt der Schalter "mobile Daten/VPN", gleich wie in den Einstellungen neu planen
+        if (gs.syncOffWifi != offWifiBefore) SyncScheduler.onOffWifiChanged(context)
         ImportResult(imported, synced, withoutPw, needFolder, skipped, overlapping)
     }
 }

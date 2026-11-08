@@ -174,7 +174,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         // Direkt nach dem WLAN-Verbinden ist das Netz oft noch nicht bereit (IP, Routing, PC-Firewall).
         // Deshalb mehrere Versuche über ca. 1 Minute, bevor "nicht erreichbar" gilt.
-        val waits = if (manual) listOf(0L, 3_000L) else listOf(0L, 5_000L, 10_000L, 15_000L, 30_000L)
+        // Nur mobile Daten/VPN (0.11.7): höchstens 2 Versuche (Akku, Datenvolumen)
+        val waits = NetworkRules.reachabilityWaits(manual, WifiHelper.offWifiSyncActive(ctx))
         val reach = HashMap<String, Boolean>()
         val unreachable = ArrayList<Profile>()
         val runnable = ArrayList<Profile>()
@@ -238,10 +239,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         try {
             for (p in runnable) {
                 val shouldContinue: () -> Boolean = {
-                    if (manual) true else {
-                        val s = WifiHelper.currentSsid(ctx)
-                        if (s != null) p.ssids().contains(s) else WifiHelper.onAllowedNetwork(ctx)
-                    }
+                    manual || NetworkRules.mayContinue(
+                        WifiHelper.currentSsid(ctx), p.ssids(), WifiHelper.onAllowedNetwork(ctx)
+                    )
                 }
                 val onProgress: (SyncProgress) -> Unit = progress@{ pr ->
                     if (isStopped) return@progress // nach dem Stopp keine Anzeige mehr neu erzeugen
@@ -346,8 +346,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val ssid = WifiHelper.currentSsid(ctx)
         val stillOnTargetWifi = if (ssid != null) unreachable.any { it.ssids().contains(ssid) } else WifiHelper.onAllowedNetwork(ctx)
         if (stillOnTargetWifi) {
-            // Abbruch mitten in der Übertragung bei bestehendem WLAN = meist kurzer Aussetzer -> bald erneut
-            val minutes = if (midRun) 2L else SyncScheduler.SHARE_RETRY_MINUTES
+            // Im WLAN: Abbruch mitten in der Übertragung = meist kurzer Aussetzer -> bald erneut (2 min).
+            // Nur mobile Daten/VPN (0.11.7): immer 2 Stunden. Ein erfolgreicher Lauf (auch von Hand) hebt die
+            // Wartezeit auf (oben: unreachable.isEmpty()); der manuelle Start ignoriert sie ohnehin.
+            val minutes = NetworkRules.retryMinutes(WifiHelper.offWifiSyncActive(ctx), midRun)
             s.shareRetryAt = System.currentTimeMillis() + minutes * 60_000
             s.shareUnreachable = names
             SyncScheduler.enqueueShareRetry(ctx, minutes)

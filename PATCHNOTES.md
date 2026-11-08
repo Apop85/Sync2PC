@@ -2,6 +2,19 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.11.7 (2026-11-08)
+
+### Geändert
+- **Mobile Daten/VPN:** Ausserhalb des WLAN wartet die App nach „PC nicht erreichbar“ und nach Verbindungsabbruch mitten im Lauf 2 Stunden (im WLAN weiter 30 bzw. 2 Minuten). Der Erreichbarkeitstest macht dort nur 2 Versuche. Die Wartezeit endet durch neue WLAN-Verbindung, manuellen Start oder einen erfolgreichen Lauf.
+- **Sicherung einspielen:** Ändert sich dabei der Schalter für mobile Daten/VPN, wird neu geplant und die Wartezeit verworfen (wie beim Umschalten).
+- **Problem melden:** Prüft vorab, ob eine Mail-App vorhanden ist.
+
+### Behoben
+- **Verlauf teilen:** Der Titel des Auswahldialogs folgt jetzt der App-Sprache (war fest deutsch; `Diagnostics.kt`).
+
+### Intern
+- Neue Datei `sync/NetworkRules.kt` (reine Netzentscheidungen), `SyncScheduler.onOffWifiChanged`, `<queries>` im Manifest; neue `NetworkRulesTest`, `BackupCodecTest` +2 Tests.
+
 ## 0.11.6 (2026-11-08)
 
 ### Geändert

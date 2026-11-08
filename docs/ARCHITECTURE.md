@@ -166,7 +166,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 
 | Datei | Verantwortlichkeit / Inhalt | Zusammenarbeit | Rel. |
 |---|---|---|---|
-| `sync/SyncScheduler.kt` | Alle WorkManager-Aufträge und Auslöser: `enqueueAuto/Manual/FollowUp/Resume`, `enqueueShareRetry`, `armContentTrigger` (MediaStore-Content-URI-Trigger), `scheduleSafetyNet` (6 h), `scheduleRemotePoll`, `pause/pauseForever/resume/cancelAll`, `setupAll` | `SyncWorker`, `TriggerWorker`, `WifiHelper`, `UpdateWorker`, `StaleCheck` | ● |
+| `sync/SyncScheduler.kt` | Alle WorkManager-Aufträge und Auslöser: `enqueueAuto/Manual/FollowUp/Resume`, `enqueueShareRetry`, `armContentTrigger` (MediaStore-Content-URI-Trigger), `scheduleSafetyNet` (6 h), `onOffWifiChanged` (Neuplanung und Verwerfen der Wartezeit bei Wechsel von `syncOffWifi`, auch nach Sicherung einspielen), `scheduleRemotePoll`, `pause/pauseForever/resume/cancelAll`, `setupAll` | `SyncWorker`, `TriggerWorker`, `WifiHelper`, `UpdateWorker`, `StaleCheck` | ● |
 | `sync/SyncWorker.kt` | `CoroutineWorker`; ein Lauf für alle passenden Profile: Pause/Wartebedingungen prüfen, WLAN-SSID abgleichen, PC-Erreichbarkeit testen, je Profil `SyncRunner` wählen und ausführen, Abschluss-Benachrichtigungen, Folgeaufträge; globaler `Mutex` gegen parallele Läufe | `SyncEngine`, `MirrorEngine`, `Notifications`, `PauseService`, `TransferLocks`, `GuardStore` | ● |
 | `sync/SyncRunner.kt` | Interface beider Engines | Worker, Engines | ● |
 | `sync/SyncEngine.kt` | Bildordner-Lauf pro Profil: Scan → bekannte Dateien per DB aussortieren → Analyse + Zielordner (sequenziell) → parallele Uploads (je eigene SMB-Verbindung), Verifikation, Log. Enthält `SyncProgress`, `PreviewEntry` | `MediaScanner`, `MediaAnalyzer`, `TargetResolver`, `SmbSession`, `PartialHash`, `DeletionManager`, DAO | ● |
@@ -180,7 +180,8 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `sync/Notifications.kt` | Kanäle (`sync_progress`, `sync_alerts`), Fortschritt/Foreground-Info, Zusammenfassungen, Hinweise; Intent-Extras `EXTRA_OPEN`/`OPEN_*` | Worker, `MainActivity` | ● |
 | `sync/PauseService.kt` | Foreground-Service (`dataSync`) „Pausiert – wartet auf WLAN“ nach WLAN-Unterbruch | `SyncWorker`, `SyncScheduler` | ● |
 | `sync/Receivers.kt` | `WifiNetworkReceiver` (System-Callback bei WLAN-Verbindung), `BootReceiver` (Boot/App-Update) | `SyncScheduler`, `WifiHelper` | ● |
-| `sync/WifiHelper.kt` | SSID lesen, WLAN-Status, Registrierung des `NetworkCallback` über `PendingIntent` | Receiver, Worker, Scheduler | ● |
+| `sync/WifiHelper.kt` | SSID lesen, WLAN-Status, Registrierung des `NetworkCallback` über `PendingIntent`; liest die Netzeigenschaften (`isOnMobileOrVpn`) und ruft `NetworkRules` auf | Receiver, Worker, Scheduler | ● |
+| `sync/NetworkRules.kt` | Reine Netzentscheidungen (seit 0.11.7, DEC-126): erlaubte Netzart, SSID-Prüfung ja/nein, Wartezeit „PC nicht erreichbar“ (`retryMinutes`: 30 min / 2 min / 2 h ausserhalb WLAN), Erreichbarkeitsversuche (`reachabilityWaits`) | `WifiHelper`, `SyncWorker` | ○ |
 | `sync/TriggerWorker.kt` | Leichtgewichtiger Auslöser (neue Medien, Sicherheitsnetz, PC-Abfrage, Pausenende): stellt nur einen Sync ein | `SyncScheduler` | ○ |
 | `sync/StaleCheck.kt` | Tägliche Erinnerung „lange nicht gesichert“ (`StaleCheckWorker`) | `PendingCheck`, `Notifications` | ○ |
 | `sync/TransferLocks.kt` | WLAN-/CPU-Wakelock nur während eines Laufs | `SyncWorker` | ○ |
@@ -251,7 +252,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 
 ### 4.7 Tests und Konfiguration
 
-- `app/src/test/java/com/sync2pc/app/` – 19 Dateien (18 Testklassen + `TestTexts` als Hilfsklasse). Abgedeckt sind die reinen Logikklassen (`MirrorGuard`, `FreeRules`, `TrashIndex/Policy/Purge`, `BackupCodec`, `Diagnostics`, `FileFilter`, `FolderNames`, `FilenameDateParser`, `ProfileOverlap/Wizard`, `CredentialGroups`, `RunSummary`, `TransferPlan`, `VerifyLevel`, `LocalTree`-Label) sowie `StringsParityTest` (DE/EN-Textparität). Details: `docs/TESTING.md`.
+- `app/src/test/java/com/sync2pc/app/` – 20 Testklassen (QA-Lauf 2026-11-08 nach 0.11.7: 110 Tests) plus `TestTexts` als Hilfsklasse. Abgedeckt sind die reinen Logikklassen (`MirrorGuard`, `RemoteFolderName`, `FreeRules`, `TrashIndex/Policy/Purge`, `BackupCodec`, `Diagnostics`, `FileFilter`, `FolderNames`, `FilenameDateParser`, `ProfileOverlap/Wizard`, `CredentialGroups`, `RunSummary`, `TransferPlan`, `VerifyLevel`, `LocalTree`-Label) sowie `StringsParityTest` (DE/EN-Textparität). Details: `docs/TESTING.md`.
 - `app/src/androidTest/java/com/sync2pc/app/MigrationTest.kt` – Room-Migrationen auf Gerät/Emulator (Schemas aus `app/schemas`).
 - `app/build.gradle.kts`, `proguard-rules.pro`, `AndroidManifest.xml`, `res/xml/*` – siehe Abschnitte 8 und 9.
 

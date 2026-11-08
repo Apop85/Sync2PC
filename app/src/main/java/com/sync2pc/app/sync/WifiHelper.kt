@@ -59,11 +59,13 @@ object WifiHelper {
      * mobile Daten/VPN nur mit dem Schalter [com.sync2pc.app.data.GlobalSettings.syncOffWifi].
      */
     fun onAllowedNetwork(context: Context): Boolean =
-        isOnWifi(context) || (com.sync2pc.app.data.GlobalSettings(context).syncOffWifi && isOnMobileOrVpn(context))
+        NetworkRules.onAllowedNetwork(
+            isOnWifi(context), isOnMobileOrVpn(context), com.sync2pc.app.data.GlobalSettings(context).syncOffWifi
+        )
 
     /** Nur mobile Daten/VPN, und der Schalter ist an: SSID-Prüfung entfällt */
     fun offWifiSyncActive(context: Context): Boolean =
-        com.sync2pc.app.data.GlobalSettings(context).syncOffWifi && isOnMobileOrVpn(context)
+        NetworkRules.offWifiSyncActive(isOnMobileOrVpn(context), com.sync2pc.app.data.GlobalSettings(context).syncOffWifi)
 
     fun isLocationEnabled(context: Context): Boolean =
         context.getSystemService(LocationManager::class.java)?.isLocationEnabled == true

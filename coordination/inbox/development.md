@@ -3,20 +3,70 @@
 
 Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISIONS.md` Anhang A/B (Antworten des Inhabers vom 2026-11-08). Umsetzung ist vom Inhaber freigegeben, ausser wo „prüfen“ steht. Jede Umsetzung: Doku gemäss `CLAUDE.md` §11 an Documentation melden.
 
+### SYNC-20261108-026 – Fester Text „Verlauf teilen“ in Diagnostics.kt durch Textressource ersetzen
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Development
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: Nachgewiesener Verstoss gegen die Regel „sichtbare Texte nur in den Sprachdateien“ (`CLAUDE.md` §1); gefunden bei QA -024, nicht Teil von 0.11.7.
+- Aufgabenbeschreibung: `Diagnostics.kt` Zeile 288 übergibt `"Verlauf teilen"` fest an `Intent.createChooser`. Die Ressource `log_share` („Verlauf teilen“) existiert bereits in `values-de/strings_log_backup.xml`; Eintrag in `values/` (EN) und Verwendung prüfen. Text durch `str(R.string.…)` ersetzen, Sprachdateien paritätisch halten, danach `tools/make-translations.ps1`.
+- Technischer Kontext: Reproduktion: App auf Englisch, Verlauf teilen: Chooser-Titel erscheint deutsch. `StringsParityTest` erfasst feste Texte im Code nicht. `reportProblem` (Zeile 323) macht es bereits richtig.
+- Betroffene Dateien: `diag/Diagnostics.kt`, `res/values/strings_log_backup.xml`, `res/values-de/strings_log_backup.xml` (nur falls nötig)
+- Erwartetes Ergebnis: Chooser-Titel folgt der App-Sprache; PATCH-Version erhöhen; Doku-Meldung nur falls nötig (PATCHNOTES).
+- Tatsächlich durchgeführte Arbeiten: `Diagnostics.kt` Zeile 288: `"Verlauf teilen"` durch `str(R.string.log_share)` ersetzt. Die Ressource existiert in beiden Sprachdateien (EN „Share history“, DE „Verlauf teilen“), keine Textänderung, daher kein `make-translations.ps1` nötig. Version bleibt 0.11.7 (Entscheid Inhaber: Rückmeldung zu einer noch nicht gebauten Version).
+- Ergebnis und Rückmeldung: Nicht gebaut, nicht getestet (Inhaberregel). Kein Test sinnvoll (`StringsParityTest` erfasst Code-Texte nicht). Doku-Meldung nicht nötig; PATCHNOTES-Eintrag 0.11.7 kann den Punkt ergänzen (Documentation).
+- Abgeschlossen am: 2026-11-08
+
+### SYNC-20261108-025 – Rückmeldung QA -024 (0.11.7) und Entscheidungsfrage zu geplanten Aufträgen nach Schalterwechsel
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Development
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: Abschluss von -024 mitteilen; ein mögliches Problem (nicht nachgewiesen) zur Bewertung durch Development.
+- Aufgabenbeschreibung: **Ergebnis -024:** `testDebugUnitTest --rerun-tasks` (JDK 17): 20 Klassen, 110 Tests, 0 Fehler, 0 übersprungen; `NetworkRulesTest` 5/5, `BackupCodecTest` 9/9. Quelltext: Schalter AUS gleichwertig zu WLAN-Regel, 2-h-Wartezeit und Aufhebung, Schleifenfreiheit, `reportProblem`, `onOffWifiChanged` (Einstellungen und Sicherung) ohne Befund. Details und Gerätetests: `inbox/qa-testing.md` (-024). **Mögliches Problem (LOW):** `onOffWifiChanged` plant nur Sicherheitsnetz neu und verwirft die Wartezeit; bereits geplante `WORK_RESUME`/`WORK_FOLLOWUP` behalten die alte Netzbedingung. EIN→AUS: laufen an, Worker beendet sich (harmlos). AUS→EIN: warten weiter auf WLAN (`UNMETERED`), obwohl Mobil jetzt erlaubt wäre, bis der nächste Auslöser kommt (Verzögerung, kein Datenverlust). Bitte bewerten: bewusst so belassen (dann in -027 Doku erwähnt) oder `enqueueResume`/`enqueueFollowUp` bei Wechsel neu einplanen. Keine Änderung ohne Entscheid.
+- Technischer Kontext: Nur Quelltextanalyse, nicht auf dem Gerät belegt. Wiederherstellung/Datenverlust nicht betroffen.
+- Betroffene Dateien: `sync/SyncScheduler.kt` (`onOffWifiChanged`, `autoConstraints`, `enqueueResume`, `enqueueFollowUp`)
+- Erwartetes Ergebnis: Kurze Antwort (belassen oder ändern); bei Änderung Test/Begründung, danach erneute QA-Prüfung.
+- Tatsächlich durchgeführte Arbeiten: Bewertet, keine Codeänderung. Entscheid Inhaber 2026-11-08: **so belassen**.
+- Ergebnis und Rückmeldung: Bereits geplante `WORK_RESUME`/`WORK_FOLLOWUP` behalten nach einem Schalterwechsel ihre alte Netzbedingung. AUS→EIN: Verzögerung bis zum nächsten Auslöser (Inhaber: zu verkraften). EIN→AUS: harmlos. Kein Datenverlust. Für Documentation (-027): als bekanntes Verhalten erwähnen. `enqueueResume`/`enqueueFollowUp` bleiben unverändert (Fortsetzen-Pfad bewusst nicht angefasst). Keine erneute QA-Prüfung für -025 nötig; für -026 genügt Sichtprüfung der einen Zeile.
+- Abgeschlossen am: 2026-11-08
+
+### SYNC-20261108-021 – QA-Funde zu Schalter mobile Daten/VPN und „Problem melden“ (aus QA -020)
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Development
+- Priorität: MEDIUM
+- Status: COMPLETED (Umsetzung; unabhängige QA-Nachprüfung offen, siehe -024)
+- Übergabegrund: Funde der unabhängigen QA-Prüfung zu 0.11.5/0.11.6 (Details in `qa-testing.md` -020). Keine Datenverlust-Befunde; QA korrigiert nicht selbst. Alle Punkte sind aus dem Quelltext abgeleitet, **nicht auf einem Gerät reproduziert**.
+- Aufgabenbeschreibung:
+  1. **[MÖGLICHES PROBLEM, MEDIUM] Netzwechsel WLAN → Mobilfunk mitten im Lauf bei Schalter EIN.** `SyncWorker.shouldContinue` (Z. 240–245): `currentSsid` ist ausserhalb des WLAN `null`, dann gilt `onAllowedNetwork` = true, also kein `wifiLost`. Der Lauf macht weiter, die SMB-Verbindung zum PC (LAN-Adresse) bricht ab → `connectionFailed` → `handleUnreachable(midRun=true)`: `stillOnTargetWifi` ist über `onAllowedNetwork` true → Wiederholung alle 2 min bzw. danach 30 min über Mobilfunk (`enqueueShareRetry`, Bedingung `CONNECTED`) statt `markInterrupted()`/„Pausiert“ bis zum WLAN. Ohne VPN also Kette von Wiederholungen mit je bis zu ca. 60 s Erreichbarkeitstest. Verwandt mit -019 (dort nur Begrenzung der Wiederholungen); bitte gemeinsam entscheiden, ob „Mobilfunk ohne erreichbaren PC“ als Unterbrechung bis WLAN gelten soll. Auswirkung: Akku/Datenverbrauch, kein Datenverlust (Listing-Fehler brechen den Lauf ab, `SmbSession.listRecursive` wirft; Schutzbremse unverändert).
+  2. **[MÖGLICHES PROBLEM, LOW] „Problem melden“ ohne Mail-App.** `Diagnostics.reportProblem` (Z. 316–323) fängt `ActivityNotFoundException` um `startActivity(Intent.createChooser(...))`. Ein Chooser wirft diese Ausnahme in der Regel nicht; er zeigt „Keine Apps…“. Dann wäre der Rückfall (Adresse in die Zwischenablage, Hinweis `settings_report_no_mail`) nicht erreichbar. Vorschlag: vorher `resolveActivity`/`queryIntentActivities` auf den `mailto:`-Intent prüfen oder ohne Chooser starten. Auf Gerät ohne Mail-App prüfen.
+  3. **[MÖGLICHES PROBLEM, LOW] Sicherung einspielen ändert `syncOffWifi`.** `BackupManager` (Z. 126–128) ruft nach `importFrom` nur `setupAll` auf. `scheduleSafetyNet(restart=false)` nutzt `KEEP`, und `cancelShareRetry` fehlt: das Sicherheitsnetz behält die alte Netzwerkbedingung, die Wartezeit „PC nicht erreichbar“ bleibt. Der Schalter in den Einstellungen macht beides (0.11.6). Gleiches Verhalten bei Import herstellen, falls der Wert wechselt.
+  4. **[FEHLENDER TEST] Keine Tests für die neue Entscheidungslogik.** `WifiHelper.onAllowedNetwork`/`offWifiSyncActive`/`isOnMobileOrVpn` brauchen `Context`. Empfehlung: reine Funktion auslagern (Eingaben: `isWifi`, `isMobileOrVpn`, `switchOn`, SSID, Profil-SSIDs) und als JVM-Unit-Test abdecken: Tabelle Schalter AUS/EIN × WLAN/Mobil/kein Netz × SSID passend/unbekannt/unlesbar; ebenso `shouldContinue`-Entscheid. Ausserdem `BackupCodecTest`: Round-Trip `syncOffWifi` (Boolean) und Sicherung ohne Schlüssel (Wert bleibt unverändert).
+  5. **[HINWEIS, INFO] Definition „mobil/VPN“.** `isOnMobileOrVpn` = aktives Netz mit `INTERNET` und ohne `TRANSPORT_WIFI`. Das schliesst auch Ethernet/Bluetooth-Tethering ein und hängt für VPN davon ab, ob die VPN-App das Unterliegende-Netz (WLAN) meldet. Ein VPN ohne WLAN-Transport über ein fremdes WLAN würde die SSID-Regel umgehen. Nur auf Gerät mit gängigen VPN-Apps prüfen, kein Code-Auftrag.
+- Technischer Kontext: QA -020; DEC-126, DEC-044, -019. „AUS = Verhalten wie vorher“: durch Diff-Zusammenfassung 0.11.5 (GitHub) bestätigt, siehe QA -020.
+- Betroffene Dateien: `sync/SyncWorker.kt`, `sync/WifiHelper.kt`, `sync/SyncScheduler.kt`, `backup/BackupManager.kt`, `diag/Diagnostics.kt`, `app/src/test/…/BackupCodecTest.kt` (neue Tests)
+- Erwartetes Ergebnis: Entscheid zu Punkt 1 (zusammen mit -019), Korrektur 2 und 3, Tests zu 4; danach erneute unabhängige QA-Prüfung (ich bewerte nicht allein nach Rückmeldung).
+- Tatsächlich durchgeführte Arbeiten: Version 0.11.7. **Punkt 1 (Entscheid Inhaber 2026-11-08):** „Mobilfunk ohne erreichbaren PC“ gilt **nicht** als Unterbrechung bis WLAN (sonst Schleife: `enqueueResume` nutzt bei Schalter EIN `CONNECTED` und liefe sofort wieder), sondern als lange Wartezeit: ausserhalb WLAN (Schalter EIN, `offWifiSyncActive`) 2 Stunden bei „PC nicht erreichbar“ **und** bei Abbruch mitten im Lauf (statt 30 bzw. 2 min); Erreichbarkeitstest nur 2 Versuche (0/5 s). Ein erfolgreicher Lauf, auch von Hand, hebt die Wartezeit auf (bestehend: `handleUnreachable` ohne Unerreichbare); danach läuft es normal, bis der nächste Fehler wieder 2 h auslöst. Im WLAN unverändert. Neue reine Logik `sync/NetworkRules.kt` (`onAllowedNetwork`, `offWifiSyncActive`, `mayContinue`, `retryMinutes`, `reachabilityWaits`), von `WifiHelper` und `SyncWorker` genutzt. **Punkt 2:** `Diagnostics.reportProblem` prüft vorab per `queryIntentActivities(mailto:)`; dafür `<queries>` im Manifest ergänzt (sonst wäre die Prüfung ab Android 11 immer leer); ohne Mail-App Rückfall Zwischenablage. **Punkt 3:** neue `SyncScheduler.onOffWifiChanged` (Sicherheitsnetz neu planen, Wartezeit verwerfen); aufgerufen aus Einstellungen und aus `BackupManager.importFrom`-Pfad, wenn der Wert wechselt. **Punkt 4:** neue `NetworkRulesTest` (Tabelle Schalter × WLAN/Mobil/kein Netz × SSID, Wartezeiten, Versuche), `BackupCodecTest` um 2 Tests (Round-Trip Boolean, Sicherung ohne Schlüssel). Punkt 5: kein Code.
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel „nichts bauen“); Syntax von Hand geprüft. Restrisiken: Wartezeit 2 h gilt auch für Abbruch mitten im Lauf ausserhalb WLAN (kurze Aussetzer werden dort erst nach 2 h nachgeholt, ausser Auslöser/manuell hebt es auf – bewusst laut Inhaber). Wartezeit wird von neuen Auslösern (neue Fotos usw.) ignoriert, nur WLAN-Neuverbindung und manueller Start prüfen sofort. `<queries>`-Eintrag und Mail-Rückfall nicht auf Gerät geprüft. Doku an Documentation (-023), Nachprüfung an QA (-024).
+- Abgeschlossen am: 2026-11-08
+
 ### SYNC-20261108-019 – Mobile Daten/VPN: Wiederholungen und Erreichbarkeitstest begrenzen (Review -003, Befund 1)
 - Erstellt am: 2026-11-08
 - Absender: Development (Folgeauftrag aus Review zu -003, vom Inhaber bestätigt)
 - Empfänger: Development
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Optionale Nachbesserung aus dem Review von 0.11.5; eigenständiger Folgeauftrag.
 - Aufgabenbeschreibung: Mit Schalter `syncOffWifi` und ohne erreichbaren PC (kein VPN) verursacht jeder automatische Lauf über Mobilfunk bis zu ca. 60 s Verbindungsversuche (`waits` in `SyncWorker`, ~Z. 177) und danach alle 30 Minuten eine Wiederholung (`enqueueShareRetry`). Ausserhalb des WLAN: Erreichbarkeitstest auf 1–2 Versuche kürzen und/oder Wiederholungsabstand vergrössern (Wert mit Inhaber klären). Verhalten im WLAN unverändert lassen.
 - Technischer Kontext: Review 0.11.5 (MEDIUM 1), DEC-126, DEC-045, DEC-048.
 - Betroffene Dateien: `sync/SyncWorker.kt` (`work`, `handleUnreachable`), `sync/SyncScheduler.kt`
 - Erwartetes Ergebnis: Umsetzung, Doku-Hinweis (SYNC-ENGINE Zeitregeln).
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Zusammen mit -021 Punkt 1 in 0.11.7 umgesetzt (Details dort). Wert vom Inhaber festgelegt: 2 Stunden ausserhalb WLAN, Erreichbarkeitstest 2 Versuche (0/5 s); im WLAN unverändert.
+- Ergebnis und Rückmeldung: Nicht gebaut/getestet (Inhaberregel). Doku-Hinweis: SYNC-ENGINE Zeitregeln, DEC-048/DEC-126 (siehe -023).
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-013 – Nicht verwendete Texte aufräumen (Anhang A Punkt 25)
 - Erstellt am: 2026-11-08

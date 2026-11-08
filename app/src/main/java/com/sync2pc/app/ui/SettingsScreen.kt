@@ -156,10 +156,8 @@ private fun LazyListScope.transferPage() {
             }
             SwitchRow(str(R.string.settings_auto_offwifi), offWifi, subtitle = str(R.string.settings_auto_offwifi_sub)) {
                 offWifi = it; s.syncOffWifi = it; apply()
-                // Bereits geplante Aufträge tragen die alte Netzwerk-Bedingung -> neu planen
-                SyncScheduler.scheduleSafetyNet(ctx, restart = true)
-                // Wartezeit "PC nicht erreichbar" gehört zur alten Netzwerkregel -> verwerfen, Prüfung beim nächsten Auslöser
-                SyncScheduler.cancelShareRetry(ctx)
+                // Geplante Aufträge und Wartezeit "PC nicht erreichbar" gehören zur alten Netzwerkregel
+                SyncScheduler.onOffWifiChanged(ctx)
             }
             OutlinedTextField(
                 minAge,

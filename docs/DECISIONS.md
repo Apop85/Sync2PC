@@ -1450,7 +1450,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Ist das Ziel-WLAN verbunden, der PC aber nicht erreichbar, folgt der nächste Versuch nach 30 Minuten; in der Zwischenzeit ignorieren automatische Läufe die Auslöser. Eine neue WLAN-Verbindung und der manuelle Start prüfen sofort. Bricht die Verbindung mitten im Lauf ab, folgt der nächste Versuch nach 2 Minuten (0.0.11).
 - **Begründung:** Wunsch des Inhabers (0.0.4); die 2-Minuten-Regel für kurze Aussetzer kam in 0.0.11 dazu.
 - **Alternativen:** Backoff (DEC-047).
-- **Konsequenzen:** Die Startseite zeigt „PC nicht erreichbar – nächste Prüfung um …“.
+- **Konsequenzen:** Die Startseite zeigt „PC nicht erreichbar – nächste Prüfung um …“. Seit 0.11.7 gilt bei Schalter EIN ausserhalb des WLAN (nur mobile Daten/VPN) stattdessen eine Wartezeit von 2 Stunden (DEC-126).
 - **Betroffene Komponenten:** `GlobalSettings.shareRetryAt`, `SyncScheduler.enqueueShareRetry`, `SyncWorker.handleUnreachable`
 - **Abhängigkeiten:** DEC-045, DEC-049
 
@@ -1588,20 +1588,23 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** DEC-043
 
 ### DEC-126: Option „auch über mobile Daten bzw. VPN synchronisieren“
-- **Status:** Implemented (0.11.5, Nachtrag 0.11.6)
+- **Status:** Implemented (0.11.5, Nachträge 0.11.6, 0.11.7)
 - **Datum:** 2026-11-08 (2026-11-02)
 - **Kategorie:** Synchronisation
 - **Entscheidung:** Vorgemerkt zusammen mit der PC-Erkennung: eine Option, über mobile Daten bzw. VPN zu synchronisieren (VPN über Mobilfunk gilt als gemessen; Hinweis auf Datenverbrauch).
 - **Begründung:** Frage des Inhabers, ob der WLAN-Name für VPN-Nutzer Pflicht sein muss; „das kannst du dir vormerken“.
 - **Alternativen:** —
-- **Konsequenzen:** Umgesetzt als Schalter (Inhaberentscheid 2026-11-08, SYNC-20261108-003; Quelle: Rückmeldung Development, nicht gebaut/getestet, Code nicht selbst geprüft):
+- **Konsequenzen:** Umgesetzt als Schalter (Inhaberentscheid 2026-11-08, SYNC-20261108-003; Quelle: Rückmeldung Development, Code nicht selbst geprüft; Build 0.11.6 laut Inhaber erfolgreich, Unit-Tests im QA-Lauf bestanden):
   - Schalter `syncOffWifi` (Standard aus), Einstellungen › Übertragung; in Sicherung und Diagnose enthalten.
   - Ausserhalb des WLAN keine SSID-Prüfung, alle aktiven Profile berechtigt. Im WLAN (auch VPN über WLAN) bleibt die SSID-Regel (DEC-044).
   - Netzwerkbedingung der automatischen Aufträge: `CONNECTED` statt `UNMETERED`. PC-Erreichbarkeit wie bisher.
-  - Auslöser ausserhalb des WLAN: neue Medien, Sicherheitsnetz (6 h), Ordner-Prüfung. Kein WLAN-Broadcast und kein Auslöser „mobile Daten verbunden“. Fortsetzen-Dienst und „Pausiert“ bleiben WLAN-gebunden.
+  - Auslöser ausserhalb des WLAN: neue Medien, Sicherheitsnetz (6 h), Ordner-Prüfung. Kein WLAN-Broadcast und kein Auslöser „mobile Daten verbunden“. Nur `PauseService` und `WifiNetworkReceiver` („Pausiert“) bleiben WLAN-gebunden; die Fortsetzen-/Wiederholungsaufträge (`enqueueResume`, `enqueueShareRetry`) nutzen bei Schalter EIN `CONNECTED` (`autoConstraints`). Mobile Daten/VPN gelten also **nicht** als Unterbrechung bis zum nächsten WLAN (Klärung Development -021/-023; bestätigt durch QA -020).
+  - **Präzisierung 0.11.7 (Entscheid Inhaber 2026-11-08, Development -019/-021/-023; Quelle `sync/NetworkRules.kt`, `SyncWorker.handleUnreachable`):** Ausserhalb des WLAN (nur mobile Daten/VPN) gilt bei „PC nicht erreichbar“ und bei Verbindungsabbruch mitten im Lauf eine Wartezeit von **2 Stunden** (`NetworkRules.OFF_WIFI_RETRY_MINUTES` = 120); im WLAN bleiben 30 min bzw. 2 min (DEC-048). Der Erreichbarkeitstest umfasst ausserhalb des WLAN nur 2 Versuche (0/5 s; im WLAN automatisch 5). Die Wartezeit endet durch eine neue WLAN-Verbindung, den manuellen Start oder einen erfolgreichen Lauf (auch von Hand); neue Auslöser (Fotos, Sicherheitsnetz, Ordner-Prüfung) ignorieren sie. Beim Umschalten des Schalters und beim Einspielen einer Sicherung mit geändertem `syncOffWifi` wird neu geplant und die Wartezeit verworfen (`SyncScheduler.onOffWifiChanged`). „Mobil/VPN“ = jedes aktive Netz mit Internet ausser WLAN (auch Ethernet, Tethering, Bluetooth; `WifiHelper.isOnMobileOrVpn`).
+  - **Bekannter Hinweis (QA -024):** Während der 2-h-Wartezeit kehren automatische Läufe (Foto-Auslöser, Sicherheitsnetz) still zurück (`SyncWorker`, Prüfung `shareRetryAt`); neue Fotos warten bis zu 2 h, sofern keine WLAN-Verbindung, kein manueller Start und kein Schalterwechsel die Wartezeit aufhebt.
+  - **Entscheid Inhaber 2026-11-08 (Development -025, „so belassen“):** Bereits geplante `WORK_RESUME`/`WORK_FOLLOWUP` behalten nach einem Schalterwechsel ihre alte Netzbedingung (`onOffWifiChanged` plant nur das Sicherheitsnetz neu und verwirft die Wartezeit). AUS→EIN: Aufträge warten weiter auf WLAN (`UNMETERED`), bis der nächste Auslöser kommt (Verzögerung, vom Inhaber akzeptiert). EIN→AUS: harmlos (Auftrag läuft an, Worker beendet sich). Kein Datenverlust; `enqueueResume`/`enqueueFollowUp` bleiben unverändert. Quelle: Rückmeldung Development/QA, nur Quelltextanalyse, nicht auf dem Gerät belegt.
   - Hinweis auf Datenverbrauch in der App; 0.11.6 nennt zusätzlich mögliche Kosten beim Mobilfunkabo (z. B. Ausland) und verwirft beim Umschalten die Wartezeit „PC nicht erreichbar“ (`cancelShareRetry`).
-  - Offen: Folgeauftrag SYNC-20261108-019 (Wiederholungen über Mobilfunk begrenzen).
-- **Betroffene Komponenten:** `sync/WifiHelper.kt` (`onAllowedNetwork`), `sync/SyncScheduler.kt` (`autoConstraints`), `sync/SyncWorker.kt`, `GlobalSettings.syncOffWifi`
+  - Folgeauftrag SYNC-20261108-019 (Wiederholungen über Mobilfunk begrenzen) umgesetzt in 0.11.7 (siehe Präzisierung 0.11.7 oben).
+- **Betroffene Komponenten:** `sync/NetworkRules.kt` (0.11.7), `sync/WifiHelper.kt` (`onAllowedNetwork`), `sync/SyncScheduler.kt` (`autoConstraints`), `sync/SyncWorker.kt`, `GlobalSettings.syncOffWifi`
 - **Abhängigkeiten:** DEC-044, DEC-109
 
 ### DEC-152: App nur im Hochformat

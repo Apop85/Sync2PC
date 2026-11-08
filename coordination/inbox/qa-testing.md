@@ -1,18 +1,60 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261108-024 – Nachprüfung 0.11.7: Wartezeit ausserhalb WLAN, „Problem melden“, Sicherung (aus -021)
+- Erstellt am: 2026-11-08
+- Absender: Development
+- Empfänger: QA & Testing
+- Priorität: MEDIUM
+- Status: COMPLETED (Übernahme durch QA bestätigt 2026-11-08)
+- Übergabegrund: Von QA angeforderte erneute unabhängige Prüfung nach Umsetzung von -021/-019.
+- Aufgabenbeschreibung: Prüfen: (1) `sync/NetworkRules.kt` und Nutzung in `WifiHelper`, `SyncWorker` (Waits, `shouldContinue`, `handleUnreachable`): AUS = Verhalten wie vor 0.11.5? Wartezeit 2 h ausserhalb WLAN (nur Schalter EIN) inkl. Abbruch mitten im Lauf; Aufhebung durch erfolgreichen manuellen oder automatischen Lauf; Schleifenfreiheit. (2) `Diagnostics.reportProblem` + `<queries>` im Manifest. (3) `SyncScheduler.onOffWifiChanged` aus Einstellungen und `BackupManager`. (4) neue `NetworkRulesTest`, `BackupCodecTest` (2 neue Tests) ausführen.
+- Technischer Kontext: Development -019/-021 (Ergebnis dort), QA -020. Entscheid Inhaber: 2 h Wartezeit, Test 2 Versuche (0/5 s).
+- Betroffene Dateien: `sync/NetworkRules.kt` (neu), `sync/WifiHelper.kt`, `sync/SyncWorker.kt`, `sync/SyncScheduler.kt`, `backup/BackupManager.kt`, `diag/Diagnostics.kt`, `ui/SettingsScreen.kt`, `AndroidManifest.xml`, Tests `NetworkRulesTest`, `BackupCodecTest`
+- Erwartetes Ergebnis: Bewertung, Testergebnis (Development hat nicht gebaut/getestet).
+- Tatsächlich durchgeführte Arbeiten: Quelltext gelesen: `NetworkRules`, `WifiHelper`, `SyncWorker` (Zeilen 120–363), `SyncScheduler`, `Receivers.kt` (WifiNetworkReceiver), `BackupManager.import`, `GlobalSettings` (`syncOffWifi`), `SettingsScreen` (Schalter), `Diagnostics.reportProblem`, Manifest `<queries>`, `NetworkRulesTest`, `BackupCodecTest`. Keine Dateien geändert, nichts gebaut (kein APK).
+- Ergebnis und Rückmeldung:
+  - **Risikokategorie:** Sync-Hintergrund/Netzbedingungen wie -020; Datenverlustrisiko durch die Änderung: niedrig (kein neuer Lösch-/Ersetzpfad, nur Zeitsteuerung und Netzentscheid).
+  - **Ausgeführt:** `gradlew testDebugUnitTest --rerun-tasks` (JDK 17 Android Studio jbr): BUILD SUCCESSFUL, 20 Klassen, 110 Tests, 0 Fehler, 0 Fehlschläge, 0 übersprungen. `NetworkRulesTest` 5/5, `BackupCodecTest` 9/9 (inkl. `offWifiSwitchRoundTripsAsBoolean`, `backupWithoutOffWifiKeyLeavesItAbsent`). INFO: Gesamtzahl 110 liegt nur um 1 über -020 (109), obwohl 5 + 2 Tests neu sind; Ursache nicht untersucht (vermutlich anders zusammengesetzter Stand), für die Bewertung unerheblich.
+  - **Nicht ausgeführt:** `connectedDebugAndroidTest`, `assembleRelease`, alle Gerätetests (Netzwechsel, Mail-App, Sicherung).
+  - **Nachgewiesen (Quelltext):**
+    1. Schalter AUS: `onAllowedNetwork` = `isWifi`, `offWifiSyncActive` = false, `retryMinutes(false, …)` = 2 bzw. 30 min, `reachabilityWaits` = 5 Stufen (auto) bzw. 0/3 s (manuell), Constraint `UNMETERED`; durch Tabellentest abgedeckt. Ob die Werte mit dem Stand vor 0.11.5 identisch sind, lässt sich ohne Vergleichsstand/Git nicht belegen (nicht geprüft).
+    2. Schalter EIN, nur Mobil/VPN: 2 Versuche (0/5 s), Wartezeit 120 min auch bei Abbruch mitten im Lauf (`midRun`), manuell unverändert (ignoriert die Wartezeit, 0/3 s). Wird das Netz während der Wartestufe unzulässig, bricht die Schleife ab (kein Timer, `markInterrupted`).
+    3. Aufhebung der Wartezeit: erfolgreicher Lauf (`handleUnreachable`, `unreachable.isEmpty()`, auch manuell), WLAN-Verbindung im Ziel-WLAN (`WifiNetworkReceiver`), Schalterwechsel (`onOffWifiChanged` aus Einstellungen und `BackupManager.import` nur bei tatsächlichem Wechsel). Ein manueller Lauf mit weiter unerreichbarem PC lässt die Wartezeit bestehen (nur Hinweis), sinnvoll.
+    4. Schleifenfreiheit: pro Zeitraum höchstens ein Wiederholungsauftrag (`WORK_RETRY`, REPLACE), Mindestabstand 120/30/2 min; kein enger Zyklus. Netzverlust: kein Timer, Fortsetzen über Receiver/`enqueueResume`.
+    5. `reportProblem`: Vorabprüfung `queryIntentActivities(SENDTO mailto:)` plus `<queries>` im Manifest stimmig; ohne Mail-App Rückfall in Zwischenablage und `false`; Anhang über FileProvider mit `ClipData` und Leserecht.
+    6. Sicherung: `syncOffWifi` in `exportable`/`importFrom`; Import ordnet Planung nach `setupAll` (Sicherheitsnetz mit `restart = true` ersetzt das mit KEEP angelegte).
+  - **Funde (keine nachgewiesenen Fehler):**
+    - LOW (möglich): Bereits geplante Fortsetzen-/Nachhol-Aufträge (`WORK_RESUME`, `WORK_FOLLOWUP`) behalten nach Schalterwechsel die alte Netzbedingung. EIN→AUS: laufen an, Worker beendet sich (kein Datenrisiko). AUS→EIN: warten weiter auf WLAN, bis der nächste Auslöser kommt (Verzögerung, kein Verlust).
+    - LOW (möglich, Verhalten): Während der 120-min-Wartezeit kehren automatische Läufe (Foto-Auslöser, Sicherheitsnetz) still zurück (`SyncWorker` Zeile 171); neue Fotos warten bis zu 2 h, sofern kein WLAN-Wechsel/manueller Start die Wartezeit aufhebt. Entspricht dem Entscheid des Inhabers; im Handbuch/der Beschreibung erwähnen.
+    - LOW/INFO (nachgewiesen, bestehend): `Diagnostics.kt` Zeile 288 enthält den festen deutschen Text „Verlauf teilen“ (Verstoss gegen die Regel „keine Texte im Code“, nicht Teil von 0.11.7).
+    - INFO: „Mobil/VPN“ = jedes aktive Netz mit Internet ausser WLAN (auch Ethernet/Tethering/Bluetooth), wie in -020.
+  - **Testlücken:** Orchestrierung in `SyncWorker` (Wartestufen-Schleife, `handleUnreachable` mit `midRun`/Schalter) nicht JVM-testbar; `SyncScheduler.onOffWifiChanged`, `WifiNetworkReceiver`-Aufhebung und `reportProblem` ohne Test.
+  - **Manuell empfohlen (Inhaber):** a) Schalter EIN, Mobil, PC aus: nach 2 Versuchen Wartezeit, kein weiterer Versuch vor Ablauf, Anzeige „erneuter Versuch in 120 min“; b) danach PC an, WLAN zu Hause: sofortiger Lauf; c) Abbruch mitten im Lauf (Flugmodus kurz) über Mobil: Fortsetzen erst nach 2 h bzw. beim WLAN; d) Schalter AUS→EIN→AUS mit offener Wartezeit; e) „Problem melden“ mit Mail-App (Anhang vorhanden) und ohne Mail-App (Zwischenablage-Hinweis).
+  - **Bewertung:** Die geprüfte Logik ist nach Quelltext korrekt und schleifenfrei; 0.11.7 ist aus QA-Sicht freigabefähig, vorbehaltlich der manuellen Gerätetests. -019/-021 sind damit aus QA-Sicht bestätigt (Teil Quelltext/JVM).
+  - **Folgeaufträge:** Development: SYNC-20261108-025 (Rückmeldung, Entscheidungsfrage geplante Aufträge), SYNC-20261108-026 (fester Text „Verlauf teilen“, `Diagnostics.kt` Zeile 288). Documentation: SYNC-20261108-027 (TESTING.md-Zahlen, Verhaltenshinweise). Nach Rückmeldung von Development erneute unabhängige Prüfung.
+- Abgeschlossen am: 2026-11-08
+
 ### SYNC-20261108-020 – Unabhängige Prüfung: Schalter mobile Daten/VPN (DEC-126, 0.11.5/0.11.6)
 - Erstellt am: 2026-11-08
 - Absender: Development
 - Empfänger: QA
 - Priorität: MEDIUM
-- Status: OPEN
+- Status: COMPLETED (Übernahme durch QA bestätigt 2026-11-08)
 - Übergabegrund: Änderung an Netzbedingungen, Wiederanlauf und Nebenläufigkeit des automatischen Syncs; unabhängige Prüfung nötig. Build 0.11.6 ist erfolgreich (Inhaber).
 - Aufgabenbeschreibung: Funktionale Korrektheit, Regressionen und Datenverlustrisiken prüfen. Schwerpunkte: (1) Schalter AUS = Verhalten identisch zu vorher (WLAN-Regel, SSID, `UNMETERED`). (2) Schalter EIN: ausserhalb des WLAN keine SSID-Prüfung, alle aktiven Profile berechtigt; im WLAN (auch VPN über WLAN) weiter SSID-Regel. (3) Abbruch/Fortsetzen: Netzverlust mitten im Lauf (`shouldContinue`, `markInterrupted`, `enqueueResume`), Ordner-Profile mit Löschen/Spiegeln über instabile Mobilverbindung, Schutzbremse unverändert. (4) Umschalten EIN→AUS und AUS→EIN: bereits geplante Aufträge mit alter Netzwerkbedingung, `cancelShareRetry`, `scheduleSafetyNet`. (5) Sicherung: `syncOffWifi` Export/Import, ältere Sicherungen ohne Schlüssel. (6) Testlücken: keine Unit-Tests für `onAllowedNetwork`/`offWifiSyncActive`, kein Round-Trip-Test für `syncOffWifi`. Zusätzlich „Problem melden“ (-008): Mail-App öffnet, Anhang vorhanden, Fall ohne Mail-App.
 - Technischer Kontext: Review (code-reviewer) zu 0.11.5: keine CRITICAL/HIGH-Funde; MEDIUM 1 (Wiederholungen über Mobilfunk, eigener Auftrag SYNC-20261108-019, offen) und MEDIUM 2 (behoben in 0.11.6: `cancelShareRetry` beim Umschalten). Kein Git; Details und Fundstellen in `inbox/development.md` (-003, -008, -019).
 - Betroffene Dateien: `sync/WifiHelper.kt`, `sync/SyncWorker.kt`, `sync/SyncScheduler.kt`, `data/GlobalSettings.kt`, `ui/SettingsScreen.kt`, `diag/Diagnostics.kt`, `res/values*/strings_settings.xml`
 - Erwartetes Ergebnis: Risikobewertung, ausgeführte Tests mit Ergebnis, Fehler/Testlücken, Empfehlungen.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Quelltext gelesen (`WifiHelper`, `SyncScheduler`, `SyncWorker`, `GlobalSettings`, `SettingsScreen`-Schalter und Diagnose, `Diagnostics.reportProblem`, `BackupManager`-Import, `MirrorEngine` Lauf/Abbruch, `SmbSession.listRecursive`), Doku (`TESTING.md`, `SYNC-ENGINE.md`, DEC-126). Keine Dateien an Produktions- oder Testcode geändert.
+- Ergebnis und Rückmeldung:
+  - **Risikokategorie:** Sync-Hintergrund/Netzbedingungen/Wiederanlauf; Datenverlustrisiko durch die Änderung selbst: niedrig.
+  - **Ausgeführt (Windows, JDK 17 `Android Studio\jbr`, `gradlew testDebugUnitTest --rerun-tasks`):** alle 19 Testklassen, 109 Tests, 0 Fehler, 0 übersprungen. Darin u. a. `StringsParityTest` (5), `BackupCodecTest` (7), `DiagnosticsTest` (6), `RemoteFolderNameTest` (4, erstmals ausgeführt), `MirrorGuardTest` (14). Das belegt Kompilierung und Textparität; **keiner dieser Tests deckt die geänderte Logik ab.**
+  - **Nicht ausgeführt:** `connectedDebugAndroidTest` (kein Gerät, keine DB-Änderung), `assembleRelease`, alle manuellen Gerätetests (Netzwechsel, VPN, Mail-App, Update).
+  - **Nachgewiesen (Quelltext):** (1) Schalter AUS: `onAllowedNetwork` = `isOnWifi`, `offWifiSyncActive` = false, Constraint `UNMETERED`; SSID-Regel unverändert. Nachtrag (Diff 0.11.5, Commit 6c141b4 auf GitHub, nur zusammengefasst gelesen): Bei AUS ist jede geänderte Stelle (`shouldContinue`, Wartekontrolle, `handleUnreachable`) von `isOnWifi` auf `onAllowedNetwork` = `isOnWifi || (Schalter && mobil)` umgestellt, also ohne Schalter gleichwertig; `UNMETERED` bleibt. Der volle Diff wurde nicht Zeile für Zeile geprüft. (2) Schalter EIN: ausserhalb WLAN alle aktiven Profile, im WLAN SSID-Regel. (3) `exportable`/`importFrom` enthalten `syncOffWifi`; ältere Sicherung ohne Schlüssel lässt den aktuellen Wert unverändert (INFO). (4) Listing-Fehler brechen den Lauf ab (`listRecursive` wirft), Schutzbremse unverändert: kein neuer Löschpfad.
+  - **Funde (alle LOW/MEDIUM, „möglich“, nicht auf Gerät belegt):** MEDIUM: Wechsel WLAN→Mobilfunk mitten im Lauf löst keine Unterbrechung aus, stattdessen Wiederholungskette über Mobilfunk (Verwandt mit -019). LOW: „Problem melden“-Rückfall ohne Mail-App vermutlich unerreichbar (Chooser). LOW: Sicherung einspielen verwirft weder Wartezeit noch aktualisiert es das Sicherheitsnetz. INFO: Definition „mobil/VPN“ (Ethernet/Tethering, VPN-Transport). Umschalten EIN→AUS: bereits geplante Aufträge mit `CONNECTED` laufen an, der Worker beendet sich wegen leerer Berechtigungsliste; Fortsetzen-Schleife baut sich mit neuer Bedingung neu auf: kein Datenrisiko.
+  - **Testlücken:** `WifiHelper`-Netzentscheid und `shouldContinue` (nicht JVM-testbar ohne Auslagerung), `syncOffWifi`-Round-Trip, „Problem melden“, `SyncScheduler`-Planung (kein `work-testing`). Schalter-Umschalten und Netzwechsel nur manuell.
+  - **Manuell empfohlen (Inhaber):** a) Schalter EIN, mobile Daten ohne VPN: Verhalten des Laufs und Wiederholungen beobachten; b) Lauf starten, WLAN abschalten → Verlauf/Benachrichtigung prüfen; c) mit VPN (Heim-WLAN fern, Mobilfunk): Ordner-Profil mit Änderung auf beiden Seiten; d) EIN→AUS und zurück mit offenem „PC nicht erreichbar“; e) „Problem melden“ mit und ohne Mail-App, Anhang vorhanden; f) Sicherung Export/Import mit beiden Schalterwerten.
+  - **Folgeaufträge:** SYNC-20261108-021 (Development, MEDIUM), SYNC-20261108-022 (Documentation, LOW). Bestehend: -019 (Development, offen). Nach Rückmeldung von Development erneute unabhängige Prüfung.
+- Abgeschlossen am: 2026-11-08
 
