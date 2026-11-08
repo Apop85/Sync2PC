@@ -3,6 +3,25 @@
 
 Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISIONS.md` Anhang A/B (Antworten des Inhabers vom 2026-11-08). Umsetzung ist vom Inhaber freigegeben, ausser wo „prüfen“ steht. Jede Umsetzung: Doku gemäss `CLAUDE.md` §11 an Documentation melden.
 
+### SYNC-20261108-030 – Leere Ordner aufräumen: Absicherung gegen Löschen von Inhalt, Zähler-Nebenläufigkeit (aus QA -029)
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Development
+- Priorität: MEDIUM
+- Status: COMPLETED (Umsetzung; erneute QA-Prüfung offen, siehe -032)
+- Übergabegrund: Datenverlustrisiko (möglich, nicht auf Gerät belegt) in der neuen Ordner-Löschung 0.11.8; zwei kleine Verbesserungen an der Wiederherstellung. QA korrigiert nicht selbst.
+- Aufgabenbeschreibung:
+  1. **Nachgewiesen im Quelltext:** `LocalTree.children()` überspringt Einträge ohne Anzeigenamen (`c.getString(1) ?: continue`, Zeile 91). `deleteDirIfEmpty` hält einen Ordner mit nur solchen Einträgen deshalb für leer und ruft `deleteDocument` auf, das bei vielen Anbietern rekursiv löscht. Erwartet: `deleteDirIfEmpty` darf nur löschen, wenn die Abfrage tatsächlich 0 Zeilen liefert (z. B. eigene Zählung ohne Überspringen oder Eintrag ohne Namen als „nicht leer“ werten). Eintritt sehr unwahrscheinlich (Anbieter liefert Eintrag ohne Namen).
+  2. **Möglich, bewusst akzeptierbar:** Zwischen `children(id)` und `delete(id)` kann ein anderer Prozess eine Datei im Ordner anlegen; sie ginge bei rekursivem Löschen verloren (Fenster Millisekunden; SAF kennt kein nicht-rekursives Löschen). Bitte entscheiden/dokumentieren (Restrisiko), ggf. Nachprüfung unmittelbar vor `delete` (Wert nur klein).
+  3. **Möglich (LOW):** `RestoreFailures.mark/resetAttempts/clear` lesen und schreiben `SharedPreferences`-Sätze ohne Sperre; `retryFailed` (Oberfläche) während eines laufenden Syncs (`mark`) kann einen Zähler verlieren oder fälschlich bestehen lassen. Folge nur: eine Wiederholung mehr oder weniger, keine Datenfolge. Optional `synchronized`.
+  4. **INFO:** Bei nicht vollständigem Zurückrollen (`!rolledBack`) erscheint nach dem 5. Fehlversuch nicht `eng_restore_gave_up`, die Startseite zeigt aber „aufgegeben“; Verlaufstext und Karte stimmen dann nicht überein (so bereits in -028 beschrieben, nur zur Kenntnis).
+- Technischer Kontext: QA -029 (Ergebnis dort). Tests: 22 Klassen, 118 Tests, alle bestanden. `FolderFreerTest`/`RestoreRetryPolicyTest` decken nur reine Funktionen ab, nicht `deleteDirIfEmpty` (SAF, nicht JVM-testbar).
+- Betroffene Dateien: `mirror/LocalTree.kt` (`children`, `deleteDirIfEmpty`), `mirror/RestoreManager.kt` (`RestoreFailures`)
+- Erwartetes Ergebnis: Punkt 1 behoben (Entscheidung Entwicklung, ob als 0.11.9), Punkt 2 entschieden und dokumentiert, Punkte 3/4 nach Ermessen. PATCH-Version erhöhen bei Codeänderung. Danach erneute QA-Prüfung.
+- Tatsächlich durchgeführte Arbeiten: Version 0.11.9 (0.11.8 ist gebaut und veröffentlicht). **Punkt 1:** neue `LocalTree.rawChildCount` zählt alle Zeilen der Ordnerabfrage (nur `COLUMN_DOCUMENT_ID`), auch Einträge ohne Anzeigenamen; `deleteDirIfEmpty` löscht nur bei Zahl 0, `null`-Antwort wirft (kein „leer“). **Punkt 2 (Entscheid):** als Restrisiko akzeptiert, keine zusätzliche Nachprüfung (die Zählung geschieht ohnehin unmittelbar vor `delete`; das verbleibende Fenster ist Millisekunden, SAF kennt kein nicht-rekursives Löschen). Dokumentieren als Restrisiko D26. **Punkt 3:** `RestoreFailures.mark/resetAttempts/clear/forget` laufen unter gemeinsamer Sperre (`synchronized`, prozessweit); Folge war ohnehin nur eine Wiederholung mehr/weniger. **Punkt 4:** unverändert belassen (Verlaufstext und Karte weichen bei teilweisem Zurückrollen ab; Zustand ist ohnehin ein Fall für den Benutzer, Text „siehe Papierkorb“ ist der wichtigere Hinweis).
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel); keine neuen Tests, da SAF und Prefs nicht JVM-testbar (wie von QA festgestellt). Gerätetest „Ordner mit Inhalt bleibt bestehen“ bleibt beim Inhaber. Doku an Documentation (-031), erneute Prüfung an QA (-032).
+- Abgeschlossen am: 2026-11-08
+
 ### SYNC-20261108-026 – Fester Text „Verlauf teilen“ in Diagnostics.kt durch Textressource ersetzen
 - Erstellt am: 2026-11-08
 - Absender: QA

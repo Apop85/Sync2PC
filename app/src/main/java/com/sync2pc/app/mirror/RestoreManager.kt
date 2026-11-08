@@ -132,10 +132,10 @@ class RestoreFailures(context: Context) {
     private fun attempts(): Set<String> = prefs.getStringSet("attempts", emptySet()) ?: emptySet()
 
     /** Fehlversuch festhalten (Netzwerkfehler zählen nicht, dort bleibt die Vormerkung einfach liegen). Liefert den Stand. */
-    fun mark(profileId: Long, restoreId: Long): Int {
+    fun mark(profileId: Long, restoreId: Long): Int = synchronized(LOCK) {
         val (next, n) = RestoreRetryPolicy.bump(attempts(), restoreId)
         prefs.edit().putStringSet("failed", all() + "$profileId:$restoreId").putStringSet("attempts", next).apply()
-        return n
+        n
     }
 
     /** true = die automatischen Versuche sind aufgebraucht, die Vormerkung wartet auf den Benutzer */
@@ -144,12 +144,12 @@ class RestoreFailures(context: Context) {
     /** Anzahl der Wiederherstellungen mit aufgebrauchten Versuchen (nur gegebene Profile) */
     fun exhaustedCount(profileIds: Collection<Long>): Int = restoreIds(profileIds).count { isExhausted(it) }
 
-    fun resetAttempts(restoreIds: Collection<Long>) {
+    fun resetAttempts(restoreIds: Collection<Long>) = synchronized(LOCK) {
         val ids = restoreIds.map { it.toString() }.toSet()
         prefs.edit().putStringSet("attempts", attempts().filterNot { it.substringBefore(':') in ids }.toSet()).apply()
     }
 
-    fun clear(restoreId: Long) {
+    fun clear(restoreId: Long) = synchronized(LOCK) {
         val left = all().filterNot { it.substringAfter(':') == restoreId.toString() }.toSet()
         prefs.edit().putStringSet("failed", left).apply()
         resetAttempts(listOf(restoreId))
@@ -163,8 +163,13 @@ class RestoreFailures(context: Context) {
     /** Profile mit fehlgeschlagener Wiederherstellung */
     fun profiles(): Set<Long> = all().mapNotNull { it.substringBefore(':').toLongOrNull() }.toSet()
 
-    fun forget(profileId: Long) {
+    fun forget(profileId: Long) = synchronized(LOCK) {
         resetAttempts(all().filter { it.substringBefore(':') == profileId.toString() }.mapNotNull { it.substringAfter(':').toLongOrNull() })
         prefs.edit().putStringSet("failed", all().filterNot { it.startsWith("$profileId:") }.toSet()).apply()
+    }
+
+    private companion object {
+        /** Lesen-ändern-Schreiben auf den Prefs: Sync-Lauf und Oberfläche dürfen sich nicht überschneiden (0.11.9) */
+        val LOCK = Any()
     }
 }

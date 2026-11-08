@@ -432,6 +432,17 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
     }
 
     /**
+     * Anzahl aller Einträge eines Ordners, auch solcher ohne Anzeigenamen (die [children] überspringt). Nur für die
+     * Leer-Prüfung vor dem Löschen (0.11.9): Antwortet Android nicht, ist das ein Fehler und nicht "leer".
+     */
+    private fun rawChildCount(docId: String): Int {
+        val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
+        val cursor = resolver.query(uri, arrayOf(Document.COLUMN_DOCUMENT_ID), null, null, null)
+            ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_unreadable))
+        return cursor.use { it.count }
+    }
+
+    /**
      * Ordner löschen, aber nur wenn er tatsächlich leer ist (0.11.8). Unmittelbar vorher neu einlesen, da
      * "deleteDocument" auf Ordnern bei vielen Anbietern rekursiv löscht. Das Profil-Wurzel ("") wird nie gelöscht.
      * false = nicht vorhanden oder nicht leer.
@@ -440,7 +451,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         if (relDir.isEmpty()) return false
         forgetDirs(relDir) // keine veraltete Kennung verwenden
         val id = findDir(relDir) ?: return false
-        if (children(id).isNotEmpty()) return false
+        if (rawChildCount(id) != 0) return false
         delete(id)
         forgetDirs(relDir)
         return true

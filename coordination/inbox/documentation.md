@@ -1,12 +1,27 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261108-031 – Doku-Nachführung zu Version 0.11.9 (Absicherung Ordner-Löschung, Sperre Versuchszähler)
+- Erstellt am: 2026-11-08
+- Absender: Development
+- Empfänger: Documentation
+- Priorität: LOW
+- Status: OPEN
+- Übergabegrund: Fehlerbehebung an der Löschlogik aus QA -029/Development -030; Restrisiko dokumentieren.
+- Aufgabenbeschreibung: (1) `LocalTree.deleteDirIfEmpty` zählt vor dem Löschen alle Einträge des Ordners (`rawChildCount`), auch ohne Anzeigenamen, und löscht nur bei 0; vorher übersah `children()` solche Einträge (`?: continue`) und hätte den Ordner rekursiv gelöscht. (2) Restrisiko, vom Entwickler akzeptiert: Zwischen Zählung und `deleteDocument` kann ein anderer Prozess eine Datei anlegen (Millisekunden; Android kennt kein nicht-rekursives Löschen); bei DEC-147/Risiko D26 festhalten. (3) `RestoreFailures` (Prefs `restore`) schreibt unter einer Sperre; bei DEC-146 nur erwähnen, falls Nebenläufigkeit dort beschrieben ist. (4) Bekannt, unverändert: bei nicht vollständigem Zurückrollen zeigt der Verlauf nach dem 5. Fehlversuch nicht „nicht mehr automatisch wiederholt“, die Startseite aber schon. PATCHNOTES 0.11.9; `TESTING.md`: QA-Zahlen aus -029 (22 Klassen, 118 Tests) falls noch nicht eingetragen, Testlücke `deleteDirIfEmpty`/`RestoreFailures` (nicht JVM-testbar).
+- Technischer Kontext: Development -030, QA -029.
+- Betroffene Dateien: `docs/DECISIONS.md` (DEC-147, DEC-146), `docs/TESTING.md`, `PATCHNOTES.md`
+- Erwartetes Ergebnis: Doku passend zum Code, nichts erfinden.
+- Tatsächlich durchgeführte Arbeiten: –
+- Ergebnis und Rückmeldung: –
+- Abgeschlossen am: –
+
 ### SYNC-20261108-028 – Doku-Nachführung zu Version 0.11.8 (Aufräumen Texte, leere Ordner, Wiederherstellung 5 Versuche)
 - Erstellt am: 2026-11-08
 - Absender: Development
 - Empfänger: Documentation
 - Priorität: MEDIUM
-- Status: BLOCKED (nur Punkt 4 `TESTING.md` wartet auf QA-Lauf -029; Punkte 1, 2, 3, 5 erledigt)
+- Status: COMPLETED
 - Übergabegrund: Geändertes Verhalten (Löschlogik, Wiederanlauf), neue Tests; Doku nach `CLAUDE.md` §11.
 - Aufgabenbeschreibung:
   1. **DEC-147 (Speicher freigeben, leere Ordner), Umsetzung 0.11.8:** Nach `FolderFreer.verifyAndDelete` werden die Elternordner der tatsächlich gelöschten Dateien (tiefster zuerst) entfernt, aber nur wenn sie beim Prüfen wirklich leer sind (`LocalTree.deleteDirIfEmpty`, liest unmittelbar vorher neu ein). Nie entfernt: Profil-Wurzel, Papierkorb-Ordner, `DCIM/Camera` (`FolderFreer.isProtectedDir`, gilt auch, wenn der gewählte Ordner `DCIM` oder `DCIM/Camera` ist). Fehler beim Aufräumen ändern das Ergebnis nicht. Anzeige: „X leere Ordner entfernt“ im Ergebnis (`Result.foldersRemoved`). Nur Profile Handy → PC ohne „Löschungen übernehmen“ (wie bisher). Risiko D26 teilweise entschärft; Inhaber bestätigte `DCIM/Camera` (Schreibfehler „DICM“).
@@ -18,8 +33,9 @@
 - Betroffene Dateien: `docs/DECISIONS.md`, `docs/SYNC-ENGINE.md`, `docs/DATA-MODEL.md`, `docs/TESTING.md`, `PATCHNOTES.md`
 - Erwartetes Ergebnis: Doku passend zum Code; nichts erfinden, bei Unklarheit zurückfragen.
 - Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `DECISIONS.md`: Nachträge 0.11.8 in DEC-146 und DEC-147 (Status war schon Implemented), Anhang A Punkte 15, 16, 25 als umgesetzt, Anhang B Punkt 26 (D26) ergänzt. `SYNC-ENGINE.md` 7.6: Schritt 7 Wiederholregel. `DATA-MODEL.md`: Prefs `restore` Schlüssel `attempts`. `PATCHNOTES.md`: 0.11.8. Code stichprobenartig geprüft (`MAX_ATTEMPTS`=5, `isProtectedDir`, `deleteDirIfEmpty`, `foldersRemoved`, `retryFailed`, `eng_restore_gave_up`); übrige Angaben aus dem Auftrag.
-- Ergebnis und Rückmeldung: Offen: `TESTING.md` (`RestoreRetryPolicyTest` 3, `FolderFreerTest` 5, Gesamtzahlen) erst nach QA-Lauf -029 mit gemessenen Zahlen, wie vom Auftrag verlangt. Danach COMPLETED. Nicht geprüft: Risiko-Nummern D26/D27 gegen Anhang B (Text so übernommen).
-- Abgeschlossen am: –
+- Ergebnis und Rückmeldung: Punkt 4 nachgeführt nach QA -029 (118 Tests in 22 Klassen, 0 Fehler; `FolderFreerTest` 5, `RestoreRetryPolicyTest` 3; Testlücken und Gerätetests) in `TESTING.md` und `ARCHITECTURE.md` 4.7; QA-Restrisiken A1/A2 (rekursives `deleteDocument`, Restfenster) in DEC-147 vermerkt. Nicht geprüft: Risiko-Nummern D26/D27 gegen Anhang B. Hinweis: Development -030 kann das Verhalten noch ändern, dann Doku erneut prüfen.
+- QA-Nachtrag (2026-11-08, aus QA -029, Punkt 4 freigegeben): Gemessener Lauf `testDebugUnitTest --rerun-tasks`: 22 Klassen, 118 Tests, 0 Fehler/Fehlschläge/Übersprungen (110 + `FolderFreerTest` 5 + `RestoreRetryPolicyTest` 3). Nicht abgedeckt: `FolderFreer.verifyAndDelete`, `LocalTree.deleteDirIfEmpty`, `RestoreFailures` (Prefs), `runRestores`-Filter, Kartenlogik Startseite. Restrisiko in TESTING.md/DECISIONS aufnehmen: `deleteDocument` auf Ordnern ist bei vielen Anbietern rekursiv, Restfenster zwischen Einlesen und Löschen (D26); Offen bei Development: -030.
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-027 – QA-Ergebnisse 0.11.7 in TESTING.md und bekannte Verhaltenshinweise (aus QA -024)
 - Erstellt am: 2026-11-08

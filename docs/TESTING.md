@@ -11,7 +11,7 @@ Kennzeichnung: **[vorhanden]** = im Repository nachweisbar, **[fehlt]** = nachwe
 
 | Testart | Status | Framework | Ort | Läuft auf |
 |---|---|---|---|---|
-| JVM-Unit-Tests (reine Logik) | vorhanden: 20 Klassen, 110 Tests (QA-Lauf 2026-11-08 nach 0.11.7, `--rerun-tasks`: 0 Fehler, 0 übersprungen) | JUnit 4.13.2, `org.json:json:20240303` | `app/src/test/java/com/sync2pc/app/` | PC (JVM), kein Gerät |
+| JVM-Unit-Tests (reine Logik) | vorhanden: 22 Klassen, 118 Tests (QA-Lauf 2026-11-08 nach 0.11.8, `--rerun-tasks`: 0 Fehler, 0 übersprungen) | JUnit 4.13.2, `org.json:json:20240303` | `app/src/test/java/com/sync2pc/app/` | PC (JVM), kein Gerät |
 | Instrumentierte Tests | vorhanden: 1 Klasse, 2 `@Test` (nur Room-Migration) | AndroidJUnit4, `room-testing` (`MigrationTestHelper`) | `app/src/androidTest/java/com/sync2pc/app/` | Gerät/Emulator |
 | Textparität DE/EN | vorhanden (als Unit-Test) | JUnit 4 | `StringsParityTest.kt` | PC |
 | Manuelle Release-Checkliste | vorhanden, dokumentiert | – | `build.md` (Abschnitte „Release-Checkliste“, „Test …“) | echtes Handy + PC/NAS |
@@ -75,7 +75,7 @@ Alle Befehle aus dem Projektwurzelordner (Windows: `gradlew.bat`). Die Tasks sin
 |---|---|---|---|
 | `build.bat` | Standard-Build des Projekts: Hash-Prüfung, Versionserhöhung, Unit-Tests, Release-APK nach `releases\` | Debug-Unit-Tests + `assembleRelease` | Vom Projektinhaber für Releases; Claude Code baut laut Projektregel **nicht** selbständig |
 | `build.bat -SkipTests` / `-Force` / `-Debug` / `-NoPause` | Tests überspringen / immer bauen / Debug-APK / ohne Tastendruck am Ende | wie oben | nach Absprache |
-| `gradlew.bat testDebugUnitTest` | Alle JVM-Unit-Tests (Debug) | 20 Testklassen, kein Gerät; Gradle braucht JDK 17+ (die Shell-Standard-`JAVA_HOME` zeigt auf Java 8; z. B. `C:\Program Files\Android\Android Studio\jbr` verwenden) | Nach jeder Änderung an Logikklassen, Texten (`strings_*.xml`) oder Datenmodell-Klassen |
+| `gradlew.bat testDebugUnitTest` | Alle JVM-Unit-Tests (Debug) | 22 Testklassen, kein Gerät; Gradle braucht JDK 17+ (die Shell-Standard-`JAVA_HOME` zeigt auf Java 8; z. B. `C:\Program Files\Android\Android Studio\jbr` verwenden) | Nach jeder Änderung an Logikklassen, Texten (`strings_*.xml`) oder Datenmodell-Klassen |
 | `gradlew.bat testDebugUnitTest --tests "com.sync2pc.app.MirrorGuardTest"` | Eine Testklasse | 1 Klasse | gezielte Prüfung nach kleinem Eingriff |
 | `gradlew.bat testDebugUnitTest --tests "com.sync2pc.app.MirrorGuardTest.massDeleteAbove20Percent"` | Eine Testmethode | 1 Test | Fehlersuche |
 | `gradlew.bat testReleaseUnitTest` | Unit-Tests gegen die Release-Variante | wie oben | selten; nur bei Verdacht auf Varianten-Unterschiede |
@@ -144,6 +144,8 @@ Pfade relativ zu `app/src/test/java/com/sync2pc/app/` (Ausnahme: `MigrationTest`
 | `DiagnosticsTest.kt` | `diag/Diagnostics`, `VendorHints`, `CrashReporter` | Log-Verdichtung (neues/altes Format, Einzelzeile); Herstellererkennung; Absturzprotokoll behält neueste drei; Trace gekürzt | 6 |
 | `RemoteFolderNameTest.kt` | `invalidFolderName` (Ordnername in der PC-Auswahl) | Namensprüfung (leer, Länge, verbotene Zeichen, „.“/„..“, Ende mit Punkt/Leerzeichen, Dublette); seit 0.11.3; im QA-Lauf 2026-11-08 ausgeführt und bestanden | 4 |
 | `NetworkRulesTest.kt` | `sync/NetworkRules` (reine Netzentscheidungen, DEC-126) | Tabelle erlaubte Netzart (`onAllowedNetwork`); Schalter + mobile Daten/VPN nötig (`offWifiSyncActive`); Weiterlaufen nach SSID bzw. Netzart (`mayContinue`); Wartezeiten (`retryMinutes`); Erreichbarkeitsversuche (`reachabilityWaits`); seit 0.11.7 | 5 |
+| `FolderFreerTest.kt` | `mirror/FolderFreer` (`isProtectedDir`, `emptyDirCandidates`; DEC-147) | Profil-Wurzel immer geschützt; `DCIM/Camera` geschützt (handgeschriebene Labels); andere Ordner nicht geschützt; Kandidaten tiefster Ordner zuerst ohne geschützte; geschützte übersprungen, andere bleiben; seit 0.11.8 | 5 |
+| `RestoreRetryPolicyTest.kt` | `mirror/RestoreRetryPolicy` (DEC-146) | ab dem 5. Fehlversuch erschöpft; Zähler je Wiederherstellungs-ID; ID-Präfix wird nicht verwechselt (1/12); seit 0.11.8 | 3 |
 | `StringsParityTest.kt` | `res/values*/strings*.xml` über `TestTexts` | gleiche Schlüssel, Plural-Formen `one`/`other`, gleiche Platzhalter, Formate funktionieren, Apostrophe maskiert | 5 |
 
 ### 4.3 Instrumentation
@@ -328,7 +330,8 @@ flowchart TD
 
 **Nicht eindeutig feststellbar** (Quellcode der betreffenden Klassen wurde für diese Datei nicht auf versteckte Testbarkeit geprüft): ob `livePhotoPairsStayTogether` produktiven Code oder nur lokale Testlogik prüft; ob weitere Funktionen von `Diagnostics`/`LocalTree` getestet sind, als die in 4.1/4.2 genannten. Es wurde keine Coverage-Messung (JaCoCo) durchgeführt; Zahlen zur Zeilenabdeckung sind unbekannt.
 
-Testlücken mit höchster Priorität (ableitbar, [Empfehlung], nicht umgesetzt): (1) `MirrorEngine.plan()` mit Entscheidungstabellen aus `docs/SYNC-ENGINE.md` als Unit-Test, dafür reine Funktion ohne SMB nötig; (2) Fake für `SmbSession` hinter einer Schnittstelle; (3) Migrations-Datenprüfungen für alle Schritte und alle Tabellen; (4) DAO-Tests mit In-Memory-Room; (5) `work-testing` für `SyncWorker`; (6) CI-Lauf von `testDebugUnitTest` auf GitHub; (7) Nach 0.11.7 sind Netzregeln (`NetworkRulesTest`) und `syncOffWifi`-Round-Trip getestet. Weiter ohne Test (QA 2026-11-08): Orchestrierung in `SyncWorker` (Wartestufen, `handleUnreachable` mit `midRun`/Schalter), `SyncScheduler.onOffWifiChanged`, Aufhebung der Wartezeit in `WifiNetworkReceiver`, „Problem melden“ (`reportProblem`). Manuelle Gerätetests (Netzwechsel, Mail-App, Sicherung) bleiben beim Inhaber und wurden nicht ausgeführt. Die Gesamtzahl 110 (vorher 109) ist nur als gemessen angegeben; die Differenz zu den neuen Tests ist nicht erklärt.
+Testlücken mit höchster Priorität (ableitbar, [Empfehlung], nicht umgesetzt): (1) `MirrorEngine.plan()` mit Entscheidungstabellen aus `docs/SYNC-ENGINE.md` als Unit-Test, dafür reine Funktion ohne SMB nötig; (2) Fake für `SmbSession` hinter einer Schnittstelle; (3) Migrations-Datenprüfungen für alle Schritte und alle Tabellen; (4) DAO-Tests mit In-Memory-Room; (5) `work-testing` für `SyncWorker`; (6) CI-Lauf von `testDebugUnitTest` auf GitHub; (7) Nach 0.11.7 sind Netzregeln (`NetworkRulesTest`) und `syncOffWifi`-Round-Trip getestet. Weiter ohne Test (QA 2026-11-08): Orchestrierung in `SyncWorker` (Wartestufen, `handleUnreachable` mit `midRun`/Schalter), `SyncScheduler.onOffWifiChanged`, Aufhebung der Wartezeit in `WifiNetworkReceiver`, „Problem melden“ (`reportProblem`). Manuelle Gerätetests (Netzwechsel, Mail-App, Sicherung) bleiben beim Inhaber und wurden nicht ausgeführt. Die Gesamtzahl: 109 → 110 (0.11.7) nicht erklärt; 118 = 110 + 5 + 3 (0.11.8, laut QA -029).
+(8) Ohne Test nach 0.11.8 (QA -029): `FolderFreer.verifyAndDelete`, `LocalTree.deleteDirIfEmpty` (SAF), `RestoreFailures` (Prefs), `runRestores`-Filter und Rollback, Kartenarithmetik „vorgemerkt − fehlgeschlagen“ auf der Startseite, `RestoreManager.retryFailed`; `isProtectedDir` nur mit handgeschriebenen Labels, nicht mit der echten Ausgabe von `LocalTree.label`; Verhalten von `deleteDocument` auf Ordnern am echten Anbieter nicht automatisierbar. Manuelle Gerätetests beim Inhaber (nicht ausgeführt): Ordner leeren (Unterordner, `DCIM/Camera`, SD-Karte, `.nomedia`, Netzabbruch) und 5 Fehlversuche provozieren (Erneut versuchen, Verwerfen, Papierkorb leeren).
 
 ---
 
@@ -364,4 +367,4 @@ Testlücken mit höchster Priorität (ableitbar, [Empfehlung], nicht umgesetzt):
 
 ## 13. Pflege dieser Datei
 
-Bei neuen Testklassen: Abschnitt 4 und die Tabellen in 6, 9, 10 aktualisieren. Anzahl und Pfade der Tests sind in `docs/ARCHITECTURE.md` 4.7 ebenfalls erwähnt; bei Änderungen dort mitführen. Die Testanzahl (Stand QA-Lauf 2026-11-08: 20 Klassen, 110 Tests) ist bei jeder Änderung neu zu prüfen.
+Bei neuen Testklassen: Abschnitt 4 und die Tabellen in 6, 9, 10 aktualisieren. Anzahl und Pfade der Tests sind in `docs/ARCHITECTURE.md` 4.7 ebenfalls erwähnt; bei Änderungen dort mitführen. Die Testanzahl (Stand QA-Lauf 2026-11-08: 22 Klassen, 118 Tests) ist bei jeder Änderung neu zu prüfen.
