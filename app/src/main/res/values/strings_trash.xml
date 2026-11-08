@@ -6,8 +6,13 @@
     <string name="trash_switch_profile">Switch profile</string>
     <string name="trash_choose_profile">Which trash do you want to open?</string>
     <string name="trash_photos_hint">Photo profiles have no trash of their own: removed photos are in the gallery trash and are emptied in the gallery app.</string>
-    <string name="trash_waiting_for_sync">Waiting until the running sync is finished…\nPlease keep this view open.</string>
-    <string name="trash_deleting">Deleting…</string>
+    <string name="intervention_waiting">Will run after the current sync.</string>
+    <string name="intervention_waiting_hint">You can leave this view. If the system ends LeoSync before it is the turn of this action, nothing is deleted.</string>
+    <string name="intervention_running">Running…</string>
+    <string name="intervention_running_hint">You can leave this view. The result is shown here or as a notice.</string>
+    <string name="intervention_already_pending">Another action for this profile is already waiting or running.</string>
+    <string name="intervention_failed">Failed: %1$s</string>
+    <string name="trash_nothing_deleted">Nothing deleted: the entries are gone, have changed or are reserved for restoring.</string>
     <string name="trash_reading">Reading the trash on mobile and PC…</string>
     <plurals name="trash_phone_summary">
         <item quantity="one">Mobile: %1$s file, %2$s</item>

@@ -23,8 +23,6 @@
     </plurals>
     <string name="free_unreachable_hosts">PC nicht erreichbar: %1$s.</string>
     <string name="free_check_failed">Prüfung fehlgeschlagen: %1$s</string>
-    <string name="free_waiting_for_sync">Wartet, bis die laufende Synchronisierung fertig ist… Diese Ansicht bitte offen lassen.</string>
-    <string name="free_checking_deleting">Prüfe auf dem PC und lösche…</string>
     <plurals name="free_deleted">
         <item quantity="one">%1$s Datei gelöscht, %2$s frei.</item>
         <item quantity="other">%1$s Dateien gelöscht, %2$s frei.</item>
@@ -38,7 +36,6 @@
         <item quantity="other">%1$s Dateien bleiben (auf dem PC nicht gefunden, anders oder inzwischen geändert).</item>
     </plurals>
     <string name="free_pc_lost">Der PC war nicht (mehr) erreichbar.</string>
-    <string name="free_failed">Fehlgeschlagen: %1$s</string>
     <string name="free_intro_photos">Verschiebt Fotos und Videos, die nachweislich auf dem PC gesichert sind, in den Papierkorb der Galerie. Vorher prüft LeoSync jede Datei auf dem PC. Was dort fehlt oder anders ist, bleibt.</string>
     <string name="free_verify_off_hint">Die Prüfung nach dem Hochladen steht bei diesem Profil auf „Aus“. Ungeprüfte Fotos werden hier nicht angeboten. Stelle im Profil mindestens „Wenig“ ein; ab der nächsten Synchronisierung erscheinen neu gesicherte Fotos.</string>
     <string name="free_intro_folder">Löscht Dateien auf dem Handy, die nachweislich unverändert auf dem PC liegen. Auf dem PC bleiben sie erhalten. Ordner-Dateien kommen nicht in einen Papierkorb, sie werden nach der Prüfung direkt gelöscht.</string>

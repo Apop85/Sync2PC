@@ -65,7 +65,7 @@ import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.l10n.Texts
 import com.sync2pc.app.l10n.plural
 import com.sync2pc.app.l10n.str
-import com.sync2pc.app.mirror.MirrorLock
+import com.sync2pc.app.mirror.PendingIntervention
 import com.sync2pc.app.mirror.PurgeRule
 import com.sync2pc.app.mirror.PurgeSides
 import com.sync2pc.app.mirror.RestoreManager
@@ -161,23 +161,24 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     var confirmRestore by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showCleanup by remember { mutableStateOf(false) }
-    /** null = nichts läuft, sonst Text der Fortschrittsanzeige */
-    var working by remember { mutableStateOf<String?>(null) }
     var pickDay by remember { mutableStateOf(false) }
     LaunchedEffect(profile.id, reload) { loaded = null; loaded = RestoreManager.load(ctx, profile) }
 
-    // Löschen wartet auf einen laufenden Ordner-Sync (0.7.0)
-    fun startWork() {
-        working = str(if (MirrorLock.busy) R.string.trash_waiting_for_sync else R.string.trash_deleting)
-    }
+    // Eingriffe warten auf einen laufenden Ordner-Sync und überleben das Verlassen der Ansicht (0.11.10, DEC-144)
+    val task = rememberIntervention(profile.id) { selected = emptyList(); reload++ }
+    val app = remember { ctx.applicationContext }
+    fun busyToast() = Toast.makeText(ctx, str(R.string.intervention_already_pending), Toast.LENGTH_LONG).show()
 
     val data = loaded
-    val busyText = working
-    if (data == null || busyText != null) {
+    if (task != null) {
+        InterventionPanel(profile.id, task, modifier)
+        return
+    }
+    if (data == null) {
         Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CircularProgressIndicator()
-            Hint(busyText ?: str(R.string.trash_reading))
+            Hint(str(R.string.trash_reading))
         }
         return
     }
@@ -308,14 +309,19 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = { showCleanup = false }, sheetState = sheetState) {
             CleanupSheet(data) { rule, sides ->
-                showCleanup = false; startWork()
-                scope.launch {
-                    val r = try { TrashCleaner.purge(ctx, profile, rule, sides) } finally { working = null }
-                    Toast.makeText(ctx, str(if (r.remotePending) R.string.trash_purged_pc_pending else R.string.trash_purged),
-                        Toast.LENGTH_LONG).show()
-                    selected = emptyList()
-                    reload++
+                showCleanup = false
+                // Nur der hier bestätigte Stand wird ausgeführt, auch wenn der Eingriff auf einen Sync warten muss
+                val confirmed = TrashPurge.affected(data.entries, rule, sides, data.reserved)
+                val pcKnown = data.pcAvailable
+                val started = PendingIntervention.start(app, profile.id) { onStart, _ ->
+                    val r = TrashCleaner.purgeConfirmed(app, profile, rule, sides, confirmed, pcKnown, onStart)
+                    str(when {
+                        r.remotePending -> R.string.trash_purged_pc_pending
+                        r.local + r.remote == 0 -> R.string.trash_nothing_deleted // nichts mehr da/geändert/vorgemerkt
+                        else -> R.string.trash_purged
+                    })
                 }
+                if (!started) busyToast()
             }
         }
     }
@@ -330,14 +336,16 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         confirmButton = {
             TextButton(onClick = {
                 confirmDelete = false
-                startWork()
-                scope.launch {
-                    val r = try { TrashCleaner.deleteEntries(ctx, profile, selected) } finally { working = null }
-                    Toast.makeText(ctx, str(if (r.remotePending) R.string.trash_deleted_pc_pending else R.string.trash_deleted_done),
-                        Toast.LENGTH_SHORT).show()
-                    selected = emptyList()
-                    reload++
+                val chosenEntries = selected
+                val started = PendingIntervention.start(app, profile.id) { onStart, _ ->
+                    val r = TrashCleaner.deleteEntries(app, profile, chosenEntries, onStart)
+                    str(when {
+                        r.remotePending -> R.string.trash_deleted_pc_pending
+                        r.local + r.remote == 0 -> R.string.trash_nothing_deleted
+                        else -> R.string.trash_deleted_done
+                    })
                 }
+                if (!started) busyToast()
             }) { Text(str(R.string.delete_mode_delete), color = MaterialTheme.colorScheme.error) }
         },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.common_cancel)) } },

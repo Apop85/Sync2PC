@@ -69,6 +69,44 @@ object TrashPurge {
 
     fun bytes(entries: List<TrashEntry>): Long = entries.sumOf { it.size }
 
+    /** Was beim Ausführen eines bestätigten Aufräumens wirklich gelöscht wird (0.11.10, DEC-144) */
+    data class ConfirmedPlan(
+        /** Ganze Datumsordner ("<Papierkorb>/<Datum>"), deren aktueller Inhalt vollständig bestätigt war */
+        val wholeDirs: List<String>,
+        /** Sonst nur die bestätigten Dateien */
+        val files: List<TrashEntry>,
+    )
+
+    /**
+     * Nur der bestätigte Stand wird ausgeführt: [current] ist der Inhalt des Papierkorbs *jetzt* (unter der Sperre
+     * eingelesen), [confirmed] die Einträge, die der Benutzer vor dem Bestätigen gesehen hat. Gelöscht wird nur, was
+     * jetzt noch mit gleicher Grösse vorhanden ist und nicht zum Wiederherstellen vorgemerkt ([reserved]). Ein
+     * Datumsordner wird nur ganz gelöscht, wenn alle seine aktuellen Einträge bestätigt sind – hat ein Sync inzwischen
+     * etwas dazugelegt, bleibt das liegen.
+     */
+    fun planConfirmed(current: List<TrashEntry>, confirmed: List<TrashEntry>, reserved: Set<String>): ConfirmedPlan {
+        val now = current.associateBy { key(it) }
+        val ok = HashSet<String>()
+        for (c in confirmed) {
+            val cur = now[key(c)] ?: continue
+            if (cur.size == c.size && key(cur) !in reserved) ok += key(cur)
+        }
+        val whole = ArrayList<String>()
+        val files = ArrayList<TrashEntry>()
+        val byDir = current.groupBy { dateDir(it.trashPath)?.lowercase() }
+        for ((dir, inDir) in byDir) {
+            if (dir != null && inDir.all { key(it) in ok }) whole += dateDir(inDir.first().trashPath)!!
+            else files += inDir.filter { key(it) in ok }
+        }
+        return ConfirmedPlan(whole, files)
+    }
+
+    /** "<Papierkorb>/<Datum>" aus einem Papierkorb-Pfad, null wenn der Pfad zu kurz ist */
+    fun dateDir(trashPath: String): String? {
+        val p = trashPath.split('/')
+        return if (p.size >= 3) p[0] + "/" + p[1] else null
+    }
+
     /** Eindeutiger Schlüssel eines Papierkorb-Eintrags: Seite + Pfad (Kleinbuchstaben) */
     fun key(e: TrashEntry): String = key(e.side.name, e.trashPath)
     fun key(side: String, trashPath: String): String = side + "|" + trashPath.lowercase()

@@ -86,8 +86,10 @@ object FolderFreer {
      */
     suspend fun verifyAndDelete(
         context: Context, profile: Profile, list: List<FreeItem>, onProgress: (Int, Int) -> Unit,
+        onStart: () -> Unit = {},
     ): Result = withContext(Dispatchers.IO) {
         MirrorLock.mutex.withLock {
+            onStart() // Sperre erworben: ab jetzt läuft der Eingriff wirklich (0.11.10)
             val dao = AppDatabase.get(context).dao()
             val tree = tree(context, profile)
             val s = try { SmbSession.open(profile) } catch (e: Exception) { null }

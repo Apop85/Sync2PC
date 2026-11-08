@@ -53,6 +53,9 @@ object TrashCleaner {
         return true
     }
 
+    private fun localAccessLost() =
+        java.io.IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.err_local_access_lost))
+
     private fun localTree(context: Context, profile: Profile): LocalTree? = try {
         val uri = Uri.parse(profile.localTreeUri)
         if (LocalTree.hasPermission(context, uri)) LocalTree(context, uri) else null
@@ -64,31 +67,84 @@ object TrashCleaner {
         if (host != null && SmbSession.isReachable(host)) SmbSession.open(profile) else null
     } catch (e: Exception) { null }
 
-    /** Papierkorb nach [rule] auf den gewählten Seiten leeren (wartet auf einen laufenden Ordner-Sync) */
-    suspend fun purge(context: Context, profile: Profile, rule: PurgeRule, sides: PurgeSides): Result =
-        withContext(Dispatchers.IO) {
-            MirrorLock.mutex.withLock {
-                val pending = AppDatabase.get(context).dao().pendingRestores(profile.id)
-                val local = if (sides.local)
-                    localTree(context, profile)?.purgeTrash(rule, TrashPurge.reservedPaths(pending, Side.LOCAL)) ?: 0 else 0
-                var remote = 0
-                var remotePending = false
-                if (sides.remote) {
-                    val s = openPc(profile)
+    /**
+     * Papierkorb aufräumen (wartet auf einen laufenden Ordner-Sync). Seit 0.11.10 (DEC-144) wird **nur der bestätigte
+     * Stand** ausgeführt: [confirmed] sind die Einträge, die der Benutzer vor dem Bestätigen gesehen hat; unter der
+     * Sperre wird neu eingelesen und nur gelöscht, was davon unverändert noch da und nicht zum Wiederherstellen
+     * vorgemerkt ist ([TrashPurge.planConfirmed]). Was ein Sync inzwischen in den Papierkorb gelegt hat, bleibt liegen.
+     * [pcKnown] = der PC-Papierkorb war beim Einlesen bekannt; sonst gilt wie bisher die Regel [rule] (vorgemerkt bzw.
+     * sofort, wenn der PC jetzt erreichbar ist). [onStart] wird aufgerufen, sobald die Sperre erworben ist.
+     */
+    suspend fun purgeConfirmed(
+        context: Context, profile: Profile, rule: PurgeRule, sides: PurgeSides,
+        confirmed: List<TrashEntry>, pcKnown: Boolean, onStart: () -> Unit = {},
+    ): Result = withContext(Dispatchers.IO) {
+        MirrorLock.mutex.withLock {
+            onStart()
+            val pending = AppDatabase.get(context).dao().pendingRestores(profile.id)
+            val reserved = TrashPurge.reservedKeys(pending)
+            var local = 0
+            if (sides.local) {
+                val tree = localTree(context, profile)
+                // Handy-Berechtigung weg: Fehler melden, bevor irgendetwas (auch auf dem PC) gelöscht wird (QA -035)
+                if (tree == null && confirmed.any { it.side == Side.LOCAL }) throw localAccessLost()
+                if (tree != null) {
+                    val plan = TrashPurge.planConfirmed(tree.listTrash(), confirmed.filter { it.side == Side.LOCAL }, reserved)
+                    for (d in plan.wholeDirs) if (tree.deleteTrashDir(d)) local++
+                    for (f in plan.files) if (tree.deleteTrashFile(f.trashPath)) local++
+                    // Leer gewordene Ordner entfernen (nur wirklich leere; Fehler hier sind unwichtig)
+                    val cleanup = FolderFreer.emptyDirCandidates(plan.files.map { it.trashPath }) { false } +
+                        plan.wholeDirs.map { it.substringBefore('/') }.distinct()
+                    for (dir in cleanup) try { tree.deleteDirIfEmpty(dir) } catch (e: Exception) { /* bleibt bestehen */ }
+                }
+            }
+            var remote = 0
+            var remotePending = false
+            if (sides.remote) {
+                val pcConfirmed = confirmed.filter { it.side == Side.REMOTE }
+                val s = openPc(profile)
+                if (!pcKnown) {
+                    // PC war beim Einlesen unbekannt: wie bisher die Regel (vorgemerkt oder jetzt ausgeführt)
                     if (s == null) { PurgeStore(context).addRule(profile.id, rule); remotePending = true }
                     else s.use { remote = purgeRemote(it, rule, TrashPurge.reservedPaths(pending, Side.REMOTE)) }
+                } else if (pcConfirmed.isNotEmpty()) {
+                    if (s == null) { PurgeStore(context).addFiles(profile.id, pcConfirmed.map { it.trashPath }); remotePending = true }
+                    else try {
+                        s.use { pc ->
+                            val plan = TrashPurge.planConfirmed(RestoreManager.remoteTrash(pc), pcConfirmed, reserved)
+                            for (d in plan.wholeDirs) { pc.deleteDir(pc.path(d.replace('/', '\\'))); remote++ }
+                            for (f in plan.files) if (deleteRemoteFile(pc, f.trashPath)) remote++
+                            // Leer gewordene Datumsordner entfernen
+                            for (d in plan.files.mapNotNull { TrashPurge.dateDir(it.trashPath) }.distinct()) {
+                                val p = pc.path(d.replace('/', '\\'))
+                                if (pc.dirExists(p) && pc.listRecursive(p).isEmpty()) pc.deleteDir(p)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        if (!com.sync2pc.app.sync.isNetworkError(e)) throw e
+                        // Verbindung weg: genau die bestätigten Dateien vormerken (nie mehr als gesehen)
+                        PurgeStore(context).addFiles(profile.id, pcConfirmed.map { it.trashPath }); remotePending = true
+                    }
                 }
-                Result(local, remote, remotePending)
             }
+            Result(local, remote, remotePending)
         }
+    }
 
-    /** Ausgewählte Einträge endgültig löschen; vorgemerkte Wiederherstellungen bleiben (wartet auf laufenden Sync) */
-    suspend fun deleteEntries(context: Context, profile: Profile, entries: List<TrashEntry>): Result =
+    /**
+     * Ausgewählte Einträge endgültig löschen; vorgemerkte Wiederherstellungen bleiben (wartet auf laufenden Sync).
+     * [onStart] wird aufgerufen, sobald die Sperre erworben ist.
+     */
+    suspend fun deleteEntries(
+        context: Context, profile: Profile, entries: List<TrashEntry>, onStart: () -> Unit = {},
+    ): Result =
         withContext(Dispatchers.IO) {
             MirrorLock.mutex.withLock {
+                onStart()
                 val reserved = TrashPurge.reservedKeys(AppDatabase.get(context).dao().pendingRestores(profile.id))
                 val list = entries.filter { TrashPurge.key(it) !in reserved }
                 val tree = localTree(context, profile)
+                if (tree == null && list.any { it.side == Side.LOCAL }) throw localAccessLost() // nichts löschen, Fehler melden
                 var local = 0
                 for (e in list.filter { it.side == Side.LOCAL }) {
                     if (tree?.deleteTrashFile(e.trashPath) == true) local++

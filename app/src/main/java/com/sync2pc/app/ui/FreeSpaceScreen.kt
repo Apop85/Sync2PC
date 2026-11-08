@@ -57,7 +57,7 @@ import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.l10n.plural
 import com.sync2pc.app.l10n.str
 import com.sync2pc.app.mirror.FolderFreer
-import com.sync2pc.app.mirror.MirrorLock
+import com.sync2pc.app.mirror.PendingIntervention
 import com.sync2pc.app.sync.Age
 import com.sync2pc.app.sync.AgeUnit
 import com.sync2pc.app.sync.FileKind
@@ -175,6 +175,13 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         requests.firstOrNull()?.let { launcher.launch(IntentSenderRequest.Builder(it.first.intentSender).build()) }
     }
 
+    // Wartender/laufender Eingriff (Ordner-Profile): Anzeige mit "Abbrechen"; Ergebnis nach dem Ende hier oder als Hinweis
+    val task = rememberIntervention(profile.id) { resultText = null; reload++ }
+    if (task != null) {
+        InterventionPanel(profile.id, task, modifier)
+        return
+    }
+
     val all = items
     if (all == null) {
         Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
@@ -222,24 +229,21 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
     }
 
     fun runFolder() {
-        busy = str(if (MirrorLock.busy) R.string.free_waiting_for_sync else R.string.free_checking_deleting)
-        progress = 0 to final.size; resultText = null
-        scope.launch {
-            try {
-                val r = FolderFreer.verifyAndDelete(ctx, profile, final) { d, t ->
-                    busy = str(R.string.free_checking_deleting); progress = d to t
-                }
-                resultText = buildString {
-                    append(plural(R.plurals.free_deleted, r.deleted, r.deleted, Notifications.formatBytes(r.bytes)))
-                    if (r.foldersRemoved > 0) append(" ").append(plural(R.plurals.free_folders_removed, r.foldersRemoved))
-                    if (r.kept > 0) append(" ").append(plural(R.plurals.free_kept, r.kept))
-                    if (r.unreachable) append(" ").append(str(R.string.free_pc_lost))
-                }
-                reload++
-            } catch (e: Exception) {
-                resultText = str(R.string.free_failed, e.message ?: "")
-            } finally { busy = null; progress = null }
+        resultText = null
+        val list = final
+        val app = ctx.applicationContext
+        // Wartet auf einen laufenden Ordner-Sync und überlebt das Verlassen der Ansicht (0.11.10, DEC-144).
+        // FolderFreer.verifyAndDelete prüft jede Datei unter der Sperre neu; die Auswahl wird nicht neu ausgewertet.
+        val started = PendingIntervention.start(app, profile.id) { onStart, report ->
+            val r = FolderFreer.verifyAndDelete(app, profile, list, { d, t -> report(d, t) }, onStart)
+            buildString {
+                append(plural(R.plurals.free_deleted, r.deleted, r.deleted, Notifications.formatBytes(r.bytes)))
+                if (r.foldersRemoved > 0) append(" ").append(plural(R.plurals.free_folders_removed, r.foldersRemoved))
+                if (r.kept > 0) append(" ").append(plural(R.plurals.free_kept, r.kept))
+                if (r.unreachable) append(" ").append(str(R.string.free_pc_lost))
+            }
         }
+        if (!started) Toast.makeText(ctx, str(R.string.intervention_already_pending), Toast.LENGTH_LONG).show()
     }
 
     LazyColumn(

@@ -2,6 +2,22 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.11.10 (2026-11-08)
+
+### Behoben
+- **Papierkorb (ersetzte Versionen):** Steht nach einem Ordnerwechsel die Stichprobe aus, wurde das vorgemerkte PC-Leeren übersprungen, der Lauf legte aber ersetzte Versionen in den PC-Papierkorb, und der nächste Lauf löschte sie bei „Alles“/„Tage“ ungesehen mit. Jetzt läuft das vorgemerkte Leeren unmittelbar nach bestandener Stichprobe (`MirrorEngine.runInner`, nur Leeren, keine Wiederherstellungen; nicht im Trockenlauf).
+- **Aufräumen:** führt nur noch den bestätigten Stand aus. Unter der Sperre wird neu eingelesen; gelöscht wird nur, was noch mit gleicher Grösse da und nicht zum Wiederherstellen vorgemerkt ist. Ein Datumsordner wird nur ganz gelöscht, wenn sein aktueller Inhalt vollständig bestätigt war (`TrashPurge.planConfirmed`).
+
+### Neu
+- **Eingriff beim laufenden Sync (DEC-144):** Aufräumen, Endgültig löschen und Speicher freigeben (Ordner) warten auf den laufenden Sync und laufen danach auch dann, wenn die Ansicht verlassen wird (prozessweit, `PendingIntervention`, nicht gespeichert: Prozessende = nichts gelöscht). Anzeige „Wird nach der laufenden Synchronisierung ausgeführt“ mit „Abbrechen“ (nur wartend); pro Profil nur ein Eingriff gleichzeitig; Ergebnis in der Ansicht oder als Hinweis. Keine Datenbankänderung.
+- **Eingriff beim laufenden Sync (QA -035):** Das Ergebnis geht nicht mehr still verloren: Die Benachrichtigung hängt nicht mehr vom Schalter „Hinweise“ ab, hat je Profil eine eigene Kennung, und ist sie nicht zustellbar (keine Berechtigung), bleibt das Ergebnis in der App stehen, bis die Ansicht geöffnet wird. Fehlt die Handy-Berechtigung, meldet Aufräumen/Endgültig löschen einen Fehler, bevor etwas gelöscht wird; bei 0 Treffern erscheint „Nichts gelöscht …“ statt „gelöscht“. „Abbrechen“ und Start schliessen sich gegenseitig aus (gemeinsame Sperre, Kennung je Start), ein abgebrochener Eingriff kann einen neuen nicht mehr aus der Anzeige entfernen. Die Zustandslogik (`InterventionRegistry`) ist ohne Android testbar.
+
+## 0.11.9 (2026-11-08)
+
+### Behoben
+- **Speicher freigeben (leere Ordner):** Vor dem Löschen eines Ordners werden alle Einträge gezählt, auch solche ohne Anzeigenamen; gelöscht wird nur bei 0 (`LocalTree.deleteDirIfEmpty`, `rawChildCount`). Vorher hätte ein Ordner nur mit solchen Einträgen als leer gegolten.
+- **Wiederherstellen:** Der Versuchszähler (`RestoreFailures`) wird unter einer Sperre geschrieben.
+
 ## 0.11.8 (2026-11-08)
 
 ### Neu

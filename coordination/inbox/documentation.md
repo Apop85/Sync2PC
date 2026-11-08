@@ -1,20 +1,51 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261108-037 – TESTING.md: Stand 0.11.10 (Testzahlen, Testlücken Eingriff beim Sync) (aus QA -035)
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Documentation
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: Teststrategie/Testzahlen in `docs/TESTING.md` sind nicht mehr aktuell.
+- Aufgabenbeschreibung: (1) Gemessene Zahlen (QA-Lauf 2026-11-08, `testDebugUnitTest --rerun-tasks`, JDK 17, aus JUnit-XML): **23 Klassen, 124 Tests, 0 Fehler, 0 Fehlschläge, 0 übersprungen** (118 + 6 aus `TrashPurgeConfirmedTest`); in Abschnitt 1, 4.1 (Tabelle, neue Zeile `TrashPurgeConfirmedTest`: `TrashPurge.planConfirmed`, 6 Szenarien: ganzer Tag, neuere Version bleibt, geänderte Grösse, vorgemerkte bleiben, verschwundene Einträge/Tage unabhängig, `dateDir`), 9, 10 und 13 (Zahlen) nachführen. (2) Testlücken in Abschnitt 6/10 ergänzen: `PendingIntervention` (Zustände, ein Eingriff je Profil, Abbrechen nur wartend), `TrashCleaner.purgeConfirmed`/`deleteEntries` mit I/O, `FolderFreer.verifyAndDelete` mit `onStart`, `MirrorEngine` Leeren nach Stichprobe (-034) ohne Test. (3) Manuelle Gerätetests ergänzen (beim Inhaber, nicht ausgeführt): Aufräumen während laufendem Sync (Wartezustand, Ansicht verlassen, Ergebnis als Hinweis), „Abbrechen“ im Wartezustand, PC aus → „Alles“ → Ordnerwechsel → Sync mit Ersetzungen → nächster Sync (ersetzte Versionen bleiben), Speicher freigeben während Sync, Prozess beenden im Wartezustand (nichts gelöscht).
+- **Nachtrag QA -038 (2026-11-08):** Aktueller Stand nach Development -036: **24 Klassen, 132 Tests, 0 Fehler, 0 Fehlschläge, 0 übersprungen** (124 + 8 aus `InterventionRegistryTest`; statt der Zahlen oben verwenden). Neue Zeile in 4.1: `InterventionRegistryTest` (`mirror/InterventionRegistry`, Zustandslogik der Eingriffe: Warten/Laufen/Fertig, ein Eingriff je Profil, Abbrechen nur wartend, Neustart nach Abbrechen, Zustellung/nicht zustellbares Ergebnis, Fehlertext, Zähler). Die Lücke „`PendingIntervention` ohne Test“ in (2) entfällt; offen bleibt: Abbrechen genau zwischen Sperrerwerb und `onStart`, `purgeConfirmed`/`deleteEntries` mit I/O, `Notifications`. Zusätzliche Gerätetests (Inhaber): System-Hinweise für LeoSync aus → Eingriff → Ansicht schliessen → Ergebnis prüfen; „Abbrechen“ kurz vor Sync-Ende wiederholt.
+- Technischer Kontext: QA -035 (Version 0.11.10), Entscheidungen DEC-144 und Folgeaufträge siehe Development -012/-034.
+- Betroffene Dateien: `docs/TESTING.md`
+- Erwartetes Ergebnis: Doku stimmt mit gemessenen Zahlen und dem tatsächlichen Teststand überein; nichts Ungeprüftes behaupten.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `TESTING.md`: Abschnitte 1, 2 (Befehlstabelle), 13: 24 Klassen/132 Tests (Stand -038); neue Zeilen in 4.1 `TrashPurgeConfirmedTest` (6) und `InterventionRegistryTest` (8); Testlücken (9) in Abschnitt 10 und manuelle Gerätetests (nicht ausgeführt). `ARCHITECTURE.md` 4.7: Zahlen angepasst.
+- Ergebnis und Rückmeldung: Zahlen aus dem QA-Auftrag übernommen, nicht selbst gemessen; Testinhalte der beiden Klassen aus -035/-038 übernommen, Quelltext nicht gelesen. Abschnitt 9 enthält keine Testzahlen, unverändert. Die Lücke „`PendingIntervention` ohne Test“ nicht aufgenommen (durch -038 hinfällig). Nicht ausgeführt: Prüfung, ob `ARCHITECTURE.md` 4.7 weitere Testklassen namentlich aufzählt.
+- Abgeschlossen am: 2026-11-08
+
+### SYNC-20261108-033 – Neue Architekturentscheidungen aus -014 und -015 in DECISIONS festhalten
+- Erstellt am: 2026-11-08
+- Absender: Architecture
+- Empfänger: Documentation
+- Priorität: MEDIUM
+- Status: COMPLETED
+- Übergabegrund: Zwei vom Inhaber freigegebene Architekturentscheidungen (2026-11-08); Entscheidungsdokumentation nachführen.
+- Aufgabenbeschreibung: (1) Neue DEC „Eingriffe beim laufenden Ordner-Sync: prozessweit statt dauerhaft vormerken; nur der bestätigte Stand wird gelöscht“, Status Accepted, Inhalt aus -014 (a–f, verworfene Alternativen, Restrisiken). (2) DEC-144 ergänzen: Konsequenz „Verlässt man die Ansicht … unterbleibt der Eingriff“ wird durch die neue DEC abgelöst, sobald umgesetzt; Verweis setzen. (3) Neue DEC „Verlauf mit Kennungen: Code-Spalten mit Rückfalltext“, Status Accepted, Inhalt aus -015 (a–e, verworfene Alternativen); DEC-159 und Anhang A Punkt 19 darauf verweisen. (4) Risiko D35 und D29 je mit Verweis auf die neuen DEC ergänzen. (5) Neues Risiko bzw. Befund F3 (Aufräumen löscht mehr als angezeigt, bis zur Umsetzung von -012) bei DEC-140 oder Anhang D festhalten. Status bleibt Accepted, bis Development umgesetzt hat; SYNC-ENGINE.md und DATA-MODEL.md erst nach der Umsetzung (Development -012/-009 meldet dann).
+- Technischer Kontext: Vorgaben stehen vollständig in `inbox/architecture.md` unter -014 und -015 („Ergebnis und Rückmeldung“). Umsetzung: Development -012 und -009. Befund F5 (vorgemerktes PC-Leeren bei ausstehender Stichprobe) ist inzwischen freigegeben und als Development -034 übergeben; Doku dazu erst nach dessen Umsetzung (Meldung durch Development).
+- Betroffene Dateien: `docs/DECISIONS.md` (neue DEC, DEC-144, DEC-159, DEC-140 oder Anhang D, Anhang A Punkt 19, Statistik und Index)
+- Erwartetes Ergebnis: DECISIONS.md enthält beide Entscheidungen konsistent mit -014/-015; nichts darüber hinaus erfinden.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `DECISIONS.md`: neu DEC-201 (Eingriffe vormerken, Abschnitt 2) und DEC-202 (Verlauf mit Kennungen, Abschnitt 6), beide Accepted, Inhalt aus `inbox/architecture.md` -014/-015; DEC-144 (Konsequenz als abgelöst markiert, Verweis), DEC-159 (Alternativen/Konsequenzen/Abhängigkeiten), DEC-140 (Konsequenz F3), Anhang A Punkte 17 und 19, Anhang D: D29 und D35 mit Verweis, neu D47 (F3); Statistik (Accepted 15, Total 202), Themenzähler, Abschnittslisten, Index, Session-5-Kopf.
+- Ergebnis und Rückmeldung: Nichts am Code geprüft, Angaben aus -014/-015. `SYNC-ENGINE.md` und `DATA-MODEL.md` bewusst nicht geändert (erst nach Umsetzung, Meldung durch Development -012/-009 abwarten); ebenso Befund F5/Development -034. Nummern DEC-201/-202 und D47 von mir vergeben (nächste freie). Nicht geprüft: ob `ARCHITECTURE.md` auf DEC-144 verweist und nachzuziehen ist.
+- Abgeschlossen am: 2026-11-08
+
 ### SYNC-20261108-031 – Doku-Nachführung zu Version 0.11.9 (Absicherung Ordner-Löschung, Sperre Versuchszähler)
 - Erstellt am: 2026-11-08
 - Absender: Development
 - Empfänger: Documentation
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Fehlerbehebung an der Löschlogik aus QA -029/Development -030; Restrisiko dokumentieren.
 - Aufgabenbeschreibung: (1) `LocalTree.deleteDirIfEmpty` zählt vor dem Löschen alle Einträge des Ordners (`rawChildCount`), auch ohne Anzeigenamen, und löscht nur bei 0; vorher übersah `children()` solche Einträge (`?: continue`) und hätte den Ordner rekursiv gelöscht. (2) Restrisiko, vom Entwickler akzeptiert: Zwischen Zählung und `deleteDocument` kann ein anderer Prozess eine Datei anlegen (Millisekunden; Android kennt kein nicht-rekursives Löschen); bei DEC-147/Risiko D26 festhalten. (3) `RestoreFailures` (Prefs `restore`) schreibt unter einer Sperre; bei DEC-146 nur erwähnen, falls Nebenläufigkeit dort beschrieben ist. (4) Bekannt, unverändert: bei nicht vollständigem Zurückrollen zeigt der Verlauf nach dem 5. Fehlversuch nicht „nicht mehr automatisch wiederholt“, die Startseite aber schon. PATCHNOTES 0.11.9; `TESTING.md`: QA-Zahlen aus -029 (22 Klassen, 118 Tests) falls noch nicht eingetragen, Testlücke `deleteDirIfEmpty`/`RestoreFailures` (nicht JVM-testbar).
 - Technischer Kontext: Development -030, QA -029.
 - Betroffene Dateien: `docs/DECISIONS.md` (DEC-147, DEC-146), `docs/TESTING.md`, `PATCHNOTES.md`
 - Erwartetes Ergebnis: Doku passend zum Code, nichts erfinden.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. Code gesehen: `rawChildCount` (`LocalTree` Z. 438, Prüfung Z. 454), `synchronized(LOCK)` in `RestoreFailures`. `DECISIONS.md` DEC-147: A1 als behoben (0.11.9), A2 als akzeptiertes Restrisiko D26. `TESTING.md`: Lücke ergänzt (Zahlen 22/118 standen schon). `PATCHNOTES.md`: 0.11.9.
+- Ergebnis und Rückmeldung: Punkt 3 (Sperre) nur in PATCHNOTES, da Nebenläufigkeit in DEC-146 nicht beschrieben ist. Punkt 4 war bereits dokumentiert (QA B2). Anhang B Punkt 26 nicht erweitert, Restrisiko steht in DEC-147. Nicht geprüft: Verhalten auf dem Gerät.
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-028 – Doku-Nachführung zu Version 0.11.8 (Aufräumen Texte, leere Ordner, Wiederherstellung 5 Versuche)
 - Erstellt am: 2026-11-08

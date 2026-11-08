@@ -6,8 +6,13 @@
     <string name="trash_switch_profile">Profil wechseln</string>
     <string name="trash_choose_profile">Welchen Papierkorb möchtest du öffnen?</string>
     <string name="trash_photos_hint">Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie und werden in der Galerie-App geleert.</string>
-    <string name="trash_waiting_for_sync">Wartet, bis die laufende Synchronisierung fertig ist…\nDiese Ansicht bitte offen lassen.</string>
-    <string name="trash_deleting">Lösche…</string>
+    <string name="intervention_waiting">Wird nach der laufenden Synchronisierung ausgeführt.</string>
+    <string name="intervention_waiting_hint">Sie können diese Ansicht verlassen. Beendet das System LeoSync, bevor die Aktion an der Reihe ist, wird nichts gelöscht.</string>
+    <string name="intervention_running">Wird ausgeführt…</string>
+    <string name="intervention_running_hint">Sie können diese Ansicht verlassen. Das Ergebnis erscheint hier oder als Hinweis.</string>
+    <string name="intervention_already_pending">Für dieses Profil wartet oder läuft bereits eine Aktion.</string>
+    <string name="intervention_failed">Fehlgeschlagen: %1$s</string>
+    <string name="trash_nothing_deleted">Nichts gelöscht: Die Einträge sind nicht mehr vorhanden, haben sich geändert oder sind zum Wiederherstellen vorgemerkt.</string>
     <string name="trash_reading">Lese den Papierkorb auf Handy und PC…</string>
     <plurals name="trash_phone_summary">
         <item quantity="one">Handy: %1$s Datei, %2$s</item>

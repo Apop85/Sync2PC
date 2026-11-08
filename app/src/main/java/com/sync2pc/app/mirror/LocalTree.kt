@@ -424,6 +424,16 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         return n
     }
 
+    /** Einen ganzen Datumsordner im Papierkorb ("<Papierkorb>/<Datum>") löschen (0.11.10). false = nicht vorhanden */
+    fun deleteTrashDir(relDir: String): Boolean {
+        if (relDir.isEmpty()) return false
+        forgetDirs(relDir)
+        val id = findDir(relDir) ?: return false
+        delete(id)
+        forgetDirs(relDir)
+        return true
+    }
+
     /** Eine einzelne Datei im Papierkorb endgültig löschen. false = nicht (mehr) vorhanden */
     fun deleteTrashFile(trashPath: String): Boolean {
         val e = find(trashPath) ?: return false

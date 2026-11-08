@@ -41,6 +41,8 @@ object Notifications {
     const val ID_PAUSED = 1008
     const val ID_STALE = 1009
     const val ID_GUARD = 1010
+    /** Basis; je Profil eine eigene Kennung (Basis + Profil-ID mod 1000), damit sich Ergebnisse nicht überschreiben */
+    const val ID_INTERVENTION = 20000
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -164,6 +166,15 @@ object Notifications {
         post(context, ID_DECISION, CH_ALERTS, str(R.string.home_decisions_title),
             plural(R.plurals.notif_decision_text, files, files, plural(R.plurals.home_groups, groups)),
             OPEN_DECISIONS)
+    }
+
+    /** Ergebnis eines vorgemerkten Eingriffs (Aufräumen, Endgültig löschen, Speicher freigeben), wenn die Ansicht zu ist (0.11.10) */
+    fun interventionDone(context: Context, profileId: Long, text: String): Boolean {
+        // Antwort auf eine Aktion des Benutzers, daher unabhängig vom Schalter "Hinweise". false = nicht zustellbar
+        // (keine Berechtigung): das Ergebnis bleibt dann in der App stehen (InterventionRegistry).
+        if (!canPost(context)) return false
+        post(context, ID_INTERVENTION + (profileId % 1000).toInt(), CH_ALERTS, str(R.string.notif_summary_done), text, null)
+        return true
     }
 
     fun deleteReady(context: Context, files: Int) {

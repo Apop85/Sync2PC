@@ -3,6 +3,56 @@
 
 Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISIONS.md` Anhang A/B (Antworten des Inhabers vom 2026-11-08). Umsetzung ist vom Inhaber freigegeben, ausser wo „prüfen“ steht. Jede Umsetzung: Doku gemäss `CLAUDE.md` §11 an Documentation melden.
 
+### SYNC-20261108-039 – Ergebnis des Eingriffs geht bei abgeschalteten System-Hinweisen verloren (optional, aus QA -038)
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Development
+- Priorität: LOW
+- Status: OPEN
+- Übergabegrund: Restfund bei der Nachprüfung -038; QA korrigiert nicht selbst. Möglich, nicht auf dem Gerät belegt.
+- Aufgabenbeschreibung: `Notifications.interventionDone` meldet „zugestellt“ (true), sobald `canPost` stimmt. `canPost` prüft nur `POST_NOTIFICATIONS` (ab Android 13), nicht `NotificationManagerCompat.areNotificationsEnabled()` bzw. den Kanal `CH_ALERTS`. Sind die Hinweise für LeoSync im System abgeschaltet (Berechtigung vorhanden, oder Android < 13), wirft das System die Meldung weg, die Registry löscht den Zustand, das Ergebnis erscheint nirgends. Erwartet: in diesem Fall `false` liefern (Ergebnis bleibt als DONE bis zum Öffnen der Ansicht), oder Entscheid, das als Restrisiko zu akzeptieren. Entscheid bei Development.
+- Technischer Kontext: QA -038, Version 0.11.10; Restrisiko ohnehin: DONE liegt nur im Speicher (Prozessende).
+- Betroffene Dateien: `sync/Notifications.kt` (`interventionDone`, `canPost`)
+- Erwartetes Ergebnis: Entscheid, ggf. Korrektur, Rückmeldung. Kleine Änderung; Nachprüfung durch QA nur bei Code-Änderung.
+- Tatsächlich durchgeführte Arbeiten: –
+- Ergebnis und Rückmeldung: –
+- Abgeschlossen am: –
+
+### SYNC-20261108-036 – Eingriff beim laufenden Sync (0.11.10): Ergebnismeldung, Abbrechen-Race, Testbarkeit (aus QA -035)
+- Erstellt am: 2026-11-08
+- Absender: QA
+- Empfänger: Development
+- Priorität: LOW
+- Status: COMPLETED (Umsetzung 0.11.10; erneute QA offen)
+- Übergabegrund: QA-Prüfung -035 fand keine CRITICAL/HIGH-Fehler, aber drei kleine Funde (LOW) und eine Testlücke. QA korrigiert nicht selbst.
+- Aufgabenbeschreibung (Entscheid durch Development; Unterscheidung nachgewiesen / möglich):
+  1. **Nachgewiesen (Quelltext), LOW:** Ergebnis geht still verloren. `Notifications.interventionDone` kehrt bei `notifyHints == false` (Zeile 171–174) bzw. fehlender Benachrichtigungsberechtigung (`canPost`) zurück, die Ansicht ist dann zu: Der Benutzer erfährt nie, ob/was gelöscht wurde. Zudem eine feste ID (`ID_INTERVENTION`), Ergebnisse mehrerer Profile überschreiben sich.
+  2. **Nachgewiesen (Quelltext), LOW:** Ergebnistext ignoriert die tatsächlichen Zähler. `TrashCleaner.purgeConfirmed` Zeile 85–86 und `deleteEntries` Zeile 141: Ist die Handy-Berechtigung weg (`localTree` = null), wird still nichts gelöscht, `TrashScreen` meldet trotzdem „geleert“/„gelöscht“ (`r.local`/`r.remote` werden nicht ausgewertet). Erwartet: Fehler bzw. Text mit Anzahl, mindestens bei 0 Treffern.
+  3. **Möglich, LOW (Race, nicht belegt):** `PendingIntervention.cancel` prüft WAITING und bricht dann den Job ab; hat der Job die Sperre gerade erworben (nach `onStart`), laufen `purgeConfirmed`/`deleteEntries` ohne Abbruchpunkt zu Ende (Löschen findet statt, Ergebnis wird verworfen, Anzeige verschwindet wie bei „Abgebrochen“). Betrifft nur bestätigten Stand, kein Datenverlust über Bestätigung hinaus. Ähnlich: `jobs[profileId] = launch` nach sofortigem `finish` hinterlässt einen alten Job (harmlos); ein spät abgearbeitetes `clear` des abgebrochenen Jobs könnte einen direkt neu gestarteten Eingriff aus der Anzeige entfernen (Wartezustand).
+  4. **Testlücke:** `PendingIntervention` (Zustände, ein Eingriff pro Profil, `cancel` nur wartend, `viewers`) und `purgeConfirmed` mit I/O sind nicht getestet. Vorschlag: Zustandslogik ohne Android-Klassen testbar machen (z. B. Notification/`str` über Parameter) und Test ergänzen; Entscheid bei Development.
+- Technischer Kontext: QA -035, Version 0.11.10. Bekannte, von Development bereits benannte Restrisiken (a)–(d) werden von QA geteilt und hier nicht wiederholt.
+- Betroffene Dateien: `mirror/PendingIntervention.kt`, `mirror/TrashCleaner.kt`, `sync/Notifications.kt`, `ui/TrashScreen.kt`, `ui/FreeSpaceScreen.kt`, `res/values*/strings_trash.xml`
+- Erwartetes Ergebnis: Entscheid je Punkt (beheben / akzeptieren und begründen), neue Texte in DE und EN, Version erhöhen, Rückmeldung; danach erneute unabhängige Prüfung durch QA.
+- Tatsächlich durchgeführte Arbeiten: Alle vier Punkte behoben, in 0.11.10 (Version nicht erhöht, 0.11.10 noch nicht gebaut). **1:** `Notifications.interventionDone(context, profileId, text): Boolean` ignoriert den Schalter „Hinweise“ (Antwort auf Benutzeraktion), eigene Kennung je Profil (`ID_INTERVENTION` 20000 + Profil-ID mod 1000, vorher fest 1011); nicht zustellbar (`canPost` false) → Ergebnis bleibt als DONE stehen und erscheint beim nächsten Öffnen der Ansicht. **2:** `TrashCleaner.purgeConfirmed`/`deleteEntries` werfen `err_local_access_lost`, wenn die Handy-Berechtigung fehlt und Handy-Einträge anstehen (vor jeder Löschung, auch auf dem PC); `TrashScreen` zeigt bei 0 Treffern neuen Text `trash_nothing_deleted` (EN/DE). **3:** `InterventionRegistry` (Logik aus `PendingIntervention` herausgelöst; `PendingIntervention` ist deren Instanz): `cancel` und `onStart` laufen unter derselben Monitor-Sperre, `Token` je Start (`cancelled`); `onStart` wirft `CancellationException`, wenn inzwischen abgebrochen wurde (Lösch-Teil läuft dann nie an); `release`/`finish` ändern den Zustand nur für den aktuellen Token (altes `clear` kann neuen Eingriff nicht entfernen); Job wird `LAZY` gestartet, nachdem er eingetragen ist; `viewers` unter Sperre, nie negativ (behebt auch das Fenster `finish`/`viewerClosed` aus dem Development-Review). Typen jetzt `InterventionState`/`InterventionTask` (oberste Ebene). **4:** Neu `InterventionRegistryTest` (8 Tests: Zustände, ein Eingriff pro Profil, Abbrechen nur wartend, kein Start nach Abbrechen, Benachrichtigung/nicht zustellbar, Fehlertext, `viewers`). `purgeConfirmed` mit I/O bleibt ungetestet (SAF/SMB nicht JVM-testbar).
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel); Syntax von Hand geprüft. Restrisiko: `cancel` nach erworbener Sperre, aber vor `onStart`, wirkt (nichts gelöscht); nach `onStart` bewusst nicht mehr. Doku an Documentation: -033 (DECISIONS DEC-144, SYNC-ENGINE, TESTING um `InterventionRegistryTest`). Erneute QA-Prüfung offen (an QA, zu -035).
+- Abgeschlossen am: 2026-11-08
+
+### SYNC-20261108-034 – Vorgemerktes PC-Leeren nach bestandener Stichprobe im selben Lauf ausführen (Befund F5 aus -014)
+- Erstellt am: 2026-11-08
+- Absender: Architecture
+- Empfänger: Development
+- Priorität: MEDIUM
+- Status: COMPLETED (Umsetzung 0.11.10; QA offen)
+- Übergabegrund: Datenverlustrisiko im Papierkorb (ersetzte Versionen); Lösung vom Inhaber freigegeben (2026-11-08).
+- Aufgabenbeschreibung: Steht nach einem Ordnerwechsel die Stichprobe aus, überspringt `MirrorEngine.runInner` Wiederherstellungen und vorgemerktes PC-Leeren (Bedingung `guards.pendingCheck(...).isEmpty()`, MirrorEngine.kt:194). Besteht die Stichprobe im selben Lauf (`setPendingCheck(..., emptySet())`, Z. 216), plant und überträgt der Lauf und legt ersetzte Versionen in den PC-Papierkorb. Der nächste Lauf führt dann eine vorgemerkte Regel „Alles“ bzw. „Tage“ mit heutigem Datum aus und löscht diese Versionen ungesehen. **Lösung:** Unmittelbar nach bestandener Stichprobe (nach Z. 216, vor „Nicht löschen“/`purgeTrash()`/Planung) `runPendingPurges(s)` aufrufen, nur wenn es in diesem Lauf noch nicht lief.
+- Technische Vorgaben: (1) **Nur** `runPendingPurges`, **nicht** `runRestores`: `local`/`remote` sind an dieser Stelle schon eingelesen; eine Wiederherstellung danach würde der Plan als Löschung werten. Wiederherstellungen bleiben für den nächsten Lauf liegen; `runPendingPurges` schützt vorgemerkte Wiederherstellungen bereits (`reservedPaths`). (2) Papierkorb-Ordner sind vom Einlesen ausgeschlossen (`skipTrash`), das Leeren verändert die eingelesenen Listen also nicht – im Code bestätigen. (3) Nicht im Trockenlauf (`dryRun`). (4) Netzwerkfehler wie bisher: Vormerkung bleibt, Lauf bricht ab (`connectionFailed`). (5) Keine weitere Änderung an Planung, Schutzbremse oder Reihenfolge; DEC-147/Risiko D26 (DROP statt TRASH) unberührt.
+- Technischer Kontext: -014 Befund F5 (`inbox/architecture.md`), DEC-129 (Stichprobe), DEC-140 (Papierkorb leeren, Vormerkung `PurgeStore`), DEC-145. Unabhängig von -012, aber dieselbe Datei nicht gleichzeitig mit anderen Aufträgen ändern.
+- Betroffene Dateien: `mirror/MirrorEngine.kt` (nur `runInner`)
+- Erwartetes Ergebnis: Umsetzung, PATCH-Version und PATCHNOTES, Doku-Hinweis an Documentation (SYNC-ENGINE.md: Reihenfolge eines Ordner-Laufs). Kritische Sync-Änderung → `review-changes`; manueller Testfall: PC aus → „Aufräumen: Alles“ (PC vorgemerkt) → Ordner wechseln → Sync mit Ersetzungen → nächster Sync: ersetzte Versionen bleiben im PC-Papierkorb.
+- Tatsächlich durchgeführte Arbeiten: Version 0.11.10. `MirrorEngine.runInner`: Flag `purgesRan`; nach bestandener Stichprobe (`setPendingCheck(..., emptySet())`, nicht im Trockenlauf) `runPendingPurges(s)`, nur wenn im Lauf noch nicht gelaufen. Keine Wiederherstellungen. Bestätigt im Code: `local`/`remote` werden mit `skipTrash` eingelesen, das Leeren ändert die Listen nicht; Netzfehler wie bisher (`connectionFailed`, Vormerkung bleibt). PATCHNOTES 0.11.10 ergänzt.
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel). Review (code-reviewer): kein CRITICAL/HIGH. Manueller Testfall (PC aus → „Aufräumen: Alles“ → Ordner wechseln → Sync mit Ersetzungen → nächster Sync) bleibt beim Inhaber. Doku an Documentation: SYNC-ENGINE.md Reihenfolge eines Ordner-Laufs (bereits in -033 angekündigt).
+- Abgeschlossen am: 2026-11-08
+
 ### SYNC-20261108-030 – Leere Ordner aufräumen: Absicherung gegen Löschen von Inhalt, Zähler-Nebenläufigkeit (aus QA -029)
 - Erstellt am: 2026-11-08
 - Absender: QA
@@ -107,16 +157,17 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: MEDIUM
-- Status: OPEN
+- Status: COMPLETED (Umsetzung 0.11.10; QA offen)
 - Übergabegrund: Entscheid des Inhabers (Anhang A Punkt 17): umsetzen.
 - Aufgabenbeschreibung: Verlässt man die Ansicht, während Aufräumen, Endgültig löschen oder Speicher freigeben (Ordner) auf den laufenden Sync wartet, soll der Eingriff vorgemerkt und danach ausgeführt werden, statt zu unterbleiben. Datenverlust beachten: vorgemerkter Eingriff darf nicht mit veralteten Daten laufen (Regeln neu prüfen, geschützte Versionen, Abbruch/Neustart der App). Ähnlich vorhandener Vormerkung `PurgeStore`.
 - Hinweis Development (2026-11-08): Wartet auf Entscheidung Architecture, siehe SYNC-20261108-014 (`inbox/architecture.md`).
+- Hinweis Architecture (2026-11-08): Entscheidung liegt vor, vom Inhaber freigegeben – verbindliche Vorgabe in -014 („Ergebnis und Rückmeldung“, Punkte a–f). Kern: **keine** dauerhafte Vormerkung wie `PurgeStore`, sondern prozessweiter Eingriff, der die Ansicht überlebt; Aufräumen führt immer nur den bestätigten Stand aus (behebt bestehende Lücke F3). Keine DB-Änderung. Kritische Löschlogik → nach Umsetzung Review und QA.
 - Technischer Kontext: DEC-144 (Alternative „vormerken“ wurde damals nicht gewählt), DEC-147, Risiko D29.
 - Betroffene Dateien: `mirror/MirrorLock.kt`, `TrashCleaner`, `FolderFreer`, `ui/TrashScreen.kt`, `ui/FreeSpaceScreen.kt`
 - Erwartetes Ergebnis: Umsetzung, Tests, Doku-Hinweis. Review und QA empfohlen.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Version 0.11.10, nach Vorgabe -014 (a–f). Neu `mirror/PendingIntervention` (prozessweit, `SupervisorJob`, Zustände WAITING/RUNNING/DONE, nicht gespeichert; ein Eingriff pro Profil; `cancel` nur wartend; Ergebnis in der offenen Ansicht, sonst Benachrichtigung `Notifications.interventionDone`, Schalter „Hinweise“). Die bestehenden Funktionen erhalten `onStart` (nach Erwerb der `MirrorLock`): `TrashCleaner.deleteEntries`, `FolderFreer.verifyAndDelete`; `TrashCleaner.purge` ersetzt durch `purgeConfirmed`: liest unter der Sperre neu ein und führt nur den bestätigten Stand aus (`TrashPurge.planConfirmed`: gleiche Grösse, nicht vorgemerkt, Datumsordner nur ganz, wenn aktueller Inhalt vollständig bestätigt; behebt F3). PC beim Einlesen unbekannt: Regel wie bisher (`PurgeStore`); PC bekannt, aber weg: genau die bestätigten Pfade vormerken. Neu `LocalTree.deleteTrashDir`, `RestoreManager.remoteTrash` public, `ui/InterventionPanel` (Hinweis „Wird nach der laufenden Synchronisierung ausgeführt“ + „Abbrechen“), Anpassung `TrashScreen`/`FreeSpaceScreen`. Texte `intervention_*` EN/DE, alte Warte-Texte entfernt, `make-translations.ps1` ausgeführt. Neu `TrashPurgeConfirmedTest` (6 Tests). Keine DB-Änderung.
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel). Review (code-reviewer): kein CRITICAL/HIGH. Restrisiken: (1) MEDIUM, bewusst: Bei PC-Papierkorb unbekannt beim Einlesen gilt weiter die Regel (ungesehen, nur PC; wie bisher). (2) LOW: Reste `.s2pold`/`.s2ptmp` im Datumsordner werden mitgelöscht; vorgemerkte Einzeldateien werden ohne Grössenprüfung gelöscht (wie bisher). (3) LOW: Ergebnis bleibt bei Schliessen der Ansicht genau zwischen Ende und Abmeldung ohne Benachrichtigung stehen. (4) Prozessende während des Wartens: Eingriff entfällt still, nichts gelöscht (D14). Keine Tests für `PendingIntervention`/`purgeConfirmed` mit I/O (nur reine Planung). Gerätetest beim Inhaber: Papierkorb-Aufräumen während Sync, Ansicht verlassen, „Abbrechen“. Empfehlung: unabhängige QA (kritische Löschlogik) und Doku (-033: DECISIONS DEC-144 Umsetzung, SYNC-ENGINE, ARCHITECTURE, TESTING, Risiko D29).
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-011 – Prüfung: Teil-Prüfsumme in App und Import-Skript identisch
 - Erstellt am: 2026-11-08
@@ -157,6 +208,7 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Übergabegrund: Umsetzung vom Inhaber freigegeben (Anhang A Punkt 19).
 - Aufgabenbeschreibung: Verlaufseinträge nicht als fertige Texte, sondern mit Kennungen speichern, sodass sie in der aktiven Sprache angezeigt werden. Löst auch das Risiko D35 (gemischtsprachiger Verlauf, `isIdle` über Merkmal-Wörter). Bei Schema- oder Sicherungsformat-Änderung: Migration, `MigrationTest`, Rückwärtskompatibilität der Sicherung prüfen; bei Bedarf vorher Rückfrage an Architecture.
 - Hinweis Development (2026-11-08): Wartet auf Entscheidung Architecture, siehe SYNC-20261108-015 (`inbox/architecture.md`).
+- Hinweis Architecture (2026-11-08): Entscheidung liegt vor, vom Inhaber freigegeben – verbindliche Vorgabe in -015 („Ergebnis und Rückmeldung“, Punkte a–e). Kern: neue nullable Code-Spalten (DB-Version 7, `MIGRATION_6_7`, `MigrationTest`), gespeicherter Text bleibt als Rückfall, Sicherung unberührt, Umsetzung in zwei Stufen.
 - Technischer Kontext: DEC-159, `RunSummary`, `isIdle`.
 - Betroffene Dateien: `sync/RunSummary.kt`, `data/*`, `ui/LogScreen.kt`, `backup/*`
 - Erwartetes Ergebnis: Umsetzung, Tests, Hinweis auf nötige Doku-Änderungen (DATA-MODEL, DECISIONS).

@@ -23,8 +23,6 @@
     </plurals>
     <string name="free_unreachable_hosts">PC not reachable: %1$s.</string>
     <string name="free_check_failed">Check failed: %1$s</string>
-    <string name="free_waiting_for_sync">Waiting until the running sync is finished… Please keep this view open.</string>
-    <string name="free_checking_deleting">Checking on the PC and deleting…</string>
     <plurals name="free_deleted">
         <item quantity="one">%1$s file deleted, %2$s freed.</item>
         <item quantity="other">%1$s files deleted, %2$s freed.</item>
@@ -38,7 +36,6 @@
         <item quantity="other">%1$s files stay (not found on the PC, different or changed in the meantime).</item>
     </plurals>
     <string name="free_pc_lost">The PC was not (or no longer) reachable.</string>
-    <string name="free_failed">Failed: %1$s</string>
     <string name="free_intro_photos">Moves photos and videos that are verifiably backed up on the PC to the gallery trash. Before that LeoSync checks every file on the PC. Whatever is missing there or different stays.</string>
     <string name="free_verify_off_hint">The check after upload is set to “Off” for this profile. Unchecked photos are not offered here. Set at least “Low” in the profile; newly backed-up photos appear from the next sync on.</string>
     <string name="free_intro_folder">Deletes files on the mobile that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check.</string>

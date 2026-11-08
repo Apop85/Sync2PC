@@ -191,11 +191,13 @@ class MirrorEngine(
             }
             // Vorgemerkte Wiederherstellungen (0.5.0) vor dem Einlesen: Der Abgleich sieht danach den neuen Stand
             // (nicht, solange nach einem Ordnerwechsel die Stichprobe aussteht – erst muss der Ordner bestätigt sein)
+            var purgesRan = false
             if (!dryRun && s != null && guards.pendingCheck(profile.id).isEmpty()) {
                 if (runRestores(s)) states = dao.mirrorStates(profile.id).associateBy { it.relPath }
                 // Danach vorgemerktes Leeren des PC-Papierkorbs (0.6.0) – nach dem Wiederherstellen, damit nichts
                 // gelöscht wird, was gerade zurückgeholt werden soll
                 runPendingPurges(s)
+                purgesRan = true
             }
 
             // recover: liegengebliebene ".s2pold" aufräumen bzw. zurückholen (nicht in der Simulation)
@@ -213,7 +215,15 @@ class MirrorEngine(
             if (pending.isNotEmpty() && s != null) {
                 if (states.isNotEmpty() && !folderMatches(pending, states.values.toList()))
                     return block(Guard(profile.id, GuardKind.CHECK_FOLDER))
-                if (!dryRun) guards.setPendingCheck(profile.id, emptySet())
+                if (!dryRun) {
+                    guards.setPendingCheck(profile.id, emptySet())
+                    // 0.11.10 (-034): Vorgemerktes PC-Leeren jetzt ausführen, noch vor Planung und Übertragung. Sonst
+                    // legt dieser Lauf ersetzte Versionen in den PC-Papierkorb, und der nächste Lauf würde sie bei
+                    // einer Regel "Alles"/"Tage" mit heutigem Datum ungesehen mitlöschen. Bewusst nur das Leeren,
+                    // keine Wiederherstellungen (local/remote sind schon eingelesen; Papierkorb-Ordner sind davon
+                    // ausgeschlossen, das Leeren ändert die Listen also nicht). Netzfehler: Vormerkung bleibt, Abbruch.
+                    if (!purgesRan) { runPendingPurges(s); purgesRan = true }
+                }
             }
             // "Nicht löschen" bei der Schutzbremse: dieser Lauf übernimmt keine Löschungen
             if (!dryRun && guards.takeKeepFiles(profile.id)) {

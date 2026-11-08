@@ -16,7 +16,7 @@
 > **Session 4** („Lokalisierung“, 0.8.0, Entscheidungen vom 2026-11-03): DEC-155 bis DEC-166; dazu Aktualisierungen an DEC-001, DEC-018, DEC-019, DEC-036, DEC-037, DEC-099 und DEC-125.
 > - Session 4: 0.8.0 umgesetzt. Der erste Build scheiterte nur an der Kompilierung der Unit-Tests (Kommentar-Falle in `TestTexts.kt`), behoben ohne neue Version (DEC-120). Ein erfolgreicher Build und ein Gerätetest sind im Verlauf **nicht** belegt.
 >
-> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-200; dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
+> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-202 (DEC-201 und DEC-202 am 2026-11-08, Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 >
 > **Hinweis:** Die frühere Notiz „Änderungen aus späteren Sessions sind nicht erfasst“ (Statistik-Symbol 0.9.0, Begriffe „Mobile/Share“, Roadmap ab 0.10.0) ist mit Session 5 erledigt.
@@ -25,12 +25,12 @@
 
 | Status | Anzahl |
 |---|---|
-| Accepted | 13 |
+| Accepted | 15 |
 | Implemented | 151 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
-| **Total** | **200** |
+| **Total** | **202** |
 
 ---
 
@@ -41,11 +41,11 @@ Die Entscheidungen sind nach Themen gruppiert (innerhalb eines Themas nach DEC-I
 ### Themen
 
 1. [Architektur und Projektstruktur](#1-architektur-und-projektstruktur) (7) – Plattform, Profilmodell, Namen, Lizenz und Codeaufbau.
-2. [Synchronisationsengine und 3-Wege-Abgleich](#2-synchronisationsengine-und-3-wege-abgleich) (6) – Richtung, Abgleichsregeln, Filter, Start neuer Profile, Sperre zwischen Sync und Eingriffen.
+2. [Synchronisationsengine und 3-Wege-Abgleich](#2-synchronisationsengine-und-3-wege-abgleich) (7) – Richtung, Abgleichsregeln, Filter, Start neuer Profile, Sperre und Eingriffe beim laufenden Sync.
 3. [Konflikterkennung und Konfliktbehandlung](#3-konflikterkennung-und-konfliktbehandlung) (3) – Rückfragen bei Konflikten, Änderungen während des Laufs, Konflikt-Zusatz.
 4. [Dateiübertragung und SMB](#4-dateiübertragung-und-smb) (8) – SMB-Zugriff, Upload/Download, Fortsetzen, Zeitstempel, Verbindungsabbrüche, Zielauswahl auf dem PC.
 5. [Foto-Sortierung (Bildordner)](#5-foto-sortierung-bildordner) (8) – Zielstruktur Jahr/Monat/Land, Datums- und Ländererkennung, Live-Fotos, Mindestalter, PC-Import-Skript.
-6. [Datenbank und Datenmodell](#6-datenbank-und-datenmodell) (6) – Room, Migrationen, DB-Versionen, gespeicherte Namen und Texte.
+6. [Datenbank und Datenmodell](#6-datenbank-und-datenmodell) (7) – Room, Migrationen, DB-Versionen, gespeicherte Namen und Texte.
 7. [Datenintegrität und Duplikaterkennung](#7-datenintegrität-und-duplikaterkennung) (11) – Prüfsummen, Prüfstufen, Duplikatsuche, Namenskonflikte, sichere Vergleiche, doppelte Profile.
 8. [Lösch- und Wiederherstellungslogik](#8-lösch--und-wiederherstellungslogik) (16) – Löschen nach dem Sync, Papierkorb, Versionsschutz, Wiederherstellen, Schutzbremse, Speicher freigeben.
 9. [Android und Hintergrundprozesse](#9-android-und-hintergrundprozesse) (22) – WorkManager, Auslöser, WLAN-Erkennung, Pause, Vordergrunddienst, Akku, Berechtigungen, Zielversion.
@@ -79,6 +79,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-103: Neue Profile starten erst nach dem ersten manuellen Sync
 - DEC-135: Importierte Ordner-Profile warten auf den ersten Start und eine Stichprobe
 - DEC-144: Sperre zwischen Ordner-Sync und Eingriffen von Hand
+- DEC-201: Eingriffe beim laufenden Ordner-Sync prozessweit vormerken
 
 **3. Konflikterkennung und Konfliktbehandlung**
 
@@ -113,6 +114,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-003: Room-Datenbank als zentraler Zustandsspeicher
 - DEC-084: Migrationsregeln – nie destruktiv, neue Spalten mit DEFAULT
 - DEC-159: Verlaufstexte in der aktiven Sprache speichern
+- DEC-202: Verlauf mit Kennungen (Code-Spalten mit Rückfalltext)
 - DEC-162: Ordnername aus dem Länderkürzel, Cache-Name nur als Kennzeichen
 - DEC-172: DB-Version 6 – Prüfstufe und bereinigte Profilnamen
 - DEC-173: Profilnamen ohne Leerzeichen am Rand
@@ -513,6 +515,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-198 | Rejected | 16. Verworfene und überholte Lösungsansätze |
 | DEC-199 | Rejected | 16. Verworfene und überholte Lösungsansätze |
 | DEC-200 | Proposed | 13. Sicherheit, Datenschutz und Diagnose |
+| DEC-201 | Accepted | 2. Synchronisationsengine und 3-Wege-Abgleich |
+| DEC-202 | Accepted | 6. Datenbank und Datenmodell |
 
 ---
 
@@ -676,9 +680,26 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Ein prozessweiter Mutex (`MirrorLock`) wird von jedem echten Ordner-Sync gehalten. Aufräumen, Endgültig löschen und Speicher freigeben (Ordner) warten darauf; die Ansicht zeigt „Wartet, bis der laufende Sync fertig ist…“. Die Simulation sperrt nicht.
 - **Begründung:** Logikprüfung: „Alles leeren“ während eines Syncs hätte eine gerade ersetzte Version sofort mitgelöscht.
 - **Alternativen:** Eingriff vormerken und vom Sync ausführen lassen (genannt, nicht gewählt).
-- **Konsequenzen:** Verlässt man die Ansicht während des Wartens, unterbleibt der Eingriff.
+- **Konsequenzen:** Verlässt man die Ansicht während des Wartens, unterbleibt der Eingriff. *(Wird durch DEC-201 abgelöst, sobald umgesetzt: der Eingriff wird dann prozessweit vorgemerkt und läuft nach dem Sync; bis dahin gilt der Satz.)*
 - **Betroffene Komponenten:** `mirror/MirrorLock.kt`, `MirrorEngine.run`, `TrashCleaner`, `FolderFreer`, `ui/TrashScreen.kt`, `ui/FreeSpaceScreen.kt`
-- **Abhängigkeiten:** DEC-140, DEC-147
+- **Abhängigkeiten:** DEC-140, DEC-147, DEC-201
+
+### DEC-201: Eingriffe beim laufenden Ordner-Sync prozessweit vormerken, nur bestätigter Stand wird gelöscht
+- **Status:** Accepted *(vom Inhaber am 2026-11-08 freigegeben; bis zur Umsetzung durch Development -012 nicht implementiert)*
+- **Datum:** 2026-11-08
+- **Kategorie:** Architektur
+- **Entscheidung:** Aufräumen, Endgültig löschen und Speicher freigeben (Ordner) werden bei laufendem Sync nicht dauerhaft vorgemerkt, sondern von einem prozessweiten Objekt gehalten (Muster `PendingProfileDelete`, `SupervisorJob`), das die bestehenden Funktionen startet; Verlassen der Ansicht bricht nicht ab.
+  - (a) Keine Prefs, keine Datenbank. Eine verlorene Vormerkung bedeutet: nichts wird gelöscht (sichere Richtung).
+  - (b) Ausgeführt wird immer nur der bestätigte Stand: Aufräumen übergibt die betroffenen Einträge (Seite, Pfad, Grösse). Ein Datumsordner wird nur ganz gelöscht, wenn sein aktueller Inhalt vollständig darin enthalten ist, sonst nur die bestätigten Dateien. Übersprungen werden Einträge mit geänderter Grösse oder inzwischen zum Wiederherstellen vorgemerkte (Prüfung bei der Ausführung). Ist der PC beim Einlesen unbekannt, gilt die Regel in `PurgeStore` wie bisher. Endgültig löschen und Speicher freigeben bleiben unverändert; ihre Auswahlkriterien werden nicht neu ausgewertet.
+  - (c) Bei Neustart oder Prozessende entfällt die Vormerkung, nichts wird gelöscht. Das Ergebnis erscheint als Benachrichtigung (bestehender Hinweis-Schalter) bzw. als Meldung in der offenen Ansicht.
+  - (d) Der vorgemerkte Eingriff führt sich selbst aus, sobald er `MirrorLock` erhält; keine Kopplung an `SyncWorker`/`MirrorEngine`, kein eigener Worker (10-Minuten-Grenze beim Warten, Sperre gilt nur im Prozess).
+  - (e) Anzeige „Wird nach dem laufenden Sync ausgeführt“ mit „Abbrechen“ (nur solange wartend) in Papierkorb und Speicher freigeben. Solange ein Eingriff für ein Profil ansteht, sind weitere Lösch-Eingriffe für dasselbe Profil gesperrt. Texte DE/EN.
+  - (f) Bricht das WLAN ab, gibt der Lauf die Sperre frei und der Eingriff läuft; PC-Teile gehen in `PurgeStore`, Speicher freigeben meldet „PC nicht erreichbar“. Keine Verklemmung (der Eingriff hält nur `MirrorLock`). Wiederherstellen hat Vorrang vor wartendem Löschen.
+- **Begründung:** Befund F1: Die Eingriffe laufen im `rememberCoroutineScope` der Ansicht (`TrashScreen`, `FreeSpaceScreen`) und werden beim Verlassen abgebrochen. Befund F3 (siehe D47): Aufräumen löscht bei „Alles“ und „Tage“ mit heutigem Tag mehr als angezeigt. Befund F4: „Endgültig löschen“ (konkrete Pfade) und `FolderFreer.verifyAndDelete` (volle Neuprüfung) sind robust.
+- **Alternativen:** Dauerhaft in Prefs oder Datenbank vormerken (dauerhafte Löschabsichten, Haken im Worker, Migration); eigener Worker; Ausführung in `MirrorEngine` am Laufende (alle verworfen).
+- **Konsequenzen:** Löst die Konsequenz „Verlässt man die Ansicht … unterbleibt der Eingriff“ aus DEC-144 ab, sobald umgesetzt. Restrisiken: Beendet ein Hersteller-Killer den Prozess während des Wartens, unterbleibt der Eingriff still (D14); die Sperre bleibt global (D29). Kritische Änderung: Review und QA nach der Umsetzung.
+- **Betroffene Komponenten:** `mirror/MirrorLock.kt`, `TrashCleaner`, `TrashPurge`, `PurgeStore`, `FolderFreer`, `ui/TrashScreen.kt`, `ui/FreeSpaceScreen.kt`
+- **Abhängigkeiten:** DEC-140, DEC-144, DEC-147, DEC-196 (Muster `PendingProfileDelete`)
 
 ---
 
@@ -982,10 +1003,28 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
   - Log-Einträge, Lauf-Kurztexte und Auslöser werden als fertiger Text in der Sprache gespeichert, die beim Lauf aktiv war. Ältere Einträge bleiben deutsch.
   - `RunGrouping.isIdle` erkennt die Merkmale („Papierkorb“/„trash“, „bereits vorhanden“/„already present“ …) in beiden Sprachen.
 - **Begründung:** Rückfrage 1: „erstmal einfache variante, für später vormerken“.
-- **Alternativen:** Kennungen speichern und erst beim Anzeigen übersetzen (vorgemerkt, siehe A. Offene Entscheidungen).
-- **Konsequenzen:** Nach einem Sprachwechsel ist der Verlauf gemischtsprachig. Periodische Aufträge behalten den Auslöser-Text vom Zeitpunkt der Einplanung.
+- **Alternativen:** Kennungen speichern und erst beim Anzeigen übersetzen (vorgemerkt, siehe A. Offene Entscheidungen; Lösungsansatz in DEC-202 festgelegt).
+- **Konsequenzen:** Nach einem Sprachwechsel ist der Verlauf gemischtsprachig. Periodische Aufträge behalten den Auslöser-Text vom Zeitpunkt der Einplanung. *(DEC-202 löst dies ab, sobald umgesetzt.)*
 - **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `SyncEngine`, `MirrorEngine`, `SyncScheduler`, `data/SyncDao.closeDanglingRuns`
-- **Abhängigkeiten:** DEC-099, DEC-100
+- **Abhängigkeiten:** DEC-099, DEC-100, DEC-202
+
+### DEC-202: Verlauf mit Kennungen – Code-Spalten mit Rückfalltext
+- **Status:** Accepted *(vom Inhaber am 2026-11-08 freigegeben; bis zur Umsetzung durch Development -009 nicht implementiert)*
+- **Datum:** 2026-11-08
+- **Kategorie:** Datenbank
+- **Entscheidung:**
+  - (a) Neue nullable Spalten `log_entries.code`, `sync_runs.messageCode`, `sync_runs.triggerCode` (TEXT); DB-Version 7, `MIGRATION_6_7` nur mit `ADD COLUMN` (DEC-084), Schema-Export, `MigrationTest` 6→7. Der Code ist ein kleiner JSON-Baum (org.json): Ressourcen-Name (nie R-ID), optional Pluralzahl, Argumente (Text, Zahl oder verschachtelter Code), Liste für Verkettung. Dateinamen und Fehlertexte bleiben wörtliche Argumente. `message`/`trigger` bleiben als Rückfalltext in der Sprache beim Schreiben. Ein zentraler Renderer (reiner Teil unit-getestet) zeigt den Code an; unbekannter Schlüssel sowie Parse- oder Formatfehler führen zum Rückfalltext.
+  - (b) Alte Einträge (Code NULL) zeigen den gespeicherten Text, ohne Umrechnung; sie verschwinden mit der Aufbewahrung (Logs 30, Läufe 90 Tage).
+  - (c) `RunGrouping.isIdle` prüft Schlüssel im Code (`run_trashed`, `run_found`, `run_conflicts`, `run_space_full`; Konstante neben `RunSummary`, Unit-Test); die Merkmal-Wörter bleiben nur Rückfall für Einträge ohne Code. `RunSummary` liefert einen strukturierten Wert statt String.
+  - (d) Die Sicherung bleibt unberührt: `backup/*` enthält weder Läufe noch Logs, Formatversion bleibt 1. Regel für später: Code-Felder optional, Leser ignorieren unbekannte Felder.
+  - (e) Verlauf-Export (`Diagnostics.logExport`, Teilen-Menü) und alle Anzeigen (`LogScreen`, `HomeParts`, `PreviewScreen`, Fehlermeldung in `SyncWorker`) rendern in der aktiven Sprache. Diagnose (`build`, `compress`) bleibt beim gespeicherten Text (DEC-160).
+  - Auslöser: Die Kennung kommt zusätzlich in die Auftragsdaten (`SyncScheduler`); fehlt sie (bereits eingeplante Aufträge), gilt der Text.
+  - Umsetzung in zwei Stufen: 1. Lauf-Kurztext und Auslöser, 2. Log-Zeilen. `TestTexts` muss Namen auflösen können (D33).
+- **Begründung:** Beseitigt den gemischtsprachigen Verlauf (DEC-159, D35) und die Abhängigkeit von Merkmal-Wörtern.
+- **Alternativen:** Kodierung in `message` (jeder vergessene Leser zeigt JSON, Rückfalltext und Diagnose-Regex gehen verloren); nur Schlüssel ohne Rückfall (umbenannte Texte ergäben leere Einträge) – beide verworfen.
+- **Konsequenzen:** Nebenbefund: `Diagnostics.compress` (Regex `ALREADY_COUNT`/`ALREADY_FOLDER`) erkennt „bereits vorhanden“ nur deutsch, in Englisch ist die Zählung in der Diagnose falsch; lösbar in Stufe 2 über den Schlüssel `eng_already_in`. Restrisiken: Ein vergessener Leser zeigt nur den Rückfalltext (harmlos); Platzhalter DE/EN müssen gleich bleiben (`StringsParityTest`).
+- **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `data/Entities.kt` (`SyncRun`, `LogEntry`), `AppDatabase`, `SyncScheduler`, `ui/LogScreen.kt`, `diag/Diagnostics.kt`
+- **Abhängigkeiten:** DEC-084, DEC-159, DEC-160
 
 ### DEC-162: Ordnername aus dem Länderkürzel, Cache-Name nur als Kennzeichen
 - **Status:** Implemented
@@ -1283,7 +1322,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Regeln: älter als X Tage (Standard 7), einzelne Tage oder alles; Seiten: beide (Standard), nur Handy, nur PC. Rückfrage mit Anzahl und Grösse. Das Handy wird sofort geleert; der PC sofort, wenn erreichbar, sonst vorgemerkt (`PurgeStore`, Prefs „purge“) und im nächsten Sync nach den Wiederherstellungen erledigt. Markierte Einträge lassen sich einzeln endgültig löschen. Nur Ordner-Profile; Fotos verweisen auf den Galerie-Papierkorb.
 - **Begründung:** Neues Tool laut Inhaber; Antworten „alles genannte, lass den User auswählen“.
 - **Alternativen:** —
-- **Konsequenzen:** Keine DB-Änderung. Die Kachel zeigt die zuletzt gemessene Grösse.
+- **Konsequenzen:** Keine DB-Änderung. Die Kachel zeigt die zuletzt gemessene Grösse. Bekannte Lücke F3 bis zur Umsetzung von DEC-201: Aufräumen zeigt die Anzahl aus dem eingelesenen Stand, führt aber die Regel aus (D47).
 - **Betroffene Komponenten:** `mirror/TrashPurge.kt`, `mirror/TrashCleaner.kt`, `LocalTree.purgeTrash/deleteTrashFile`, `MirrorEngine.runPendingPurges`, `TrashPurgeTest`
 - **Abhängigkeiten:** DEC-083, DEC-141, DEC-145
 
@@ -3039,12 +3078,12 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 14. **WLAN-Name Pflicht oder optional** (Frage des Inhabers für VPN-Nutzer): nur als Option „mobile Daten/VPN“ vorgemerkt (DEC-126); die Antwort im Verlauf ist nicht eindeutig belegt. Inhaber 2026-11-08: Schalter für automatische Synchronisierung auch ausserhalb des WLAN; umgesetzt in 0.11.5/0.11.6 (SYNC-20261108-003, siehe DEC-126). Offen: Wiederholungen über Mobilfunk begrenzen (SYNC-20261108-019).
 15. **Leere Ordner nach „Speicher freigeben“** (DEC-147): bis 0.11.7 blieben sie stehen. Inhaber 2026-11-08: aufräumen, keine leeren Ordner zurücklassen, Ausnahme `DCIM\Camera` (SYNC-20261108-004). **Umgesetzt in 0.11.8.**
 16. **Fehlgeschlagene Wiederherstellungen** (DEC-146): bis 0.11.7 bei jedem Sync erneut versucht. Inhaber 2026-11-08: 5 Versuche, danach Meldung an den Benutzer (SYNC-20261108-005). **Umgesetzt in 0.11.8.**
-17. **Warten auf den laufenden Sync** (DEC-144): Verlässt man die Ansicht, unterbleibt der Eingriff; ob er stattdessen vorgemerkt werden soll, ist offen. Inhaber 2026-11-08: Eingriff vormerken und später ausführen, Umsetzung freigegeben (SYNC-20261108-012).
+17. **Warten auf den laufenden Sync** (DEC-144): Verlässt man die Ansicht, unterbleibt der Eingriff; ob er stattdessen vorgemerkt werden soll, ist offen. Inhaber 2026-11-08: Eingriff vormerken und später ausführen, Umsetzung freigegeben (SYNC-20261108-012); Vorgabe als DEC-201 festgehalten.
 18. **Umsetzung von „Problem melden“ und Datenschutzerklärung** (DEC-121, DEC-123): Inhaber 2026-11-08: „Problem melden“ umgesetzt in 0.11.5 (Kontakt `leotools@protonmail.com`, SYNC-20261108-008, siehe DEC-121); Datenschutzerklärung ist umgesetzt (`PRIVACY_GER.md`, `PRIVACY_EN.md`).
 
 *Session 4:*
 
-19. **Verlauf mit Kennungen statt fertiger Texte** (DEC-159): vom Inhaber „für später vormerken“. Inhaber 2026-11-08: Umsetzung freigegeben (SYNC-20261108-009), Version offen.
+19. **Verlauf mit Kennungen statt fertiger Texte** (DEC-159): vom Inhaber „für später vormerken“. Inhaber 2026-11-08: Umsetzung freigegeben (SYNC-20261108-009), Version offen; Vorgabe als DEC-202 festgehalten.
 20. **Englische Übersetzungen prüfen** (DEC-166): Tabelle liegt vor; ob und welche Korrekturen der Inhaber meldet, ist offen.
 21. **Sprachwechsel auf Android 10–12** (DEC-158): eigener Weg über `createConfigurationContext`; auf dem Gerät nicht getestet.
 
@@ -3155,7 +3194,7 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
 26. **„Speicher freigeben“ bei Ordnern löscht endgültig:** Die Sicherheit hängt davon ab, dass der Sync bei Handy → PC ohne „Löschungen übernehmen“ fehlende Handy-Dateien nie auf den PC überträgt. Jede Änderung an `MirrorEngine.plan` für diesen Fall muss das berücksichtigen (DEC-147). Seit 0.11.8 werden danach auch leere Elternordner entfernt (ausser Profil-Wurzel, Papierkorb, `DCIM/Camera`), Teilentschärfung von D26.
 27. **Wiederherstellen kann unvollständig zurückrollen:** Scheitert der Schritt nach einem erfolgreichen Upload bzw. Download, bleibt die aktuelle Version im Papierkorb (Hinweis im Verlauf). Ein Download, der wegen einer inzwischen entstandenen Handy-Datei übersprungen wird, gilt als erfolgreich wiederhergestellt.
 28. **Namensschema im Papierkorb:** Eine echte Datei, die zufällig `name (HH-mm-ss).ext` heisst, wird als Version von `name.ext` angezeigt.
-29. **`MirrorLock` und lange Läufe:** Eingriffe warten bis zum Ende eines grossen Syncs; die Sperre ist nur prozessweit und schützt nicht vor anderen Apps.
+29. **`MirrorLock` und lange Läufe:** Eingriffe warten bis zum Ende eines grossen Syncs; die Sperre ist nur prozessweit und schützt nicht vor anderen Apps. Bleibt auch mit DEC-201 bestehen (die Sperre bleibt global).
 30. **Agent-Fallen:** Vorhandene Dateien beim Anlegen überschrieben (`AppIcons.kt`, Build-Fehler 0.6.1); `/**` in KDoc erneut in 0.7.0 (`FreeRules.kt`).
 31. **Hochformat-Sperre:** Ab targetSdk 36 auf Tablets und Faltgeräten wirkungslos (DEC-152).
 
@@ -3164,7 +3203,7 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
 32. **Texte vor `App.onCreate`:** `str()` wirft, solange `Texts.init` nicht gelaufen ist (z. B. in ContentProvidern oder frühen Initialisierungen).
 33. **Reflection-Rückfall in Tests:** `Texts` lädt `com.sync2pc.app.TestTexts` per Namen; wird die Klasse umbenannt oder verschoben, scheitern alle Tests mit Texten.
 34. **Formatfehler zur Laufzeit:** Ein `%` ohne `%%` in Texten mit Platzhaltern oder abweichende Platzhalter zwischen den Sprachen stürzen erst beim Anzeigen ab; nur `StringsParityTest` fängt das ab.
-35. **Gemischtsprachiger Verlauf:** Gespeicherte Texte lassen sich nachträglich nicht übersetzen; `isIdle` hängt an Merkmal-Wörtern beider Sprachen. Ändert sich die Formulierung in `RunSummary`, müssen die Merkmale nachgezogen werden.
+35. **Gemischtsprachiger Verlauf:** Gespeicherte Texte lassen sich nachträglich nicht übersetzen; `isIdle` hängt an Merkmal-Wörtern beider Sprachen. Ändert sich die Formulierung in `RunSummary`, müssen die Merkmale nachgezogen werden. Mit DEC-202 (nach Umsetzung) entfällt das Risiko für neue Einträge; alte Einträge ohne Code bleiben bis zum Ablauf der Aufbewahrung betroffen.
 36. **Kommentar-Falle zum dritten Mal:** `values-de/*.xml` in einem KDoc (`TestTexts.kt`) brach den Test-Build (0.8.0).
 37. **Erkennung „erzeugter“ Ordnernamen:** Mit mehr App-Sprachen gelten mehr Namen als Standardordner; ein selbst gewählter Name in einer App-Sprache löst dann keine Rückfrage mehr aus (DEC-161).
 
@@ -3179,3 +3218,7 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
 44. **Vorgemerkte Profillöschung nur im Speicher** (DEC-196): Prozess-Ende während der Frist lässt das Profil bestehen (gewollt); ein zweites Löschen während der Frist löscht das erste sofort.
 45. **Android 16+** (DEC-183): Hochformat-Sperre auf Tablets wirkungslos, Querformat ungetestet; strengere Kontingente für Hintergrundaufträge.
 46. **Agent-Fallen beim Bauen/Testen:** PowerShell-`Set-Location` gilt nicht für `cmd /c`; Gradle-Ausgabe in eine Pipe lässt den Aufruf hängen; die Sandbox blockiert Befehle, deren Text wie ein geschützter Pfad aussieht; PowerShell-Hashtables sind bei Schlüsseln nicht gross-/kleinschreibungssensitiv; gestaffelte Textersetzungen können bereits ersetzte Stellen erneut treffen („Synchronisierunghronisierung“).
+
+*Nachtrag 2026-11-08 (Architecture -014):*
+
+47. **Aufräumen löscht mehr als angezeigt (Befund F3, bis zur Umsetzung von Development -012):** Die Papierkorb-Ansicht zeigt Anzahl und Grösse aus dem eingelesenen Stand (`TrashScreen`), führt aber die Regel aus. Bei „Alles“ und „Tage“ mit heutigem Tag werden Versionen mitgelöscht, die ein Sync inzwischen in den Papierkorb gelegt hat (nach dem Warten auf `MirrorLock` oder wenn zwischen Einlesen und Bestätigen ein Sync lief). „Älter als“ ist sicher. Behebung: DEC-201 (b), nur der bestätigte Stand wird gelöscht. Datenverlustrisiko, bis umgesetzt.
