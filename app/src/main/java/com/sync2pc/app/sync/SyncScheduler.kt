@@ -77,7 +77,8 @@ object SyncScheduler {
 
     private fun autoConstraints(context: Context): Constraints =
         Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
+            // 0.11.5 (DEC-126): mit dem Schalter "auch mobile Daten/VPN" genügt irgendeine Verbindung
+            .setRequiredNetworkType(if (GlobalSettings(context).syncOffWifi) NetworkType.CONNECTED else NetworkType.UNMETERED)
             .setRequiresCharging(GlobalSettings(context).onlyWhileCharging)
             .build()
 

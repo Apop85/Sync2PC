@@ -141,6 +141,7 @@ private fun LazyListScope.transferPage() {
         var autoWifi by remember { mutableStateOf(s.autoSyncOnWifi) }
         var onNew by remember { mutableStateOf(s.syncOnNewMedia) }
         var charging by remember { mutableStateOf(s.onlyWhileCharging) }
+        var offWifi by remember { mutableStateOf(s.syncOffWifi) }
         var minAge by remember { mutableStateOf(s.minFileAgeMinutes.toString()) }
         fun apply() = SyncScheduler.setupAll(ctx)
         SectionCard(str(R.string.settings_auto)) {
@@ -152,6 +153,13 @@ private fun LazyListScope.transferPage() {
             }
             SwitchRow(str(R.string.settings_auto_charging), charging, subtitle = str(R.string.settings_auto_charging_sub)) {
                 charging = it; s.onlyWhileCharging = it; apply()
+            }
+            SwitchRow(str(R.string.settings_auto_offwifi), offWifi, subtitle = str(R.string.settings_auto_offwifi_sub)) {
+                offWifi = it; s.syncOffWifi = it; apply()
+                // Bereits geplante Aufträge tragen die alte Netzwerk-Bedingung -> neu planen
+                SyncScheduler.scheduleSafetyNet(ctx, restart = true)
+                // Wartezeit "PC nicht erreichbar" gehört zur alten Netzwerkregel -> verwerfen, Prüfung beim nächsten Auslöser
+                SyncScheduler.cancelShareRetry(ctx)
             }
             OutlinedTextField(
                 minAge,
@@ -295,6 +303,22 @@ private fun LazyListScope.diagnosePage() {
                     }
                 }
             }) { Text(str(if (diagBusy) R.string.settings_diag_busy else R.string.settings_diag_copy)) }
+            // 0.11.5 (DEC-121): Mail-App mit Adresse, Betreff und Diagnose als Anhang; der Benutzer sendet selbst
+            Hint(str(R.string.settings_report_hint, Diagnostics.SUPPORT_EMAIL))
+            OutlinedButton(enabled = !diagBusy, onClick = {
+                diagBusy = true
+                scope.launch {
+                    try {
+                        if (!Diagnostics.reportProblem(ctx)) {
+                            android.widget.Toast.makeText(ctx, str(R.string.settings_report_no_mail, Diagnostics.SUPPORT_EMAIL), android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(ctx, str(R.string.settings_diag_failed, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+                    } finally {
+                        diagBusy = false
+                    }
+                }
+            }) { Text(str(R.string.settings_report)) }
         }
     }
     item { HintMore(str(R.string.settings_about, BuildConfig.VERSION_NAME)) }

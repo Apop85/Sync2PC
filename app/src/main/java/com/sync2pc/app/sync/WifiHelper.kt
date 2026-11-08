@@ -43,6 +43,28 @@ object WifiHelper {
         return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
+    /**
+     * Mobile Daten bzw. VPN über Mobilfunk (0.11.5, DEC-126): aktives Netz mit Internet, aber kein WLAN.
+     * Ein VPN über ein WLAN zählt als WLAN (dort gilt weiter die SSID-Regel).
+     */
+    fun isOnMobileOrVpn(context: Context): Boolean {
+        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            !caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
+    /**
+     * Darf jetzt automatisch synchronisiert werden? WLAN immer (SSID-Regel prüft der Aufrufer),
+     * mobile Daten/VPN nur mit dem Schalter [com.sync2pc.app.data.GlobalSettings.syncOffWifi].
+     */
+    fun onAllowedNetwork(context: Context): Boolean =
+        isOnWifi(context) || (com.sync2pc.app.data.GlobalSettings(context).syncOffWifi && isOnMobileOrVpn(context))
+
+    /** Nur mobile Daten/VPN, und der Schalter ist an: SSID-Prüfung entfällt */
+    fun offWifiSyncActive(context: Context): Boolean =
+        com.sync2pc.app.data.GlobalSettings(context).syncOffWifi && isOnMobileOrVpn(context)
+
     fun isLocationEnabled(context: Context): Boolean =
         context.getSystemService(LocationManager::class.java)?.isLocationEnabled == true
 

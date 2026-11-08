@@ -19,6 +19,11 @@ class GlobalSettings(context: Context) {
         set(v) = prefs.edit().putBoolean("syncOnNewMedia", v).apply()
 
     /** Automatische Syncs nur beim Laden (manueller Sync ignoriert das) */
+    /** 0.11.5 (DEC-126): automatisch auch über mobile Daten bzw. VPN synchronisieren (Standard: aus) */
+    var syncOffWifi: Boolean
+        get() = prefs.getBoolean("syncOffWifi", false)
+        set(v) = prefs.edit().putBoolean("syncOffWifi", v).apply()
+
     var onlyWhileCharging: Boolean
         get() = prefs.getBoolean("onlyWhileCharging", false)
         set(v) = prefs.edit().putBoolean("onlyWhileCharging", v).apply()
@@ -217,6 +222,7 @@ class GlobalSettings(context: Context) {
     fun exportable(): Map<String, Any> = linkedMapOf(
         "autoSyncOnWifi" to autoSyncOnWifi, "syncOnNewMedia" to syncOnNewMedia,
         "onlyWhileCharging" to onlyWhileCharging, "minFileAgeMinutes" to minFileAgeMinutes,
+        "syncOffWifi" to syncOffWifi,
         "homeCountryIso" to homeCountryIso, "parallelUploads" to parallelUploads,
         "autoUpdateCheck" to autoUpdateCheck,
         "notifySummary" to notifySummary, "notifyUpdate" to notifyUpdate, "notifyHints" to notifyHints,
@@ -231,6 +237,7 @@ class GlobalSettings(context: Context) {
         fun s(k: String, set: (String) -> Unit) { (map[k] as? String)?.let(set) }
         b("autoSyncOnWifi") { autoSyncOnWifi = it }; b("syncOnNewMedia") { syncOnNewMedia = it }
         b("onlyWhileCharging") { onlyWhileCharging = it }; i("minFileAgeMinutes") { minFileAgeMinutes = it }
+        b("syncOffWifi") { syncOffWifi = it }
         s("homeCountryIso") { homeCountryIso = it }; i("parallelUploads") { parallelUploads = it }
         // "updateRepo" wird seit 0.4.0 nicht mehr übernommen (fest eingebaut)
         b("autoUpdateCheck") { autoUpdateCheck = it }

@@ -150,7 +150,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
         }
         val currentSsid = ssid
-        val eligible = if (manual) all else all.filter { p -> currentSsid != null && p.ssids().contains(currentSsid) }
+        // 0.11.5 (DEC-126): über mobile Daten/VPN (Schalter an) gibt es keinen WLAN-Namen -> alle aktiven Profile
+        val eligible = if (manual || WifiHelper.offWifiSyncActive(ctx)) all else all.filter { p -> currentSsid != null && p.ssids().contains(currentSsid) }
         if (eligible.isEmpty()) {
             if (!manual && WifiHelper.isOnWifi(ctx)) settings.noteSkip(
                 if (currentSsid == null) str(R.string.skip_ssid_unreadable)
@@ -190,7 +191,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 var r = false
                 for ((n, w) in waits.withIndex()) {
                     if (w > 0) {
-                        if (!manual && !WifiHelper.isOnWifi(ctx)) break // WLAN wieder weg -> aufgeben
+                        if (!manual && !WifiHelper.onAllowedNetwork(ctx)) break // Netz wieder weg -> aufgeben
                         Notifications.updateProgress(
                             ctx, SyncProgress(p.name, str(R.string.wait_for_pc, host, n + 1, waits.size), 0, 0, 0, 0, null), null
                         )
@@ -239,7 +240,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val shouldContinue: () -> Boolean = {
                     if (manual) true else {
                         val s = WifiHelper.currentSsid(ctx)
-                        if (s != null) p.ssids().contains(s) else WifiHelper.isOnWifi(ctx)
+                        if (s != null) p.ssids().contains(s) else WifiHelper.onAllowedNetwork(ctx)
                     }
                 }
                 val onProgress: (SyncProgress) -> Unit = progress@{ pr ->
@@ -343,7 +344,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // Noch im Ziel-WLAN? Dann ist der PC weg -> in 30 Minuten erneut prüfen.
         // WLAN selbst verloren -> kein Timer, sondern sofort beim nächsten Verbinden (WifiNetworkReceiver).
         val ssid = WifiHelper.currentSsid(ctx)
-        val stillOnTargetWifi = if (ssid != null) unreachable.any { it.ssids().contains(ssid) } else WifiHelper.isOnWifi(ctx)
+        val stillOnTargetWifi = if (ssid != null) unreachable.any { it.ssids().contains(ssid) } else WifiHelper.onAllowedNetwork(ctx)
         if (stillOnTargetWifi) {
             // Abbruch mitten in der Übertragung bei bestehendem WLAN = meist kurzer Aussetzer -> bald erneut
             val minutes = if (midRun) 2L else SyncScheduler.SHARE_RETRY_MINUTES

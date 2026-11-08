@@ -26,6 +26,8 @@
     <string name="settings_auto">Automatic</string>
     <string name="settings_auto_wifi">Sync when connecting to home Wi-Fi</string>
     <string name="settings_auto_wifi_sub">Starts as soon as a Wi-Fi network of a profile connects</string>
+    <string name="settings_auto_offwifi">Also sync over mobile data or VPN</string>
+    <string name="settings_auto_offwifi_sub">Off Wi-Fi the Wi-Fi name is not checked. Starts on new photos, by the safety net and by folder checks. May use a lot of mobile data and cause costs with your mobile plan (e.g. roaming). The PC must be reachable (VPN).</string>
     <string name="settings_auto_new">Transfer new photos/videos right away</string>
     <string name="settings_auto_new_sub">Only while a home Wi-Fi is connected</string>
     <string name="settings_auto_charging">Only while charging</string>
@@ -62,6 +64,12 @@
     <string name="settings_diag_hint">Collects details about the device, background restrictions, permissions, profiles and the latest runs (without passwords) and copies them to the clipboard. Device ID: %1$s</string>
     <string name="settings_diag_failed">Diagnostics failed: %1$s</string>
     <string name="settings_diag_busy">Collecting data…</string>
+    <string name="settings_report">Report a problem</string>
+    <string name="settings_report_hint">Opens your mail app with a message to %1$s and the diagnostic data attached. Nothing is sent automatically: check the message and send it yourself. The data may contain Wi-Fi names, server addresses and file names (no passwords).</string>
+    <string name="settings_report_no_mail">No mail app found. The address %1$s was copied to the clipboard.</string>
+    <string name="report_subject">LeoSync %1$s – problem report</string>
+    <string name="report_body">Please describe the problem here (what did you do, what did you expect, what happened?):\n\n</string>
+    <string name="report_chooser">Report a problem</string>
     <string name="settings_diag_copy">Copy diagnostic data</string>
     <string name="settings_about">LeoSync %1$s – Open Source (MIT)</string>
 </resources>

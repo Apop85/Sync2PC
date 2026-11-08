@@ -26,6 +26,8 @@
     <string name="settings_auto">Automatik</string>
     <string name="settings_auto_wifi">Synchronisieren beim Verbinden mit Heim-WLAN</string>
     <string name="settings_auto_wifi_sub">Startet sofort, wenn ein WLAN eines Profils verbunden wird</string>
+    <string name="settings_auto_offwifi">Auch über mobile Daten oder VPN synchronisieren</string>
+    <string name="settings_auto_offwifi_sub">Ausserhalb des WLANs wird der WLAN-Name nicht geprüft. Startet bei neuen Fotos, über das Sicherheitsnetz und die Ordnerprüfung. Kann viel Datenvolumen verbrauchen und Kosten beim Mobilfunkabo verursachen (z. B. im Ausland). Der PC muss erreichbar sein (VPN).</string>
     <string name="settings_auto_new">Neue Fotos/Videos sofort übertragen</string>
     <string name="settings_auto_new_sub">Nur, wenn gerade ein Heim-WLAN verbunden ist</string>
     <string name="settings_auto_charging">Nur beim Laden</string>
@@ -62,6 +64,12 @@
     <string name="settings_diag_hint">Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen (ohne Passwörter) und kopiert sie in die Zwischenablage. Geräte-ID: %1$s</string>
     <string name="settings_diag_failed">Diagnose fehlgeschlagen: %1$s</string>
     <string name="settings_diag_busy">Sammle Daten…</string>
+    <string name="settings_report">Problem melden</string>
+    <string name="settings_report_hint">Öffnet die Mail-App mit einer Nachricht an %1$s und den Diagnosedaten im Anhang. Es wird nichts automatisch gesendet: Nachricht prüfen und selbst senden. Die Daten können WLAN-Namen, Serveradressen und Dateinamen enthalten (keine Passwörter).</string>
+    <string name="settings_report_no_mail">Keine Mail-App gefunden. Die Adresse %1$s wurde in die Zwischenablage kopiert.</string>
+    <string name="report_subject">LeoSync %1$s – Problembericht</string>
+    <string name="report_body">Bitte beschreibe hier das Problem (was hast du gemacht, was hast du erwartet, was ist passiert?):\n\n</string>
+    <string name="report_chooser">Problem melden</string>
     <string name="settings_diag_copy">Diagnosedaten kopieren</string>
     <string name="settings_about">LeoSync %1$s – Open Source (MIT)</string>
 </resources>

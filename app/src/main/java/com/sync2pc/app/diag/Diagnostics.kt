@@ -116,6 +116,7 @@ object Diagnostics {
             kv("autoSyncOnWifi", s.autoSyncOnWifi)
             kv("syncOnNewMedia", s.syncOnNewMedia)
             kv("onlyWhileCharging", s.onlyWhileCharging)
+            kv("syncOffWifi", s.syncOffWifi)
             kv("minFileAgeMinutes", s.minFileAgeMinutes)
             kv("homeCountryIso", s.homeCountryIso)
             kv("parallelUploads", s.parallelUploads)
@@ -285,6 +286,41 @@ object Diagnostics {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(send, "Verlauf teilen"))
+    }
+
+    /** Kontaktadresse für "Problem melden" (DEC-123) */
+    const val SUPPORT_EMAIL = "leotools@protonmail.com"
+
+    /**
+     * "Problem melden" (0.11.5, DEC-121): öffnet die Mail-App mit Adresse, Betreff, Hinweistext und der Diagnose als
+     * Anhang. Gesendet wird nichts automatisch – der Benutzer sieht alles und sendet selbst.
+     * @return false, wenn keine Mail-App vorhanden ist (die Adresse wurde dann in die Zwischenablage kopiert)
+     */
+    suspend fun reportProblem(context: Context): Boolean {
+        val text = build(context)
+        val file = withContext(Dispatchers.IO) {
+            val dir = File(context.cacheDir, "share").apply { mkdirs() }
+            dir.listFiles()?.forEach { it.delete() } // alte Exporte aufräumen
+            File(dir, "LeoSync-Diagnose_${fileStamp()}.txt").apply { writeText(text, Charsets.UTF_8) }
+        }
+        val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+        val send = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:")
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(SUPPORT_EMAIL))
+            putExtra(Intent.EXTRA_SUBJECT, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.report_subject, BuildConfig.VERSION_NAME))
+            putExtra(Intent.EXTRA_TEXT, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.report_body))
+            putExtra(Intent.EXTRA_STREAM, uri)
+            clipData = ClipData.newRawUri("", uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        return try {
+            context.startActivity(Intent.createChooser(send, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.report_chooser)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: android.content.ActivityNotFoundException) {
+            context.getSystemService(ClipboardManager::class.java)
+                ?.setPrimaryClip(ClipData.newPlainText("LeoSync", SUPPORT_EMAIL))
+            false
+        }
     }
 
     fun fileStamp(): String = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.GERMANY).format(Date())

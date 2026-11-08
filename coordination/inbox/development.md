@@ -3,6 +3,21 @@
 
 Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISIONS.md` Anhang A/B (Antworten des Inhabers vom 2026-11-08). Umsetzung ist vom Inhaber freigegeben, ausser wo „prüfen“ steht. Jede Umsetzung: Doku gemäss `CLAUDE.md` §11 an Documentation melden.
 
+### SYNC-20261108-019 – Mobile Daten/VPN: Wiederholungen und Erreichbarkeitstest begrenzen (Review -003, Befund 1)
+- Erstellt am: 2026-11-08
+- Absender: Development (Folgeauftrag aus Review zu -003, vom Inhaber bestätigt)
+- Empfänger: Development
+- Priorität: LOW
+- Status: OPEN
+- Übergabegrund: Optionale Nachbesserung aus dem Review von 0.11.5; eigenständiger Folgeauftrag.
+- Aufgabenbeschreibung: Mit Schalter `syncOffWifi` und ohne erreichbaren PC (kein VPN) verursacht jeder automatische Lauf über Mobilfunk bis zu ca. 60 s Verbindungsversuche (`waits` in `SyncWorker`, ~Z. 177) und danach alle 30 Minuten eine Wiederholung (`enqueueShareRetry`). Ausserhalb des WLAN: Erreichbarkeitstest auf 1–2 Versuche kürzen und/oder Wiederholungsabstand vergrössern (Wert mit Inhaber klären). Verhalten im WLAN unverändert lassen.
+- Technischer Kontext: Review 0.11.5 (MEDIUM 1), DEC-126, DEC-045, DEC-048.
+- Betroffene Dateien: `sync/SyncWorker.kt` (`work`, `handleUnreachable`), `sync/SyncScheduler.kt`
+- Erwartetes Ergebnis: Umsetzung, Doku-Hinweis (SYNC-ENGINE Zeitregeln).
+- Tatsächlich durchgeführte Arbeiten: –
+- Ergebnis und Rückmeldung: –
+- Abgeschlossen am: –
+
 ### SYNC-20261108-013 – Nicht verwendete Texte aufräumen (Anhang A Punkt 25)
 - Erstellt am: 2026-11-08
 - Absender: Documentation
@@ -85,15 +100,15 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Umsetzung vom Inhaber freigegeben (Anhang A Punkt 18).
 - Aufgabenbeschreibung: Funktion „Problem melden“ umsetzen. Kontakt: `leotools@protonmail.com`. Die Datenschutzerklärung ist bereits umgesetzt (`PRIVACY_GER.md` / `PRIVACY_EN.md`); sie ist nur zu verlinken bzw. auf Konsistenz mit der Funktion zu prüfen.
 - Technischer Kontext: DEC-121, DEC-123; Memory-Roadmap (Version laut Versionsplan klären, nächste Minor-Reihe).
 - Betroffene Dateien: `ui/SettingsScreen.kt` (voraussichtlich), `res/values*/strings_*.xml`, `PRIVACY_*.md`
 - Erwartetes Ergebnis: Umsetzung, Tests, Doku-Hinweis.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Einstellungen › Diagnose: neuer Knopf „Problem melden“ mit Hinweistext. `Diagnostics.reportProblem` erzeugt die Diagnose (`build`), legt sie als `LeoSync-Diagnose_<Zeit>.txt` im Cache-Ordner `share` ab (bestehender FileProvider) und öffnet per `ACTION_SENDTO mailto:` die Mail-App mit Adresse `Diagnostics.SUPPORT_EMAIL`, Betreff mit Version, Hinweistext und Diagnose als Anhang. Der Benutzer sendet selbst. Ohne Mail-App: Adresse in die Zwischenablage, Hinweis. Neue Strings `settings_report*`, `report_*` (EN/DE), `make-translations.ps1` ausgeführt. Der Knopf ist nicht ausgeblendet, da die Adresse fest hinterlegt ist. Version 0.11.5.
+- Ergebnis und Rückmeldung: Nicht gebaut, keine Tests ausgeführt (Inhaberregel „nichts bauen“); kein UI-Test vorhanden. Datenschutz-Konsistenz geprüft: `PRIVACY_*.md` Abschnitte 6/7 (freiwilliger Versand per E-Mail, Inhalt, UUID) passen zur Funktion. Offen/Inhaber: In beiden Dateien stehen noch Platzhalter (Z. 14 Name, Z. 16 und Z. 230 E-Mail); Name kenne ich nicht, E-Mail wäre `leotools@protonmail.com` (nicht selbst geändert, Documentation). Verlinkung der Datenschutzerklärung in der App nicht umgesetzt: es gibt noch keine öffentliche URL (Play-Store-Vorbereitung 0.12.0). Der Anhang enthält die vollständige Diagnose (u. a. WLAN-Namen, Serveradressen, Dateinamen), der Hinweistext in der App nennt das. Restrisiken: Mail-Apps behandeln den Anhang unterschiedlich; nicht auf einem Gerät geprüft.
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-007 – Konfliktkarten eines in Löschung befindlichen Profils ausblenden (DEC-196)
 - Erstellt am: 2026-11-08
@@ -161,15 +176,15 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: MEDIUM
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Entscheid des Inhabers (Anhang A Punkt 14): umsetzen.
 - Aufgabenbeschreibung: Schalter, mit dem die automatische Synchronisierung auch über mobile Daten bzw. VPN läuft; mit Hinweis auf Datenverbrauch (siehe DEC-126). Zusammenspiel mit WLAN-Name/SSID-Prüfung, Standort-Berechtigung und PC-Erreichbarkeit klären.
 - Technischer Kontext: DEC-126, DEC-044; PC-Erkennung (DEC-109) bleibt vorerst offen.
 - Betroffene Dateien: `sync/WifiHelper.kt`, `sync/SyncWorker.kt`, `ui/SettingsScreen.kt` bzw. `ProfileScreen.kt`, `res/values*/strings_*.xml`
 - Erwartetes Ergebnis: Umsetzung, Tests, Doku-Hinweis (DECISIONS, ARCHITECTURE).
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Neue Einstellung `GlobalSettings.syncOffWifi` (Standard aus, in der Sicherung enthalten, in der Diagnose). Schalter in Einstellungen › Übertragung mit Datenverbrauchs-Hinweis. `WifiHelper`: `isOnMobileOrVpn` (aktives Netz mit Internet, ohne WLAN-Transport), `onAllowedNetwork` (WLAN oder, mit Schalter, mobile Daten/VPN), `offWifiSyncActive`. `SyncScheduler.autoConstraints`: Netzwerkbedingung `CONNECTED` statt `UNMETERED`, wenn der Schalter an ist; beim Umschalten wird das Sicherheitsnetz neu geplant (Ordner-Prüfung wird über `setupAll` aktualisiert). `SyncWorker`: ausserhalb des WLAN (Schalter an) sind alle aktiven Profile berechtigt (keine SSID-Prüfung); die drei Stellen „im WLAN geblieben?“ (Erreichbarkeits-Wiederholung, `shouldContinue` während der Übertragung, `handleUnreachable`) nutzen `onAllowedNetwork`. Regeln bleiben: im WLAN (auch VPN über WLAN) gilt weiter die SSID-Regel inkl. Standort-Berechtigung; PC-Erreichbarkeit (TCP 445) wird wie bisher vor dem Lauf geprüft, ohne Erreichbarkeit (z. B. VPN aus) gilt „PC nicht erreichbar“ (30 min). Auslöser ausserhalb des WLAN: neue Medien, Sicherheitsnetz (6 h), Ordner-Prüfung; kein eigener Auslöser „mobile Daten verbunden“. Version 0.11.5.
+- Ergebnis und Rückmeldung: Nicht gebaut, keine Tests ausgeführt (Inhaberregel „nichts bauen“); keine Unit-Tests ergänzt (Netzwerklogik braucht Android-Umgebung). Restrisiken: (1) Mit Schalter an kann der Hintergrund-Sync mobile Daten verbrauchen (Hinweis in der App); keine Datenbegrenzung. (2) Eine unterbrochene Übertragung ausserhalb des WLAN wird über den Fortsetzen-Auftrag (nur Bedingung `CONNECTED`) fortgesetzt; `WifiNetworkReceiver` und `PauseService` bleiben WLAN-gebunden. (3) „Pausiert“-Dienst wartet weiterhin auf ein Ziel-WLAN. (4) Netz-Eigenschaften von VPN-Typen sind je nach Gerät verschieden, nicht auf einem Gerät geprüft. Doku-Hinweis: DECISIONS DEC-126 (Accepted → Implemented 0.11.5), Anhang A Punkt 14, ARCHITECTURE/SYNC-ENGINE (Netzwerkregeln), DATA-MODEL (neue Einstellung `syncOffWifi`, Sicherung). Review und QA empfohlen (Netzbedingung, Wiederanlauf).
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-002 – Anzeige gesicherter und offener Dateien unter dem Profil (DEC-072)
 - Erstellt am: 2026-11-08
