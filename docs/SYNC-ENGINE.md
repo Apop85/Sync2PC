@@ -149,8 +149,8 @@ Alle automatischen Läufe laufen über **einen** Worker-Typ (`SyncWorker`); `Tri
 | Auslöser | Einstieg | Verhalten |
 |---|---|---|
 | WLAN verbunden | `WifiNetworkReceiver.onReceive` → `enqueueAuto` | Drosselung 60 s, ausser `resumeOnWifi` gesetzt; nur wenn ein aktives Profil zur SSID passt (oder SSID unlesbar) **[IMPL]** |
-| Neue Fotos/Videos | `armContentTrigger` (Content-URI-Trigger) → `TriggerWorker` | Wartet Mindestalter ab (`minFileAgeMinutes`, Standard 5); wird nach jedem Lauf neu scharf gestellt |
-| Sicherheitsnetz | `scheduleSafetyNet` | 6 h nach dem letzten Lauf, wird bei jedem Lauf nach hinten geschoben |
+| Neue Fotos/Videos | `armContentTrigger` (Content-URI-Trigger) → `TriggerWorker` | Wartet Mindestalter ab (`minFileAgeMinutes`, Standard 5); wird nach jedem Lauf neu scharf gestellt; mit `syncOffWifi` auch ausserhalb des WLAN |
+| Sicherheitsnetz | `scheduleSafetyNet` | 6 h nach dem letzten Lauf, wird bei jedem Lauf nach hinten geschoben; mit `syncOffWifi` auch ausserhalb des WLAN |
 | PC-Abfrage (Ordner-Profile) | `scheduleRemotePoll` | Periodisch, mindestens 15 min (WorkManager-Minimum), kürzestes Intervall aller aktiven Ordner-Profile |
 | Nachhol-Sync | `enqueueFollowUp` | Für zu junge Dateien, frühestens nach 30 s |
 | PC nicht erreichbar | `enqueueShareRetry` | Nach 30 min (bei Abbruch mitten im Lauf nach 2 min) |
@@ -179,7 +179,7 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 2. `dao.closeDanglingRuns()`: Läufe mit Status `RUNNING` (App wurde währenddessen beendet) werden auf `INTERRUPTED` gesetzt **[IMPL]**.
 3. **Pause:** Nicht-manuell und `settings.isPaused()` → Lauf entfällt (Grund wird notiert).
 4. **Profilauswahl:** aktiv (`enabled`), konfiguriert (`isConfigured`), bei automatischen Läufen nicht in `awaitingFirstStart` (neue Profile warten auf ersten manuellen Start, DEC-103), **nicht durch die Schutzbremse blockiert** (`GuardStore.blockedIds`), nicht gerade zum Löschen vorgemerkt (`PendingProfileDelete`).
-5. **WLAN:** Automatisch nur Profile, deren Ziel-SSID zur aktuellen SSID passt; bei noch unlesbarer SSID bis zu 3× 5 s nachlesen. Manuell: alle.
+5. **WLAN:** Automatisch nur Profile, deren Ziel-SSID zur aktuellen SSID passt; bei noch unlesbarer SSID bis zu 3× 5 s nachlesen. Manuell: alle. Mit Schalter `syncOffWifi` (seit 0.11.5, DEC-126) entfällt die SSID-Prüfung ausserhalb des WLAN: alle aktiven Profile sind berechtigt; im WLAN (auch VPN über WLAN) gilt weiter die SSID-Regel.
 6. **PC-Erreichbarkeit** (`SmbSession.isReachable`, TCP Port 445, 3 s): automatisch bis 5 Versuche (0, 5, 10, 15, 30 s), manuell 2 (0, 3 s). **Ausnahme:** Foto-Profile ohne übertragungsbereite Dateien (`PendingCheck.readyFiles == 0`) überspringen den Test.
 7. **Vordergrunddienst:** `setForeground(...)`; scheitert das (Android 12+), normale Benachrichtigung. `TransferLocks.acquire` hält WLAN- und CPU-Sperre (max. 4 h).
 8. **Schleife über alle lauffähigen Profile, nacheinander** (nicht parallel): Engine erzeugen (`MIRROR` → `MirrorEngine`, sonst `SyncEngine`), `engine.run()`, danach Flags auswerten:

@@ -6,30 +6,30 @@
 - Absender: Development
 - Empfänger: Documentation
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Dokumentationsänderungen liegen ausschliesslich bei Documentation.
 - Aufgabenbeschreibung: (1) DEC-126 von Accepted auf Implemented (0.11.5) und Anhang A Punkt 14; Verhalten: Schalter `syncOffWifi` (Standard aus, Einstellungen › Übertragung, in Sicherung und Diagnose); ausserhalb des WLAN keine SSID-Prüfung, alle aktiven Profile berechtigt; im WLAN (auch VPN über WLAN) bleibt die SSID-Regel (DEC-044); Netzwerkbedingung der automatischen Aufträge `CONNECTED` statt `UNMETERED`; PC-Erreichbarkeit wie bisher; Auslöser ausserhalb des WLAN: neue Medien, Sicherheitsnetz (6 h), Ordner-Prüfung (kein WLAN-Broadcast, kein Auslöser „mobile Daten verbunden“); Fortsetzen-Dienst/„Pausiert“ bleibt WLAN-gebunden; Datenverbrauch-Hinweis in der App. Weiter ARCHITECTURE/SYNC-ENGINE (Netzwerkregeln) und DATA-MODEL (Einstellung `syncOffWifi`, Sicherungsfeld, abwärtskompatibel). (2) DEC-121/DEC-123 auf Implemented (0.11.5) und Anhang A Punkt 18: Knopf „Problem melden“ in Einstellungen › Diagnose; `Diagnostics.reportProblem` öffnet per `ACTION_SENDTO mailto:` die Mail-App (`leotools@protonmail.com`, Betreff mit Version, Hinweistext, Diagnose als Anhang `LeoSync-Diagnose_<Zeit>.txt`), Benutzer sendet selbst; ohne Mail-App Adresse in Zwischenablage. Knopf nicht ausgeblendet (Adresse fest hinterlegt; DEC-121 nannte Ausblenden ohne Adresse). `PRIVACY_*.md` Abschnitte 6/7 passen zur Funktion; Platzhalter (Name Z. 14, E-Mail Z. 16 und 230) stehen noch, E-Mail wäre `leotools@protonmail.com`, Name Sache des Inhabers. (3) `PATCHNOTES.md` 0.11.5 (Neu: Schalter mobile Daten/VPN, Problem melden; Intern: `WifiHelper.onAllowedNetwork`, `SyncScheduler.autoConstraints`, 8 Strings EN/DE) und 0.11.4 (Intern: Typfehler `collectAsState` in `HomeParts.kt` behoben).
 - Technischer Kontext: Aufträge SYNC-20261108-003 und -008 (COMPLETED, Details in `inbox/development.md`). Nicht gebaut/getestet. Nachtrag 0.11.6 nach Review: Beim Umschalten des Schalters wird zusätzlich die Wartezeit „PC nicht erreichbar“ verworfen (`cancelShareRetry`); Hinweistext nennt jetzt mögliche Kosten beim Mobilfunkabo (z. B. Ausland). PATCHNOTES 0.11.6 entsprechend. Offener Folgeauftrag SYNC-20261108-019 (Wiederholungen über Mobilfunk begrenzen).
 - Betroffene Dateien: `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/SYNC-ENGINE.md`, `docs/DATA-MODEL.md`, `PATCHNOTES.md`
 - Erwartetes Ergebnis: Doku passt zum Ist-Stand; Rückmeldung mit geänderten Stellen.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: `DECISIONS.md`: DEC-126 (Implemented, Verhalten), DEC-121 und DEC-123 (Implemented), Anhang A Punkte 14 und 18. `ARCHITECTURE.md`: WorkManager-Netzwerkbedingung (`autoConstraints`, `CONNECTED`), Sequenzdiagramm. `SYNC-ENGINE.md`: Schritt 5 (SSID-Prüfung) und Auslöser-Tabelle. `DATA-MODEL.md`: Schlüssel `syncOffWifi` in `global`, Sicherung. `PATCHNOTES.md`: Einträge 0.11.3 bis 0.11.6 ergänzt (0.11.3/0.11.4 aus -017, 0.11.5/0.11.6 aus diesem Auftrag). Alle Angaben aus Developments Beschreibung, Code nicht selbst geprüft.
+- Ergebnis und Rückmeldung: Offen/Hinweise: (1) Anzahl der exportierten Schlüssel in DATA-MODEL (14 + `syncOffWifi`) nicht nachgezählt; bei Bedarf Development fragen. (2) `PRIVACY_*.md`-Platzhalter (Name Z. 14, E-Mail Z. 16 und 230) sind Sache des Inhabers bzw. Development; E-Mail wäre `leotools@protonmail.com`; in DEC-123 als offen vermerkt. (3) Folgeauftrag SYNC-20261108-019 (Wiederholungen über Mobilfunk begrenzen) bei Abschluss nachführen. (4) Die in DATA-MODEL/TESTING genannten Testanzahlen sind nicht aktualisiert.
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-017 – Doku-Nachführung zu Version 0.11.3 («Ordner anlegen», DEC-192)
 - Erstellt am: 2026-11-08
 - Absender: Development
 - Empfänger: Documentation
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Dokumentationsänderungen (DECISIONS, ARCHITECTURE, TESTING, PATCHNOTES) liegen ausschliesslich bei Documentation.
 - Aufgabenbeschreibung: (1) `DECISIONS.md`: DEC-192 (Ordner anlegen in der PC-Ordnerauswahl) als umgesetzt in 0.11.3 nachführen; Anhang A Punkt 24 entsprechend. Verhalten: Zeile «Neuer Ordner» nur unterhalb einer Freigabe (keine Freigaben anlegen); Namensprüfung lokal (leer, über 255 Zeichen, `\ / : * ? " < > |`, Steuerzeichen, «.»/«..», Punkt/Leerzeichen am Ende; Dublette ohne Gross-/Kleinschreibung); Anlegen über `SmbSession.ensureDir` auf eigener Verbindung, Erfolg nur wenn der Ordner danach existiert; Fehler (Rechte, Netz) im Dialog, Eingabe bleibt; nach Erfolg wechselt die Auswahl in den neuen Ordner. Restrisiko: Windows-reservierte Namen (CON, NUL …) nicht lokal abgefangen, Serverfehler wird angezeigt. (2) `ARCHITECTURE.md`: Beschreibung von `RemoteFolderPicker` um «Ordner anlegen» ergänzen. (3) `TESTING.md`: neue Testklasse `RemoteFolderNameTest` (Namensprüfung `invalidFolderName`); nicht ausgeführt, nur erstellt (Inhaberregel «nichts bauen»). (4) `PATCHNOTES.md`: Eintrag 0.11.3 (Neu: Ordner auf dem PC direkt in der Ordnerauswahl anlegen; Intern: `invalidFolderName`, 6 neue Strings EN/DE, `RemoteFolderNameTest`).
 - Technischer Kontext: Auftrag SYNC-20261108-006 (COMPLETED, Details in `inbox/development.md`). Keine Schema-, DAO- oder `SmbSession`-Änderung. `version.properties` steht inzwischen auf 0.11.4. Nachtrag: 0.11.3 scheiterte im Build an einem Typfehler in `ui/HomeParts.kt:411` (`collectAsState`, Profilkarte aus 0.11.2); behoben in 0.11.4 (Intern-Eintrag in PATCHNOTES), 0.11.4 gebaut, Inhaber bestätigt erfolgreichen Build.
 - Betroffene Dateien: `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `PATCHNOTES.md`
 - Erwartetes Ergebnis: Doku passt zum Ist-Stand; Rückmeldung mit geänderten Stellen.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: `DECISIONS.md`: DEC-192 (Nachtrag 0.11.3, Konsequenz angepasst), Anhang A Punkt 24 erledigt. `ARCHITECTURE.md`: `RemoteFolderPicker` und Abschnitt 14 (Eintrag „nicht entschieden“ entfernt). `TESTING.md`: Zeile `RemoteFolderNameTest`. `PATCHNOTES.md`: 0.11.3 und 0.11.4.
+- Ergebnis und Rückmeldung: Testanzahl von `RemoteFolderNameTest` unbekannt (Spalte „–“); Test nicht ausgeführt, nur erstellt. Angaben aus Developments Beschreibung, Code nicht selbst geprüft.
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-016 – Doku-Nachführung zu Version 0.11.1 und Prüfergebnissen -010/-011
 - Erstellt am: 2026-11-08

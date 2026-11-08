@@ -815,9 +815,15 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Im Profil genügt der PC (`\\192.168.1.20`) mit Zugangsdaten; „Ordner auf dem PC wählen…“ listet die Freigaben (nur Datei-Freigaben, ohne `$`-Freigaben) und darin die Ordner. Das Feld „Unterordner“ entfällt; ein vorhandener Unterordner wird beim Öffnen in den Pfad übernommen (gleiches Ziel). Für das Auflisten wird `com.rapid7.client:dcerpc:0.12.13` (Dienst `srvsvc`) mit der vorhandenen smbj-Verbindung genutzt.
 - **Begründung:** Design-Prüfung (Pfad tippen ist Arbeit, die das System übernehmen kann); der Inhaber: Unterordner-Feld „kann somit weg“. smbj allein kann keine Freigaben auflisten.
 - **Alternativen:** eigene RPC-Umsetzung (zu aufwendig); Freigabe weiter von Hand tippen (Eintippen bleibt möglich).
-- **Konsequenzen:** Zusatzbibliotheken (Guava, Commons IO/Lang); smbj und BouncyCastle aus dcerpc ausgeschlossen; R8-Regeln ergänzt; APK +0,4 MB. Ordner anlegen kann die Auswahl nicht.
+- **Konsequenzen:** Zusatzbibliotheken (Guava, Commons IO/Lang); smbj und BouncyCastle aus dcerpc ausgeschlossen; R8-Regeln ergänzt; APK +0,4 MB. Seit 0.11.3 kann die Auswahl Ordner anlegen (Nachtrag unten).
 - **Betroffene Komponenten:** `smb/SmbSession.kt` (`listShares`, `SmbTarget.hostOf`), `ui/ProfileParts.kt` (`RemoteFolderPicker`), `ui/ProfileScreen.kt`, `app/build.gradle.kts`, `app/proguard-rules.pro`
 - **Abhängigkeiten:** DEC-039 (ersetzt), DEC-002, DEC-014
+- **Nachtrag 0.11.3 („Ordner anlegen“, Inhaberentscheid 2026-11-08, SYNC-20261108-006):**
+  - Zeile „Neuer Ordner“ nur unterhalb einer Freigabe; Freigaben werden nicht angelegt.
+  - Namensprüfung lokal (`invalidFolderName`): leer, über 255 Zeichen, `\ / : * ? " < > |`, Steuerzeichen, „.“/„..“, Punkt oder Leerzeichen am Ende, Dublette (ohne Gross-/Kleinschreibung).
+  - Anlegen über `SmbSession.ensureDir` auf eigener Verbindung; Erfolg nur, wenn der Ordner danach existiert. Fehler (Rechte, Netz) erscheinen im Dialog, die Eingabe bleibt; nach Erfolg wechselt die Auswahl in den neuen Ordner.
+  - Restrisiko: Windows-reservierte Namen (CON, NUL …) werden nicht lokal abgefangen; der Serverfehler wird angezeigt.
+  - Quelle: Rückmeldung Development (SYNC-20261108-017), Code von Documentation nicht selbst geprüft.
 
 ---
 
@@ -1582,14 +1588,20 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** DEC-043
 
 ### DEC-126: Option „auch über mobile Daten bzw. VPN synchronisieren“
-- **Status:** Accepted
+- **Status:** Implemented (0.11.5, Nachtrag 0.11.6)
 - **Datum:** 2026-11-08 (2026-11-02)
 - **Kategorie:** Synchronisation
 - **Entscheidung:** Vorgemerkt zusammen mit der PC-Erkennung: eine Option, über mobile Daten bzw. VPN zu synchronisieren (VPN über Mobilfunk gilt als gemessen; Hinweis auf Datenverbrauch).
 - **Begründung:** Frage des Inhabers, ob der WLAN-Name für VPN-Nutzer Pflicht sein muss; „das kannst du dir vormerken“.
 - **Alternativen:** —
-- **Konsequenzen:** Noch nicht umgesetzt.
-- **Betroffene Komponenten:** geplant: `WifiHelper`, `SyncWorker`
+- **Konsequenzen:** Umgesetzt als Schalter (Inhaberentscheid 2026-11-08, SYNC-20261108-003; Quelle: Rückmeldung Development, nicht gebaut/getestet, Code nicht selbst geprüft):
+  - Schalter `syncOffWifi` (Standard aus), Einstellungen › Übertragung; in Sicherung und Diagnose enthalten.
+  - Ausserhalb des WLAN keine SSID-Prüfung, alle aktiven Profile berechtigt. Im WLAN (auch VPN über WLAN) bleibt die SSID-Regel (DEC-044).
+  - Netzwerkbedingung der automatischen Aufträge: `CONNECTED` statt `UNMETERED`. PC-Erreichbarkeit wie bisher.
+  - Auslöser ausserhalb des WLAN: neue Medien, Sicherheitsnetz (6 h), Ordner-Prüfung. Kein WLAN-Broadcast und kein Auslöser „mobile Daten verbunden“. Fortsetzen-Dienst und „Pausiert“ bleiben WLAN-gebunden.
+  - Hinweis auf Datenverbrauch in der App; 0.11.6 nennt zusätzlich mögliche Kosten beim Mobilfunkabo (z. B. Ausland) und verwirft beim Umschalten die Wartezeit „PC nicht erreichbar“ (`cancelShareRetry`).
+  - Offen: Folgeauftrag SYNC-20261108-019 (Wiederholungen über Mobilfunk begrenzen).
+- **Betroffene Komponenten:** `sync/WifiHelper.kt` (`onAllowedNetwork`), `sync/SyncScheduler.kt` (`autoConstraints`), `sync/SyncWorker.kt`, `GlobalSettings.syncOffWifi`
 - **Abhängigkeiten:** DEC-044, DEC-109
 
 ### DEC-152: App nur im Hochformat
@@ -2417,25 +2429,25 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** DEC-056, DEC-109, DEC-112
 
 ### DEC-121: Feedback in der Testphase per E-Mail-Knopf „Problem melden“
-- **Status:** Accepted
+- **Status:** Implemented (0.11.5)
 - **Datum:** 2026-11-08 (2026-11-02)
 - **Kategorie:** Sicherheit
 - **Entscheidung:** Ein Knopf „Problem melden“ öffnet die Mail-App mit vorbereitetem Text und Diagnose; der Tester sendet selbst. Dazu das Play-Feedback der Testversion. Der Knopf bleibt nach 1.0.0. Er wird ausgeblendet, solange keine Adresse hinterlegt ist.
 - **Begründung:** Keine Server und keine Geheimnisse in der App; der Nutzer sieht, was er sendet.
 - **Alternativen:** Discord-Webhook (DEC-122, verworfen).
-- **Konsequenzen:** Teil der Play-Store-Vorbereitung; noch nicht umgesetzt.
-- **Betroffene Komponenten:** geplant: `diag/Diagnostics.kt`, Einstellungen „Diagnose“
+- **Konsequenzen:** Umgesetzt in 0.11.5 (SYNC-20261108-008): Knopf in Einstellungen › Diagnose; `Diagnostics.reportProblem` öffnet per `ACTION_SENDTO mailto:` die Mail-App (`leotools@protonmail.com`, Betreff mit Version, Hinweistext, Diagnose als Anhang `LeoSync-Diagnose_<Zeit>.txt`); der Benutzer sendet selbst. Ohne Mail-App landet die Adresse in der Zwischenablage. Abweichung: Der Knopf wird nicht ausgeblendet, weil die Adresse fest hinterlegt ist. Quelle: Rückmeldung Development, Code nicht selbst geprüft.
+- **Betroffene Komponenten:** `diag/Diagnostics.kt` (`reportProblem`), Einstellungen „Diagnose“
 - **Abhängigkeiten:** DEC-079, DEC-109, DEC-123
 
 ### DEC-123: Kontaktadresse `leotools@protonmail.com`
-- **Status:** Accepted
+- **Status:** Implemented (0.11.5, „Problem melden“)
 - **Datum:** 2026-11-08 (2026-11-03)
 - **Kategorie:** Sonstiges
 - **Entscheidung:** Die Adresse dient für „Problem melden“, als Kontakt in der Datenschutzerklärung und im Play Store.
 - **Begründung:** Vom Inhaber eingerichtet und bestätigt („1. ja“).
 - **Alternativen:** `leo@` bzw. `leosoft@protonmail` (bereits vergeben).
-- **Konsequenzen:** —
-- **Betroffene Komponenten:** geplant: „Problem melden“, Datenschutzerklärung
+- **Konsequenzen:** In „Problem melden“ fest hinterlegt (DEC-121). In `PRIVACY_*.md` stehen laut Development noch Platzhalter (Name Z. 14, E-Mail Z. 16 und 230); die E-Mail wäre `leotools@protonmail.com`, der Name ist Sache des Inhabers (offen).
+- **Betroffene Komponenten:** „Problem melden“ (`diag/Diagnostics.kt`), Datenschutzerklärung
 - **Abhängigkeiten:** DEC-109, DEC-121
 
 ### DEC-124: Nur die Play-Variante erhält `ch.leo.sync`
@@ -3018,11 +3030,11 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 
 *Session 3:*
 
-14. **WLAN-Name Pflicht oder optional** (Frage des Inhabers für VPN-Nutzer): nur als Option „mobile Daten/VPN“ vorgemerkt (DEC-126); die Antwort im Verlauf ist nicht eindeutig belegt. Inhaber 2026-11-08: Schalter für automatische Synchronisierung auch ausserhalb des WLAN, Umsetzung freigegeben (SYNC-20261108-003).
+14. **WLAN-Name Pflicht oder optional** (Frage des Inhabers für VPN-Nutzer): nur als Option „mobile Daten/VPN“ vorgemerkt (DEC-126); die Antwort im Verlauf ist nicht eindeutig belegt. Inhaber 2026-11-08: Schalter für automatische Synchronisierung auch ausserhalb des WLAN; umgesetzt in 0.11.5/0.11.6 (SYNC-20261108-003, siehe DEC-126). Offen: Wiederholungen über Mobilfunk begrenzen (SYNC-20261108-019).
 15. **Leere Ordner nach „Speicher freigeben“** (DEC-147): bleiben stehen. Inhaber 2026-11-08: aufräumen, keine leeren Ordner zurücklassen, Ausnahme `DCIM\Camera` (SYNC-20261108-004).
 16. **Fehlgeschlagene Wiederherstellungen** (DEC-146): werden bei jedem Sync erneut versucht, bis der Inhaber „Verwerfen“ wählt. Inhaber 2026-11-08: 5 Versuche, danach Meldung an den Benutzer (SYNC-20261108-005).
 17. **Warten auf den laufenden Sync** (DEC-144): Verlässt man die Ansicht, unterbleibt der Eingriff; ob er stattdessen vorgemerkt werden soll, ist offen. Inhaber 2026-11-08: Eingriff vormerken und später ausführen, Umsetzung freigegeben (SYNC-20261108-012).
-18. **Umsetzung von „Problem melden“ und Datenschutzerklärung** (DEC-121, DEC-123): Inhaber 2026-11-08: „Problem melden“ umsetzen (Kontakt `leotools@protonmail.com`, SYNC-20261108-008); Datenschutzerklärung ist umgesetzt (`PRIVACY_GER.md`, `PRIVACY_EN.md`).
+18. **Umsetzung von „Problem melden“ und Datenschutzerklärung** (DEC-121, DEC-123): Inhaber 2026-11-08: „Problem melden“ umgesetzt in 0.11.5 (Kontakt `leotools@protonmail.com`, SYNC-20261108-008, siehe DEC-121); Datenschutzerklärung ist umgesetzt (`PRIVACY_GER.md`, `PRIVACY_EN.md`).
 
 *Session 4:*
 
@@ -3034,7 +3046,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 
 22. ~~**Sicherheitsprüfung mit claude-security** (DEC-200)~~ – Inhaber 2026-11-08: wird nicht umgesetzt, verworfen. (Status von DEC-200 selbst unverändert; Anpassung ggf. durch Architecture.)
 23. **Ungeprüfte Teile von 0.9.5–0.11.0:** Restzeit im echten Lauf, Ansagen mit TalkBack, Berechtigungen bei einer Neuinstallation, strengere Hintergrund-Kontingente unter Android 16 bei langen Erstsicherungen.
-24. **Ordner anlegen in der PC-Ordnerauswahl** (DEC-192): heute muss der Zielordner auf dem PC existieren; ob die Auswahl Ordner anlegen können soll, war nicht entschieden. Inhaber 2026-11-08: „Ordner anlegen“ implementieren (SYNC-20261108-006).
+24. **Ordner anlegen in der PC-Ordnerauswahl** (DEC-192): heute muss der Zielordner auf dem PC existieren; ob die Auswahl Ordner anlegen können soll, war nicht entschieden. ~~erledigt~~: Inhaber 2026-11-08 „Ordner anlegen“, umgesetzt in 0.11.3 (SYNC-20261108-006, DEC-192 Nachtrag).
 25. **Nicht mehr verwendete Texte** (z. B. `profile_subfolder*`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`): aufräumen oder behalten ist nicht entschieden. Stand 2026-11-08: Die Texte stehen in beiden Sprachdateien, werden im Kotlin-Code aber nicht verwendet (geprüft per Suche in `app/src`); Inhaber 2026-11-08: aufräumen (SYNC-20261108-013).
 26. ~~**Konfliktkarten eines Profils, das gerade gelöscht wird** (DEC-196)~~ – erledigt: Inhaber 2026-11-08 ausblenden, umgesetzt in 0.11.1 (SYNC-20261108-007).
 27. **Hilfe-Texte auf der Produktseite** (DEC-197): Einbindung durch den Inhaber; Inhaber 2026-11-08: pending.

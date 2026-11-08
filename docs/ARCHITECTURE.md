@@ -236,7 +236,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 |---|---|---|
 | `ui/MainActivity.kt` | Einzige Activity (`singleTop`, Hochformat). `sealed class Screen` (Navigationszustand), `AppRoot`, Splash, Intent-Verarbeitung (`Notifications.OPEN_*`, Installer-Status), Löschfluss | ● |
 | `ui/HomeScreen.kt`, `ui/HomeParts.kt` | Startseite: Status, Profile, Werkzeuge, Schutzbremse-Karten, Pause-Dialog | ● |
-| `ui/ProfileScreen.kt`, `ui/ProfileCards.kt`, `ui/ProfileParts.kt` | Profil anlegen/bearbeiten (Assistent, Mirror-/Foto-Optionen, Freigaben- und Ordnerauswahl) | ● |
+| `ui/ProfileScreen.kt`, `ui/ProfileCards.kt`, `ui/ProfileParts.kt` | Profil anlegen/bearbeiten (Assistent, Mirror-/Foto-Optionen, Freigaben- und Ordnerauswahl; `RemoteFolderPicker` kann seit 0.11.3 Ordner unterhalb einer Freigabe anlegen, `SmbSession.ensureDir`, DEC-192) | ● |
 | `ui/SettingsScreen.kt` | Einstellungen in Rubriken (`SettingsSection`: NOTIFICATIONS, TRANSFER, PERMISSIONS, APP, UPDATES, DIAGNOSE), Sprache | ● |
 | `ui/TrashScreen.kt` | Papierkorb: wiederherstellen, aufräumen | ● |
 | `ui/FreeSpaceScreen.kt` | „Speicher freigeben“ mit Vorschau | ● |
@@ -367,7 +367,7 @@ sequenceDiagram
 
     T->>S: enqueueAuto / enqueueManual
     S->>W: WorkManager (Constraint UNMETERED, ggf. expedited)
-    W->>W: Pause? SSID passt? PendingCheck? isReachable (TCP 445)
+    W->>W: Pause? SSID passt (nur im WLAN)? PendingCheck? isReachable (TCP 445)
     W->>E: je Profil: run()
     E->>P: open(profile), Listen/Upload/Download
     E->>D: SyncedFile / MirrorState / SyncRun / LogEntry
@@ -417,7 +417,7 @@ Build: Android Gradle Plugin 9 mit eingebautem Kotlin, Compose-Compiler-Plugin u
 - **Navigation:** eigener Zustand, **kein** Navigation-Component: `var screen by mutableStateOf<Screen>` in `MainActivity`, `AppRoot` schaltet per `when`. Screens: Home, Settings(section), ProfileEdit(id), Decisions, Preview(profileId), Log, Stats, Update, Conflicts, FreeSpace, Trash.
 - **ViewModels:** keine vorhanden.
 - **Services/Receiver:** `PauseService` (`foregroundServiceType=dataSync`), WorkManagers `SystemForegroundService` (dataSync, per `tools:node="merge"`), `WifiNetworkReceiver` (nicht exportiert), `BootReceiver` (exportiert; `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`), `FileProvider` für den Verlauf-Export.
-- **WorkManager:** Eindeutige Aufträge (Konstanten in `SyncScheduler`): `sync-auto`, `sync-manual`, `sync-followup`, `sync-share-retry`, `sync-resume`, `trigger-content`, `trigger-safety`, `trigger-remote-poll`, `pause-end`; außerdem `stale-check` (`StaleCheck`) und die Update-Prüfung (`UpdateWorker`). Automatische Läufe verlangen `NetworkType.UNMETERED` (optional Laden); manuelle `CONNECTED`. Einzelne Läufe laufen expedited bzw. als Foreground (`getForegroundInfo`, `setForeground`).
+- **WorkManager:** Eindeutige Aufträge (Konstanten in `SyncScheduler`): `sync-auto`, `sync-manual`, `sync-followup`, `sync-share-retry`, `sync-resume`, `trigger-content`, `trigger-safety`, `trigger-remote-poll`, `pause-end`; außerdem `stale-check` (`StaleCheck`) und die Update-Prüfung (`UpdateWorker`). Automatische Läufe verlangen `NetworkType.UNMETERED` (optional Laden), mit eingeschaltetem Schalter `syncOffWifi` seit 0.11.5 `CONNECTED` (`SyncScheduler.autoConstraints`, DEC-126); manuelle `CONNECTED`. Einzelne Läufe laufen expedited bzw. als Foreground (`getForegroundInfo`, `setForeground`).
 - **Berechtigungen (Manifest):** Netzwerk/WLAN, Standort inkl. Hintergrund (nur zum Lesen der SSID), Medien (`READ_MEDIA_IMAGES/VIDEO`, `ACCESS_MEDIA_LOCATION`, Legacy-Storage begrenzt auf ältere SDKs), `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE(_DATA_SYNC)`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, `REQUEST_INSTALL_PACKAGES` (Selbst-Update). Anzeige und Anforderung: `ui/Permissions.kt`, `ui/PermissionRows.kt`.
 - **Benachrichtigungen:** zwei Kanäle (`sync_progress` niedrig, `sync_alerts` Standard) in `Notifications.createChannels`; eigene RemoteViews-Layouts `res/layout/notif*.xml`.
 - **Speicherzugriff:** MediaStore (Fotos/Videos), SAF mit dauerhafter Berechtigung (beliebige Ordner), SMB über Netzwerk. `allowBackup=false`.
@@ -491,4 +491,3 @@ Massgeblich sind die Dateien mit Bindestrich (alle vorhanden); die Unterstrich-V
 - Paketwechsel zu `ch.leo.sync` und Play-Store-Vorbereitung (0.12.0), PC-Erkennung (0.13.0) – Beschluss, Umsetzung steht aus (DEC-110, DEC-188).
 - Heimnetz-Berechtigung ab targetSdk 37 voraussichtlich nötig (DEC-183).
 - „Verlauf mit Kennungen statt fertiger Texte“ (DEC-159, vorgemerkt).
-- Ordner anlegen in der PC-Ordnerauswahl (DEC-192, nicht entschieden).

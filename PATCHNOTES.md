@@ -2,6 +2,33 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.11.6 (2026-11-08)
+
+### Geändert
+- **Mobile Daten/VPN:** Beim Umschalten des Schalters wird die Wartezeit „PC nicht erreichbar“ verworfen (`cancelShareRetry`). Der Hinweistext nennt jetzt mögliche Kosten beim Mobilfunkabo (z. B. im Ausland).
+
+## 0.11.5 (2026-11-08)
+
+### Neu
+- **Mobile Daten/VPN:** Schalter in Einstellungen › Übertragung, mit dem die automatische Synchronisierung auch ausserhalb des WLAN läuft (Standard aus, mit Hinweis auf den Datenverbrauch).
+- **Problem melden:** Knopf in Einstellungen › Diagnose öffnet die Mail-App mit vorbereitetem Text und der Diagnose als Anhang (`leotools@protonmail.com`). Gesendet wird erst vom Benutzer.
+
+### Intern
+- `WifiHelper.onAllowedNetwork`, `SyncScheduler.autoConstraints`, 8 Strings EN/DE.
+
+## 0.11.4 (2026-11-08)
+
+### Intern
+- Typfehler `collectAsState` in `HomeParts.kt` behoben (Build-Fehler von 0.11.3).
+
+## 0.11.3 (2026-11-08)
+
+### Neu
+- **Ordner anlegen:** In der PC-Ordnerauswahl lässt sich unterhalb einer Freigabe direkt ein neuer Ordner anlegen.
+
+### Intern
+- `invalidFolderName`, 6 neue Strings EN/DE, `RemoteFolderNameTest`. Nicht gebaut, da 0.11.3 am Typfehler scheiterte (siehe 0.11.4).
+
 ## 0.11.2 (2026-11-08)
 
 ### Neu
