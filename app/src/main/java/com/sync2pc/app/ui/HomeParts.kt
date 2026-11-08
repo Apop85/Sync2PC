@@ -400,6 +400,27 @@ internal fun ActionCard(title: String, text: String, button: String, onClick: ()
 
 @Composable
 internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean, onClick: () -> Unit) {
+    // 0.11.1 (DEC-072): bei Fotos-Profilen Anzahl gesicherter und noch offener Dateien (rein lokal, ohne Netzwerk).
+    // Ordner-Profile (0.11.2): "offen" wäre nur mit PC-Listing bekannt -> stattdessen "synchronisiert" (Stand letzter
+    // Abgleich, `mirror_state`) und die lokal bekannten offenen Konflikte.
+    val ctx = LocalContext.current
+    val isPhotos = p.type() != ProfileType.MIRROR
+    val synced: Int? by remember(p.id) {
+        val dao = AppDatabase.get(ctx).dao()
+        if (isPhotos) dao.syncedCount(p.id) else dao.mirrorStateCountFlow(p.id)
+    }.collectAsState<Int, Int?>(initial = null)
+    val openConflicts by remember(p.id) { AppDatabase.get(ctx).dao().openConflictCountFlow(p.id) }.collectAsState(initial = 0)
+    var open by remember(p.id) { mutableStateOf<Int?>(null) }
+    LaunchedEffect(p, synced) {
+        if (!isPhotos) return@LaunchedEffect
+        delay(800) // während eines Laufs ändert sich der Zähler laufend: nicht bei jeder Datei neu scannen
+        open = try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.sync2pc.app.sync.PendingCheck.readyFiles(ctx, p, 0)
+            }
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) { throw e }
+        catch (e: Exception) { null } // z. B. Medienzugriff fehlt -> Zeile ausblenden
+    }
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -425,6 +446,12 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 Hint(str(R.string.home_profile_sources, p.folders().joinToString(", ").ifBlank { str(R.string.home_profile_none) }))
             }
             Hint(str(R.string.home_wifi, p.ssids().joinToString(", ").ifBlank { str(R.string.home_profile_no_wifi) }))
+            val sc = synced; val oc = open
+            if (isPhotos && sc != null && oc != null) Hint(str(R.string.home_profile_counts, sc, oc))
+            if (!isPhotos && sc != null) Hint(
+                plural(R.plurals.home_profile_mirror_synced, sc) +
+                    if (openConflicts > 0) " · " + plural(R.plurals.home_profile_open_conflicts, openConflicts) else ""
+            )
             if (awaitingFirstStart && p.enabled) Text(
                 str(R.string.home_profile_awaiting),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,

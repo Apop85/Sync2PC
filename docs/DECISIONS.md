@@ -1711,14 +1711,17 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** DEC-044, DEC-045
 
 ### DEC-072: Vollständigkeitsbilanz pro Profil
-- **Status:** Proposed
+- **Status:** Implemented (eingeschränkt, 0.11.1/0.11.2)
 - **Datum:** 2026-11-08 (2026-11-01)
 - **Kategorie:** UI
-- **Entscheidung:** Anzeige „X von Y Dateien gesichert, Z offen“ mit Liste und Grund.
+- **Entscheidung:** Anzeige „X von Y Dateien gesichert, Z offen“ mit Liste und Grund. Freigabe des Inhabers (2026-11-08) nur für die Anzahl gesicherter und offener Dateien unter dem Profil, ohne Liste mit Gründen.
 - **Begründung:** Frage des Inhabers nach einer Vollständigkeitsprüfung.
 - **Alternativen:** —
-- **Konsequenzen:** —
-- **Betroffene Komponenten:** —
+- **Konsequenzen:**
+  - 0.11.1: Fotos-Profile zeigen „X gesichert · Y offen“. „Gesichert“ zählt alle Einträge in `synced_files` (auch per „Speicher freigeben“ entfernte Dateien); „offen“ ist der lokale MediaStore-Abgleich ohne Mindestalter. Keine Liste mit Gründen.
+  - 0.11.2: Ordner-Profile zeigen „X Dateien synchronisiert“ (Zeilen in `mirror_state`, Stand des letzten Abgleichs) und „Y Konflikte offen“ (`mirror_conflicts`, `resolution IS NULL`). Kein „offen“ im Sinn nicht übertragener Dateien, weil dafür ein PC-Listing nötig wäre; vom Inhaber als sinnvolle Ergänzung bestätigt. Neue DAO-Abfragen `mirrorStateCountFlow`, `openConflictCountFlow` (kein Schemaeintrag).
+  - Quelle: Rückmeldung Development zu SYNC-20261108-002 und -016; Code von Documentation nicht selbst geprüft.
+- **Betroffene Komponenten:** `ui/HomeScreen.kt`, `ui/ProfileCards.kt`, `data/SyncDao.kt`
 - **Abhängigkeiten:** DEC-021
 
 ### DEC-088: Zustandsbild auf der Startseite immer sichtbar, mit Laufanimation
@@ -2086,7 +2089,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Nach dem Löschen wird das Profil nur vorgemerkt (ausgeblendet, wird nicht synchronisiert). Die Startseite zeigt „Profil gelöscht – Rückgängig“; endgültig gelöscht wird, wenn der Hinweis verschwindet, spätestens nach 15 Sekunden. Wird die App vorher beendet, bleibt das Profil erhalten.
 - **Begründung:** Design-Prüfung (Rückgängig statt nur Rückfrage), angenommen.
 - **Alternativen:** nur die bisherige Rückfrage.
-- **Konsequenzen:** Die Vormerkung ist nur im Speicher; während der Frist sind Konfliktkarten des Profils noch sichtbar.
+- **Konsequenzen:** Die Vormerkung ist nur im Speicher. Seit 0.11.1 sind die Konfliktkarten des Profils während der Frist ausgeblendet (`HomeScreen`, `ConflictScreen` filtern nach `PendingProfileDelete.pending`; nur Anzeige, Konflikte bleiben in `mirror_conflicts` gespeichert, „Alle: neuere Version“ wirkt nur auf sichtbare Konflikte). Die Benachrichtigung „Konflikte“ zählt weiterhin alle offenen Konflikte (`dao.openConflictCount()`).
 - **Betroffene Komponenten:** `ui/PendingProfileDelete.kt`, `ui/HomeScreen.kt`, `ui/ProfileScreen.kt`, `sync/SyncWorker.kt`, `ScreenScaffold(snackbarHost)`
 - **Abhängigkeiten:** DEC-174
 
@@ -2999,43 +3002,43 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 
 ## A. Offene Entscheidungen
 
-1. **Vollständigkeitsbilanz** (DEC-072): vorgeschlagen, keine Antwort.
-2. **`release.bat`** (DEC-075): keine Antwort. *(Papierkorb-Aufräumen und paralleler Ordner-Sync sind seit Session 2 umgesetzt: DEC-083, DEC-093.)*
+1. **Vollständigkeitsbilanz** (DEC-072): Inhaber 2026-11-08: Anzahl gesicherter und offener Dateien unter dem Profil anzeigen. Umgesetzt in 0.11.1/0.11.2 (SYNC-20261108-002), eingeschränkt: siehe DEC-072.
+2. **`release.bat`** (DEC-075): Inhaber 2026-11-08: abgelehnt, Pushes führt er selbst aus. *(Papierkorb-Aufräumen und paralleler Ordner-Sync sind seit Session 2 umgesetzt: DEC-083, DEC-093.)*
 3. ~~Gradle/AGP-Upgrade~~ – erledigt in Session 2 (DEC-085).
 4. **Dateianzahl in der Ordnerauswahl anzeigen** (Vorschlag aus 0.0.3): keine Antwort.
-5. **NDK-Strip-Warnung stummschalten:** angeboten, keine Antwort.
+5. **NDK-Strip-Warnung stummschalten:** angeboten, keine Antwort; Inhaber fragte 2026-11-08 nach der Bedeutung. Im Repository nicht weiter belegt. Inhaber 2026-11-08: vorerst pending.
 6. **Wirksamkeit des Fortsetzens auf dem Gerät des Inhabers:** In Session 2 geklärt: Gerät OnePlus 9 Pro (OxygenOS 14); der Oplus-Killer beendete die App auch im Vordergrunddienst. Nach „Hintergrundaktivität zulassen“ keine neuen Kills; Fortsetzen nach WLAN-Trennung im Feldtest bestätigt. Ob „Automatischer Start“ zusätzlich gesetzt wurde, ist offen.
-7. **HEIC im Import-Skript:** Die Einschränkung ist dokumentiert, eine Lösung wurde nicht entschieden.
+7. ~~**HEIC im Import-Skript:**~~ – Inhaber 2026-11-08: Das Skript war nur für den Inhaber, Punkt wird ignoriert.
 8. **Verhalten nach dem 6-Stunden-Limit des dataSync-Dienstes (Android 15+):** Rückfall vorhanden, Wirksamkeit offen; Teil der Play-Store-Vorbereitung (DEC-109).
-9. ~~**Versionsnummer der Play-Store-Vorbereitung**~~ – in Session 3 festgelegt (DEC-125), laut Memory später erneut verschoben.
+9. ~~**Versionsnummer der Play-Store-Vorbereitung**~~ – erledigt: DEC-125 (Session 3), später durch DEC-188 ersetzt (0.12.0 Play Store, 0.13.0 PC-Erkennung).
 10. ~~**Kontakt-E-Mail**~~ – erledigt: `leotools@protonmail.com` (DEC-123).
 11. **Play-Protect-Einspruch** (DEC-111): Text vorbereitet; ob eingereicht und mit welchem Ergebnis, ist offen.
 12. **Wirksamkeit der Erinnerung „lange nicht gesichert“** (DEC-090): auf dem Gerät noch nicht beobachtet.
-13. **Verwendung der Server-GUID** (DEC-109): Konkreter Ablauf beim Wechsel der GUID (z. B. nach Windows-Neuinstallation: einmal nachfragen) ist nur skizziert.
+13. **Verwendung der Server-GUID** (DEC-109): Konkreter Ablauf beim Wechsel der GUID (z. B. nach Windows-Neuinstallation: einmal nachfragen) ist nur skizziert. Inhaber 2026-11-08: hängt an der PC-Erkennung, bleibt vorerst offen.
 
 *Session 3:*
 
-14. **WLAN-Name Pflicht oder optional** (Frage des Inhabers für VPN-Nutzer): nur als Option „mobile Daten/VPN“ vorgemerkt (DEC-126); die Antwort im Verlauf ist nicht eindeutig belegt.
-15. **Leere Ordner nach „Speicher freigeben“** (DEC-147): bleiben stehen; ob sie aufgeräumt werden sollen, ist nicht entschieden.
-16. **Fehlgeschlagene Wiederherstellungen** (DEC-146): werden bei jedem Sync erneut versucht, bis der Inhaber „Verwerfen“ wählt; eine Obergrenze ist nicht entschieden.
-17. **Warten auf den laufenden Sync** (DEC-144): Verlässt man die Ansicht, unterbleibt der Eingriff; ob er stattdessen vorgemerkt werden soll, ist offen.
-18. **Umsetzung von „Problem melden“ und Datenschutzerklärung** (DEC-121, DEC-123): beschlossen, Version laut späterer Roadmap offen.
+14. **WLAN-Name Pflicht oder optional** (Frage des Inhabers für VPN-Nutzer): nur als Option „mobile Daten/VPN“ vorgemerkt (DEC-126); die Antwort im Verlauf ist nicht eindeutig belegt. Inhaber 2026-11-08: Schalter für automatische Synchronisierung auch ausserhalb des WLAN, Umsetzung freigegeben (SYNC-20261108-003).
+15. **Leere Ordner nach „Speicher freigeben“** (DEC-147): bleiben stehen. Inhaber 2026-11-08: aufräumen, keine leeren Ordner zurücklassen, Ausnahme `DCIM\Camera` (SYNC-20261108-004).
+16. **Fehlgeschlagene Wiederherstellungen** (DEC-146): werden bei jedem Sync erneut versucht, bis der Inhaber „Verwerfen“ wählt. Inhaber 2026-11-08: 5 Versuche, danach Meldung an den Benutzer (SYNC-20261108-005).
+17. **Warten auf den laufenden Sync** (DEC-144): Verlässt man die Ansicht, unterbleibt der Eingriff; ob er stattdessen vorgemerkt werden soll, ist offen. Inhaber 2026-11-08: Eingriff vormerken und später ausführen, Umsetzung freigegeben (SYNC-20261108-012).
+18. **Umsetzung von „Problem melden“ und Datenschutzerklärung** (DEC-121, DEC-123): Inhaber 2026-11-08: „Problem melden“ umsetzen (Kontakt `leotools@protonmail.com`, SYNC-20261108-008); Datenschutzerklärung ist umgesetzt (`PRIVACY_GER.md`, `PRIVACY_EN.md`).
 
 *Session 4:*
 
-19. **Verlauf mit Kennungen statt fertiger Texte** (DEC-159): vom Inhaber „für später vormerken“; Umsetzung und Version offen.
+19. **Verlauf mit Kennungen statt fertiger Texte** (DEC-159): vom Inhaber „für später vormerken“. Inhaber 2026-11-08: Umsetzung freigegeben (SYNC-20261108-009), Version offen.
 20. **Englische Übersetzungen prüfen** (DEC-166): Tabelle liegt vor; ob und welche Korrekturen der Inhaber meldet, ist offen.
 21. **Sprachwechsel auf Android 10–12** (DEC-158): eigener Weg über `createConfigurationContext`; auf dem Gerät nicht getestet.
 
 *Session 5:*
 
-22. **Sicherheitsprüfung mit claude-security** (DEC-200): Start durch den Inhaber in seiner Hauptsitzung mit Kosten-Zustimmung; Umfang (ganzes Repo oder eingegrenzt) offen.
+22. ~~**Sicherheitsprüfung mit claude-security** (DEC-200)~~ – Inhaber 2026-11-08: wird nicht umgesetzt, verworfen. (Status von DEC-200 selbst unverändert; Anpassung ggf. durch Architecture.)
 23. **Ungeprüfte Teile von 0.9.5–0.11.0:** Restzeit im echten Lauf, Ansagen mit TalkBack, Berechtigungen bei einer Neuinstallation, strengere Hintergrund-Kontingente unter Android 16 bei langen Erstsicherungen.
-24. **Ordner anlegen in der PC-Ordnerauswahl** (DEC-192): heute muss der Zielordner auf dem PC existieren; ob die Auswahl Ordner anlegen können soll, ist nicht entschieden.
-25. **Nicht mehr verwendete Texte** (z. B. `profile_subfolder*`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`): aufräumen oder behalten ist nicht entschieden.
-26. **Konfliktkarten eines Profils, das gerade gelöscht wird** (DEC-196): bleiben während der Rückgängig-Frist sichtbar; ausblenden ist nicht entschieden.
-27. **Hilfe-Texte auf der Produktseite** (DEC-197): Einbindung durch den Inhaber offen.
-28. **Heimnetz-Berechtigung ab targetSdk 37** (DEC-183): voraussichtlich nötig für die Verbindung zur Freigabe; Zeitpunkt offen (frühestens mit der nächsten Ziel-Version).
+24. **Ordner anlegen in der PC-Ordnerauswahl** (DEC-192): heute muss der Zielordner auf dem PC existieren; ob die Auswahl Ordner anlegen können soll, war nicht entschieden. Inhaber 2026-11-08: „Ordner anlegen“ implementieren (SYNC-20261108-006).
+25. **Nicht mehr verwendete Texte** (z. B. `profile_subfolder*`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`): aufräumen oder behalten ist nicht entschieden. Stand 2026-11-08: Die Texte stehen in beiden Sprachdateien, werden im Kotlin-Code aber nicht verwendet (geprüft per Suche in `app/src`); Inhaber 2026-11-08: aufräumen (SYNC-20261108-013).
+26. ~~**Konfliktkarten eines Profils, das gerade gelöscht wird** (DEC-196)~~ – erledigt: Inhaber 2026-11-08 ausblenden, umgesetzt in 0.11.1 (SYNC-20261108-007).
+27. **Hilfe-Texte auf der Produktseite** (DEC-197): Einbindung durch den Inhaber; Inhaber 2026-11-08: pending.
+28. **Heimnetz-Berechtigung ab targetSdk 37** (DEC-183): voraussichtlich nötig für die Verbindung zur Freigabe; Inhaber 2026-11-08: bleibt offen (frühestens mit der nächsten Ziel-Version).
 
 ## B. Änderungsbedarf an bestehenden Entscheidungen
 
@@ -3046,13 +3049,13 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
 3. **DEC-001 (nur Deutsch) und DEC-040 (Begriffe White- und Blacklist):** ~~DEC-001~~ erledigt in Session 4 (DEC-155). DEC-040: Das Memory nennt „keine Whitelist/Blacklist“ und die Begriffe „Mobile/Share“; in Session 4 hiessen die Filter noch Whitelist/Blacklist. Das stammt aus einer späteren Session und ist dort zu erfassen.
 4. **DEC-021 und DEC-024 (Teil-Prüfsumme):** `PartialHash` enthält inzwischen gründliche Vergleiche und Prüfstufen (0.4.1/0.9.0). Der Algorithmus „Wenig“ muss mit dem Import-Skript (`LeoSyncImport.cs`) identisch bleiben.
 5. ~~**DEC-013 (Arbeitsregeln):**~~ – erledigt: „Kurzfassung nur auf Aufforderung“ als DEC-119 erfasst, DEC-013 aktualisiert.
-6. **DEC-048:** Innerhalb der Session teilweise angepasst; bei Abbruch mitten im Lauf gilt 2 statt 30 Minuten.
+6. **DEC-048:** Innerhalb der Session teilweise angepasst; bei Abbruch mitten im Lauf gilt 2 statt 30 Minuten. Geprüft (SYNC-20261108-010, Development): DEC-048 und `SYNC-ENGINE.md` stimmen mit dem Code überein.
 7. ~~**DEC-092 (doppelte Profile):**~~ – erledigt: verschachtelte Ordner-Profile als DEC-134 erfasst.
 8. ~~**Mehrsprachigkeit:**~~ – erledigt: Session 4 (DEC-155 bis DEC-166); DEC-001, DEC-099 aktualisiert.
 9. ~~**DEC-125 (Versionsplan):**~~ – erledigt in Session 5: DEC-188 (0.12.0 Play Store, 0.13.0 PC-Erkennung); DEC-165 verweist darauf.
 10. ~~**DEC-149 und DEC-153:**~~ – erledigt in Session 5: Statistik-Symbol und Änderungen an `FreeSpaceScreen` als DEC-175 und DEC-178 erfasst. *(Unklar bleibt, ob `FolderFreer`/`TrashCleaner` in Session 5 geändert wurden; im Verlauf nicht belegt.)*
 11. ~~**DEC-040 (Begriffe):**~~ – erledigt in Session 5 (DEC-169); Punkt 3 damit abgeschlossen.
-12. **DEC-021 und DEC-024 (Teil-Prüfsumme):** Prüfstufen als DEC-171 erfasst. Weiterhin gilt: Der Algorithmus „Wenig“ muss mit dem Import-Skript (`LeoSyncImport.cs`) identisch bleiben (Punkt 4).
+12. **DEC-021 und DEC-024 (Teil-Prüfsumme):** Prüfstufen als DEC-171 erfasst. Weiterhin gilt: Der Algorithmus „Wenig“ muss mit dem Import-Skript (`LeoSyncImport.cs`) identisch bleiben (Punkt 4); geprüft, siehe Punkt 4. Geprüft (SYNC-20261108-011, Development): „Wenig“ in `PartialHash.kt` und `LeoSyncImport.cs` identisch; DEC-021/-171 korrekt, kein Änderungsbedarf.
 
 ## C. Dokumentationsbedarf
 
@@ -3060,13 +3063,13 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
   - Zwei Engines hinter `SyncRunner`, Worker, Auslöser-Kette (Receiver, WorkManager, PauseService) und Mutex.
   - Rollen von `TransferLocks`, `PauseService` und den Retry- und Resume-Aufträgen.
   - Bewusst unveränderte interne Kennungen (Paket, DB, Keystore-Alias).
-- **SYNC_ENGINE.md:**
+- **SYNC-ENGINE.md:**
   - Ablauf der Ordnerauflösung (Mapping, Standardname, Kandidaten, neu), Regel für erzeugte Namen, `seen`-Flag.
   - Duplikatsuche über alle Monatsordner.
   - Spezifikation der Teil-Prüfsumme (Big-Endian-Grösse, Bereiche), Temp-Datei und Fortsetzen.
   - Entscheidungstabelle des 3-Wege-Abgleichs (L/R/S × Richtung × `propagateDeletes` × `ConflictMode`), Papierkorb-Regeln.
   - Fehlerklassen (Netz gegenüber Datei), Status `INTERRUPTED`, Zeitregeln (1 Minute, 2 Minuten, 30 Minuten, Resume 15 Minuten, höchstens 24 Stunden).
-- **DATA_MODEL.md:**
+- **DATA-MODEL.md:**
   - Alle Tabellen und Schlüssel; `DeleteState`-Werte (0/1/2/3/4); `ConflictResolution`.
   - `MIGRATION_1_2`; Aufbewahrungsfristen.
   - `GlobalSettings`-Schlüssel (`resumeOnWifi`, `shareRetryAt`, `noteSkip`, `updateInstalling` …).
@@ -3078,24 +3081,24 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
   - Release-Checkliste in `build.md` und Testanleitung „Test Ordner-Sync“; Migrationstest vor 1.0.0 (DEC-113).
 - *Session 2 zusätzlich:*
   - **ARCHITECTURE.md:** Paket `diag/` (Diagnose, Absturzbericht, Hersteller-Hinweise), `backup/`; Navigation `Screen.Settings(section)`, `Screen.Preview(profileId)`; Zustände Benutzer-Pause (`pausedUntil`, `manualOnly`) gegenüber WLAN-Pause (`resumeOnWifi`); Auslöser `trigger-safety`, `pause-end`, `stale-check`; Benachrichtigungs-Schalter.
-  - **SYNC_ENGINE.md:** Zwei Phasen des Ordner-Syncs, Reihenfolge, Download-Fortsetzung (`resumeOffset`), Papierkorb-Frist; `PendingCheck` vor dem PC-Kontakt; `stopReason`-Auswertung; Lauf-Zusammenfassungen und `isIdle`-Regel; `previewLimit` im Trockenlauf; Freigabe neuer Profile.
-  - **DATA_MODEL.md:** DB-Version 3 (`trashRetentionDays`, `MIGRATION_2_3`), Migrationsregeln (DEC-084); neue `GlobalSettings`-Schlüssel (`deviceId`, `stale*`, `freeSpace*`, `pausedUntil`, `manualOnly`, `awaitingFirstStart`, `previewLimit`, `logFilter*`, `notify*`); Sicherungsformat `leosync-backup` v1.
+  - **SYNC-ENGINE.md:** Zwei Phasen des Ordner-Syncs, Reihenfolge, Download-Fortsetzung (`resumeOffset`), Papierkorb-Frist; `PendingCheck` vor dem PC-Kontakt; `stopReason`-Auswertung; Lauf-Zusammenfassungen und `isIdle`-Regel; `previewLimit` im Trockenlauf; Freigabe neuer Profile.
+  - **DATA-MODEL.md:** DB-Version 3 (`trashRetentionDays`, `MIGRATION_2_3`), Migrationsregeln (DEC-084); neue `GlobalSettings`-Schlüssel (`deviceId`, `stale*`, `freeSpace*`, `pausedUntil`, `manualOnly`, `awaitingFirstStart`, `previewLimit`, `logFilter*`, `notify*`); Sicherungsformat `leosync-backup` v1.
 - *Session 3 zusätzlich:*
   - **ARCHITECTURE.md:** `MirrorLock` (Sperre Sync ↔ Eingriffe von Hand); Tools `Screen.Trash` und `Screen.FreeSpace`; Paket-Zuordnung `mirror/FolderFreer`, `mirror/TrashCleaner`, `mirror/TrashPurge`, `sync/FreeRules`.
-  - **SYNC_ENGINE.md:** Reihenfolge eines Ordner-Laufs: offene Schutzbremse → Handy-Ordner prüfen (`LOCAL_MISSING`) → SMB öffnen, PC-Ordner prüfen (`REMOTE_MISSING`) → vorgemerkte Wiederherstellungen → vorgemerktes PC-Leeren → Einlesen mit `.s2pold`-Recovery → Stichprobe nach Ordnerwechsel → „Nicht löschen“ → Papierkorb-Frist → Planung → Massenlösch-Prüfung → Phase A/B. Dazu Schwellen der Schutzbremse, Versionsschutz (`trashOther`), Rollback beim Wiederherstellen, Namensschema im Papierkorb, Regel „stat() und children() nie mischen“, Sicherheitsargument für „Speicher freigeben“ bei Ordnern (DROP statt TRASH).
-  - **DATA_MODEL.md:** DB-Version 4 (`massDeletePercent`, `MIGRATION_3_4`) und 5 (`keepVersions`, Tabelle `pending_restores`, `MIGRATION_4_5`); DAO-Abfrage `pendingRestoreProfiles`; SharedPreferences „guard“, „purge“ (Regeln, Dateien, Grössen) und „restore“ (fehlgeschlagene Wiederherstellungen) – nicht in der Sicherung.
+  - **SYNC-ENGINE.md:** Reihenfolge eines Ordner-Laufs: offene Schutzbremse → Handy-Ordner prüfen (`LOCAL_MISSING`) → SMB öffnen, PC-Ordner prüfen (`REMOTE_MISSING`) → vorgemerkte Wiederherstellungen → vorgemerktes PC-Leeren → Einlesen mit `.s2pold`-Recovery → Stichprobe nach Ordnerwechsel → „Nicht löschen“ → Papierkorb-Frist → Planung → Massenlösch-Prüfung → Phase A/B. Dazu Schwellen der Schutzbremse, Versionsschutz (`trashOther`), Rollback beim Wiederherstellen, Namensschema im Papierkorb, Regel „stat() und children() nie mischen“, Sicherheitsargument für „Speicher freigeben“ bei Ordnern (DROP statt TRASH).
+  - **DATA-MODEL.md:** DB-Version 4 (`massDeletePercent`, `MIGRATION_3_4`) und 5 (`keepVersions`, Tabelle `pending_restores`, `MIGRATION_4_5`); DAO-Abfrage `pendingRestoreProfiles`; SharedPreferences „guard“, „purge“ (Regeln, Dateien, Grössen) und „restore“ (fehlgeschlagene Wiederherstellungen) – nicht in der Sicherung.
   - **TESTING.md:** Unit-Tests `MirrorGuardTest`, `TrashIndexTest` (inkl. Uhrzeit-Namen), `ProfileWizardTest`, `TrashPurgeTest` (inkl. Schutz vorgemerkter Einträge), `FreeRulesTest`; manuelle Testabschnitte in `build.md` (Schutzbremse, Versionsschutz/Wiederherstellen, Papierkorb aufräumen, Profil-Assistent, Speicher freigeben für Ordner); Migrationstest vor 1.0.0 muss v3→v4→v5 abdecken.
 
 - *Session 4 zusätzlich:*
   - **ARCHITECTURE.md:** Paket `l10n/` (`Texts`, `AppLanguage`), Initialisierung in `App.onCreate`/`onConfigurationChanged`, Sprachwahl je Android-Version, Aufbau der `strings_*.xml` je Bereich, Regel „keine Texte im Code“.
-  - **SYNC_ENGINE.md:** Ordnerauflösung Schritt 2b (Standardname in anderer App-Sprache), Ordnername aus ISO-Kürzel, Papierkorb-Namen `TRASH_DIRS`, Konflikt-Zusatz `_conflict-phone`, Verlaufstexte in aktiver Sprache und `isIdle`-Merkmale beider Sprachen.
-  - **DATA_MODEL.md:** `StatRow.countryIso`; Bedeutung von `media_info.countryName` (nur Kennzeichen); SharedPreferences „lang“ (nicht in der Sicherung).
+  - **SYNC-ENGINE.md:** Ordnerauflösung Schritt 2b (Standardname in anderer App-Sprache), Ordnername aus ISO-Kürzel, Papierkorb-Namen `TRASH_DIRS`, Konflikt-Zusatz `_conflict-phone`, Verlaufstexte in aktiver Sprache und `isIdle`-Merkmale beider Sprachen.
+  - **DATA-MODEL.md:** `StatRow.countryIso`; Bedeutung von `media_info.countryName` (nur Kennzeichen); SharedPreferences „lang“ (nicht in der Sicherung).
   - **TESTING.md:** `StringsParityTest`, Reflection-Rückfall `TestTexts` (deutsche Texte in allen Tests), Ergänzung `FileFilterTest` (`.LeoSync-Bin`); manueller Sprachtest (Release-Checkliste 10a in `build.md`).
 
 - *Session 5 zusätzlich:*
   - **ARCHITECTURE.md:** Aufteilung `HomeScreen`/`HomeParts` und `ProfileScreen`/`ProfileCards` (MutableState-Übergabe); `PermissionRows` + `PermNeeds`; `PendingProfileDelete` (prozessweit, Snackbar); `ScreenScaffold` mit `bottomBar`/`snackbarHost`; Bibliothek dcerpc (`listShares`) und ihre R8-Regeln; `RunStatus`-Konstanten.
-  - **SYNC_ENGINE.md:** Prüfstufen (`PartialHash.levelRegions`: LOW = `regions`, MEDIUM = `thoroughRegions`, HIGH = 256 MB/128 Stichproben, FULL = ganze Datei), Pflicht bei Löschen, „Aus“ prüft nur die Grösse und gilt nicht als verifiziert; `friendlyError`/`userError` (Lauf-Meldung verständlich, Log technisch); vorgemerkte Profillöschung wird vom `SyncWorker` übersprungen.
-  - **DATA_MODEL.md:** DB-Version 6 (`verifyLevel`, Mapping aus `verifyUpload`/`deleteMode`, `TRIM(name)`); `remoteSubfolder` wird beim Öffnen in `smbPath` übernommen und leer gespeichert; Sicherung mit `verifyLevel` (Rückfall `verifyUpload`); neue `GlobalSettings`-Schlüssel `pullTipDone` und Neuinstallations-Standard für `notifySummary`.
+  - **SYNC-ENGINE.md:** Prüfstufen (`PartialHash.levelRegions`: LOW = `regions`, MEDIUM = `thoroughRegions`, HIGH = 256 MB/128 Stichproben, FULL = ganze Datei), Pflicht bei Löschen, „Aus“ prüft nur die Grösse und gilt nicht als verifiziert; `friendlyError`/`userError` (Lauf-Meldung verständlich, Log technisch); vorgemerkte Profillöschung wird vom `SyncWorker` übersprungen.
+  - **DATA-MODEL.md:** DB-Version 6 (`verifyLevel`, Mapping aus `verifyUpload`/`deleteMode`, `TRIM(name)`); `remoteSubfolder` wird beim Öffnen in `smbPath` übernommen und leer gespeichert; Sicherung mit `verifyLevel` (Rückfall `verifyUpload`); neue `GlobalSettings`-Schlüssel `pullTipDone` und Neuinstallations-Standard für `notifySummary`.
   - **TESTING.md:** `VerifyLevelTest`, `CredentialGroupsTest`, instrumentierter `MigrationTest` (`gradlew connectedDebugAndroidTest`, Schemas als androidTest-Assets); Emulator-Testumgebung (`LeoSync_API29`, `Medium_Phone_API_37.0`) mit Testfreigabe und Bedienung per `adb`/`uiautomator`; Testabschnitt „UX-Überarbeitung und Prüfstufen“ in `build.md`.
 
 ## D. Technische Risiken

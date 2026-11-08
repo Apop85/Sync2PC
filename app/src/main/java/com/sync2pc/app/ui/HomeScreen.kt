@@ -136,7 +136,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         if (r == SnackbarResult.ActionPerformed) PendingProfileDelete.undo() else PendingProfileDelete.commit(ctx)
     }
     val decisions by remember { dao.decisionsFlow() }.collectAsState(initial = emptyList())
-    val conflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
+    // 0.11.1: Konflikte eines Profils in der Rückgängig-Frist nicht anzeigen (bleiben gespeichert, kommen bei „Rückgängig“ zurück)
+    val allConflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
+    val conflicts = allConflicts.filter { it.profileId != pendingDelete?.id }
     val deleteCount by remember { dao.queuedDeleteCount() }.collectAsState(initial = 0)
     val lastRun by remember { dao.lastRunFlow() }.collectAsState(initial = null)
     val pendingRestores by remember { dao.pendingRestoreCount() }.collectAsState(initial = 0)

@@ -43,4 +43,10 @@
     <string name="remote_picker_no_shares">No Shares found. Is a folder shared on the PC (Properties → Sharing)?</string>
     <string name="remote_picker_empty">No subfolders</string>
     <string name="remote_picker_use">Use this folder</string>
+    <string name="remote_picker_new_folder">New folder</string>
+    <string name="remote_picker_new_folder_name">Folder name</string>
+    <string name="remote_picker_create">Create</string>
+    <string name="remote_picker_name_invalid">Invalid name. No \\ / : * ? \" &lt; &gt; |, no dot or space at the end.</string>
+    <string name="remote_picker_name_exists">A folder named \"%1$s\" already exists.</string>
+    <string name="remote_picker_create_failed">The folder could not be created.</string>
 </resources>

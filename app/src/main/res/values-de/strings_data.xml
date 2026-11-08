@@ -43,4 +43,10 @@
     <string name="remote_picker_no_shares">Keine Freigaben gefunden. Ist ein Ordner auf dem PC freigegeben (Eigenschaften → Freigabe)?</string>
     <string name="remote_picker_empty">Keine Unterordner</string>
     <string name="remote_picker_use">Diesen Ordner verwenden</string>
+    <string name="remote_picker_new_folder">Neuer Ordner</string>
+    <string name="remote_picker_new_folder_name">Ordnername</string>
+    <string name="remote_picker_create">Anlegen</string>
+    <string name="remote_picker_name_invalid">Ungültiger Name. Kein \\ / : * ? \" &lt; &gt; |, kein Punkt oder Leerzeichen am Ende.</string>
+    <string name="remote_picker_name_exists">Ein Ordner «%1$s» existiert bereits.</string>
+    <string name="remote_picker_create_failed">Der Ordner konnte nicht angelegt werden.</string>
 </resources>

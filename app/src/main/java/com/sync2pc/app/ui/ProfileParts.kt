@@ -13,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +33,7 @@ import com.sync2pc.app.l10n.str
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Assistent beim neuen Profil: Was soll synchronisiert werden? */
@@ -78,6 +81,12 @@ fun RemoteFolderPicker(
     var entries by remember { mutableStateOf<List<String>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var detail by remember { mutableStateOf<String?>(null) }
+    // Ordner anlegen (0.11.3, DEC-192)
+    var creating by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+    var createError by remember { mutableStateOf<String?>(null) }
+    var createBusy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(parts) {
         entries = null; error = null; detail = null
@@ -117,6 +126,14 @@ fun RemoteFolderPicker(
                                 Text("⬆  ..")
                             }
                         }
+                        // Auf der Ebene der Freigaben kann man keine Freigabe anlegen, nur Ordner darunter
+                        if (parts.isNotEmpty()) item {
+                            Row(Modifier.fillMaxWidth().clickable {
+                                newName = ""; createError = null; creating = true
+                            }.padding(vertical = 10.dp)) {
+                                Text("➕  " + str(R.string.remote_picker_new_folder))
+                            }
+                        }
                         if (list.isEmpty()) item {
                             Hint(str(if (parts.isEmpty()) R.string.remote_picker_no_shares else R.string.remote_picker_empty))
                         }
@@ -136,4 +153,59 @@ fun RemoteFolderPicker(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.common_cancel)) } },
     )
+
+    if (creating) {
+        val close = { if (!createBusy) creating = false }
+        AlertDialog(
+            onDismissRequest = close,
+            title = { Text(str(R.string.remote_picker_new_folder)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        newName, { newName = it; createError = null },
+                        label = { Text(str(R.string.remote_picker_new_folder_name)) },
+                        singleLine = true, enabled = !createBusy, modifier = Modifier.fillMaxWidth(),
+                    )
+                    createError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !createBusy && newName.isNotBlank(), onClick = {
+                    val name = newName.trim()
+                    val bad = invalidFolderName(name)
+                    when {
+                        bad -> createError = str(R.string.remote_picker_name_invalid)
+                        entries.orEmpty().any { it.equals(name, ignoreCase = true) } ->
+                            createError = str(R.string.remote_picker_name_exists, name)
+                        else -> {
+                            createBusy = true
+                            val share = parts.first()
+                            val full = (parts.drop(1) + name).joinToString("\\")
+                            scope.launch {
+                                val r = withContext(Dispatchers.IO) {
+                                    try {
+                                        SmbSession.open(start.copy(smbPath = "\\\\$host\\$share", remoteSubfolder = "")).use { s ->
+                                            s.ensureDir(full)
+                                            // Nur als Erfolg werten, wenn der Ordner wirklich da ist
+                                            if (!s.dirExists(full)) throw java.io.IOException(str(R.string.remote_picker_create_failed))
+                                        }
+                                        Result.success(Unit)
+                                    } catch (e: Exception) { Result.failure(e) }
+                                }
+                                createBusy = false
+                                r.onSuccess { creating = false; parts = parts + name }
+                                    .onFailure { createError = com.sync2pc.app.sync.userError(it) }
+                            }
+                        }
+                    }
+                }) { Text(str(R.string.remote_picker_create)) }
+            },
+            dismissButton = { TextButton(enabled = !createBusy, onClick = close) { Text(str(R.string.common_cancel)) } },
+        )
+    }
 }
+
+/** Windows-Ordnername ungültig? (leer, Sonderzeichen, Punkt/Leerzeichen am Ende, "." und "..", zu lang) */
+internal fun invalidFolderName(name: String): Boolean =
+    name.isEmpty() || name.length > 255 || name == "." || name == ".." ||
+        name.any { it in "\\/:*?\"<>|" || it.code < 32 } || name.endsWith(".") || name.endsWith(" ")

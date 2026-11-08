@@ -124,6 +124,15 @@
     <string name="home_profile_sources">Quellen: %1$s</string>
     <string name="home_profile_none">keine</string>
     <string name="home_profile_no_wifi">keines – nur manuelle Synchronisierung</string>
+    <string name="home_profile_counts">%1$d gesichert · %2$d offen</string>
+    <plurals name="home_profile_mirror_synced">
+        <item quantity="one">%1$s Datei synchronisiert</item>
+        <item quantity="other">%1$s Dateien synchronisiert</item>
+    </plurals>
+    <plurals name="home_profile_open_conflicts">
+        <item quantity="one">%1$s Konflikt offen</item>
+        <item quantity="other">%1$s Konflikte offen</item>
+    </plurals>
     <string name="home_profile_awaiting">Wartet auf den ersten Start – zuerst im Profil simulieren oder „Synchronisieren“ tippen</string>
 
     <!-- Schutzbremse: Knoepfe der Karte auf der Startseite -->

@@ -141,6 +141,14 @@ interface SyncDao {
     @Query("SELECT COUNT(*) FROM mirror_conflicts WHERE resolution IS NULL")
     suspend fun openConflictCount(): Int
 
+    /** Profilkarte (0.11.2): Anzahl offener Konflikte eines Profils */
+    @Query("SELECT COUNT(*) FROM mirror_conflicts WHERE profileId = :profileId AND resolution IS NULL")
+    fun openConflictCountFlow(profileId: Long): Flow<Int>
+
+    /** Profilkarte (0.11.2): Anzahl synchronisierter Dateien eines Ordner-Profils (Stand des letzten Abgleichs) */
+    @Query("SELECT COUNT(*) FROM mirror_state WHERE profileId = :profileId")
+    fun mirrorStateCountFlow(profileId: Long): Flow<Int>
+
     @Query("SELECT * FROM mirror_conflicts WHERE profileId = :profileId")
     suspend fun conflicts(profileId: Long): List<MirrorConflict>
 

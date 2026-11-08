@@ -2,6 +2,25 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.11.2 (2026-11-08)
+
+### Neu
+- **Ordner-Profile:** Die Profilkarte zeigt „X Dateien synchronisiert“ (Stand des letzten Abgleichs) und, falls vorhanden, „Y Konflikte offen“. Beides wird lokal gelesen, ohne PC-Zugriff.
+
+### Intern
+- `SyncDao.mirrorStateCountFlow`, `SyncDao.openConflictCountFlow` (reine Abfragen, keine Schema-Änderung).
+
+## 0.11.1 (2026-11-08)
+
+### Neu
+- **Gesichert und offen:** Bei Fotos-Profilen zeigt die Profilkarte „X gesichert · Y offen“ (rein lokal berechnet, ohne PC-Zugriff). Bei Ordner-Profilen erscheint noch keine Anzeige.
+
+### Geändert
+- **Profil löschen:** Während der Rückgängig-Frist erscheinen keine Konfliktkarten dieses Profils mehr (auf Startseite und in der Konfliktliste). Die Konflikte bleiben gespeichert und sind nach „Rückgängig“ wieder da.
+
+### Intern
+- `ProfileCard` liest `SyncDao.syncedCount` und `PendingCheck.readyFiles(…, 0)`. Keine Datenbank-Änderung. Aufträge SYNC-20261108-002 und -007.
+
 ## 0.11.0 (2026-11-08)
 
 ### Neu

@@ -200,6 +200,19 @@ gh release create v0.1.0 releases\LeoSync-0.1.0.apk --title "LeoSync 0.1.0" --no
 adb install -r releases\LeoSync-0.1.0.apk
 ```
 
+## Hinweise für Agents beim Bauen
+
+Gebaut wird nur, wenn der Inhaber es ausdrücklich erlaubt (siehe `CLAUDE.md`).
+
+1. `cmd /c "build.bat"` findet die Datei nicht, weil `Set-Location` in PowerShell nicht für cmd gilt. Immer den vollen Pfad nutzen, bei Gradle `gradlew.bat -p <Projektordner>`.
+2. Die Ausgabe nie in eine Pipe leiten (`| Select-Object …`). Der Gradle-Daemon hält die Pipe offen, der Aufruf hängt nach dem Build. Stattdessen in eine Datei umleiten (`> datei 2>&1`) und `build.bat -NoPause` verwenden.
+3. Existiert die APK der aktuellen Version schon, zählt der Builder hoch. Für einen erneuten Build derselben Version die APK vorher löschen.
+4. In KDoc-Kommentaren (`/** … */`) nie `/*` oder `/**` schreiben (z. B. Glob-Beispiele wie `values-de/*.xml`). Kotlin verschachtelt Kommentare, die Folge sind viele Folgefehler. Solche Beispiele nur in Zeilenkommentaren oder Strings.
+5. Die Sandbox blockt PowerShell-Befehle, deren Text wie ein geschützter Pfad aussieht (z. B. Regex `\d+` zusammen mit `Remove-Item`). `[0-9]+` schreiben oder die Befehle trennen.
+6. Vor dem Anlegen einer Datei prüfen, ob sie schon existiert (z. B. wurde `ui/AppIcons.kt` einmal überschrieben).
+7. Bei SAF (Handy-Ordner) nie Werte aus `stat()` mit Werten aus `children()` vergleichen: die Zeitstempel unterscheiden sich und lösen unnötige Übertragungen aus. Einheitlich `tree.find(rel)` nutzen.
+8. Neue DB-Version: Test in `app/src/androidTest/.../MigrationTest.kt` ergänzen und die neue Schema-Datei committen.
+
 ## Fehlerbehebung
 
 | Problem | Lösung |

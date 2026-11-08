@@ -39,7 +39,10 @@ fun ConflictScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val scope = rememberCoroutineScope()
-    val conflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
+    // 0.11.1: Konflikte eines Profils in der Rückgängig-Frist der Löschung ausblenden (nicht löschen)
+    val pendingDelete by PendingProfileDelete.pending.collectAsState()
+    val allConflicts by remember { dao.openConflictsFlow() }.collectAsState(initial = emptyList())
+    val conflicts = allConflicts.filter { it.profileId != pendingDelete?.id }
     val profiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
 
     fun resolve(list: List<MirrorConflict>, choose: (MirrorConflict) -> String) {
