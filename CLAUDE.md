@@ -8,6 +8,7 @@ Architecture & Complex Issues: .claude\roles\ARCHITECTURE-Specialist.md
 Documentation: .claude\roles\DOCUMENTATION-Specialist.md
 QA & Testing: .claude\roles\QA-Specialist.md
 Development: .claude\roles\DEVELOPMENT-Specialist.md
+Projektmanager: .claude\roles\Project-manager.md
 Lese den für dich bestimmten Masterprompt einmalig ein. 
 
 ## 1. Verbindliche Inhaberregeln

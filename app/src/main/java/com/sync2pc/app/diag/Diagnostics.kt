@@ -30,6 +30,7 @@ import com.sync2pc.app.data.messageText
 import com.sync2pc.app.data.text
 import com.sync2pc.app.data.triggerText
 import com.sync2pc.app.mirror.LocalTree
+import com.sync2pc.app.smb.SmbTarget
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.sync.WifiHelper
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,10 @@ import java.util.Locale
 /**
  * Diagnosedaten für die Fehlersuche (Beta): Gerät, Hintergrund-Einschränkungen, Berechtigungen,
  * Einstellungen, Profile, geplante Aufträge und die letzten Läufe. Ohne Passwörter.
+ *
+ * Seit 0.12.4 pseudonymisiert: Profil-, Rechner-, Freigabe-, WLAN- und Ordnernamen, Benutzernamen, IP-Adressen,
+ * Pfade und genaue Dateinamen kommen nicht mehr vor (siehe [Redactor]). Der Verlauf-Export ([logExport]) ist ein
+ * bewusster Export des Benutzers für sich selbst und bleibt unverändert.
  */
 object Diagnostics {
     private val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.GERMANY)
@@ -66,8 +71,27 @@ object Diagnostics {
         val ctx = context.applicationContext
         val s = GlobalSettings(ctx)
         val dao = AppDatabase.get(ctx).dao()
+        val r = Redactor()
+        // Bekannte sensible Werte zuerst erfassen, damit sie auch in Log, Fehlertexten und Abstürzen ersetzt werden
+        val profiles = safe { dao.profiles() } ?: emptyList()
+        val currentSsid = safe { WifiHelper.currentSsid(ctx) }
+        for (p in profiles) {
+            r.register("Profil", p.name)
+            SmbTarget.parse(p.smbPath)?.let { t ->
+                r.register("Host", t.host); r.register("Freigabe", t.share); r.registerFolders(t.basePath)
+            } ?: SmbTarget.hostOf(p.smbPath)?.let { r.register("Host", it) }
+            p.smbUser.split('\\', '@').forEach { r.register("Benutzer", it) }
+            r.registerFolders(p.remoteSubfolder)
+            r.registerAll("WLAN", p.ssids())
+            p.folders().forEach { r.registerFolders(it) }
+            p.localTreeUri.takeIf { it.isNotBlank() }?.let { r.registerFolders(safe { LocalTree.label(Uri.parse(it)) } ?: "") }
+        }
+        currentSsid?.let { r.register("WLAN", it) }
+        val runs = safe { dao.recentRuns(15) } ?: emptyList()
+        runs.forEach { r.register("Profil", it.profileName) } // auch Profile, die es nicht mehr gibt
         buildString {
             appendLine("=== LeoSync Diagnose ===")
+            appendLine("Hinweis: Namen, Benutzer, IP-Adressen, Pfade und Dateinamen sind maskiert (Profil-1, Host-1 …).")
             append(header(ctx))
             appendLine("Hersteller-OS: ${Build.DISPLAY}, Sicherheitspatch ${Build.VERSION.SECURITY_PATCH}")
 
@@ -102,7 +126,7 @@ object Diagnostics {
             section("Netzwerk")
             kv("Standortdienst an", safe { WifiHelper.isLocationEnabled(ctx) })
             kv("Im WLAN", safe { WifiHelper.isOnWifi(ctx) })
-            kv("SSID", safe { WifiHelper.currentSsid(ctx) ?: "(nicht lesbar)" })
+            kv("WLAN", currentSsid?.let { r.pseudo("WLAN", it) } ?: "(nicht lesbar)")
             kv("Netz", safe {
                 val cm = ctx.getSystemService(ConnectivityManager::class.java)
                 val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
@@ -130,7 +154,7 @@ object Diagnostics {
             kv("updateVersion", s.updateVersion.ifEmpty { "-" })
             kv("updateInstalling", s.updateInstalling.ifEmpty { "-" })
             kv("shareRetryAt", t(s.shareRetryAt))
-            kv("shareUnreachable", s.shareUnreachable.ifEmpty { "-" })
+            kv("shareUnreachable", r.scrub(s.shareUnreachable).ifEmpty { "-" })
             kv("resumeOnWifi", s.resumeOnWifi)
             kv("resumeSince", t(s.resumeSince))
             kv("lastWifiTriggerAt", t(s.lastWifiTriggerAt))
@@ -143,25 +167,29 @@ object Diagnostics {
             }.ifEmpty { "-" })
             kv("staleWarn", if (s.staleWarnEnabled) "an, ${s.staleWarnDays} Tage, zuletzt ${t(s.lastStaleWarnAt)}" else "aus")
             kv("freeSpace", "${s.freeSpaceMonths} Monate, Favoriten behalten ${s.freeSpaceKeepFavorites}")
-            kv("lastSkip", if (s.lastSkipAt > 0) "${t(s.lastSkipAt)} – ${s.lastSkipInfo}" else "-")
+            kv("lastSkip", if (s.lastSkipAt > 0) "${t(s.lastSkipAt)} – ${r.scrub(s.lastSkipInfo)}" else "-")
 
             section("Profile")
-            val profiles = safe { dao.profiles() } ?: emptyList()
             if (profiles.isEmpty()) appendLine("(keine)")
             for (p in profiles) {
-                appendLine("[${p.id}] ${p.name} – ${p.type().name}, ${if (p.enabled) "aktiv" else "inaktiv"}, ${p.dir().name}")
-                kv("  Share", p.smbPath + (if (p.remoteSubfolder.isNotBlank()) " + ${p.remoteSubfolder}" else ""))
+                appendLine("[${p.id}] ${r.pseudo("Profil", p.name)} – ${p.type().name}, ${if (p.enabled) "aktiv" else "inaktiv"}, ${p.dir().name}")
+                val target = SmbTarget.parse(p.smbPath)
+                kv("  Freigabe", if (target != null) {
+                    "${r.pseudo("Host", target.host)} / ${r.pseudo("Freigabe", target.share)}" +
+                        (if (target.basePath.isNotBlank()) " + ${target.basePath.split('\\').count { it.isNotBlank() }} Unterordner" else "")
+                } else if (p.smbPath.isBlank()) "-" else "${SmbTarget.hostOf(p.smbPath)?.let { r.pseudo("Host", it) } ?: "?"} (ohne Freigabe)")
+                kv("  Unterordner am PC gesetzt", p.remoteSubfolder.isNotBlank())
                 kv("  Benutzer gesetzt", p.smbUser.isNotBlank())
                 kv("  Passwort gesetzt", p.smbPasswordEnc.isNotBlank())
-                kv("  WLANs", p.ssids().joinToString(", ").ifEmpty { "-" })
+                kv("  WLANs", p.ssids().joinToString(", ") { r.pseudo("WLAN", it) }.ifEmpty { "-" })
                 if (p.type() == ProfileType.PHOTOS) {
-                    kv("  Quellordner", p.folders().joinToString(", ").ifEmpty { "-" })
+                    kv("  Quellordner", p.folders().joinToString(", ") { r.folderPath(it) }.ifEmpty { "-" })
                     kv("  Fotos/Videos/Unterordner", "${p.includeImages}/${p.includeVideos}/${p.includeSubfolders}")
                     kv("  Löschen", "${p.delete().name}, Prüfen ${p.verify().name}")
                     kv("  Gesicherte Dateien", safe { dao.syncedCountNow(p.id) })
                 } else {
                     val uri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
-                    kv("  Handy-Ordner", uri?.let { LocalTree.label(it) + if (LocalTree.hasPermission(ctx, it)) "" else " (ZUGRIFF FEHLT)" } ?: "-")
+                    kv("  Handy-Ordner", uri?.let { r.folderPath(LocalTree.label(it)) + if (LocalTree.hasPermission(ctx, it)) "" else " (ZUGRIFF FEHLT)" } ?: "-")
                     kv("  Löschungen übernehmen", p.propagateDeletes)
                     kv("  Konflikte", p.conflict().name)
                     kv("  Prüfintervall", "${p.remotePollMinutes} min")
@@ -170,8 +198,9 @@ object Diagnostics {
                     kv("  Alte Versionen behalten", p.keepVersions)
                     kv("  Abgeglichene Dateien", safe { dao.mirrorStateCount(p.id) })
                 }
-                if (p.includePatterns.isNotBlank()) kv("  Whitelist", p.includePatterns.replace('\n', ' '))
-                if (p.excludePatterns.isNotBlank()) kv("  Blacklist", p.excludePatterns.replace('\n', ' '))
+                // Muster können Namen enthalten: nur Anzahl und Form ("x*.x"), Buchstaben/Ziffern maskiert
+                if (p.includePatterns.isNotBlank()) kv("  Einschluss-Regeln", patternShape(p.includePatterns))
+                if (p.excludePatterns.isNotBlank()) kv("  Ausschluss-Regeln", patternShape(p.excludePatterns))
             }
 
             section("Offen")
@@ -211,7 +240,7 @@ object Diagnostics {
                 }
                 exits.forEach {
                     appendLine("${t(it.timestamp)}: ${exitReason(it.reason)}, Wichtigkeit ${it.importance}" +
-                        (it.description?.let { d -> " – $d" } ?: ""))
+                        (it.description?.let { d -> " – ${r.scrub(d)}" } ?: ""))
                 }
             }
 
@@ -220,30 +249,29 @@ object Diagnostics {
             if (crashes.isEmpty()) appendLine("(keine)")
             crashes.forEachIndexed { i, c ->
                 if (i > 0) appendLine("-----")
-                appendLine(c)
+                appendLine(r.scrub(c))
             }
 
             section("Letzte Läufe")
-            val runs = safe { dao.recentRuns(15) } ?: emptyList()
             if (runs.isEmpty()) appendLine("(keine)")
-            runs.forEach { appendLine(runLine(it)) }
+            runs.forEach { appendLine(runLine(it, r2 = r)) }
 
             section("Warnungen und Fehler (letzte ${runs.size} Läufe)")
             var anyIssue = false
-            for (r in runs) {
-                val issues = (safe { dao.logs(r.id) } ?: emptyList()).filter { it.level == "W" || it.level == "E" }
+            for (run in runs) {
+                val issues = (safe { dao.logs(run.id) } ?: emptyList()).filter { it.level == "W" || it.level == "E" }
                 if (issues.isEmpty()) continue
                 anyIssue = true
-                appendLine("--- Lauf #${r.id} (${t(r.startedAt)}, ${r.profileName})")
+                appendLine("--- Lauf #${run.id} (${t(run.startedAt)}, ${r.pseudo("Profil", run.profileName)})")
                 if (issues.size > 30) appendLine("… ${issues.size - 30} ältere ausgelassen")
-                issues.takeLast(30).forEach { appendLine(logLine(it)) }
+                issues.takeLast(30).forEach { appendLine(logLine(it, r)) }
             }
             if (!anyIssue) appendLine("(keine)")
 
             section("Log der letzten 3 Läufe (gekürzt)")
-            for (r in runs.take(3)) {
-                appendLine("--- Lauf #${r.id} (${t(r.startedAt)}, ${r.profileName})")
-                val lines = compress(safe { dao.logs(r.id) } ?: emptyList())
+            for (run in runs.take(3)) {
+                appendLine("--- Lauf #${run.id} (${t(run.startedAt)}, ${r.pseudo("Profil", run.profileName)})")
+                val lines = compress(safe { dao.logs(run.id) } ?: emptyList(), r)
                 if (lines.size > 80) appendLine("… ${lines.size - 80} ältere Zeilen ausgelassen")
                 lines.takeLast(80).forEach { appendLine(it) }
             }
@@ -339,14 +367,21 @@ object Diagnostics {
     private val ALREADY_FOLDER = Regex("""bereits in (.+?)(?: vorhanden)?$""")
     private val ALREADY_COUNT = Regex("""^= (\d+) Dateie?n? bereits""")
 
-    private fun logLine(e: LogEntry): String =
-        "${fmt.format(Date(e.time)).substringAfter(' ')} ${e.level} ${e.message}"
+    private fun logLine(e: LogEntry, r: Redactor? = null): String =
+        "${fmt.format(Date(e.time)).substringAfter(' ')} ${e.level} ${r?.scrub(e.message) ?: e.message}"
+
+    /** Form eines Filtermusters ohne Inhalt: Buchstaben/Ziffern -> "x", Platzhalter (*, ?) und Punkte bleiben */
+    internal fun patternShape(patterns: String): String {
+        val lines = patterns.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        return "${lines.size} Regel(n): " + lines.joinToString(" ") { it.replace(Regex("[\\p{L}\\p{N}_-]+"), "x") }
+    }
 
     /**
      * Fasst aufeinanderfolgende "= …"-Zeilen (Datei bereits vorhanden) zu einer Zeile zusammen.
      * Gilt auch für das alte Format bis 0.1.0 ("= bild.jpg war bereits in 2019\02").
+     * Mit [r] werden Ordnernamen und der übrige Text maskiert (Jahr/Monat bleiben).
      */
-    internal fun compress(entries: List<LogEntry>): List<String> {
+    internal fun compress(entries: List<LogEntry>, r: Redactor? = null): List<String> {
         val out = ArrayList<String>()
         var count = 0
         var files = 0
@@ -354,7 +389,8 @@ object Diagnostics {
         var first: LogEntry? = null
         fun flush() {
             val f = first ?: return
-            out += if (count == 1) logLine(f)
+            // Mit Maskierung immer die zusammengefasste Form: so steht der Ordnername nie im Klartext
+            out += if (count == 1 && r == null) logLine(f)
             else "${fmt.format(Date(f.time)).substringAfter(' ')} I = $files Dateien bereits vorhanden ($count Einträge" +
                 (if (folders.isNotEmpty()) ": ${folders.take(6).joinToString(", ")}${if (folders.size > 6) ", …" else ""}" else "") + ")"
             count = 0; files = 0; folders.clear(); first = null
@@ -365,10 +401,10 @@ object Diagnostics {
                 count++
                 // Ab 0.1.1 "= 37 Dateien bereits in …", davor eine Zeile pro Datei
                 files += ALREADY_COUNT.find(e.message)?.groupValues?.get(1)?.toIntOrNull() ?: 1
-                ALREADY_FOLDER.find(e.message)?.groupValues?.get(1)?.let { folders += it }
+                ALREADY_FOLDER.find(e.message)?.groupValues?.get(1)?.let { folders += r?.folderPath(it, "\\") ?: it }
             } else {
                 flush()
-                out += logLine(e)
+                out += logLine(e, r)
             }
         }
         flush()
@@ -376,10 +412,13 @@ object Diagnostics {
     }
 
     /** [localized] = Kennungen in der aktiven Sprache (Verlauf-Export); sonst der gespeicherte Text (Diagnose, DEC-160) */
-    private fun runLine(r: SyncRun, localized: Boolean = false): String =
-        "#${r.id} ${t(r.startedAt)} → ${t(r.finishedAt ?: 0L)} [${r.status}] ${r.profileName} " +
-            "(${if (localized) r.triggerText() else r.trigger})" +
-            " ↑${r.uploaded} ⤼${r.skipped} ✗${r.failed} ⏸${r.waiting}: ${if (localized) r.messageText() else r.message}"
+    private fun runLine(r: SyncRun, localized: Boolean = false, r2: Redactor? = null): String {
+        val profile = r2?.pseudo("Profil", r.profileName) ?: r.profileName
+        val message = if (localized) r.messageText() else r.message
+        return "#${r.id} ${t(r.startedAt)} → ${t(r.finishedAt ?: 0L)} [${r.status}] $profile " +
+            "(${(if (localized) r.triggerText() else r.trigger).let { r2?.scrub(it) ?: it }})" +
+            " ↑${r.uploaded} ⤼${r.skipped} ✗${r.failed} ⏸${r.waiting}: ${r2?.scrub(message) ?: message}"
+    }
 
     private fun StringBuilder.section(title: String) {
         appendLine()

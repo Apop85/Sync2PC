@@ -60,7 +60,7 @@
     <string name="settings_home_country_hint">Fotos aus diesem Land bekommen keinen Länderzusatz (Standard: CH = Schweiz).</string>
 
     <string name="settings_diag_title">Beta / Diagnose</string>
-    <string name="settings_diag_hint">Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen (ohne Passwörter) und kopiert sie in die Zwischenablage. Geräte-ID: %1$s</string>
+    <string name="settings_diag_hint">Sammelt Angaben zu Gerät, Hintergrund-Einschränkungen, Berechtigungen, Profilen und den letzten Läufen und kopiert sie in die Zwischenablage. Passwörter, Benutzernamen, IP-Adressen, Rechner-, WLAN- und Ordnernamen, Pfade und genaue Dateinamen fehlen oder sind maskiert. Geräte-ID: %1$s</string>
     <string name="settings_diag_failed">Diagnose fehlgeschlagen: %1$s</string>
     <string name="settings_diag_busy">Sammle Daten…</string>
     <string name="settings_report">Problem melden</string>

@@ -3,6 +3,27 @@
 
 Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISIONS.md` Anhang A/B (Antworten des Inhabers vom 2026-11-08). Umsetzung ist vom Inhaber freigegeben, ausser wo „prüfen“ steht. Jede Umsetzung: Doku gemäss `CLAUDE.md` §11 an Documentation melden.
 
+### SYNC-20261109-047 – PC-Erkennung statt WLAN-Name (eigenständig, ohne Play-Store-Abhängigkeit)
+- Erstellt am: 2026-11-09
+- Absender: Projektmanager (im Auftrag des Inhabers)
+- Empfänger: Development
+- Priorität: HIGH
+- Status: OPEN
+- Übergabegrund: Der Inhaber will die PC-Erkennung umgesetzt haben, unabhängig vom Play Store.
+- Aufgabenbeschreibung: Die Erkennung des PCs darf nicht mehr vom WLAN-Namen abhängen. Anforderungen aus DEC-109, DEC-188 und Memory:
+  - Jedes ungemessene WLAN: Port-445-Test, danach Prüfung der SMB-Server-GUID **vor** dem Senden der Zugangsdaten.
+  - WLAN-Name nur optional (bei freiwilliger Standortfreigabe). Das bestehende Verhalten (mobile Daten/VPN-Schalter, DEC-126) darf nicht schlechter werden.
+  - Muss genauso zuverlässig sein wie heute. Zugangsdaten dürfen unter keinen Umständen an einen falschen Server gehen.
+  - Funktioniert in der Variante `github` und darf keine Flavor-, Paket-ID- oder Play-Voraussetzung haben.
+  - Version: neue Funktion = nächste Minor-Reihe (DEC-188 nennt 0.13.0), Patchnotes gemäss Inhaberregel.
+- Technischer Kontext: Aktuell `SmbSession.isReachable` (Port 445, ohne Anmeldung) plus WLAN-Name über `WifiHelper`; Wartezeiten in `NetworkRules.reachabilityWaits`. DATA-MODEL.md erwähnt mögliche Profilfelder für die Server-GUID, aber **noch keine Entscheidung und keine Felder**. Neuester Build 0.12.4, DB aktuell v7.
+- Betroffene Dateien: soweit bekannt `SmbSession`, `WifiHelper`, `SyncWorker`, `NetworkRules`. Weitere Dateien und der genaue GUID-Ablauf sind **ungeklärt**. Zuerst Code und `docs/SYNC-ENGINE.md` §6 lesen.
+- Erwartetes Ergebnis: Umsetzung nach CLAUDE.md-Ablauf „Kritisch“, mit gezielten Tests. Bei einer DB-Änderung Migration samt `MigrationTest`, separat testbar.
+- Besondere Einschränkungen: Nichts bauen. Bei offenen Grundsatzfragen (GUID-Speicherung, Verhalten bei GUID-Wechsel, Migration) stoppen und per Matrix an Architecture übergeben. Anschliessend Folgeaufträge an QA (Datenverlust/Sicherheit) und Documentation.
+- Tatsächlich durchgeführte Arbeiten: –
+- Ergebnis und Rückmeldung: –
+- Abgeschlossen am: –
+
 ### SYNC-20261109-043 – Instrumentierter Test für Kennungen mit echten Android-Ressourcen (optional, aus QA -040)
 - Erstellt am: 2026-11-09
 - Absender: QA
@@ -14,7 +35,7 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Technischer Kontext: QA -040, Version 0.12.1; Entscheid, ob umgesetzt wird, bei Development. Neue Tests gehören laut `docs/TESTING.md` zu Abschnitt 4/9.
 - Betroffene Dateien: `app/src/androidTest/…` (neu)
 - Erwartetes Ergebnis: Test vorhanden und auf dem Emulator grün, oder begründeter Verzicht; Rückmeldung an QA/Documentation.
-- Tatsächlich durchgeführte Arbeiten: Neu `app/src/androidTest/.../MsgInstrumentedTest.kt` (6 Tests): Namen-Round-Trip mit echtem `AndroidResolver` (echter Text, nicht Rückfall), Plural und verschachtelt, `RunSummary`, unbekannter Schlüssel/kaputter Code → Rückfall, gleiche Kennung in DE und EN (erwartete Texte aus den echten Ressourcen per Konfigurations-Kontext), gespeicherter Lauf in aktiver Sprache, `SyncScheduler.triggerData/triggerOf` (mit/ohne Kennung, Standard). Sprachwechsel per Prefs „lang“ nur bis Android 12 (`assumeTrue`, auf API 33+ übersprungen). Keine Produktionsänderung, Version bleibt 0.12.1.
+- Tatsächlich durchgeführte Arbeiten: Neu `app/src/androidTest/.../MsgInstrumentedTest.kt` (6 Tests): Namen-Round-Trip mit echtem `AndroidResolver` (echter Text, nicht Rückfall), Plural und verschachtelt, `RunSummary`, unbekannter Schlüssel/kaputter Code → Rückfall, gleiche Kennung in DE und EN (erwartete Texte aus den echten Ressourcen per Konfigurations-Kontext), gespeicherter Lauf in aktiver Sprache, `SyncScheduler.triggerData/triggerOf` (mit/ohne Kennung, Standard). Sprachwechsel per Prefs „lang“ nur bis Android 12 (`assumeTrue`, auf API 33+ übersprungen). Keine Produktionsänderung ausser `Msg.toCode()` (Ausnahme abgefangen); Build 0.12.2.
 - Ergebnis und Rückmeldung: Nicht gebaut, nicht ausgeführt (Inhaberregel); Syntax von Hand geprüft. Bitte `gradlew connectedDebugAndroidTest` (QA/Inhaber) und Ergebnis an Documentation (TESTING.md Abschnitt 4/9). Nicht abgedeckt: `closeDanglingRuns` (In-Memory-Room), Compose-Anzeige.
 - Abgeschlossen am: 2026-11-09
 
@@ -23,15 +44,15 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: QA
 - Empfänger: Development
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED (Umsetzung 0.12.3; QA-Nachprüfung offen)
 - Übergabegrund: Restfund bei der Nachprüfung -038; QA korrigiert nicht selbst. Möglich, nicht auf dem Gerät belegt.
 - Aufgabenbeschreibung: `Notifications.interventionDone` meldet „zugestellt“ (true), sobald `canPost` stimmt. `canPost` prüft nur `POST_NOTIFICATIONS` (ab Android 13), nicht `NotificationManagerCompat.areNotificationsEnabled()` bzw. den Kanal `CH_ALERTS`. Sind die Hinweise für LeoSync im System abgeschaltet (Berechtigung vorhanden, oder Android < 13), wirft das System die Meldung weg, die Registry löscht den Zustand, das Ergebnis erscheint nirgends. Erwartet: in diesem Fall `false` liefern (Ergebnis bleibt als DONE bis zum Öffnen der Ansicht), oder Entscheid, das als Restrisiko zu akzeptieren. Entscheid bei Development.
 - Technischer Kontext: QA -038, Version 0.11.10; Restrisiko ohnehin: DONE liegt nur im Speicher (Prozessende).
 - Betroffene Dateien: `sync/Notifications.kt` (`interventionDone`, `canPost`)
 - Erwartetes Ergebnis: Entscheid, ggf. Korrektur, Rückmeldung. Kleine Änderung; Nachprüfung durch QA nur bei Code-Änderung.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Entscheid: beheben. `Notifications.interventionDone` liefert `false`, wenn `areNotificationsEnabled()` false ist oder der Kanal `CH_ALERTS` die Wichtigkeit NONE hat (neue private `deliverable`; Ausnahme → true, wie bisher). Das Ergebnis bleibt dann als DONE stehen (`InterventionRegistry`). Version 0.12.3.
+- Ergebnis und Rückmeldung: Nicht gebaut/getestet (Inhaberregel); kein JVM-Test möglich (Android-Klassen). Gerätetest Inhaber: Hinweise für LeoSync im System aus → Eingriff bei geschlossener Ansicht → Ansicht öffnen: Ergebnis steht da. Restrisiko unverändert: DONE nur im Speicher (Prozessende). Doku: PATCHNOTES. QA-Nachprüfung (Codeänderung) empfohlen.
+- Abgeschlossen am: 2026-11-09
 
 ### SYNC-20261108-036 – Eingriff beim laufenden Sync (0.11.10): Ergebnismeldung, Abbrechen-Race, Testbarkeit (aus QA -035)
 - Erstellt am: 2026-11-08

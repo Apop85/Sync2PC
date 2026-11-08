@@ -224,6 +224,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `update/UpdateWorker.kt` | Tägliche Prüfung (periodisch, WLAN) | ○ |
 | `update/UpdateScreen.kt` | Update-Seite (Compose) | ○ |
 | `diag/Diagnostics.kt` | Diagnosetext ohne Passwörter (Gerät, Berechtigungen, Aufträge, Läufe), zufällige Geräte-ID | ● |
+| `diag/Redactor.kt` | Maskiert und pseudonymisiert Diagnosedaten (Platzhalter je Export, Mustererkennung im Freitext); reine Kotlin-Klasse ohne Android, von `Diagnostics` genutzt (DEC-203, 0.12.4) | ● |
 | `diag/CrashReporter.kt` | Uncaught-Exception-Handler, Absturzbericht lokal in Datei | ○ |
 | `diag/VendorHints.kt` | Hersteller-spezifische Stromspar-Hinweise (OnePlus/Oppo/Realme, Samsung, Xiaomi, Huawei/Honor) | ○ |
 | `backup/BackupCodec.kt` | Format `leosync-backup` (v1), Serialisierung/Verschlüsselung mit Export-Passwort (`BackupContent`, `ParsedBackup`, `BackupException`) | ● rein |
@@ -490,6 +491,6 @@ Massgeblich sind die Dateien mit Bindestrich (alle vorhanden); die Unterstrich-V
 
 ## 14. Geplant oder noch nicht umgesetzt (Quelle: DECISIONS, **nicht** implementiert)
 
-- Paketwechsel zu `ch.leo.sync` und Play-Store-Vorbereitung (Versionsnummer offen: 0.12.0 ist seit 2026-11-09 durch den Verlauf mit Kennungen belegt), PC-Erkennung (0.13.0) – Beschluss, Umsetzung steht aus (DEC-110, DEC-188).
+- Paketwechsel zu `ch.leo.sync` und Play-Store-Integration: nur als offene Punkte geführt, ohne Versionsnummer (DEC-109, DEC-110). PC-Erkennung: unabhängig vom Play Store, eigenständige Umsetzung (Development SYNC-20261109-047; DEC-109, DEC-188).
 - Heimnetz-Berechtigung ab targetSdk 37 voraussichtlich nötig (DEC-183).
 - ~~„Verlauf mit Kennungen statt fertiger Texte“ (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1 (DEC-202).

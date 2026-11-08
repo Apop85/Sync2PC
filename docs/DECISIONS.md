@@ -26,11 +26,11 @@
 | Status | Anzahl |
 |---|---|
 | Accepted | 14 |
-| Implemented | 152 |
+| Implemented | 153 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
-| **Total** | **202** |
+| **Total** | **203** |
 
 ---
 
@@ -115,6 +115,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-084: Migrationsregeln – nie destruktiv, neue Spalten mit DEFAULT
 - DEC-159: Verlaufstexte in der aktiven Sprache speichern
 - DEC-202: Verlauf mit Kennungen (Code-Spalten mit Rückfalltext)
+- DEC-203: Diagnose pseudonymisiert und maskiert (Abschnitt 13)
 - DEC-162: Ordnername aus dem Länderkürzel, Cache-Name nur als Kennzeichen
 - DEC-172: DB-Version 6 – Prüfstufe und bereinigte Profilnamen
 - DEC-173: Profilnamen ohne Leerzeichen am Rand
@@ -517,6 +518,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-200 | Proposed | 13. Sicherheit, Datenschutz und Diagnose |
 | DEC-201 | Accepted | 2. Synchronisationsengine und 3-Wege-Abgleich |
 | DEC-202 | Implemented | 6. Datenbank und Datenmodell |
+| DEC-203 | Implemented | 13. Sicherheit, Datenschutz und Diagnose |
 
 ---
 
@@ -698,6 +700,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Befund F1: Die Eingriffe laufen im `rememberCoroutineScope` der Ansicht (`TrashScreen`, `FreeSpaceScreen`) und werden beim Verlassen abgebrochen. Befund F3 (siehe D47): Aufräumen löscht bei „Alles“ und „Tage“ mit heutigem Tag mehr als angezeigt. Befund F4: „Endgültig löschen“ (konkrete Pfade) und `FolderFreer.verifyAndDelete` (volle Neuprüfung) sind robust.
 - **Alternativen:** Dauerhaft in Prefs oder Datenbank vormerken (dauerhafte Löschabsichten, Haken im Worker, Migration); eigener Worker; Ausführung in `MirrorEngine` am Laufende (alle verworfen).
 - **Konsequenzen:** Löst die Konsequenz „Verlässt man die Ansicht … unterbleibt der Eingriff“ aus DEC-144 ab, sobald umgesetzt. Restrisiken: Beendet ein Hersteller-Killer den Prozess während des Wartens, unterbleibt der Eingriff still (D14); die Sperre bleibt global (D29). Kritische Änderung: Review und QA nach der Umsetzung.
+- **Nachtrag 0.12.3 (Development -039, im Code gelesen 2026-11-09):** `Notifications.interventionDone` liefert `false`, wenn die Hinweise für LeoSync im System (`areNotificationsEnabled`) oder der Kanal `CH_ALERTS` (Wichtigkeit NONE) ausgeschaltet sind. Das Ergebnis bleibt dann als DONE in der App stehen, bis die Ansicht geöffnet wird. Restrisiko unverändert: DONE nur im Speicher.
 - **Betroffene Komponenten:** `mirror/MirrorLock.kt`, `TrashCleaner`, `TrashPurge`, `PurgeStore`, `FolderFreer`, `ui/TrashScreen.kt`, `ui/FreeSpaceScreen.kt`
 - **Abhängigkeiten:** DEC-140, DEC-144, DEC-147, DEC-196 (Muster `PendingProfileDelete`)
 
@@ -1026,6 +1029,22 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `data/Entities.kt` (`SyncRun`, `LogEntry`), `AppDatabase`, `SyncScheduler`, `ui/LogScreen.kt`, `diag/Diagnostics.kt`, `l10n/Msg.kt`, `l10n/Texts.kt`
 - **Abhängigkeiten:** DEC-084, DEC-159, DEC-160
 - **Nachtrag Umsetzung (0.12.0/0.12.1, im Code gelesen 2026-11-09):** `l10n/Msg.kt` (JSON-Kennung, Formen `t`, `k`+`a`, `k`+`n`+`a`, `j`+`p`, Tiefe höchstens 12, Rückfalltext bei jedem Fehler); `Texts.Resolver` löst Ressourcen-Namen auf (`entryName`, `stringByName`, `pluralByName`), `TestTexts` liefert ihn für Unit-Tests (D33); `MIGRATION_6_7` (DB-Version 7, drei `ADD COLUMN`); `MirrorEngine` und `SyncEngine` schreiben Text und Code aus derselben `Msg` (wörtliche Texte über `Msg.lit`); der Auslöser liegt zusätzlich als `KEY_TRIGGER_CODE` in den Auftragsdaten (`SyncScheduler`, Rückfall auf den Text); `RunGrouping.isIdle` prüft bei vorhandenem Code `RunSummary.NOT_IDLE_KEYS`, sonst die Merkmal-Wörter; `Diagnostics.logExport` rendert in der aktiven Sprache, die Diagnose bleibt beim gespeicherten Text. Abweichung/offen: Der Regex `ALREADY_COUNT` in `Diagnostics.compress` ist weiterhin nur deutsch (Nebenbefund oben nicht behoben). Das Schema `7.json` wird erst beim nächsten Build exportiert; `MigrationTest` 6→7 ist instrumentiert und nicht ausgeführt. Vollständigkeit der Umstellung aller Log-Aufrufe nicht einzeln geprüft.
+
+### DEC-203: Diagnose pseudonymisiert und maskiert
+- **Status:** Implemented *(0.12.4, Auftrag Development an Documentation SYNC-20261109-045; Freigabe durch den Inhaber im Auftrag nicht genannt)*
+- **Datum:** 2026-11-09
+- **Kategorie:** Sicherheit, Datenschutz und Diagnose
+- **Entscheidung:**
+  - (a) Die Diagnose („Problem melden“, „Diagnosedaten kopieren“) enthält keine Benutzernamen, IP-Adressen, Rechner-, Freigabe-, WLAN-, Profil- und Ordnernamen, keine Pfade und keine genauen Dateinamen.
+  - (b) Bekannte Werte werden durch stabile Platzhalter je Export ersetzt (Profil-1, Host-1, Freigabe-1, WLAN-1, Ordner-1, Benutzer-1). Freitext (Log, Fehlertexte, Abstürze) wird per Muster maskiert (<IP>, <MAC>, <E-Mail>, <URL>, <Pfad>, <Datei>.ext, <Koordinaten>, <Host>).
+  - (c) Erhalten bleiben: Jahr/Monat-Ordner, Android-Standardordner (DCIM, Camera, Pictures …), Dateiendungen, öffentliche Update-URL (github), Geräte-ID (Zufalls-UUID), Gerätemodell, Android-Version, Einstellungen, Zähler. Filterregeln nur als Anzahl und Form („x*.x“). Aktuelles WLAN nur als Platzhalter.
+  - (d) Bewusst unverändert: Verlauf-Export (`Diagnostics.logExport`, „Verlauf teilen“) als Export des Benutzers für sich selbst.
+  - Grundsatz: lieber zu viel maskieren.
+- **Begründung:** Diagnosedaten werden per Mail an Dritte gesendet; sie sollen keine personenbezogenen oder Umgebungsdaten enthalten (Begründung aus dem Auftrag abgeleitet).
+- **Alternativen:** nicht überliefert.
+- **Konsequenzen:** Restrisiko (laut Development): Namen oder Dateinamen in unbekannten Freitext-Formaten ohne bekannte Endung oder Muster können unmaskiert bleiben (z. B. Ordnername in Fehlertext ohne Pfadtrenner, der nicht als Profil/Pfad registriert ist). Der Text `settings_diag_hint` (DE/EN) wurde angepasst.
+- **Betroffene Komponenten:** `diag/Redactor.kt` (neu), `diag/Diagnostics.kt` (`build` registriert vor der Ausgabe alle bekannten Werte; `compress`, `runLine`, `logLine` und Abstürze laufen durch `scrub`)
+- **Abhängigkeiten:** DEC-160, DEC-123
 
 ### DEC-162: Ordnername aus dem Länderkürzel, Cache-Name nur als Kennzeichen
 - **Status:** Implemented
@@ -2438,7 +2457,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Datum:** 2026-11-08 (2026-11-01; Verschiebung 2026-11-02)
 - **Kategorie:** Architektur
 - **Entscheidung:** LeoSync soll offiziell in den Play Store. Inhalt der Vorbereitung:
-  - PC-Erkennung statt WLAN-Name: jedes ungemessene WLAN, Port-445-Test, Prüfung der SMB-Server-GUID **vor** dem Senden der Zugangsdaten; WLAN-Name nur optional mit freiwilliger Standortfreigabe; Bedingung: genauso zuverlässig wie heute.
+  - ~~PC-Erkennung statt WLAN-Name: jedes ungemessene WLAN, Port-445-Test, Prüfung der SMB-Server-GUID **vor** dem Senden der Zugangsdaten; WLAN-Name nur optional mit freiwilliger Standortfreigabe; Bedingung: genauso zuverlässig wie heute.~~ *(Seit 2026-11-09 nicht mehr Teil der Play-Vorbereitung, siehe Aktualisierung unten; Inhalt bleibt als Vorgabe für die eigenständige PC-Erkennung erhalten.)*
   - Zwei App-Varianten (`github` mit Selbst-Update, `play` ohne `REQUEST_INSTALL_PACKAGES`).
   - Aktuelles `targetSdk`, Umgang mit dem 6-Stunden-Limit für dataSync ab Android 15.
   - Datenschutzerklärung DE/EN (nDSG, DSGVO) über GitHub Pages; AGB sind nicht nötig.
@@ -2448,6 +2467,14 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Geschlossener Test mit 12 Testern über 14 Tage, 25 USD, Identitätsprüfung. Paketwechsel nötig (DEC-110).
 - **Aktualisierung (Session 3):** Feedback per E-Mail-Knopf „Problem melden“ (DEC-121), Kontakt `leotools@protonmail.com` (DEC-123), nur die Play-Variante bekommt die neue Paket-ID (DEC-124). Die Versionsnummer wurde zuerst 0.7.0, dann 0.8.0 (DEC-125); laut Memory hat eine spätere Session die Reihenfolge erneut geändert.
 - **Aktualisierung (Session 5):** Das aktuelle targetSdk (36) ist vorgezogen und seit 0.9.5 umgesetzt (DEC-183). Die Play-Store-Vorbereitung ist jetzt Version 0.12.0 (DEC-188).
+- **Aktualisierung (2026-11-09, Entscheid Inhaber, SYNC-20261109-046):** Die Play-Store-Integration bleibt vorerst unspezifiziert und wird nur als offene Punkte geführt (unten). Die PC-Erkennung ist nicht mehr Teil der Play-Vorbereitung und hängt nicht vom Play Store ab; sie wird eigenständig umgesetzt (Development SYNC-20261109-047). Heutige Erreichbarkeit: TCP-Port 445, 3 s, ohne Anmeldung (`SmbSession.isReachable`).
+- **Offene Punkte Play-Store-Integration:**
+  - Play-Konto und Tester fehlen. Geschlossener Test mit 12 Testern über 14 Tage, 25 USD, Identitätsprüfung. Kein Früh-Upload zur Reservierung der Paket-ID.
+  - Flavors `github`/`play`: `play` ohne Selbst-Update und ohne `REQUEST_INSTALL_PACKAGES`. Paket-ID `ch.leo.sync` nur für `play` (DEC-110, DEC-124). Die GitHub-Variante entfällt nach dem Play-Start, Umzug per Export/Import.
+  - Umgang mit dem 6-Stunden-Limit für dataSync-FGS ab Android 15.
+  - Datenschutzerklärung DE/EN (nDSG, DSGVO) über GitHub Pages; Kontakt `leotools@protonmail.com`.
+  - Vor dem ersten AAB-Upload prüfen, ob Ressourcen-Namen verkürzt werden und Kennungen falsch aufgelöst werden (QA-Risiko aus SYNC-20261109-040, LOW; siehe `TESTING.md` Abschnitt 10).
+  - Versionsnummer: nicht festgelegt, es gilt die nächste freie Minor-Reihe.
 - **Betroffene Komponenten:** geplant: `WifiHelper`, `SyncWorker`, `SmbSession`, `app/build.gradle.kts` (Flavors), `update/*`
 - **Abhängigkeiten:** DEC-044, DEC-052, DEC-056, DEC-110, DEC-113
 
@@ -2675,7 +2702,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Status:** Accepted
 - **Datum:** 2026-11-08 (2026-11-03 bis 2026-11-08)
 - **Kategorie:** Sonstiges
-- **Entscheidung:** 0.9.x UX-Überarbeitung und Prüfstufen; 0.10.0 Herunterziehen und Zugangsdaten-Auswahl; 0.11.0 Umsetzung der Design-Prüfung; **0.12.0** Play-Store-Vorbereitung; **0.13.0** PC-Erkennung inkl. mobile Daten/VPN.
+- **Entscheidung:** 0.9.x UX-Überarbeitung und Prüfstufen; 0.10.0 Herunterziehen und Zugangsdaten-Auswahl; 0.11.0 Umsetzung der Design-Prüfung; **0.12.0** Play-Store-Vorbereitung; **0.13.0** PC-Erkennung inkl. mobile Daten/VPN. *(Überholt, Stand 2026-11-09: 0.12.0 ist durch den Verlauf mit Kennungen belegt; die Play-Store-Integration ist nur noch als offene Punkte geführt und ohne Versionsnummer (DEC-109); die PC-Erkennung ist davon entkoppelt und wird eigenständig umgesetzt, ihre Versionsnummer ist im Auftrag nicht genannt. Mobile Daten/VPN ist seit 0.11.5 umgesetzt, DEC-126.)*
 - **Begründung:** Neue Funktionen eröffnen jeweils eine neue Reihe (DEC-077); vom Inhaber jeweils bestätigt.
 - **Alternativen:** Play Store als 0.10.0 bzw. 0.11.0 (verschoben).
 - **Konsequenzen:** —

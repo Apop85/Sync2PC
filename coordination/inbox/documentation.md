@@ -1,6 +1,59 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261109-046 – DECISIONS.md: Play-Store-Integration als offene Punkte festhalten; PC-Erkennung entkoppeln
+- Erstellt am: 2026-11-09
+- Absender: Projektmanager (im Auftrag des Inhabers)
+- Empfänger: Documentation
+- Priorität: MEDIUM
+- Status: COMPLETED
+- Übergabegrund: Entscheid des Inhabers: Die Play-Store-Integration bleibt vorerst unspezifiziert und wird nur als offene Punkte geführt. PC-Erkennung ist nicht mehr Teil der Play-Store-Vorbereitung.
+- Aufgabenbeschreibung:
+  1. In DECISIONS.md (DEC-109, Kategorie 14) den Block „Offene Punkte Play-Store-Integration“ ergänzen. Nur Bestehendes übernehmen, nichts erfinden:
+     - Play-Konto und Tester fehlen. Geschlossener Test mit 12 Testern über 14 Tage, 25 USD, Identitätsprüfung. Kein Früh-Upload zur Reservierung der Paket-ID.
+     - Flavors `github`/`play`: `play` ohne Selbst-Update und ohne `REQUEST_INSTALL_PACKAGES`. Paket-ID `ch.leo.sync` nur für `play` (DEC-110, DEC-124). Die GitHub-Variante entfällt nach dem Play-Start, Umzug per Export/Import.
+     - Umgang mit dem 6-Stunden-Limit für dataSync-FGS ab Android 15.
+     - Datenschutzerklärung DE/EN (nDSG, DSGVO) über GitHub Pages; Kontakt `leotools@protonmail.com`.
+     - Vor dem ersten AAB-Upload prüfen, ob Ressourcen-Namen verkürzt werden und Kennungen falsch aufgelöst werden (QA-Risiko aus SYNC-20261109-040, LOW).
+     - Versionsnummer: nicht festgelegt, es gilt die nächste freie Minor-Reihe.
+  2. DEC-109 und DEC-188 anpassen: PC-Erkennung ist nicht mehr Teil der Play-Vorbereitung und hängt nicht vom Play Store ab. Sie wird eigenständig umgesetzt (siehe Development SYNC-20261109-047). Die Aufzählung „PC-Erkennung statt WLAN-Name“ aus DEC-109 gehört zu diesem Auftrag. In ARCHITECTURE.md §14 und SYNC-ENGINE.md (Verweis ca. Zeile 1200) nur die Verweise nachziehen, soweit sie Play und PC-Erkennung verknüpfen.
+- Technischer Kontext: Heutige Erreichbarkeit: TCP Port 445, 3 s, ohne Anmeldung (`SmbSession.isReachable`). Neuester Build: 0.12.4. Keine Codeänderung.
+- Betroffene Dateien: docs/DECISIONS.md (DEC-109, DEC-188), docs/ARCHITECTURE.md (§14), docs/SYNC-ENGINE.md (Verweis ca. Zeile 1200)
+- Erwartetes Ergebnis: Offene Punkte sind in DECISIONS.md klar als „offen/nicht umgesetzt“ gekennzeichnet. Die Entkopplung ist konsistent dokumentiert. Keine Dubletten zu bestehenden DEC.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `DECISIONS.md` DEC-109: PC-Erkennung-Aufzählung durchgestrichen mit Verweis, Aktualisierung 2026-11-09 und Block „Offene Punkte Play-Store-Integration“ (6 Punkte aus dem Auftrag, Verweis auf TESTING Abschnitt 10); DEC-188: Hinweis „überholt“ bei der Aufzählung. `ARCHITECTURE.md` §14 und `SYNC-ENGINE.md` 19 (Verweis): Verknüpfung Play/PC-Erkennung entfernt. Keine Codeprüfung.
+- Ergebnis und Rückmeldung: Alles aus dem Auftrag übernommen, nichts ergänzt. Offen/Hinweis: (1) Versionsnummer der PC-Erkennung ist im Auftrag nicht genannt, in DEC-188 daher als „nicht genannt“ vermerkt; DEC-188 hat weiter Status Accepted und nennt 0.12.0/0.13.0 im Haupttext (nur kommentiert, nicht umgeschrieben). (2) Status von DEC-109 bleibt Accepted. (3) Nicht geprüft: weitere Verweise auf „0.13.0“ in `DECISIONS.md` (z. B. DEC-126), `README.md`, Memory-Roadmap (nicht Doku-Datei).
+- Abgeschlossen am: 2026-11-09
+
+### SYNC-20261109-045 – Doku zu 0.12.4: Diagnose pseudonymisiert/maskiert (aus Development)
+- Erstellt am: 2026-11-09
+- Absender: Development
+- Empfänger: Documentation
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: Neue Entscheidung (Datenschutz der Diagnosedaten), Release-Doku und Teststand.
+- Aufgabenbeschreibung: (1) `DECISIONS.md`: neue Entscheidung (nächste freie Nummer, DEC-203 war frei): Diagnose („Problem melden“, „Diagnosedaten kopieren“) enthält keine Benutzernamen, IP-Adressen, Rechner-/Freigabe-/WLAN-/Profil-/Ordnernamen, Pfade und genauen Dateinamen; stattdessen stabile Platzhalter je Export (Profil-1, Host-1, Freigabe-1, WLAN-1, Ordner-1, Benutzer-1), Freitext (Log, Fehlertexte, Abstürze) wird per Muster maskiert (<IP>, <MAC>, <E-Mail>, <URL>, <Pfad>, <Datei>.ext, <Koordinaten>, <Host>). Erhalten bleiben: Jahr/Monat-Ordner, Android-Standardordner (DCIM, Camera, Pictures …), Dateiendungen, öffentliche Update-URL (github). Filterregeln nur als Anzahl und Form („x*.x“). Aktuelles WLAN nur als Platzhalter. Geräte-ID (Zufalls-UUID), Gerätemodell, Android-Version, Einstellungen, Zähler bleiben. **Bewusst unverändert:** Verlauf-Export (`Diagnostics.logExport`, „Verlauf teilen“) = Export des Benutzers für sich selbst. Grundsatz: lieber zu viel maskieren. Restrisiko: Dateinamen/Namen in unbekannten Freitext-Formaten ohne bekannte Endung oder Muster können unmaskiert bleiben (Beispiel: Ordnername in Fehlertext ohne Pfadtrenner, der nicht als Profil/Pfad registriert ist). (2) `ARCHITECTURE.md` (Paket `diag`): neue Klasse `Redactor` (reine Kotlin-Klasse, ohne Android). (3) `TESTING.md`: `DiagnosticsTest` von 6 auf 15 Tests (grüner Lauf `testDebugUnitTest` komplett, Development 2026-11-09, nur Gesamtzahl aus QA-Lauf übernehmen); keine Strings-Änderung an Schlüsseln, nur Text `settings_diag_hint` DE/EN. (4) `PATCHNOTES.md` 0.12.4.
+- Technischer Kontext: Neue Datei `diag/Redactor.kt`; `Diagnostics.build` registriert vor der Ausgabe alle bekannten Werte (Profile, SMB-Ziel, Benutzer, WLAN, Ordner, Namen der letzten Läufe), `compress`/`runLine`/`logLine` und Abstürze laufen durch `scrub`. Keine DB-/Schema-/Dateiformat-Änderung.
+- Betroffene Dateien: `app/src/main/java/com/sync2pc/app/diag/Redactor.kt` (neu), `diag/Diagnostics.kt`, `app/src/test/java/com/sync2pc/app/DiagnosticsTest.kt`, `res/values/strings_settings.xml`, `res/values-de/strings_settings.xml`, `version.properties` (0.12.4), `.claude/translations.md` (generiert)
+- Erwartetes Ergebnis: Doku passt zur Implementierung.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `Redactor.kt` (Kopfkommentar, `pseudo`/`register`/`scrub`) gelesen, Verwendung in `Diagnostics` bestätigt (Treffer vorhanden); Muster-Liste und `DiagnosticsTest` nicht im Detail geprüft. `DECISIONS.md`: neu DEC-203 (Implemented), Statistik (Implemented 153, Total 203), Index, Statusliste. `ARCHITECTURE.md`: Zeile `diag/Redactor.kt`. `TESTING.md` 4.2: `DiagnosticsTest` 15. `PATCHNOTES.md`: 0.12.4.
+- Ergebnis und Rückmeldung: Angaben zur Maskierung aus dem Auftrag übernommen; Freigabe durch den Inhaber, Alternativen und Begründung nicht überliefert (so in DEC-203 vermerkt). Testzahl 15 laut Development, nicht von QA gemessen; Gesamtzahl (143) in TESTING 1/13 und ARCHITECTURE 4.7 bewusst nicht geändert bis QA-Lauf. Nicht geändert: `PRIVACY_*.md` (Diagnose-Abschnitt könnte nachzuziehen sein, nicht geprüft); `version.properties` und `.claude/translations.md` nicht gelesen. Kosmetik: DEC-203 steht im Dateiteil von Abschnitt 6 (neben DEC-202), Kategorie aber Sicherheit/Abschnitt 13.
+- Abgeschlossen am: 2026-11-09
+
+### SYNC-20261109-044 – Doku-Nachführung zu 0.12.2/0.12.3 (aus Development -039, -043)
+- Erstellt am: 2026-11-09
+- Absender: Development
+- Empfänger: Documentation
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: Kleine Nachträge zu Implementierungen nach 0.12.1.
+- Aufgabenbeschreibung: (1) DEC-144 / `SYNC-ENGINE.md` (Eingriff beim laufenden Sync): `Notifications.interventionDone` liefert `false`, wenn die Hinweise für LeoSync im System (`areNotificationsEnabled`) oder der Kanal `CH_ALERTS` (Wichtigkeit NONE) ausgeschaltet sind; das Ergebnis bleibt dann als DONE in der App stehen, bis die Ansicht geöffnet wird (0.12.3, -039). Restrisiko unverändert: DONE nur im Speicher. (2) `TESTING.md`: neuer instrumentierter Test `MsgInstrumentedTest` (6 Tests: Namen-Round-Trip mit echtem `AndroidResolver`, Plural/verschachtelt, Rückfall, DE/EN, `triggerData/triggerOf`; Sprachwechsel nur bis Android 12). **Noch nicht ausgeführt:** Testzahl erst nach grünem `connectedDebugAndroidTest` (QA/Inhaber) eintragen, nichts erfinden. Gerätetest Inhaber ergänzen: Hinweise aus → Eingriff → Ansicht öffnen. (3) `DATA-MODEL.md` (falls die Kennung beschrieben ist): `Msg.toCode()` fängt Ausnahmen ab und liefert dann null (Rückfalltext, 0.12.2).
+- Technischer Kontext: Development -039 (0.12.3), -043 (0.12.2), PATCHNOTES 0.12.2/0.12.3 vorhanden.
+- Betroffene Dateien: `docs/DECISIONS.md` oder `docs/SYNC-ENGINE.md`, `docs/TESTING.md`, `docs/DATA-MODEL.md`
+- Erwartetes Ergebnis: Doku passt zur Implementierung.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. Code gelesen: `Notifications.interventionDone` (Z. 179), `Msg.toCode()` (try/catch, Z. 37); `MsgInstrumentedTest` Datei nicht gelesen. `DECISIONS.md` DEC-201: Nachtrag 0.12.3 (Eingriff bei ausgeschalteten Hinweisen; DEC-144 selbst nicht geändert, der Eingriff gehört seit DEC-201 dorthin). `DATA-MODEL.md` 3.11: `toCode()` fängt Ausnahmen. `TESTING.md` 4.3: `MsgInstrumentedTest` ohne gemessene Zahl, Gerätetest ergänzt.
+- Ergebnis und Rückmeldung: Testzahl 6 aus Auftrag übernommen, nicht ausgeführt; Gesamtzahl instrumentierter Tests in Abschnitt 1/13 bewusst nicht geändert (nach QA-Lauf). `SYNC-ENGINE.md` nicht geändert (Eingriff dort nicht beschrieben, nicht geprüft).
+- Abgeschlossen am: 2026-11-09
+
 ### SYNC-20261109-042 – TESTING.md: gemessene Testzahlen 0.12.1 und Qualitätsrisiko Ressourcen-Namen (aus QA -040)
 - Erstellt am: 2026-11-09
 - Absender: QA

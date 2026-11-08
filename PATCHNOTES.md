@@ -2,9 +2,23 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.12.4 (2026-11-09)
+
+### Geändert
+- **Diagnose pseudonymisiert und maskiert (DEC-203):** „Problem melden“ und „Diagnosedaten kopieren“ enthalten keine Benutzernamen, IP-Adressen, Rechner-, Freigabe-, WLAN-, Profil- und Ordnernamen, Pfade und genauen Dateinamen mehr; stattdessen stabile Platzhalter (Profil-1, Host-1 …) bzw. Maskierung im Freitext. Der Verlauf-Export („Verlauf teilen“) bleibt unverändert. Text `settings_diag_hint` DE/EN angepasst.
+
+### Intern
+- Neue Klasse `diag/Redactor.kt`; `DiagnosticsTest` erweitert (6 auf 15 Tests laut Development).
+
+## 0.12.3 (2026-11-09)
+
+### Behoben
+- **Eingriff beim laufenden Sync (QA -039):** Sind die Hinweise für LeoSync im System oder der Kanal „Hinweise“ ausgeschaltet, gilt das Ergebnis nicht mehr als zugestellt. Es bleibt dann in der App stehen, bis die Ansicht geöffnet wird (`Notifications.interventionDone`, Prüfung `areNotificationsEnabled` und Kanal-Wichtigkeit).
+
 ## 0.12.2 (2026-11-09)
 
-- Automatischer Build: Quellcode geaendert, Patchnotes bitte ergaenzen.
+### Intern
+- `Msg.toCode()` fängt Ausnahmen ab (ein ungültiges Zahlenargument bricht keinen Lauf mehr ab, es gilt der Rückfalltext). Neuer instrumentierter Test `MsgInstrumentedTest` (Kennungen mit echten Android-Ressourcen, DE/EN, `triggerData/triggerOf`). Keine Funktionsänderung.
 
 ## 0.12.1 (2026-11-09)
 

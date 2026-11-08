@@ -70,6 +70,13 @@ object Notifications {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED ||
             android.os.Build.VERSION.SDK_INT < 33
 
+    /** Wirft das System eine Meldung auf [channel] nicht weg? (Hinweise der App und der Kanal sind eingeschaltet) */
+    private fun deliverable(context: Context, channel: String): Boolean = try {
+        NotificationManagerCompat.from(context).areNotificationsEnabled() &&
+            (context.getSystemService(NotificationManager::class.java)?.getNotificationChannel(channel)?.importance
+                ?: NotificationManager.IMPORTANCE_DEFAULT) != NotificationManager.IMPORTANCE_NONE
+    } catch (e: Exception) { true }
+
     fun formatBytes(b: Long): String = when {
         b >= 1L shl 30 -> String.format(Texts.locale, "%.1f GB", b / (1024.0 * 1024 * 1024))
         b >= 1L shl 20 -> String.format(Texts.locale, "%.1f MB", b / (1024.0 * 1024))
@@ -172,7 +179,8 @@ object Notifications {
     fun interventionDone(context: Context, profileId: Long, text: String): Boolean {
         // Antwort auf eine Aktion des Benutzers, daher unabhängig vom Schalter "Hinweise". false = nicht zustellbar
         // (keine Berechtigung): das Ergebnis bleibt dann in der App stehen (InterventionRegistry).
-        if (!canPost(context)) return false
+        // 0.12.3 (-039): auch zustellbar? Hinweise für LeoSync im System aus oder Kanal ausgeschaltet -> false.
+        if (!canPost(context) || !deliverable(context, CH_ALERTS)) return false
         post(context, ID_INTERVENTION + (profileId % 1000).toInt(), CH_ALERTS, str(R.string.notif_summary_done), text, null)
         return true
     }

@@ -60,7 +60,7 @@
     <string name="settings_home_country_hint">Photos from this country get no country suffix (default: CH = Switzerland).</string>
 
     <string name="settings_diag_title">Beta / Diagnostics</string>
-    <string name="settings_diag_hint">Collects details about the device, background restrictions, permissions, profiles and the latest runs (without passwords) and copies them to the clipboard. Device ID: %1$s</string>
+    <string name="settings_diag_hint">Collects details about the device, background restrictions, permissions, profiles and the latest runs and copies them to the clipboard. Passwords, user names, IP addresses, computer, Wi-Fi and folder names, paths and exact file names are left out or masked. Device ID: %1$s</string>
     <string name="settings_diag_failed">Diagnostics failed: %1$s</string>
     <string name="settings_diag_busy">Collecting data…</string>
     <string name="settings_report">Report a problem</string>
