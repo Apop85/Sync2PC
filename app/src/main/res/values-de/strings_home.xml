@@ -80,6 +80,10 @@
         <item quantity="one">%1$s Datei konnte nicht wiederhergestellt werden. Es wurde alles zurückgerollt; die nächste Synchronisierung versucht es erneut. Details stehen im Verlauf.</item>
         <item quantity="other">%1$s Dateien konnten nicht wiederhergestellt werden. Es wurde alles zurückgerollt; die nächste Synchronisierung versucht es erneut. Details stehen im Verlauf.</item>
     </plurals>
+    <plurals name="home_restore_gaveup_text">
+        <item quantity="one">%1$s Datei konnte auch nach mehreren Versuchen nicht wiederhergestellt werden. Es wurde alles zurückgerollt und nichts geht verloren: Vormerkung und Papierkorb-Version bleiben erhalten. „Erneut versuchen“ oder „Verwerfen“ wählen.</item>
+        <item quantity="other">%1$s Dateien konnten auch nach mehreren Versuchen nicht wiederhergestellt werden. Es wurde alles zurückgerollt und nichts geht verloren: Vormerkungen und Papierkorb-Versionen bleiben erhalten. „Erneut versuchen“ oder „Verwerfen“ wählen.</item>
+    </plurals>
     <string name="home_retry">Erneut versuchen</string>
     <string name="home_discard">Verwerfen</string>
     <string name="home_restore_pending_title">Wiederherstellung vorgemerkt</string>

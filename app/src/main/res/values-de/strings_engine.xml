@@ -170,6 +170,7 @@
     <string name="eng_restored">↺ %1$s wiederhergestellt (Version vom %2$s)</string>
     <string name="eng_restore_failed_rolled_back">✗ Wiederherstellen %1$s: %2$s – zurückgerollt, wird bei der nächsten Synchronisierung erneut versucht</string>
     <string name="eng_restore_failed_partial">✗ Wiederherstellen %1$s: %2$s – nicht vollständig zurückgerollt, siehe Papierkorb</string>
+    <string name="eng_restore_gave_up">✗ Wiederherstellen %1$s: %2$s – zurückgerollt; nach %3$d Versuchen nicht mehr automatisch wiederholt. Vormerkung und Papierkorb-Version bleiben erhalten; auf der Startseite „Erneut versuchen“ oder „Verwerfen“ wählen</string>
     <string name="eng_purged_pc">🗑 PC-Papierkorb geleert (vorgemerkt): %1$s Tagesordner, %2$s einzelne Dateien endgültig gelöscht</string>
     <string name="eng_purge_pc_failed">✗ PC-Papierkorb leeren: %1$s</string>
     <string name="eng_changed_during_run">⏭ %1$s: wurde während des Laufs %2$s geändert – folgt bei der nächsten Synchronisierung</string>

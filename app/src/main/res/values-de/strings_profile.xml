@@ -8,7 +8,6 @@
     <string name="profile_saved_toast">Gespeichert</string>
     <string name="profile_title_new">Neues Profil</string>
     <string name="profile_title_edit">Profil bearbeiten</string>
-    <string name="profile_delete_cd">Profil löschen</string>
     <string name="profile_step">Schritt %1$s von %2$s: %3$s</string>
     <string name="profile_step_optional">Schritt %1$s von %2$s: %3$s (optional)</string>
     <string name="profile_general">Allgemein</string>
@@ -41,10 +40,6 @@
     <string name="profile_share_example">Fotos</string>
     <string name="profile_share_format">Es reicht der PC, z. B. \\\\192.168.1.20. Freigabe und Ordner wählst du danach mit „Ordner auf dem PC wählen…“. Eintippen geht auch: \\\\Server\\Freigabe\\Ordner (IP-Adresse oder Name).</string>
     <string name="profile_pick_pc_folder">Ordner auf dem PC wählen…</string>
-    <string name="profile_subfolder">Unterordner auf der Freigabe (optional)</string>
-    <string name="profile_subfolder_example_mirror">Dokumente\\Handy</string>
-    <string name="profile_subfolder_example_photos">Handy\\Fotos</string>
-    <string name="profile_browse">Durchsuchen</string>
     <string name="profile_user">Benutzer</string>
     <string name="profile_password">Passwort</string>
     <string name="profile_domain">Domäne / PC-Name (optional)</string>

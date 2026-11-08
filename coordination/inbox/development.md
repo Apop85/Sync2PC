@@ -73,15 +73,15 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED
 - Übergabegrund: Entscheid des Inhabers: aufräumen.
 - Aufgabenbeschreibung: Ungenutzte Strings in beiden Sprachdateien entfernen: `profile_subfolder`, `profile_subfolder_example_mirror`, `profile_subfolder_example_photos`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`. Vor dem Löschen erneut auf Verwendung prüfen (Kotlin, XML, `TestTexts`, `StringsParityTest`); `profile_subfolders*` wird verwendet und bleibt. Danach `tools/make-translations.ps1`.
 - Technischer Kontext: Per Suche in `app/src` nur Definitionen gefunden (Stand 2026-11-08, nicht gebaut).
 - Betroffene Dateien: `res/values/strings_profile.xml`, `res/values/strings_settings.xml`, `res/values-de/` (gleiche Dateien)
 - Erwartetes Ergebnis: Entfernte Texte, Testlauf `StringsParityTest`.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Verwendung erneut per Suche in `app/src` (Kotlin, XML, Tests) geprüft: nur Definitionen. Sechs Texte in EN und DE entfernt (`profile_subfolders*` bleibt), `make-translations.ps1` ausgeführt. Version 0.11.8.
+- Ergebnis und Rückmeldung: Nicht gebaut, `StringsParityTest` nicht ausgeführt (Inhaberregel); QA -029 Punkt 3. Doku: PATCHNOTES, DECISIONS Anhang A Punkt 25 (-028).
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-012 – Eingriff beim laufenden Sync vormerken (DEC-144)
 - Erstellt am: 2026-11-08
@@ -195,31 +195,31 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: MEDIUM
-- Status: OPEN
+- Status: COMPLETED (Umsetzung; unabhängige QA offen, siehe -029)
 - Übergabegrund: Entscheid des Inhabers (Anhang A Punkt 16): 5 Versuche, danach Meldung an den Benutzer.
 - Aufgabenbeschreibung: Fehlgeschlagene Wiederherstellung nach 5 Versuchen nicht mehr automatisch wiederholen und dem Benutzer melden. Vormerkung und Papierkorb-Version dürfen dabei nicht verloren gehen (Datenverlust-Priorität); Verhalten von „Erneut versuchen“/„Verwerfen“ festlegen und dokumentieren. Zähler ausserhalb der Sicherung (Prefs „restore“) bedenken.
 - Technischer Kontext: DEC-146, Risiko D27.
 - Betroffene Dateien: `MirrorEngine.runRestores/rollbackRestore`, `RestoreFailures`, `RestoreManager`, `ui/HomeScreen.kt`
 - Erwartetes Ergebnis: Umsetzung, Tests (`TrashIndexTest` o. ä.), Hinweis für SYNC-ENGINE/DECISIONS. Wegen Datenverlustrisiko Review/QA empfohlen.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Version 0.11.8. `RestoreFailures` zählt Fehlversuche pro Wiederherstellung (Prefs `attempts`, `restoreId:n`); reine Regel `RestoreRetryPolicy` (`MAX_ATTEMPTS = 5`). `MirrorEngine.runRestores` überspringt Einträge mit aufgebrauchten Versuchen; beim 5. Fehlversuch (vollständig zurückgerollt) Verlaufstext `eng_restore_gave_up`. Netzwerkfehler zählen nicht (bleiben vorgemerkt, Lauf wird unterbrochen). Die Vormerkung bleibt in der Datenbank, damit bleibt die Papierkorb-Version geschützt (`TrashPurge.reserved*`, unverändert). Startseite: Karte „Wiederherstellen fehlgeschlagen“ zeigt zusätzlich den Text für aufgegebene Einträge (`home_restore_gaveup_text`); „Erneut versuchen“ ruft `RestoreManager.retryFailed` (Zähler zurücksetzen, Sync anstossen); „Verwerfen“ unverändert. Zähler werden bei Erfolg, Verwerfen, „Quelle weg“ und Profillöschung (`forget`) entfernt. Neu `RestoreRetryPolicyTest` (3 Tests).
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel); Syntax von Hand geprüft. Restrisiken: Zähler nur in Prefs, nicht in der Sicherung (App-Daten löschen → 5 Versuche beginnen neu); bei teilweisem Zurückrollen gibt es keinen eigenen „aufgegeben“-Text (bisheriger Text „siehe Papierkorb“, Eintrag ist trotzdem nach 5 Versuchen pausiert); Karte und Knopf nicht auf dem Gerät geprüft. Doku an Documentation (-028), QA (-029).
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-004 – „Speicher freigeben“: leere Ordner aufräumen (DEC-147)
 - Erstellt am: 2026-11-08
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: MEDIUM
-- Status: OPEN
+- Status: COMPLETED (Umsetzung; unabhängige QA offen, siehe -029)
 - Übergabegrund: Entscheid des Inhabers (Anhang A Punkt 15): leere Ordner aufräumen, ausser `DCIM\Camera`.
 - Aufgabenbeschreibung: Nach „Speicher freigeben“ (Ordner-Profile) leer gewordene Ordner auf dem Handy entfernen; `DCIM\Camera` bleibt immer bestehen. Der Inhaber schrieb „DICM\Camera“, gemeint ist vermutlich `DCIM/Camera` (bitte bestätigen). Nur Ordner, die tatsächlich leer sind (kein Löschen von Inhalt), auch nicht Profil-Wurzelordner ohne Rückfrage.
 - Hinweis Development (2026-11-08): Inhaber bestätigt: „DICM“ war ein Schreibfehler; gemeint ist der tatsächliche Ordnername `DCIM/Camera`.
 - Technischer Kontext: DEC-147, Risiko D26.
 - Betroffene Dateien: `mirror/FolderFreer.kt`, `ui/FreeSpaceScreen.kt`
 - Erwartetes Ergebnis: Umsetzung, Tests, Doku-Hinweis. Wegen Löschlogik Review/QA empfohlen.
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Version 0.11.8. `FolderFreer.verifyAndDelete` merkt sich die tatsächlich gelöschten Dateien und entfernt danach deren Elternordner, tiefster zuerst (`emptyDirCandidates`), über neues `LocalTree.deleteDirIfEmpty` (liest unmittelbar davor neu ein und löscht nur bei leerem Ordner, nie die Wurzel). Geschützt (`isProtectedDir`): Profil-Wurzel, Papierkorb-Ordner, `DCIM/Camera` (auch wenn der gewählte Ordner `DCIM` oder `DCIM/Camera` ist). Fehler beim Aufräumen werden ignoriert, das Ergebnis der Dateilöschung bleibt unberührt. Anzeige „X leere Ordner entfernt“ (`Result.foldersRemoved`, Plurals `free_folders_removed` EN/DE). Neu `FolderFreerTest` (5 Tests).
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel). Restrisiken: Zwischen dem Prüfen und `deleteDocument` bleibt ein kleines Zeitfenster (Android bietet kein „nur wenn leer“, bei manchen Anbietern löscht `deleteDocument` auf Ordnern rekursiv); Anzeigename für SD-Karte/Downloads in der `DCIM/Camera`-Regel nicht auf dem Gerät geprüft; Ordner, die schon vorher leer waren, bleiben bestehen (nur Eltern gelöschter Dateien). Doku an Documentation (-028), QA (-029).
+- Abgeschlossen am: 2026-11-08
 
 ### SYNC-20261108-003 – Schalter: automatische Synchronisierung auch ausserhalb des WLAN (DEC-126)
 - Erstellt am: 2026-11-08

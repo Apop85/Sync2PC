@@ -44,7 +44,6 @@
     <string name="settings_perm_app_info">Open app info</string>
     <string name="settings_background_hint">To keep Android from delaying or stopping the sync, battery optimization should be off for LeoSync.</string>
     <string name="settings_battery">Battery optimization</string>
-    <string name="settings_battery_off">Turn off battery optimization</string>
     <string name="settings_vendor_extra">Additionally on %1$s:</string>
     <string name="settings_vendor_note">The labels may differ slightly depending on the software version.</string>
     <string name="settings_vendor_web">Instructions in the browser</string>

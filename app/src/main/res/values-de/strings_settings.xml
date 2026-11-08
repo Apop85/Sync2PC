@@ -44,7 +44,6 @@
     <string name="settings_perm_app_info">App-Info öffnen</string>
     <string name="settings_background_hint">Damit Android die Synchronisierung nicht verzögert oder abbricht, sollte die Akku-Optimierung für LeoSync aus sein.</string>
     <string name="settings_battery">Akku-Optimierungen</string>
-    <string name="settings_battery_off">Akku-Optimierung ausschalten</string>
     <string name="settings_vendor_extra">Zusätzlich bei %1$s:</string>
     <string name="settings_vendor_note">Die Bezeichnungen können je nach Software-Stand leicht abweichen.</string>
     <string name="settings_vendor_web">Anleitung im Browser</string>

@@ -85,11 +85,42 @@ object RestoreManager {
         val f = RestoreFailures(context)
         for (id in f.restoreIds(profileIds)) { dao.deleteRestore(id); f.clear(id) }
     }
+
+    /**
+     * "Erneut versuchen" (0.11.8): Versuchszähler der fehlgeschlagenen Wiederherstellungen zurücksetzen und einen
+     * Sync anstossen. Die Vormerkung bleibt unverändert; nach weiteren 5 Fehlschlägen wird wieder pausiert.
+     */
+    fun retryFailed(context: Context, profileIds: Collection<Long>) {
+        val f = RestoreFailures(context)
+        f.resetAttempts(f.restoreIds(profileIds))
+        SyncScheduler.enqueueManual(context)
+    }
+}
+
+/** Regel für automatische Wiederholungen fehlgeschlagener Wiederherstellungen (0.11.8, DEC-146) */
+object RestoreRetryPolicy {
+    /** Nach so vielen Fehlversuchen (ohne Netzwerkfehler) wird nicht mehr automatisch wiederholt */
+    const val MAX_ATTEMPTS = 5
+
+    fun exhausted(attempts: Int): Boolean = attempts >= MAX_ATTEMPTS
+
+    /** Zähler "restoreId:n" nach einem weiteren Fehlversuch; liefert neue Menge und neuen Stand */
+    fun bump(entries: Set<String>, restoreId: Long): Pair<Set<String>, Int> {
+        val id = restoreId.toString()
+        val old = entries.firstOrNull { it.substringBefore(':') == id }?.substringAfter(':')?.toIntOrNull() ?: 0
+        val now = old + 1
+        return (entries.filterNot { it.substringBefore(':') == id } + "$id:$now").toSet() to now
+    }
+
+    fun count(entries: Set<String>, restoreId: Long): Int =
+        entries.firstOrNull { it.substringBefore(':') == restoreId.toString() }?.substringAfter(':')?.toIntOrNull() ?: 0
 }
 
 /**
- * Wiederherstellungen, die zurückgerollt wurden und beim nächsten Sync erneut versucht werden (0.7.0).
- * Die Vormerkung selbst bleibt in der Datenbank; hier nur die Markierung für den Hinweis auf der Startseite.
+ * Wiederherstellungen, die zurückgerollt wurden und beim nächsten Sync erneut versucht werden (0.7.0), höchstens
+ * [RestoreRetryPolicy.MAX_ATTEMPTS]-mal (0.11.8). Danach bleibt die Vormerkung (und damit die Papierkorb-Version
+ * geschützt) bestehen, wird aber nicht mehr automatisch ausgeführt, bis der Benutzer "Erneut versuchen" oder
+ * "Verwerfen" wählt. Die Vormerkung selbst bleibt in der Datenbank; hier nur Markierung und Zähler (Prefs).
  */
 class RestoreFailures(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("restore", Context.MODE_PRIVATE)
@@ -97,13 +128,31 @@ class RestoreFailures(context: Context) {
     /** Einträge "profilId:restoreId" */
     private fun all(): Set<String> = prefs.getStringSet("failed", emptySet()) ?: emptySet()
 
-    fun mark(profileId: Long, restoreId: Long) {
-        prefs.edit().putStringSet("failed", all() + "$profileId:$restoreId").apply()
+    /** Einträge "restoreId:Anzahl Fehlversuche" */
+    private fun attempts(): Set<String> = prefs.getStringSet("attempts", emptySet()) ?: emptySet()
+
+    /** Fehlversuch festhalten (Netzwerkfehler zählen nicht, dort bleibt die Vormerkung einfach liegen). Liefert den Stand. */
+    fun mark(profileId: Long, restoreId: Long): Int {
+        val (next, n) = RestoreRetryPolicy.bump(attempts(), restoreId)
+        prefs.edit().putStringSet("failed", all() + "$profileId:$restoreId").putStringSet("attempts", next).apply()
+        return n
+    }
+
+    /** true = die automatischen Versuche sind aufgebraucht, die Vormerkung wartet auf den Benutzer */
+    fun isExhausted(restoreId: Long): Boolean = RestoreRetryPolicy.exhausted(RestoreRetryPolicy.count(attempts(), restoreId))
+
+    /** Anzahl der Wiederherstellungen mit aufgebrauchten Versuchen (nur gegebene Profile) */
+    fun exhaustedCount(profileIds: Collection<Long>): Int = restoreIds(profileIds).count { isExhausted(it) }
+
+    fun resetAttempts(restoreIds: Collection<Long>) {
+        val ids = restoreIds.map { it.toString() }.toSet()
+        prefs.edit().putStringSet("attempts", attempts().filterNot { it.substringBefore(':') in ids }.toSet()).apply()
     }
 
     fun clear(restoreId: Long) {
         val left = all().filterNot { it.substringAfter(':') == restoreId.toString() }.toSet()
         prefs.edit().putStringSet("failed", left).apply()
+        resetAttempts(listOf(restoreId))
     }
 
     fun restoreIds(profileIds: Collection<Long>): List<Long> = all().mapNotNull { e ->
@@ -115,6 +164,7 @@ class RestoreFailures(context: Context) {
     fun profiles(): Set<Long> = all().mapNotNull { it.substringBefore(':').toLongOrNull() }.toSet()
 
     fun forget(profileId: Long) {
+        resetAttempts(all().filter { it.substringBefore(':') == profileId.toString() }.mapNotNull { it.substringAfter(':').toLongOrNull() })
         prefs.edit().putStringSet("failed", all().filterNot { it.startsWith("$profileId:") }.toSet()).apply()
     }
 }

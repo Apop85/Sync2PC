@@ -231,6 +231,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 }
                 resultText = buildString {
                     append(plural(R.plurals.free_deleted, r.deleted, r.deleted, Notifications.formatBytes(r.bytes)))
+                    if (r.foldersRemoved > 0) append(" ").append(plural(R.plurals.free_folders_removed, r.foldersRemoved))
                     if (r.kept > 0) append(" ").append(plural(R.plurals.free_kept, r.kept))
                     if (r.unreachable) append(" ").append(str(R.string.free_pc_lost))
                 }

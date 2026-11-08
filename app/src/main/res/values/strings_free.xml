@@ -29,6 +29,10 @@
         <item quantity="one">%1$s file deleted, %2$s freed.</item>
         <item quantity="other">%1$s files deleted, %2$s freed.</item>
     </plurals>
+    <plurals name="free_folders_removed">
+        <item quantity="one">%1$s empty folder removed.</item>
+        <item quantity="other">%1$s empty folders removed.</item>
+    </plurals>
     <plurals name="free_kept">
         <item quantity="one">%1$s file stays (not found on the PC, different or changed in the meantime).</item>
         <item quantity="other">%1$s files stay (not found on the PC, different or changed in the meantime).</item>

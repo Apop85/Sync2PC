@@ -431,6 +431,21 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         return true
     }
 
+    /**
+     * Ordner löschen, aber nur wenn er tatsächlich leer ist (0.11.8). Unmittelbar vorher neu einlesen, da
+     * "deleteDocument" auf Ordnern bei vielen Anbietern rekursiv löscht. Das Profil-Wurzel ("") wird nie gelöscht.
+     * false = nicht vorhanden oder nicht leer.
+     */
+    fun deleteDirIfEmpty(relDir: String): Boolean {
+        if (relDir.isEmpty()) return false
+        forgetDirs(relDir) // keine veraltete Kennung verwenden
+        val id = findDir(relDir) ?: return false
+        if (children(id).isNotEmpty()) return false
+        delete(id)
+        forgetDirs(relDir)
+        return true
+    }
+
     /** Gemerkte Ordner-IDs unterhalb von [relDir] verwerfen (nach dem Löschen sonst veraltet) */
     private fun forgetDirs(relDir: String) {
         val k = relDir.lowercase()

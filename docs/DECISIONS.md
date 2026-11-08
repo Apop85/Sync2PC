@@ -1338,8 +1338,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Scheitert eine Wiederherstellung, kommt die alte Version zurück in den Papierkorb und die aktuellen Versionen an ihren Platz; bei vollständigem Rollback wird auch der alte Sync-Stand zurückgeschrieben. Die Vormerkung bleibt; eine rote Karte auf der Startseite bietet „Erneut versuchen“ und „Verwerfen“ (Markierung in Prefs „restore“).
 - **Begründung:** Logikprüfung: Vorher konnte die Datei auf Handy und PC fehlen (nur im Papierkorb).
 - **Alternativen:** Vormerkung bei Fehler löschen (bisher).
-- **Konsequenzen:** Ohne „Verwerfen“ wird bei jedem Sync erneut versucht.
-- **Betroffene Komponenten:** `MirrorEngine.runRestores/rollbackRestore`, `RestoreFailures`, `RestoreManager.discardFailed`, `ui/HomeScreen.kt`
+- **Konsequenzen:** Bis 0.11.7: ohne „Verwerfen“ wird bei jedem Sync erneut versucht.
+- **Nachtrag 0.11.8 (Entscheid Inhaber 2026-11-08, Development -005; Angaben aus Auftrag -028, Fundstellen im Code stichprobenartig geprüft):** Pro Wiederherstellung zählt `RestoreFailures` Fehlversuche (Prefs „restore“, Schlüssel `attempts`, Format `restoreId:n`, nicht in der Sicherung). Netzwerkfehler zählen nicht (Vormerkung bleibt, Lauf wird unterbrochen). Ab dem 5. Fehlversuch (`RestoreRetryPolicy.MAX_ATTEMPTS`) überspringt `MirrorEngine.runRestores` den Eintrag. Die Vormerkung bleibt in der Datenbank, damit bleibt die Papierkorb-Version vor dem Löschen geschützt (`TrashPurge.reserved*`, unverändert). Die Karte „Wiederherstellen fehlgeschlagen“ zeigt zusätzlich einen Text für aufgegebene Einträge; „Erneut versuchen“ setzt die Zähler zurück (`RestoreManager.retryFailed`) und startet einen Sync, „Verwerfen“ löscht Vormerkung und Zähler. Zähler werden auch bei Erfolg und Profillöschung (`forget`) entfernt. Verlaufseintrag `eng_restore_gave_up` beim 5. Fehlversuch, nur bei vollständigem Zurückrollen (sonst bleibt der Text „siehe Papierkorb“). Restrisiko: Zähler nur in Prefs, bei „Daten löschen“ der App beginnen die 5 Versuche neu. Risiko D27 entschärft.
+- **Betroffene Komponenten:** `MirrorEngine.runRestores/rollbackRestore`, `RestoreFailures`, `RestoreRetryPolicy`, `RestoreManager.discardFailed/retryFailed`, `ui/HomeScreen.kt`
 - **Abhängigkeiten:** DEC-139
 
 ### DEC-147: Speicher freigeben auch für Ordner-Profile Handy → PC
@@ -1351,8 +1352,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
   - Jede Datei wird auf dem PC geprüft (vorhanden, gleiche Grösse, gleicher Inhalt per `contentHash`), danach auf dem Handy direkt gelöscht; ihr Sync-Stand wird vorher entfernt.
 - **Begründung:** Wunsch des Inhabers; Bedingung „keine Auswirkungen beim Löschen des Sync-Status und erneuter Synchronisierung“. Im Code geprüft: Bei Handy → PC ohne Löschungen übernehmen verwirft der Sync fehlende Handy-Dateien nur (DROP); ohne Stand passiert nichts.
 - **Alternativen:** Merker „freigegeben“ im Sync-Stand (unnötig); LeoSync-Papierkorb auf dem Handy (gibt erst nach der Frist Platz frei); auch bei „Löschungen übernehmen“ (verworfen, würde PC-Kopien löschen); beidseitige Profile (ausgeschlossen).
-- **Konsequenzen:** Endgültiges Löschen ohne Papierkorb; leere Ordner bleiben stehen.
-- **Betroffene Komponenten:** `mirror/FolderFreer.kt`, `ui/FreeSpaceScreen.kt` (`freeProfiles`, `FREE_HINT`)
+- **Konsequenzen:** Endgültiges Löschen ohne Papierkorb. Bis 0.11.7 blieben leere Ordner stehen.
+- **Nachtrag 0.11.8 (Entscheid Inhaber 2026-11-08, Development -004; Angaben aus Auftrag -028, Fundstellen im Code stichprobenartig geprüft):** Nach `FolderFreer.verifyAndDelete` werden die Elternordner der tatsächlich gelöschten Dateien (tiefster zuerst) entfernt, aber nur, wenn sie beim Prüfen wirklich leer sind (`LocalTree.deleteDirIfEmpty` liest unmittelbar vorher neu ein). Nie entfernt werden Profil-Wurzel, Papierkorb-Ordner und `DCIM/Camera` (`FolderFreer.isProtectedDir`, gilt auch, wenn der gewählte Ordner `DCIM` oder `DCIM/Camera` ist). Fehler beim Aufräumen ändern das Ergebnis nicht. Anzeige „X leere Ordner entfernt“ im Ergebnis (`Result.foldersRemoved`). Nur Profile Handy → PC ohne „Löschungen übernehmen“ (wie bisher). Risiko D26 teilweise entschärft.
+- **Betroffene Komponenten:** `mirror/FolderFreer.kt`, `mirror/LocalTree.kt` (`deleteDirIfEmpty`), `ui/FreeSpaceScreen.kt` (`freeProfiles`, `FREE_HINT`)
 - **Abhängigkeiten:** DEC-036, DEC-091, DEC-144, DEC-148
 
 ### DEC-163: Papierkorb heisst `.LeoSync-Bin`, alte Namen bleiben erkannt
@@ -3034,8 +3036,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 *Session 3:*
 
 14. **WLAN-Name Pflicht oder optional** (Frage des Inhabers für VPN-Nutzer): nur als Option „mobile Daten/VPN“ vorgemerkt (DEC-126); die Antwort im Verlauf ist nicht eindeutig belegt. Inhaber 2026-11-08: Schalter für automatische Synchronisierung auch ausserhalb des WLAN; umgesetzt in 0.11.5/0.11.6 (SYNC-20261108-003, siehe DEC-126). Offen: Wiederholungen über Mobilfunk begrenzen (SYNC-20261108-019).
-15. **Leere Ordner nach „Speicher freigeben“** (DEC-147): bleiben stehen. Inhaber 2026-11-08: aufräumen, keine leeren Ordner zurücklassen, Ausnahme `DCIM\Camera` (SYNC-20261108-004).
-16. **Fehlgeschlagene Wiederherstellungen** (DEC-146): werden bei jedem Sync erneut versucht, bis der Inhaber „Verwerfen“ wählt. Inhaber 2026-11-08: 5 Versuche, danach Meldung an den Benutzer (SYNC-20261108-005).
+15. **Leere Ordner nach „Speicher freigeben“** (DEC-147): bis 0.11.7 blieben sie stehen. Inhaber 2026-11-08: aufräumen, keine leeren Ordner zurücklassen, Ausnahme `DCIM\Camera` (SYNC-20261108-004). **Umgesetzt in 0.11.8.**
+16. **Fehlgeschlagene Wiederherstellungen** (DEC-146): bis 0.11.7 bei jedem Sync erneut versucht. Inhaber 2026-11-08: 5 Versuche, danach Meldung an den Benutzer (SYNC-20261108-005). **Umgesetzt in 0.11.8.**
 17. **Warten auf den laufenden Sync** (DEC-144): Verlässt man die Ansicht, unterbleibt der Eingriff; ob er stattdessen vorgemerkt werden soll, ist offen. Inhaber 2026-11-08: Eingriff vormerken und später ausführen, Umsetzung freigegeben (SYNC-20261108-012).
 18. **Umsetzung von „Problem melden“ und Datenschutzerklärung** (DEC-121, DEC-123): Inhaber 2026-11-08: „Problem melden“ umgesetzt in 0.11.5 (Kontakt `leotools@protonmail.com`, SYNC-20261108-008, siehe DEC-121); Datenschutzerklärung ist umgesetzt (`PRIVACY_GER.md`, `PRIVACY_EN.md`).
 
@@ -3050,7 +3052,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 22. ~~**Sicherheitsprüfung mit claude-security** (DEC-200)~~ – Inhaber 2026-11-08: wird nicht umgesetzt, verworfen. (Status von DEC-200 selbst unverändert; Anpassung ggf. durch Architecture.)
 23. **Ungeprüfte Teile von 0.9.5–0.11.0:** Restzeit im echten Lauf, Ansagen mit TalkBack, Berechtigungen bei einer Neuinstallation, strengere Hintergrund-Kontingente unter Android 16 bei langen Erstsicherungen.
 24. **Ordner anlegen in der PC-Ordnerauswahl** (DEC-192): heute muss der Zielordner auf dem PC existieren; ob die Auswahl Ordner anlegen können soll, war nicht entschieden. ~~erledigt~~: Inhaber 2026-11-08 „Ordner anlegen“, umgesetzt in 0.11.3 (SYNC-20261108-006, DEC-192 Nachtrag).
-25. **Nicht mehr verwendete Texte** (z. B. `profile_subfolder*`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`): aufräumen oder behalten ist nicht entschieden. Stand 2026-11-08: Die Texte stehen in beiden Sprachdateien, werden im Kotlin-Code aber nicht verwendet (geprüft per Suche in `app/src`); Inhaber 2026-11-08: aufräumen (SYNC-20261108-013).
+25. **Nicht mehr verwendete Texte** (z. B. `profile_subfolder*`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`): aufräumen oder behalten ist nicht entschieden. Stand 2026-11-08: Die Texte stehen in beiden Sprachdateien, werden im Kotlin-Code aber nicht verwendet (geprüft per Suche in `app/src`); Inhaber 2026-11-08: aufräumen (SYNC-20261108-013). **Umgesetzt in 0.11.8:** entfernt (EN/DE) `profile_subfolder`, `profile_subfolder_example_mirror`, `profile_subfolder_example_photos`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`; vorher per Suche in `app/src` nur Definitionen gefunden. `profile_subfolders*` bleibt.
 26. ~~**Konfliktkarten eines Profils, das gerade gelöscht wird** (DEC-196)~~ – erledigt: Inhaber 2026-11-08 ausblenden, umgesetzt in 0.11.1 (SYNC-20261108-007).
 27. **Hilfe-Texte auf der Produktseite** (DEC-197): Einbindung durch den Inhaber; Inhaber 2026-11-08: pending.
 28. **Heimnetz-Berechtigung ab targetSdk 37** (DEC-183): voraussichtlich nötig für die Verbindung zur Freigabe; Inhaber 2026-11-08: bleibt offen (frühestens mit der nächsten Ziel-Version).
@@ -3149,7 +3151,7 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
 
 24. **SAF-Anbieter liefern je nach Abfrage andere Zeitstempel** (`stat()` gegenüber `children()`, z. B. „Downloads“). Jeder neue Vergleich mit dem Sync-Stand muss dieselbe Quelle wie das Einlesen verwenden (DEC-137).
 25. **Zustände in SharedPreferences:** Schutzbremse, vorgemerktes PC-Leeren und fehlgeschlagene Wiederherstellungen liegen ausserhalb der Datenbank und der Sicherung; bei Neuinstallation gehen sie verloren.
-26. **„Speicher freigeben“ bei Ordnern löscht endgültig:** Die Sicherheit hängt davon ab, dass der Sync bei Handy → PC ohne „Löschungen übernehmen“ fehlende Handy-Dateien nie auf den PC überträgt. Jede Änderung an `MirrorEngine.plan` für diesen Fall muss das berücksichtigen (DEC-147).
+26. **„Speicher freigeben“ bei Ordnern löscht endgültig:** Die Sicherheit hängt davon ab, dass der Sync bei Handy → PC ohne „Löschungen übernehmen“ fehlende Handy-Dateien nie auf den PC überträgt. Jede Änderung an `MirrorEngine.plan` für diesen Fall muss das berücksichtigen (DEC-147). Seit 0.11.8 werden danach auch leere Elternordner entfernt (ausser Profil-Wurzel, Papierkorb, `DCIM/Camera`), Teilentschärfung von D26.
 27. **Wiederherstellen kann unvollständig zurückrollen:** Scheitert der Schritt nach einem erfolgreichen Upload bzw. Download, bleibt die aktuelle Version im Papierkorb (Hinweis im Verlauf). Ein Download, der wegen einer inzwischen entstandenen Handy-Datei übersprungen wird, gilt als erfolgreich wiederhergestellt.
 28. **Namensschema im Papierkorb:** Eine echte Datei, die zufällig `name (HH-mm-ss).ext` heisst, wird als Version von `name.ext` angezeigt.
 29. **`MirrorLock` und lange Läufe:** Eingriffe warten bis zum Ende eines grossen Syncs; die Sperre ist nur prozessweit und schützt nicht vor anderen Apps.

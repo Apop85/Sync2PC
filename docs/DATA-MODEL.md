@@ -33,7 +33,7 @@ Quellen (alle relativ zum Repository):
 | SharedPreferences `global` (`GlobalSettings`) | profilübergreifende Einstellungen, Pausen, Update-Zustand | 11 |
 | SharedPreferences `guard` (`GuardStore`) | offene Schutzbremsen, Einmal-Freigaben, Stichproben-Vormerkung | 11 |
 | SharedPreferences `purge` (`PurgeStore`) | vorgemerktes Leeren des PC-Papierkorbs | 11 |
-| SharedPreferences `restore` (`RestoreFailures`) | fehlgeschlagene Wiederherstellungen | 11 |
+| SharedPreferences `restore` (`RestoreFailures`) | fehlgeschlagene Wiederherstellungen; seit 0.11.8 zusätzlich Schlüssel `attempts` (Fehlversuche, Format `restoreId:n`, nicht in der Sicherung) | 11 |
 | SharedPreferences `lang` (`AppLanguage`) | Sprachwahl | 11 |
 | Android-Keystore (`CredentialCrypto`) | Schlüssel für `profiles.smbPasswordEnc` | 3.1 |
 | Dateisystem (Handy via SAF, PC via SMB) | Papierkorb `.LeoSync-Bin/<Datum>/…`, Temp-Dateien `.s2ptmp`, `.s2pold` | 12 |

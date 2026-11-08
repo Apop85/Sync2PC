@@ -234,6 +234,10 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val failedRestores = remember(tick, workKey, profiles, pendingRestores, restoreFailVersion) {
         RestoreFailures(ctx).restoreIds(profiles.map { it.id }).size
     }
+    // 0.11.8: davon die, die nach 5 Fehlversuchen nicht mehr automatisch wiederholt werden
+    val exhaustedRestores = remember(tick, workKey, profiles, pendingRestores, restoreFailVersion) {
+        RestoreFailures(ctx).exhaustedCount(profiles.map { it.id })
+    }
     val guardedIds = guards.map { it.profileId }.toSet()
     /** Zusatz, wenn ein Teil der vorgemerkten Arbeit hinter der Schutzbremse wartet */
     fun guardNote(pendingIds: Collection<Long>): String? = when {
@@ -449,9 +453,15 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(str(R.string.home_restore_failed_title), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold)
-                            Text(plural(R.plurals.home_restore_failed_text, failedRestores))
+                            if (failedRestores > exhaustedRestores)
+                                Text(plural(R.plurals.home_restore_failed_text, failedRestores - exhaustedRestores))
+                            if (exhaustedRestores > 0)
+                                Text(plural(R.plurals.home_restore_gaveup_text, exhaustedRestores))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ }) { Text(str(R.string.home_retry)) }
+                                Button(onClick = {
+                                    RestoreManager.retryFailed(ctx, profiles.map { it.id })
+                                    restoreFailVersion++; pauseVersion++
+                                }) { Text(str(R.string.home_retry)) }
                                 OutlinedButton(onClick = {
                                     scope.launch {
                                         RestoreManager.discardFailed(ctx, profiles.map { it.id })

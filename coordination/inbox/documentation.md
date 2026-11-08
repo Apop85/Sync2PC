@@ -1,6 +1,26 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261108-028 – Doku-Nachführung zu Version 0.11.8 (Aufräumen Texte, leere Ordner, Wiederherstellung 5 Versuche)
+- Erstellt am: 2026-11-08
+- Absender: Development
+- Empfänger: Documentation
+- Priorität: MEDIUM
+- Status: BLOCKED (nur Punkt 4 `TESTING.md` wartet auf QA-Lauf -029; Punkte 1, 2, 3, 5 erledigt)
+- Übergabegrund: Geändertes Verhalten (Löschlogik, Wiederanlauf), neue Tests; Doku nach `CLAUDE.md` §11.
+- Aufgabenbeschreibung:
+  1. **DEC-147 (Speicher freigeben, leere Ordner), Umsetzung 0.11.8:** Nach `FolderFreer.verifyAndDelete` werden die Elternordner der tatsächlich gelöschten Dateien (tiefster zuerst) entfernt, aber nur wenn sie beim Prüfen wirklich leer sind (`LocalTree.deleteDirIfEmpty`, liest unmittelbar vorher neu ein). Nie entfernt: Profil-Wurzel, Papierkorb-Ordner, `DCIM/Camera` (`FolderFreer.isProtectedDir`, gilt auch, wenn der gewählte Ordner `DCIM` oder `DCIM/Camera` ist). Fehler beim Aufräumen ändern das Ergebnis nicht. Anzeige: „X leere Ordner entfernt“ im Ergebnis (`Result.foldersRemoved`). Nur Profile Handy → PC ohne „Löschungen übernehmen“ (wie bisher). Risiko D26 teilweise entschärft; Inhaber bestätigte `DCIM/Camera` (Schreibfehler „DICM“).
+  2. **DEC-146 (Wiederherstellung 5 Versuche), Umsetzung 0.11.8:** Pro Wiederherstellung zählt `RestoreFailures` Fehlversuche (Prefs „restore“, Schlüssel `attempts`, ausserhalb der Sicherung, Format `restoreId:n`). Netzwerkfehler zählen nicht (Vormerkung bleibt, Lauf wird unterbrochen). Ab dem 5. Fehlversuch (`RestoreRetryPolicy.MAX_ATTEMPTS`) überspringt `MirrorEngine.runRestores` den Eintrag. Die Vormerkung bleibt in der Datenbank, damit bleibt die Papierkorb-Version vor Löschen geschützt (`TrashPurge.reserved*`, unverändert). Startseite: Karte „Wiederherstellen fehlgeschlagen“ zeigt zusätzlich den Text für aufgegebene Einträge; „Erneut versuchen“ setzt die Zähler zurück (`RestoreManager.retryFailed`) und startet einen Sync; „Verwerfen“ löscht Vormerkung und Zähler wie bisher. Zähler werden bei Erfolg, Verwerfen und Profillöschung (`forget`) entfernt. Verlaufseintrag `eng_restore_gave_up` beim 5. Fehlversuch (nur wenn vollständig zurückgerollt; bei teilweisem Zurückrollen bleibt der bisherige Text „siehe Papierkorb“). Risiko D27 entschärft; Restrisiko: Zähler nur in Prefs (geht bei „Daten löschen“ der App verloren, dann beginnen die 5 Versuche neu).
+  3. **Anhang A Punkt 25 (-013):** Entfernt: `profile_subfolder`, `profile_subfolder_example_mirror`, `profile_subfolder_example_photos`, `profile_browse`, `settings_battery_off`, `profile_delete_cd` (EN/DE). Vorher per Suche in `app/src` geprüft: nur Definitionen, keine Verwendung. `profile_subfolders*` bleibt.
+  4. **Tests:** neu `RestoreRetryPolicyTest` (3 Tests), `FolderFreerTest` (5 Tests); nicht ausgeführt (Inhaberregel), `TESTING.md` bitte nach QA-Lauf (-029) mit gemessenen Zahlen ergänzen, nicht vorher.
+  5. PATCHNOTES 0.11.8 und Entscheidungsstatus (DEC-146, DEC-147: Accepted → Implemented 0.11.8) nachführen; SYNC-ENGINE (Wiederherstellung/Wiederholregel), DATA-MODEL (Prefs „restore“: neuer Schlüssel `attempts`, nicht in Sicherung).
+- Technischer Kontext: Development -004, -005, -013 (`inbox/development.md`), QA -029.
+- Betroffene Dateien: `docs/DECISIONS.md`, `docs/SYNC-ENGINE.md`, `docs/DATA-MODEL.md`, `docs/TESTING.md`, `PATCHNOTES.md`
+- Erwartetes Ergebnis: Doku passend zum Code; nichts erfinden, bei Unklarheit zurückfragen.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `DECISIONS.md`: Nachträge 0.11.8 in DEC-146 und DEC-147 (Status war schon Implemented), Anhang A Punkte 15, 16, 25 als umgesetzt, Anhang B Punkt 26 (D26) ergänzt. `SYNC-ENGINE.md` 7.6: Schritt 7 Wiederholregel. `DATA-MODEL.md`: Prefs `restore` Schlüssel `attempts`. `PATCHNOTES.md`: 0.11.8. Code stichprobenartig geprüft (`MAX_ATTEMPTS`=5, `isProtectedDir`, `deleteDirIfEmpty`, `foldersRemoved`, `retryFailed`, `eng_restore_gave_up`); übrige Angaben aus dem Auftrag.
+- Ergebnis und Rückmeldung: Offen: `TESTING.md` (`RestoreRetryPolicyTest` 3, `FolderFreerTest` 5, Gesamtzahlen) erst nach QA-Lauf -029 mit gemessenen Zahlen, wie vom Auftrag verlangt. Danach COMPLETED. Nicht geprüft: Risiko-Nummern D26/D27 gegen Anhang B (Text so übernommen).
+- Abgeschlossen am: –
+
 ### SYNC-20261108-027 – QA-Ergebnisse 0.11.7 in TESTING.md und bekannte Verhaltenshinweise (aus QA -024)
 - Erstellt am: 2026-11-08
 - Absender: QA

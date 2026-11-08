@@ -1,6 +1,24 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261108-029 – Unabhängige Prüfung 0.11.8: leere Ordner aufräumen und Wiederherstellung mit 5 Versuchen
+- Erstellt am: 2026-11-08
+- Absender: Development
+- Empfänger: QA
+- Priorität: HIGH
+- Status: OPEN
+- Übergabegrund: Löschlogik (Ordner entfernen) und Wiederanlauf/Rückrollen der Wiederherstellung mit Datenverlustrisiko; unabhängige Prüfung nötig (`CLAUDE.md` §7 „Kritisch“).
+- Aufgabenbeschreibung:
+  1. **-004 Leere Ordner:** `FolderFreer.verifyAndDelete` ruft nach den Dateilöschungen `emptyDirCandidates` + `LocalTree.deleteDirIfEmpty` auf. Prüfen: nie Inhalt gelöscht (`DocumentsContract.deleteDocument` löscht auf Ordnern bei vielen Anbietern rekursiv; Schutz ist das erneute Einlesen unmittelbar davor, Restfenster zwischen `children()` und `delete()`), Wurzel/Papierkorb/`DCIM/Camera` geschützt (`isProtectedDir`, Regex auf Anzeigename + relativen Pfad, bitte auch Randfälle: Anzeigename bei SD-Karte/„raw:“/Downloads, Gross-/Kleinschreibung, `DCIM/Camera/Unterordner`), Ordner mit `.s2pold`/Temp-Dateien, Ordner, in die ein anderer Prozess gerade schreibt, Abbruch mitten im Aufräumen, Netzabbruch (Aufräumen läuft trotzdem für bereits gelöschte Dateien, bewusst).
+  2. **-005 5 Versuche:** `RestoreRetryPolicy`, `RestoreFailures.mark/isExhausted/resetAttempts`, `MirrorEngine.runRestores` (Filter, Verlaufstext), `RestoreManager.retryFailed`, `HomeScreen` (Karte). Prüfen: Netzwerkfehler zählt nicht; Vormerkung und Papierkorb-Version bleiben nach dem 5. Fehlversuch erhalten und werden nicht vom Papierkorb-Leeren/Ablauf gelöscht (`reservedPaths`); „Erneut versuchen“ setzt zurück; „Verwerfen“, Erfolg und Profillöschung räumen den Zähler; Gesichertes/Wiederherstellen von Sicherung (`BackupManager` → `forget`); Prefs-Verlust. Offen: Läuft ein Lauf endlos weiter „Wiederherstellung vorgemerkt“ mit Schutzbremse? Karte „vorgemerkt“ zählt `pendingRestores - failedRestores`.
+  3. **-013 Texte:** `StringsParityTest` und Suche, ob die entfernten Texte (`profile_subfolder`, `profile_subfolder_example_mirror`, `profile_subfolder_example_photos`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`) nirgends mehr gebraucht werden (auch dynamisch per Namen, `TestTexts`).
+- Technischer Kontext: Development -004, -005, -013, Version 0.11.8; DEC-146, DEC-147; Risiken D26, D27. Nichts gebaut, nichts ausgeführt. Neue Tests: `FolderFreerTest` (5), `RestoreRetryPolicyTest` (3).
+- Betroffene Dateien: `mirror/FolderFreer.kt`, `mirror/LocalTree.kt` (`deleteDirIfEmpty`), `mirror/RestoreManager.kt`, `mirror/MirrorEngine.kt` (`runRestores`), `ui/HomeScreen.kt`, `ui/FreeSpaceScreen.kt`, `res/values*/strings_free.xml`, `strings_home.xml`, `strings_engine.xml`, `strings_profile.xml`, `strings_settings.xml`, Tests `FolderFreerTest`, `RestoreRetryPolicyTest`
+- Erwartetes Ergebnis: Risikobewertung, ausgeführte Tests (`testDebugUnitTest`) mit Ergebnis, Fehler/Testlücken, Empfehlungen. Gerätetests (Ordner leeren, 5 Fehlversuche provozieren) benennen, die der Inhaber ausführen muss.
+- Tatsächlich durchgeführte Arbeiten: –
+- Ergebnis und Rückmeldung: –
+- Abgeschlossen am: –
+
 ### SYNC-20261108-024 – Nachprüfung 0.11.7: Wartezeit ausserhalb WLAN, „Problem melden“, Sicherung (aus -021)
 - Erstellt am: 2026-11-08
 - Absender: Development

@@ -49,7 +49,34 @@ object FolderFreer {
         val kept: Int,
         /** PC nicht erreichbar bzw. Verbindung abgebrochen */
         val unreachable: Boolean,
+        /** Leer gewordene Ordner auf dem Handy, die entfernt wurden (0.11.8) */
+        val foldersRemoved: Int = 0,
     )
+
+    /**
+     * Ordner, die nie entfernt werden (0.11.8, DEC-147): das Profil-Wurzel, Papierkorb-Ordner und "DCIM/Camera".
+     * [rootLabel] = Anzeigename des gewählten Ordners (z. B. "DCIM/Camera" oder "DCIM"), [rel] = relativer Ordnerpfad.
+     */
+    fun isProtectedDir(rootLabel: String, rel: String): Boolean {
+        if (rel.isEmpty()) return true
+        if (rel.split('/').any { MirrorEngine.isTrashDir(it) }) return true
+        val full = (rootLabel + "/" + rel).replace('\\', '/').lowercase().trimEnd('/')
+        return Regex("""(^|[/: ])dcim/camera$""").containsMatchIn(full)
+    }
+
+    /**
+     * Ordner, die durch das Löschen der Dateien [deletedRels] leer geworden sein können: alle Elternordner, tiefste
+     * zuerst (so wird ein leerer Elternordner erst nach seinem leeren Unterordner geprüft), ohne geschützte.
+     * Ob sie wirklich leer sind, prüft erst [LocalTree.deleteDirIfEmpty].
+     */
+    fun emptyDirCandidates(deletedRels: Collection<String>, isProtected: (String) -> Boolean): List<String> {
+        val dirs = LinkedHashSet<String>()
+        for (f in deletedRels) {
+            var d = f.substringBeforeLast('/', "")
+            while (d.isNotEmpty()) { dirs += d; d = d.substringBeforeLast('/', "") }
+        }
+        return dirs.filterNot(isProtected).sortedByDescending { it.count { c -> c == '/' } }
+    }
 
     /**
      * Jede Datei auf dem PC prüfen (vorhanden, gleiche Grösse, gleicher Inhalts-Hash) und erst dann auf dem Handy
@@ -66,6 +93,7 @@ object FolderFreer {
             val s = try { SmbSession.open(profile) } catch (e: Exception) { null }
                 ?: return@withLock Result(0, 0, list.size, unreachable = true)
             var deleted = 0; var bytes = 0L; var kept = 0; var unreachable = false
+            val deletedRels = ArrayList<String>()
             s.use {
                 val states = dao.mirrorStates(profile.id).associateBy { it.relPath }
                 for ((done, item) in list.withIndex()) {
@@ -83,7 +111,7 @@ object FolderFreer {
                             tree.contentHash(e.docId, e.size) != s.contentHash(path, r.size)) { kept++; continue }
                         dao.deleteMirrorState(profile.id, key)
                         tree.delete(e.docId)
-                        deleted++; bytes += e.size
+                        deleted++; bytes += e.size; deletedRels += item.rel
                     } catch (ex: Exception) {
                         if (com.sync2pc.app.sync.isNetworkError(ex)) {
                             unreachable = true
@@ -95,7 +123,16 @@ object FolderFreer {
                     if (done % 5 == 4 || done == list.size - 1) onProgress(done + 1, list.size)
                 }
             }
-            Result(deleted, bytes, kept, unreachable)
+            // Leer gewordene Ordner aufräumen (0.11.8, DEC-147). Nebensache: Fehler hier ändern am Ergebnis nichts,
+            // gelöscht wird nur, was beim Prüfen wirklich leer ist (kein Inhalt, nie Wurzel/Papierkorb/DCIM/Camera).
+            var folders = 0
+            if (deletedRels.isNotEmpty()) {
+                val label = LocalTree.label(Uri.parse(profile.localTreeUri))
+                for (dir in emptyDirCandidates(deletedRels) { isProtectedDir(label, it) }) {
+                    try { if (tree.deleteDirIfEmpty(dir)) folders++ } catch (ex: Exception) { /* bleibt bestehen */ }
+                }
+            }
+            Result(deleted, bytes, kept, unreachable, folders)
         }
     }
 

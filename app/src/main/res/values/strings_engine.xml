@@ -170,6 +170,7 @@
     <string name="eng_restored">↺ %1$s restored (version from %2$s)</string>
     <string name="eng_restore_failed_rolled_back">✗ Restore %1$s: %2$s – rolled back, will be tried again at the next sync</string>
     <string name="eng_restore_failed_partial">✗ Restore %1$s: %2$s – not completely rolled back, see trash</string>
+    <string name="eng_restore_gave_up">✗ Restore %1$s: %2$s – rolled back; not tried again automatically after %3$d attempts. The request and the trash version are kept; choose “Try again” or “Discard” on the home screen</string>
     <string name="eng_purged_pc">🗑 PC trash emptied (scheduled): %1$s day folders, %2$s single files permanently deleted</string>
     <string name="eng_purge_pc_failed">✗ Emptying PC trash: %1$s</string>
     <string name="eng_changed_during_run">⏭ %1$s: was changed %2$s during the run – follows at the next sync</string>

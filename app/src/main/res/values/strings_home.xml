@@ -80,6 +80,10 @@
         <item quantity="one">%1$s file could not be restored. Everything was rolled back; the next sync will try again. Details are in the history.</item>
         <item quantity="other">%1$s files could not be restored. Everything was rolled back; the next sync will try again. Details are in the history.</item>
     </plurals>
+    <plurals name="home_restore_gaveup_text">
+        <item quantity="one">%1$s file could not be restored after several attempts. Everything was rolled back and nothing is lost: the request and the trash version are kept. Choose “Try again” or “Discard”.</item>
+        <item quantity="other">%1$s files could not be restored after several attempts. Everything was rolled back and nothing is lost: the requests and the trash versions are kept. Choose “Try again” or “Discard”.</item>
+    </plurals>
     <string name="home_retry">Try again</string>
     <string name="home_discard">Discard</string>
     <string name="home_restore_pending_title">Restore scheduled</string>

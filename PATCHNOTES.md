@@ -2,6 +2,15 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.11.8 (2026-11-08)
+
+### Neu
+- **Speicher freigeben (Ordner-Profile):** Leere Ordner werden nach dem Löschen entfernt (nicht die Profil-Wurzel, den Papierkorb und `DCIM/Camera`); das Ergebnis zeigt „X leere Ordner entfernt“.
+- **Wiederherstellen:** Nach 5 Fehlversuchen wird nicht mehr automatisch wiederholt. Vormerkung und Papierkorb-Version bleiben erhalten; auf der Startseite „Erneut versuchen“ oder „Verwerfen“.
+
+### Intern
+- Sechs unbenutzte Texte entfernt (`profile_subfolder`, `profile_subfolder_example_mirror`, `profile_subfolder_example_photos`, `profile_browse`, `settings_battery_off`, `profile_delete_cd`). Neue Tests `RestoreRetryPolicyTest`, `FolderFreerTest`.
+
 ## 0.11.7 (2026-11-08)
 
 ### Geändert

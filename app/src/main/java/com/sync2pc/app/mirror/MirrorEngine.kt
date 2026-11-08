@@ -632,10 +632,12 @@ class MirrorEngine(
      * Netzwerkfehler -> Vormerkung bleibt, der Lauf wird wie üblich unterbrochen. Liefert true, wenn etwas geschah.
      */
     private suspend fun runRestores(s: SmbSession): Boolean {
-        val list = dao.pendingRestores(profile.id)
+        val failures = RestoreFailures(context)
+        // Nach 5 Fehlversuchen nicht mehr automatisch wiederholen (0.11.8, DEC-146): Vormerkung bleibt bestehen
+        // (schützt die Papierkorb-Version), der Benutzer wählt auf der Startseite "Erneut versuchen" oder "Verwerfen"
+        val list = dao.pendingRestores(profile.id).filterNot { failures.isExhausted(it.id) }
         if (list.isEmpty()) return false
         log("I", plural(R.plurals.eng_restoring, list.size))
-        val failures = RestoreFailures(context)
         val oldStates = dao.mirrorStates(profile.id).associateBy { it.relPath }
         for (r in list) {
             currentCoroutineContext().ensureActive()
@@ -686,9 +688,14 @@ class MirrorEngine(
                 if (isNetworkError(e)) { connectionFailed = true; throw e } // bleibt vorgemerkt
                 failed.incrementAndGet()
                 // Vormerkung bleiben lassen: nächster Sync versucht es erneut, die Startseite zeigt einen Hinweis
-                failures.mark(profile.id, r.id)
-                log("E", str(if (rolledBack) R.string.eng_restore_failed_rolled_back else R.string.eng_restore_failed_partial,
-                    r.origPath, com.sync2pc.app.sync.shortError(e)))
+                val attempts = failures.mark(profile.id, r.id)
+                val err = com.sync2pc.app.sync.shortError(e)
+                log("E", when {
+                    !rolledBack -> str(R.string.eng_restore_failed_partial, r.origPath, err)
+                    RestoreRetryPolicy.exhausted(attempts) ->
+                        str(R.string.eng_restore_gave_up, r.origPath, err, RestoreRetryPolicy.MAX_ATTEMPTS)
+                    else -> str(R.string.eng_restore_failed_rolled_back, r.origPath, err)
+                })
             }
         }
         return true
