@@ -35,7 +35,7 @@ object DeletionManager {
     }
 
     /** Prüft Dateien mit Status WANTED. Liefert Anzahl neu zur Bestätigung freigegebener Dateien. */
-    suspend fun sweep(context: Context, log: suspend (String) -> Unit): Int {
+    suspend fun sweep(context: Context, log: suspend (com.sync2pc.app.l10n.Msg) -> Unit): Int {
         val dao = AppDatabase.get(context).dao()
         // Nur Bildordner-Profile sichern über den MediaStore (Ordner-Profile löschen nie nach dem Sync)
         val profiles = dao.profiles().filter { it.enabled && it.type() == com.sync2pc.app.data.ProfileType.PHOTOS }
@@ -57,9 +57,9 @@ object DeletionManager {
                 try {
                     context.contentResolver.delete(Uri.parse(row.mediaUri), null, null)
                     dao.setDeleteStateForKey(key, DeleteState.DONE)
-                    log(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.delete_log_done, key))
+                    log(com.sync2pc.app.l10n.Msg.of(com.sync2pc.app.R.string.delete_log_done, key))
                 } catch (e: Exception) {
-                    log(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.delete_log_failed, key, e.message ?: ""))
+                    log(com.sync2pc.app.l10n.Msg.of(com.sync2pc.app.R.string.delete_log_failed, key, e.message ?: ""))
                 }
             } else {
                 dao.setDeleteStateForKey(key, if (trash) DeleteState.QUEUED_TRASH else DeleteState.QUEUED_DELETE)

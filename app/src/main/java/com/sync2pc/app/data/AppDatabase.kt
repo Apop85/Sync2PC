@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MediaInfo::class, SyncRun::class, LogEntry::class, MirrorState::class, MirrorConflict::class,
         PendingRestore::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,12 +26,24 @@ abstract class AppDatabase : RoomDatabase() {
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "sync2pc.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build().also { instance = it }
             }
 
         // Wichtig: Kein fallbackToDestructiveMigration() – fehlt eine Migration, soll die App
         // lieber abstürzen, als still alle Daten zu löschen.
+
+        /**
+         * 0.12.0 (DEC-159): Verlauf mit Kennungen statt fertiger Texte. Nur neue, nullable Spalten (DEC-084):
+         * bestehende Einträge behalten ihren Text (Kennung NULL → Anzeige des gespeicherten Textes).
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sync_runs ADD COLUMN messageCode TEXT")
+                db.execSQL("ALTER TABLE sync_runs ADD COLUMN triggerCode TEXT")
+                db.execSQL("ALTER TABLE log_entries ADD COLUMN code TEXT")
+            }
+        }
 
         /**
          * 0.9.0: Prüfstufe nach dem Hochladen. Bestehende Profile behalten ihr bisheriges Verhalten:

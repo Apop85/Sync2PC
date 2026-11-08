@@ -1,5 +1,8 @@
 package com.sync2pc.app.data
 
+import com.sync2pc.app.l10n.Msg
+import com.sync2pc.app.sync.RunSummary
+
 /** Eintrag im Verlauf: ein einzelner Lauf oder mehrere aufeinanderfolgende "Nichts zu tun"-Läufe (0.3.4) */
 sealed class LogItem {
     data class Single(val run: SyncRun) : LogItem()
@@ -9,18 +12,24 @@ sealed class LogItem {
 
 object RunGrouping {
     /**
-     * Merkmale im gespeicherten Kurztext (RunSummary), die einen Lauf "nicht ruhig" machen. Beide Sprachen, weil der
-     * Text in der Sprache gespeichert wird, die beim Lauf aktiv war (0.8.0).
+     * Rückfall nur für Einträge ohne Kennung (vor 0.12.0): Merkmale im gespeicherten Kurztext, die einen Lauf
+     * "nicht ruhig" machen. Beide Sprachen, weil der Text in der Sprache gespeichert wurde, die beim Lauf aktiv war.
      */
     private val notIdleMarkers = listOf(
         "Papierkorb", "bereits vorhanden", "Konflikt", "Speicher",
         "trash", "already present", "conflict", "storage",
     )
 
+    /** Hat der Kurztext Teile, die einen Lauf "nicht ruhig" machen? Mit Kennung über Schlüssel (DEC-159, D35). */
+    private fun hasNotIdlePart(r: SyncRun): Boolean {
+        val keys = Msg.keys(r.messageCode)
+        return if (keys != null) keys.any { it in RunSummary.NOT_IDLE_KEYS }
+        else notIdleMarkers.any { r.message.contains(it, ignoreCase = true) }
+    }
+
     /** Lauf ohne Übertragung, ohne Fehler und ohne offene Punkte? */
     fun isIdle(r: SyncRun): Boolean =
-        r.status == RunStatus.OK && r.uploaded == 0 && r.failed == 0 && r.waiting == 0 &&
-            notIdleMarkers.none { r.message.contains(it, ignoreCase = true) }
+        r.status == RunStatus.OK && r.uploaded == 0 && r.failed == 0 && r.waiting == 0 && !hasNotIdlePart(r)
 
     /** [runs] neueste zuerst. Aufeinanderfolgende ruhige Läufe (mind. 2) werden zu einem Eintrag. */
     fun group(runs: List<SyncRun>): List<LogItem> {

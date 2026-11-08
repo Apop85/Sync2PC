@@ -16,7 +16,7 @@
 > **Session 4** („Lokalisierung“, 0.8.0, Entscheidungen vom 2026-11-03): DEC-155 bis DEC-166; dazu Aktualisierungen an DEC-001, DEC-018, DEC-019, DEC-036, DEC-037, DEC-099 und DEC-125.
 > - Session 4: 0.8.0 umgesetzt. Der erste Build scheiterte nur an der Kompilierung der Unit-Tests (Kommentar-Falle in `TestTexts.kt`), behoben ohne neue Version (DEC-120). Ein erfolgreicher Build und ein Gerätetest sind im Verlauf **nicht** belegt.
 >
-> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-202 (DEC-201 und DEC-202 am 2026-11-08, Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
+> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-202 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 >
 > **Hinweis:** Die frühere Notiz „Änderungen aus späteren Sessions sind nicht erfasst“ (Statistik-Symbol 0.9.0, Begriffe „Mobile/Share“, Roadmap ab 0.10.0) ist mit Session 5 erledigt.
@@ -25,8 +25,8 @@
 
 | Status | Anzahl |
 |---|---|
-| Accepted | 15 |
-| Implemented | 151 |
+| Accepted | 14 |
+| Implemented | 152 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
@@ -516,7 +516,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-199 | Rejected | 16. Verworfene und überholte Lösungsansätze |
 | DEC-200 | Proposed | 13. Sicherheit, Datenschutz und Diagnose |
 | DEC-201 | Accepted | 2. Synchronisationsengine und 3-Wege-Abgleich |
-| DEC-202 | Accepted | 6. Datenbank und Datenmodell |
+| DEC-202 | Implemented | 6. Datenbank und Datenmodell |
 
 ---
 
@@ -1004,12 +1004,12 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
   - `RunGrouping.isIdle` erkennt die Merkmale („Papierkorb“/„trash“, „bereits vorhanden“/„already present“ …) in beiden Sprachen.
 - **Begründung:** Rückfrage 1: „erstmal einfache variante, für später vormerken“.
 - **Alternativen:** Kennungen speichern und erst beim Anzeigen übersetzen (vorgemerkt, siehe A. Offene Entscheidungen; Lösungsansatz in DEC-202 festgelegt).
-- **Konsequenzen:** Nach einem Sprachwechsel ist der Verlauf gemischtsprachig. Periodische Aufträge behalten den Auslöser-Text vom Zeitpunkt der Einplanung. *(DEC-202 löst dies ab, sobald umgesetzt.)*
+- **Konsequenzen:** Nach einem Sprachwechsel ist der Verlauf gemischtsprachig. Periodische Aufträge behalten den Auslöser-Text vom Zeitpunkt der Einplanung. *(Abgelöst durch DEC-202, umgesetzt in 0.12.0/0.12.1: neue Einträge werden in der aktiven Sprache angezeigt; alte Einträge ohne Kennung bleiben in ihrer Sprache.)*
 - **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `SyncEngine`, `MirrorEngine`, `SyncScheduler`, `data/SyncDao.closeDanglingRuns`
 - **Abhängigkeiten:** DEC-099, DEC-100, DEC-202
 
 ### DEC-202: Verlauf mit Kennungen – Code-Spalten mit Rückfalltext
-- **Status:** Accepted *(vom Inhaber am 2026-11-08 freigegeben; bis zur Umsetzung durch Development -009 nicht implementiert)*
+- **Status:** Implemented *(freigegeben vom Inhaber 2026-11-08; umgesetzt durch Development -009: 0.12.0 Stufe 1 Lauf-Kurztext und Auslöser, 0.12.1 Stufe 2 Log-Zeilen; Nachtrag am Ende)*
 - **Datum:** 2026-11-08
 - **Kategorie:** Datenbank
 - **Entscheidung:**
@@ -1023,8 +1023,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Beseitigt den gemischtsprachigen Verlauf (DEC-159, D35) und die Abhängigkeit von Merkmal-Wörtern.
 - **Alternativen:** Kodierung in `message` (jeder vergessene Leser zeigt JSON, Rückfalltext und Diagnose-Regex gehen verloren); nur Schlüssel ohne Rückfall (umbenannte Texte ergäben leere Einträge) – beide verworfen.
 - **Konsequenzen:** Nebenbefund: `Diagnostics.compress` (Regex `ALREADY_COUNT`/`ALREADY_FOLDER`) erkennt „bereits vorhanden“ nur deutsch, in Englisch ist die Zählung in der Diagnose falsch; lösbar in Stufe 2 über den Schlüssel `eng_already_in`. Restrisiken: Ein vergessener Leser zeigt nur den Rückfalltext (harmlos); Platzhalter DE/EN müssen gleich bleiben (`StringsParityTest`).
-- **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `data/Entities.kt` (`SyncRun`, `LogEntry`), `AppDatabase`, `SyncScheduler`, `ui/LogScreen.kt`, `diag/Diagnostics.kt`
+- **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `data/Entities.kt` (`SyncRun`, `LogEntry`), `AppDatabase`, `SyncScheduler`, `ui/LogScreen.kt`, `diag/Diagnostics.kt`, `l10n/Msg.kt`, `l10n/Texts.kt`
 - **Abhängigkeiten:** DEC-084, DEC-159, DEC-160
+- **Nachtrag Umsetzung (0.12.0/0.12.1, im Code gelesen 2026-11-09):** `l10n/Msg.kt` (JSON-Kennung, Formen `t`, `k`+`a`, `k`+`n`+`a`, `j`+`p`, Tiefe höchstens 12, Rückfalltext bei jedem Fehler); `Texts.Resolver` löst Ressourcen-Namen auf (`entryName`, `stringByName`, `pluralByName`), `TestTexts` liefert ihn für Unit-Tests (D33); `MIGRATION_6_7` (DB-Version 7, drei `ADD COLUMN`); `MirrorEngine` und `SyncEngine` schreiben Text und Code aus derselben `Msg` (wörtliche Texte über `Msg.lit`); der Auslöser liegt zusätzlich als `KEY_TRIGGER_CODE` in den Auftragsdaten (`SyncScheduler`, Rückfall auf den Text); `RunGrouping.isIdle` prüft bei vorhandenem Code `RunSummary.NOT_IDLE_KEYS`, sonst die Merkmal-Wörter; `Diagnostics.logExport` rendert in der aktiven Sprache, die Diagnose bleibt beim gespeicherten Text. Abweichung/offen: Der Regex `ALREADY_COUNT` in `Diagnostics.compress` ist weiterhin nur deutsch (Nebenbefund oben nicht behoben). Das Schema `7.json` wird erst beim nächsten Build exportiert; `MigrationTest` 6→7 ist instrumentiert und nicht ausgeführt. Vollständigkeit der Umstellung aller Log-Aufrufe nicht einzeln geprüft.
 
 ### DEC-162: Ordnername aus dem Länderkürzel, Cache-Name nur als Kennzeichen
 - **Status:** Implemented
@@ -3083,7 +3084,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 
 *Session 4:*
 
-19. **Verlauf mit Kennungen statt fertiger Texte** (DEC-159): vom Inhaber „für später vormerken“. Inhaber 2026-11-08: Umsetzung freigegeben (SYNC-20261108-009), Version offen; Vorgabe als DEC-202 festgehalten.
+19. ~~**Verlauf mit Kennungen statt fertiger Texte** (DEC-159)~~ – erledigt: Inhaber 2026-11-08 Umsetzung freigegeben, Vorgabe als DEC-202; umgesetzt in 0.12.0 (Stufe 1) und 0.12.1 (Stufe 2), SYNC-20261108-009.
 20. **Englische Übersetzungen prüfen** (DEC-166): Tabelle liegt vor; ob und welche Korrekturen der Inhaber meldet, ist offen.
 21. **Sprachwechsel auf Android 10–12** (DEC-158): eigener Weg über `createConfigurationContext`; auf dem Gerät nicht getestet.
 
@@ -3201,9 +3202,9 @@ Die Punkte 1 bis 4 beruhen nicht auf dieser Session, sondern auf dem aktuellen D
 *Session 4 zusätzlich:*
 
 32. **Texte vor `App.onCreate`:** `str()` wirft, solange `Texts.init` nicht gelaufen ist (z. B. in ContentProvidern oder frühen Initialisierungen).
-33. **Reflection-Rückfall in Tests:** `Texts` lädt `com.sync2pc.app.TestTexts` per Namen; wird die Klasse umbenannt oder verschoben, scheitern alle Tests mit Texten.
+33. **Reflection-Rückfall in Tests:** `Texts` lädt `com.sync2pc.app.TestTexts` per Namen; wird die Klasse umbenannt oder verschoben, scheitern alle Tests mit Texten. Seit 0.12.0 muss der Test-`Resolver` in `TestTexts` zusätzlich Ressourcen-**Namen** auflösen können (`entryName`, `stringByName`, `pluralByName`; DEC-202).
 34. **Formatfehler zur Laufzeit:** Ein `%` ohne `%%` in Texten mit Platzhaltern oder abweichende Platzhalter zwischen den Sprachen stürzen erst beim Anzeigen ab; nur `StringsParityTest` fängt das ab.
-35. **Gemischtsprachiger Verlauf:** Gespeicherte Texte lassen sich nachträglich nicht übersetzen; `isIdle` hängt an Merkmal-Wörtern beider Sprachen. Ändert sich die Formulierung in `RunSummary`, müssen die Merkmale nachgezogen werden. Mit DEC-202 (nach Umsetzung) entfällt das Risiko für neue Einträge; alte Einträge ohne Code bleiben bis zum Ablauf der Aufbewahrung betroffen.
+35. **Gemischtsprachiger Verlauf:** Gespeicherte Texte lassen sich nachträglich nicht übersetzen; `isIdle` hängt an Merkmal-Wörtern beider Sprachen. Ändert sich die Formulierung in `RunSummary`, müssen die Merkmale nachgezogen werden. **Behoben seit 0.12.0/0.12.1 (DEC-202)** für neue Einträge: `isIdle` prüft Schlüssel (`RunSummary.NOT_IDLE_KEYS`); alte Einträge ohne Code bleiben bis zum Ablauf der Aufbewahrung (Logs 30, Läufe 90 Tage) gemischtsprachig und nutzen weiter die Merkmal-Wörter. Die Diagnose bleibt beim gespeicherten Text (DEC-160); `ALREADY_COUNT` dort ist nur deutsch.
 36. **Kommentar-Falle zum dritten Mal:** `values-de/*.xml` in einem KDoc (`TestTexts.kt`) brach den Test-Build (0.8.0).
 37. **Erkennung „erzeugter“ Ordnernamen:** Mit mehr App-Sprachen gelten mehr Namen als Standardordner; ein selbst gewählter Name in einer App-Sprache löst dann keine Rückfrage mehr aus (DEC-161).
 

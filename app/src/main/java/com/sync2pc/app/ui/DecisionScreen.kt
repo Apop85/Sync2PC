@@ -98,7 +98,7 @@ fun DecisionScreen(onBack: () -> Unit) {
             }
             if (applied > 0) {
                 androidx.core.app.NotificationManagerCompat.from(ctx).cancel(Notifications.ID_DECISION)
-                SyncScheduler.enqueueAuto(ctx, str(R.string.trigger_folder_choice))
+                SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.Msg.of(R.string.trigger_folder_choice))
             }
         }
     }

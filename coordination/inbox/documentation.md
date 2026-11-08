@@ -1,6 +1,36 @@
 ## Aufträge
 (neueste oben)
 
+### SYNC-20261109-042 – TESTING.md: gemessene Testzahlen 0.12.1 und Qualitätsrisiko Ressourcen-Namen (aus QA -040)
+- Erstellt am: 2026-11-09
+- Absender: QA
+- Empfänger: Documentation
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: In -041 wurden die Testzahlen bewusst bis zur QA-Messung offen gelassen; zudem ein dokumentationswürdiges Qualitätsrisiko für die Auslieferung als App-Bundle. Ersetzt die Zahlen in -037 (Nachträge dort).
+- Aufgabenbeschreibung: (1) Gemessen (QA-Lauf 2026-11-09, `testDebugUnitTest --rerun-tasks`, JDK 17, aus JUnit-XML): **25 Klassen, 143 Tests, 0 Fehler, 0 Fehlschläge, 0 übersprungen** (132 + 11 `MsgTest`). `connectedDebugAndroidTest` erstmals durch QA ausgeführt, Emulator `LeoSync_API29(AVD)` (Android 10): **`MigrationTest` 3/3 bestanden** (`fromVersion1ToLatest` bis 7, `verifyLevelFromVersion5`, `runCodesFromVersion6`); in `TESTING.md` Abschnitte 1, 4, 5, 13 sowie `ARCHITECTURE.md` 4.7 nachführen; `app/schemas/…/7.json` ist jetzt vorhanden (Befund 1 aus -041 erledigt). (2) Risiko dokumentieren (Abschnitt 10, möglich, nicht belegt): Kennungen speichern Ressourcen-**Namen** (`getResourceEntryName`) und lösen per `getIdentifier` auf. Im **APK** bleiben die Namen erhalten (QA mit `aapt2 dump resources` am Release-APK 0.12.1 geprüft: 799 Strings, alle lesbar, u. a. `run_nothing`, `run_trashed`, `run_conflicts`). Für ein **App-Bundle (AAB, Play Store)** nicht geprüft; dort kann Android-/Bundle-Optimierung Ressourcen-Namen verkürzen, dann würden gespeicherte Kennungen nach einem Update falsch oder gar nicht aufgelöst (Rückfalltext). Vor dem ersten AAB-Upload prüfen. (3) Testlücken ergänzen: `SyncScheduler.triggerData/triggerOf`, `SyncDao.closeDanglingRuns`, Auflösung per Name mit echten Android-Ressourcen (nur `TestTexts`), Sprachwechsel im Verlauf. (4) Manuelle Gerätetests (Inhaber, nicht ausgeführt): Update von 0.11.x mit bestehendem Verlauf (alte Einträge als Text), Sprachwechsel DE↔EN mit Verlauf (Lauf-Karte, aufgeklappte Zeilen, Export), Release-APK starten und Verlauf prüfen.
+- Technischer Kontext: QA -040 (Version 0.12.1).
+- Betroffene Dateien: `docs/TESTING.md`, `docs/ARCHITECTURE.md` (4.7)
+- Erwartetes Ergebnis: Doku stimmt mit den gemessenen Zahlen überein; nichts Ungeprüftes behaupten.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. `TESTING.md`: Abschnitte 1 (25/143; Instrumentation 3 Tests, Emulator bestanden), Qualitätsmechanismen (Schemas bis `7.json`), 2 (Befehlstabelle 3 Tests), 4.1 (`MsgTest` gemessen), 4.3, 5 (`7.json` vorhanden, 6→7 bestanden), 10 neu Punkt (10) mit Testlücken, manuellen Gerätetests (nicht ausgeführt) und Qualitätsrisiko Ressourcen-Namen im AAB, 13 (Zahlen). `ARCHITECTURE.md` 4.7: 25 Klassen/143 Tests.
+- Ergebnis und Rückmeldung: Alle Zahlen und Aussagen aus QA -040/-042 übernommen, nicht selbst gemessen; Quelltext nicht gelesen. Offen: ältere Testzahlen in `DATA-MODEL.md` Abschnitt 14 (aus -041 Befund 5) unverändert; Hinweis „Differenz 109→110“ in TESTING Abschnitt 10 nicht bereinigt.
+- Abgeschlossen am: 2026-11-09
+
+### SYNC-20261109-041 – Doku-Nachführung zu 0.12.0/0.12.1: Verlauf mit Kennungen (DEC-159, aus Development -009)
+- Erstellt am: 2026-11-09
+- Absender: Development
+- Empfänger: Documentation
+- Priorität: LOW
+- Status: COMPLETED
+- Übergabegrund: Schema- und Datenmodelländerung (DB-Version 7), neue Komponente.
+- Aufgabenbeschreibung: `DATA-MODEL.md`: DB-Version 7, neue nullable Spalten `sync_runs.messageCode`/`triggerCode`, `log_entries.code`, Aufbau der Kennung (JSON: `t`, `k`+`a`, `k`+`n`+`a`, `j`+`p`; Ressourcen-Name, Tiefe ≤ 12), Rückfalltext, Aufbewahrung (Logs 30/Läufe 90 Tage), Sicherung unberührt. `DECISIONS.md`: DEC-159 Umsetzung (0.12.0 Stufe 1, 0.12.1 Stufe 2), Risiko D35 behoben, D33 (`TestTexts` löst Namen auf), Diagnose bleibt Text (DEC-160). `ARCHITECTURE.md`/`SYNC-ENGINE.md`: `Msg`, `Texts.Resolver`, Auslöser in Auftragsdaten (`KEY_TRIGGER_CODE`), `isIdle` über `RunSummary.NOT_IDLE_KEYS`. `TESTING.md`: neu `MsgTest`, `MigrationTest` 6→7 (Gerät), Testzahlen erst nach QA-Lauf (-040). Versionsplan: 0.12.0 war für Play Store vorgesehen (Memory-Roadmap), jetzt für diese Funktion belegt; Inhaber entscheidet. PATCHNOTES 0.12.0/0.12.1 sind bereits eingetragen.
+- Technischer Kontext: Development -009, Architecture -015.
+- Betroffene Dateien: `docs/DATA-MODEL.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/SYNC-ENGINE.md`, `docs/TESTING.md`
+- Erwartetes Ergebnis: Doku passt zur Implementierung; nichts erfinden.
+- Tatsächlich durchgeführte Arbeiten: Übernahme bestätigt. Code gelesen: `Msg.kt`, `Texts.kt` (Resolver), `AppDatabase` (`MIGRATION_6_7`, Version 7), `Entities.kt`, `SyncScheduler` (`KEY_TRIGGER_CODE`), `RunSummary.NOT_IDLE_KEYS`, `RunGrouping`, `Diagnostics.logExport/logLine`, `MigrationTest`, `MsgTest` (Anzahl `@Test`). `DATA-MODEL.md`: Kopf (DB 7, 0.12.1), 3.9/3.10 neue Spalten, neu 3.11 (Kennungsformat), 10 (Migration 6→7, Zeitleiste), 12.4, 14, 17. `DECISIONS.md`: DEC-202 auf Implemented mit Nachtrag Umsetzung, DEC-159-Konsequenz, D35 behoben (alte Einträge bleiben), D33 ergänzt, Anhang A Punkt 19 erledigt, Statistik (Accepted 14, Implemented 152). `ARCHITECTURE.md`: neue Zeile `l10n/Msg.kt`, `Texts.Resolver`, `RunSummary`, Regel „Keine Texte im Code“, Abschnitt 14. `SYNC-ENGINE.md`: Lauf-Schritt 1, Abgrenzung 18.2. `TESTING.md`: Zeile `MsgTest`, `MigrationTest` 6→7, Abschnitt 5.
+- Ergebnis und Rückmeldung: Versionsplan nach Vorgabe Inhaber 2026-11-09: 0.12.0 bleibt dem Verlauf mit Kennungen zugeordnet; die Nummer für den Play Store ist offen und so dokumentiert (DATA-MODEL 17, ARCHITECTURE 14, SYNC-ENGINE 18.2; DEC-188 unverändert, ggf. Architecture/Inhaber). Befunde: (1) `app/schemas/…/7.json` existiert noch nicht (entsteht beim nächsten Build), sonst scheitert `MigrationTest` 6→7. (2) `Diagnostics.ALREADY_COUNT` ist weiterhin nur deutsch (Nebenbefund aus -015 nicht behoben); bei Bedarf an Development. (3) Vollständigkeit der Umstellung aller Log-Aufrufe auf `Msg` nicht einzeln geprüft. (4) Testzahlen in `TESTING.md` (Abschnitte 1, 13, `ARCHITECTURE.md` 4.7) bewusst nicht geändert, bis QA -040 gemessen hat; `MsgTest` mit 11 gezählt aus dem Quelltext. (5) In `DATA-MODEL.md` Abschnitt 14 stehen ältere Testzahlen weiterer Klassen (Stand 0.11.0), nicht nachgeführt. Nicht ausgeführt: Tests, Build.
+- Abgeschlossen am: 2026-11-09
+
 ### SYNC-20261108-037 – TESTING.md: Stand 0.11.10 (Testzahlen, Testlücken Eingriff beim Sync) (aus QA -035)
 - Erstellt am: 2026-11-08
 - Absender: QA

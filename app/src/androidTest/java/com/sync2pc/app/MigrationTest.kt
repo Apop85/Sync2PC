@@ -19,7 +19,7 @@ class MigrationTest {
     private val db = "migration-test"
     private val all = arrayOf(
         AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4,
-        AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6,
+        AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7,
     )
 
     @get:Rule
@@ -35,7 +35,7 @@ class MigrationTest {
             )
             close()
         }
-        val d = helper.runMigrationsAndValidate(db, 6, true, *all)
+        val d = helper.runMigrationsAndValidate(db, 7, true, *all)
         d.query("SELECT name, profileType, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel FROM profiles").use { c ->
             c.moveToFirst()
             assertEquals("Fotos", c.getString(0))
@@ -69,6 +69,35 @@ class MigrationTest {
             val levels = buildMap { while (c.moveToNext()) put(c.getInt(0), c.getInt(1)) }
             assertEquals(mapOf(1 to 0, 2 to 1, 3 to 1), levels)
         }
+        d.close()
+    }
+
+    /** 6 -> 7 (0.12.0, DEC-159): Kennungs-Spalten; bestehende Läufe und Log-Zeilen behalten ihren Text, Kennung NULL */
+    @Test fun runCodesFromVersion6() {
+        helper.createDatabase(db, 6).apply {
+            execSQL(
+                "INSERT INTO sync_runs (id, profileId, profileName, `trigger`, dryRun, startedAt, finishedAt, status, " +
+                    "uploaded, skipped, failed, waiting, bytes, message) VALUES " +
+                    "(1, 1, 'Fotos', 'WLAN verbunden', 0, 1000, 2000, 'OK', 3, 0, 0, 0, 0, '3 übertragen')"
+            )
+            execSQL("INSERT INTO log_entries (id, runId, time, level, message) VALUES (1, 1, 1500, 'I', '↑ a.jpg → 2026\\06')")
+            close()
+        }
+        val d = helper.runMigrationsAndValidate(db, 7, true, AppDatabase.MIGRATION_6_7)
+        d.query("SELECT `trigger`, message, messageCode, triggerCode FROM sync_runs WHERE id = 1").use { c ->
+            c.moveToFirst()
+            assertEquals("WLAN verbunden", c.getString(0))
+            assertEquals("3 übertragen", c.getString(1))
+            assertEquals(true, c.isNull(2))
+            assertEquals(true, c.isNull(3))
+        }
+        d.query("SELECT message, code FROM log_entries WHERE id = 1").use { c ->
+            c.moveToFirst()
+            assertEquals("↑ a.jpg → 2026\\06", c.getString(0))
+            assertEquals(true, c.isNull(1))
+        }
+        // Neue Zeilen mit Kennung lassen sich schreiben
+        d.execSQL("UPDATE sync_runs SET messageCode = '{\"k\":\"run_nothing\"}' WHERE id = 1")
         d.close()
     }
 }

@@ -31,8 +31,8 @@ class WifiNetworkReceiver : BroadcastReceiver() {
                     s.lastWifiTriggerAt = now
                     // Neue WLAN-Verbindung -> PC sofort prüfen, eine laufende 30-Minuten-Wartezeit verfällt
                     s.shareRetryAt = 0; s.shareUnreachable = ""
-                    val label = com.sync2pc.app.l10n.str(if (s.resumeOnWifi) com.sync2pc.app.R.string.trigger_resume else com.sync2pc.app.R.string.trigger_wifi)
-                    SyncScheduler.enqueueAuto(ctx, label + (ssid?.let { " ($it)" } ?: ""))
+                    val label = com.sync2pc.app.l10n.Msg.of(if (s.resumeOnWifi) com.sync2pc.app.R.string.trigger_resume else com.sync2pc.app.R.string.trigger_wifi)
+                    SyncScheduler.enqueueAuto(ctx, ssid?.let { com.sync2pc.app.l10n.Msg.join("", listOf(label, com.sync2pc.app.l10n.Msg.lit(" ($it)"))) } ?: label)
                 }
             } finally {
                 pending.finish()

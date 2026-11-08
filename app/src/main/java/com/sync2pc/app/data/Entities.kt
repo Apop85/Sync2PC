@@ -40,6 +40,8 @@ enum class SyncDirection(@StringRes private val labelRes: Int, @StringRes privat
 
     val label: String get() = str(labelRes)
     val short: String get() = str(shortRes)
+    /** Bezeichnung als Kennung (Verlauf, 0.12.1) */
+    val labelMsg: com.sync2pc.app.l10n.Msg get() = com.sync2pc.app.l10n.Msg.of(labelRes)
 
     val up: Boolean get() = this != DOWNLOAD
     val down: Boolean get() = this != UPLOAD
@@ -339,7 +341,13 @@ data class SyncRun(
     val failed: Int = 0,
     val waiting: Int = 0,
     val bytes: Long = 0,
+    /** Fertiger Kurztext in der Sprache beim Schreiben: Rückfall für alte Einträge ([messageCode] = null) */
     val message: String = "",
+    // ---- seit DB v7 (0.12.0): Kennungen statt fertiger Texte (DEC-159), siehe [com.sync2pc.app.l10n.Msg] ----
+    /** Kurztext als Kennung (JSON); null = nur [message] */
+    val messageCode: String? = null,
+    /** Auslöser als Kennung (JSON); null = nur [trigger] */
+    val triggerCode: String? = null,
 )
 
 @Entity(tableName = "log_entries", indices = [Index("runId")])
@@ -349,5 +357,8 @@ data class LogEntry(
     val time: Long,
     /** I, W, E */
     val level: String,
+    /** Fertiger Text in der Sprache beim Schreiben: Rückfall und Text der Diagnose (DEC-160) */
     val message: String,
+    /** seit DB v7 (0.12.0): Zeile als Kennung (JSON); null = nur [message] */
+    val code: String? = null,
 )

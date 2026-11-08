@@ -38,6 +38,9 @@ import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.LogItem
 import com.sync2pc.app.data.RunGrouping
 import com.sync2pc.app.data.SyncRun
+import com.sync2pc.app.data.messageText
+import com.sync2pc.app.data.text
+import com.sync2pc.app.data.triggerText
 import androidx.compose.material3.FilterChip
 import com.sync2pc.app.diag.Diagnostics
 import com.sync2pc.app.sync.Notifications
@@ -144,7 +147,7 @@ private fun IdleCard(runs: List<SyncRun>, expanded: Boolean, onClick: () -> Unit
             val endShort = if (start.substringBefore(' ') == end.substringBefore(' ')) end.substringAfter(' ') else end
             Hint("$start – $endShort · $profiles")
             if (expanded) runs.forEach { r ->
-                Text("#${r.id} · ${formatTime(r.startedAt)} · ${r.profileName} (${r.trigger})",
+                Text("#${r.id} · ${formatTime(r.startedAt)} · ${r.profileName} (${r.triggerText()})",
                     style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -171,14 +174,14 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
                     style = MaterialTheme.typography.titleSmall)
                 if (r.status != RunStatus.OK) Text(label, color = color)
             }
-            Hint(str(R.string.log_trigger, r.trigger))
-            Text(r.message)
+            Hint(str(R.string.log_trigger, r.triggerText()))
+            Text(r.messageText())
             if (r.bytes > 0) Hint(Notifications.formatBytes(r.bytes))
             if (expanded) {
                 val entries by remember(r.id) { dao.logFlow(r.id) }.collectAsState(initial = emptyList())
                 entries.takeLast(300).forEach { e ->
                     Text(
-                        "${formatTime(e.time).substringAfter(' ')}  ${e.message}",
+                        "${formatTime(e.time).substringAfter(' ')}  ${e.text()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = when (e.level) {
                             "E" -> MaterialTheme.colorScheme.error

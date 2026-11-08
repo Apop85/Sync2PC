@@ -40,6 +40,7 @@ import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.messageText
 import com.sync2pc.app.sync.PreviewEntry
 import com.sync2pc.app.sync.SyncEngine
 import kotlinx.coroutines.Dispatchers
@@ -81,11 +82,11 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
             }
             val engine: com.sync2pc.app.sync.SyncRunner =
                 if (p.type() == com.sync2pc.app.data.ProfileType.MIRROR)
-                    com.sync2pc.app.mirror.MirrorEngine(ctx, p, str(R.string.profile_simulation), dryRun = true, onProgress = onProgress, previewLimit = max)
-                else SyncEngine(ctx, p, str(R.string.profile_simulation), dryRun = true, onProgress = onProgress, previewLimit = max)
+                    com.sync2pc.app.mirror.MirrorEngine(ctx, p, com.sync2pc.app.l10n.Msg.of(R.string.profile_simulation), dryRun = true, onProgress = onProgress, previewLimit = max)
+                else SyncEngine(ctx, p, com.sync2pc.app.l10n.Msg.of(R.string.profile_simulation), dryRun = true, onProgress = onProgress, previewLimit = max)
             val run = withContext(Dispatchers.IO) { engine.run() }
             result = engine.preview.toList()
-            status = run.message
+            status = run.messageText()
             running = false
         }
     }

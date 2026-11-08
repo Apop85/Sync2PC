@@ -26,6 +26,9 @@ import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.LogEntry
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncRun
+import com.sync2pc.app.data.messageText
+import com.sync2pc.app.data.text
+import com.sync2pc.app.data.triggerText
 import com.sync2pc.app.mirror.LocalTree
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.sync.WifiHelper
@@ -258,8 +261,8 @@ object Diagnostics {
             append(header(ctx))
             for (r in dao.recentRuns(100)) {
                 appendLine()
-                appendLine(runLine(r))
-                dao.logs(r.id).forEach { appendLine("  ${t(it.time)} ${it.level} ${it.message}") }
+                appendLine(runLine(r, localized = true))
+                dao.logs(r.id).forEach { appendLine("  ${t(it.time)} ${it.level} ${it.text()}") }
             }
         }
     }
@@ -372,9 +375,11 @@ object Diagnostics {
         return out
     }
 
-    private fun runLine(r: SyncRun): String =
-        "#${r.id} ${t(r.startedAt)} → ${t(r.finishedAt ?: 0L)} [${r.status}] ${r.profileName} (${r.trigger})" +
-            " ↑${r.uploaded} ⤼${r.skipped} ✗${r.failed} ⏸${r.waiting}: ${r.message}"
+    /** [localized] = Kennungen in der aktiven Sprache (Verlauf-Export); sonst der gespeicherte Text (Diagnose, DEC-160) */
+    private fun runLine(r: SyncRun, localized: Boolean = false): String =
+        "#${r.id} ${t(r.startedAt)} → ${t(r.finishedAt ?: 0L)} [${r.status}] ${r.profileName} " +
+            "(${if (localized) r.triggerText() else r.trigger})" +
+            " ↑${r.uploaded} ⤼${r.skipped} ✗${r.failed} ⏸${r.waiting}: ${if (localized) r.messageText() else r.message}"
 
     private fun StringBuilder.section(title: String) {
         appendLine()

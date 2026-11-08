@@ -2,6 +2,22 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.12.2 (2026-11-09)
+
+- Automatischer Build: Quellcode geaendert, Patchnotes bitte ergaenzen.
+
+## 0.12.1 (2026-11-09)
+
+### Neu
+- **Verlauf mit Kennungen, Stufe 2 (DEC-159):** Die Zeilen des Detail-Logs (Start, Zähler, Papierkorb, Konflikte, Wiederherstellen, Fehler, Ende …) werden ebenfalls als Kennung gespeichert (`log_entries.code`) und im aufgeklappten Lauf sowie im Verlauf-Export in der aktiven Sprache angezeigt. Auslöser und Richtung in der Startzeile, Gründe einer Unterbrechung und die Schutzbremse-Überschrift stecken als verschachtelte Kennung darin. Dateinamen, Pfade, technische Fehlertexte und Symbolzeilen (↑ ↓ ✗) bleiben wörtlich. Die Diagnose bleibt beim gespeicherten Text (DEC-160). Keine weitere Datenbankänderung.
+## 0.12.0 (2026-11-08)
+
+### Neu
+- **Verlauf mit Kennungen, Stufe 1 (DEC-159):** Kurztext eines Laufs und Auslöser werden zusätzlich als Kennung gespeichert (Ressourcen-Name, Zahlen, Verkettung; `Msg`) und im Verlauf, auf der Startseite, in der Simulation und im Verlauf-Export in der aktiven Sprache angezeigt. Der Verlauf ist damit nach einem Sprachwechsel nicht mehr gemischtsprachig. Alte Einträge zeigen weiter ihren gespeicherten Text. „Ruhige“ Läufe (`isIdle`) erkennt die App über Schlüssel statt über Merkmal-Wörter (Risiko D35); die Wörter gelten nur noch für Einträge ohne Kennung.
+- Datenbank Version 7 (`MIGRATION_6_7`, nur drei neue, nullable Spalten: `sync_runs.messageCode`, `sync_runs.triggerCode`, `log_entries.code`). Sicherung (`BackupCodec`) unverändert, Formatversion 1. Die Log-Zeilen folgen in Stufe 2 (0.12.1).
+
+### Intern
+- Neu `l10n/Msg.kt`, `data/RunTexts.kt`; `Texts.Resolver` löst Ressourcen per Name auf. `RunSummary` liefert eine Kennung statt Text. Neue Tests `MsgTest`, `MigrationTest` 6→7.
 ## 0.11.10 (2026-11-08)
 
 ### Behoben

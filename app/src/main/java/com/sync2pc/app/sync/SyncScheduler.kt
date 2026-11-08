@@ -10,9 +10,11 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.Data
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.sync2pc.app.data.GlobalSettings
+import com.sync2pc.app.l10n.Msg
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +47,7 @@ object SyncScheduler {
      */
     fun enqueueResume(context: Context, delayMinutes: Long = 0, appendToCurrent: Boolean = false) {
         val b = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_resume), KEY_MANUAL to false, KEY_RESUME to true))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_resume), KEY_MANUAL to false, KEY_RESUME to true))
             .setConstraints(autoConstraints(context))
         if (delayMinutes > 0) b.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
         // Aus dem laufenden Fortsetzen-Auftrag heraus anhängen statt ersetzen (sonst bricht er sich selbst ab)
@@ -57,13 +59,26 @@ object SyncScheduler {
     const val SHARE_RETRY_MINUTES = 30L
 
     const val KEY_TRIGGER = "trigger"
+    /** Auslöser als Kennung (0.12.0, DEC-159); fehlt sie (bereits eingeplante Aufträge), gilt der Text */
+    const val KEY_TRIGGER_CODE = "triggerCode"
+
+    /** Auftragsdaten mit Auslöser: Text (Rückfall) und Kennung */
+    fun triggerData(trigger: Msg, vararg more: Pair<String, Any?>): Data {
+        val b = Data.Builder().putAll(workDataOf(*more)).putString(KEY_TRIGGER, trigger.text())
+        trigger.toCode()?.let { b.putString(KEY_TRIGGER_CODE, it) }
+        return b.build()
+    }
+
+    /** Auslöser aus den Auftragsdaten; [default] bei fehlendem Eintrag */
+    fun triggerOf(data: Data, default: Msg): Msg =
+        Msg.fromJson(data.getString(KEY_TRIGGER_CODE)) ?: data.getString(KEY_TRIGGER)?.let { Msg.lit(it) } ?: default
     const val KEY_MANUAL = "manual"
     const val KEY_RETRY = "retry"
 
     /** Share nicht erreichbar -> in 30 Minuten erneut prüfen (nur im WLAN) */
     fun enqueueShareRetry(context: Context, minutes: Long = SHARE_RETRY_MINUTES) {
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_retry), KEY_MANUAL to false, KEY_RETRY to true))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_retry), KEY_MANUAL to false, KEY_RETRY to true))
             .setConstraints(autoConstraints(context))
             .setInitialDelay(minutes, TimeUnit.MINUTES)
             .build()
@@ -92,10 +107,10 @@ object SyncScheduler {
             .setRequiresCharging(GlobalSettings(context).onlyWhileCharging)
             .build()
 
-    fun enqueueAuto(context: Context, trigger: String) {
+    fun enqueueAuto(context: Context, trigger: Msg) {
         val charging = GlobalSettings(context).onlyWhileCharging
         val b = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to trigger, KEY_MANUAL to false))
+            .setInputData(triggerData(trigger, KEY_MANUAL to false))
             .setConstraints(autoConstraints(context))
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 2, TimeUnit.MINUTES)
         // Expedited erlaubt nur Netzwerk-Constraints
@@ -109,7 +124,7 @@ object SyncScheduler {
     fun enqueueManual(context: Context) {
         clearPause(context)
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_manual), KEY_MANUAL to true))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_manual), KEY_MANUAL to true))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
@@ -120,7 +135,7 @@ object SyncScheduler {
     fun enqueueFollowUp(context: Context, atMillis: Long) {
         val delay = (atMillis - System.currentTimeMillis()).coerceAtLeast(30_000)
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_followup), KEY_MANUAL to false))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_followup), KEY_MANUAL to false))
             .setConstraints(autoConstraints(context))
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .build()
@@ -146,7 +161,7 @@ object SyncScheduler {
             .setTriggerContentMaxDelay(maxOf(Duration.ofMinutes(5), update.plusMinutes(2)))
             .build()
         val req = OneTimeWorkRequestBuilder<TriggerWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_new_media)))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_new_media)))
             .setConstraints(c)
             .build()
         wm.enqueueUniqueWork(
@@ -165,7 +180,7 @@ object SyncScheduler {
         val wm = WorkManager.getInstance(context)
         if (minutes <= 0 || GlobalSettings(context).manualOnly) { wm.cancelUniqueWork(WORK_REMOTE_POLL); return }
         val req = PeriodicWorkRequestBuilder<TriggerWorker>(minutes.coerceAtLeast(15).toLong(), TimeUnit.MINUTES)
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_poll)))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_poll)))
             .setConstraints(autoConstraints(context))
             .build()
         wm.enqueueUniquePeriodicWork(WORK_REMOTE_POLL, ExistingPeriodicWorkPolicy.UPDATE, req)
@@ -194,7 +209,7 @@ object SyncScheduler {
         wm.cancelUniqueWork(WORK_PERIODIC)
         if (GlobalSettings(context).manualOnly) { wm.cancelUniqueWork(WORK_SAFETY); return }
         val req = OneTimeWorkRequestBuilder<TriggerWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_safety, SAFETY_HOURS)))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_safety, SAFETY_HOURS)))
             .setConstraints(autoConstraints(context))
             .setInitialDelay(SAFETY_HOURS, TimeUnit.HOURS)
             .build()
@@ -224,7 +239,7 @@ object SyncScheduler {
         GlobalSettings(context).pausedUntil = System.currentTimeMillis() + ms
         cancelAll(context)
         val req = OneTimeWorkRequestBuilder<TriggerWorker>()
-            .setInputData(workDataOf(KEY_TRIGGER to com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_pause_end)))
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_pause_end)))
             .setInitialDelay(ms, TimeUnit.MILLISECONDS)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_PAUSE_END, ExistingWorkPolicy.REPLACE, req)
@@ -256,7 +271,7 @@ object SyncScheduler {
         val s = GlobalSettings(context)
         val wasManualOnly = s.manualOnly
         if (wasManualOnly) { s.manualOnly = false; setupAll(context) }
-        if (clearPause(context) || wasManualOnly) enqueueAuto(context, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_resumed))
+        if (clearPause(context) || wasManualOnly) enqueueAuto(context, Msg.of(com.sync2pc.app.R.string.trigger_resumed))
     }
 
     fun cancelAll(context: Context) {

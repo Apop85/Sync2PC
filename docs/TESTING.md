@@ -11,8 +11,8 @@ Kennzeichnung: **[vorhanden]** = im Repository nachweisbar, **[fehlt]** = nachwe
 
 | Testart | Status | Framework | Ort | Läuft auf |
 |---|---|---|---|---|
-| JVM-Unit-Tests (reine Logik) | vorhanden: 24 Klassen, 132 Tests (QA-Lauf 2026-11-08 nach 0.11.10 und Development -036, `--rerun-tasks`: 0 Fehler, 0 Fehlschläge, 0 übersprungen) | JUnit 4.13.2, `org.json:json:20240303` | `app/src/test/java/com/sync2pc/app/` | PC (JVM), kein Gerät |
-| Instrumentierte Tests | vorhanden: 1 Klasse, 2 `@Test` (nur Room-Migration) | AndroidJUnit4, `room-testing` (`MigrationTestHelper`) | `app/src/androidTest/java/com/sync2pc/app/` | Gerät/Emulator |
+| JVM-Unit-Tests (reine Logik) | vorhanden: 25 Klassen, 143 Tests (QA-Lauf 2026-11-09 nach 0.12.1, `testDebugUnitTest --rerun-tasks`, JDK 17, aus JUnit-XML: 0 Fehler, 0 Fehlschläge, 0 übersprungen; 132 + 11 `MsgTest`) | JUnit 4.13.2, `org.json:json:20240303` | `app/src/test/java/com/sync2pc/app/` | PC (JVM), kein Gerät |
+| Instrumentierte Tests | vorhanden: 1 Klasse, 3 `@Test` (nur Room-Migration); QA-Lauf 2026-11-09 auf Emulator `LeoSync_API29(AVD)` (Android 10): 3/3 bestanden | AndroidJUnit4, `room-testing` (`MigrationTestHelper`) | `app/src/androidTest/java/com/sync2pc/app/` | Gerät/Emulator |
 | Textparität DE/EN | vorhanden (als Unit-Test) | JUnit 4 | `StringsParityTest.kt` | PC |
 | Manuelle Release-Checkliste | vorhanden, dokumentiert | – | `build.md` (Abschnitte „Release-Checkliste“, „Test …“) | echtes Handy + PC/NAS |
 | UI-/Compose-Tests | **[fehlt]** | – | – | – |
@@ -29,7 +29,7 @@ Mocking-Bibliotheken (Mockito, MockK, Robolectric, Turbine …) sind **nicht** e
 |---|---|---|
 | Unit-Tests beim Standard-Build | `build.bat` ruft `gradlew testDebugUnitTest assembleRelease` auf; ein Testfehler bricht den Build ab (ausser `-SkipTests`) | `build.md` |
 | Kompilierung mit R8 im Release | `isMinifyEnabled`/`isShrinkResources` = true; deckt fehlende Keep-Regeln erst zur Laufzeit auf, nicht im Test | `app/build.gradle.kts` |
-| Room-Schema-Export | `exportSchema = true`, Schemas `1.json`–`6.json` in `app/schemas/…/`; Grundlage für `MigrationTest` | `AppDatabase.kt`, `app/build.gradle.kts` |
+| Room-Schema-Export | `exportSchema = true`, Schemas `1.json`–`7.json` in `app/schemas/…/`; Grundlage für `MigrationTest` | `AppDatabase.kt`, `app/build.gradle.kts` |
 | Strings-Parität | schlägt fehl, wenn DE/EN-Schlüssel, Platzhalter oder Plural-Formen abweichen | `StringsParityTest.kt` |
 | Schutzbremse etc. zur Laufzeit | Fachliche Sicherungen der App (Löschschutz, Prüfstufen), keine Testmechanismen; Logik teilweise per Unit-Test abgesichert | `MirrorGuardTest`, `VerifyLevelTest` |
 | Manuelle Release-Checkliste | Deckt Engine, SMB, Hintergrund, Migration auf echtem Gerät ab | `build.md` |
@@ -82,7 +82,7 @@ Alle Befehle aus dem Projektwurzelordner (Windows: `gradlew.bat`). Die Tasks sin
 | `gradlew.bat assembleDebug` | Debug-APK (kompiliert alles inkl. Compose/KSP) | kein Test | schneller Kompilier-Check nach UI-Änderungen |
 | `gradlew.bat assembleRelease` | Release-APK mit R8 | kein Test | nach Änderungen an Abhängigkeiten, Reflection, Room, smbj/dcerpc (R8-Keep-Regeln) |
 | `gradlew.bat testDebugUnitTest assembleRelease` | Befehl, den `build.bat` ausführt; auch „Manuell bauen“ in `build.md` | Tests + Release | Vollprüfung vor Release |
-| `gradlew.bat connectedDebugAndroidTest` | Instrumentierter `MigrationTest` | 2 Tests, braucht Gerät/Emulator (API ≥ 29) | Bei jeder Änderung an `Entities.kt`, `AppDatabase.kt`, Schemas |
+| `gradlew.bat connectedDebugAndroidTest` | Instrumentierter `MigrationTest` | 3 Tests, braucht Gerät/Emulator (API ≥ 29) | Bei jeder Änderung an `Entities.kt`, `AppDatabase.kt`, Schemas |
 | `gradlew.bat lintDebug` | Android-Lint (AGP-Standardtask) | keine projektspezifische Lint-Konfiguration vorhanden | optional; nicht Bestandteil des Projektablaufs, Ergebnis nicht dokumentiert |
 
 Reports: JUnit-HTML unter `app/build/reports/tests/testDebugUnitTest/`; Build-Log von `build.bat` unter `.build/last-build.log`.
@@ -148,14 +148,16 @@ Pfade relativ zu `app/src/test/java/com/sync2pc/app/` (Ausnahme: `MigrationTest`
 | `NetworkRulesTest.kt` | `sync/NetworkRules` (reine Netzentscheidungen, DEC-126) | Tabelle erlaubte Netzart (`onAllowedNetwork`); Schalter + mobile Daten/VPN nötig (`offWifiSyncActive`); Weiterlaufen nach SSID bzw. Netzart (`mayContinue`); Wartezeiten (`retryMinutes`); Erreichbarkeitsversuche (`reachabilityWaits`); seit 0.11.7 | 5 |
 | `FolderFreerTest.kt` | `mirror/FolderFreer` (`isProtectedDir`, `emptyDirCandidates`; DEC-147) | Profil-Wurzel immer geschützt; `DCIM/Camera` geschützt (handgeschriebene Labels); andere Ordner nicht geschützt; Kandidaten tiefster Ordner zuerst ohne geschützte; geschützte übersprungen, andere bleiben; seit 0.11.8 | 5 |
 | `RestoreRetryPolicyTest.kt` | `mirror/RestoreRetryPolicy` (DEC-146) | ab dem 5. Fehlversuch erschöpft; Zähler je Wiederherstellungs-ID; ID-Präfix wird nicht verwechselt (1/12); seit 0.11.8 | 3 |
+| `MsgTest.kt` | `l10n/Msg` (Kennung), `data/RunTexts`, `RunGrouping.isIdle`, `RunSummary.NOT_IDLE_KEYS` (DEC-159/DEC-202) | Code rendert wie der Originaltext; Ressourcen-Namen statt IDs gespeichert; Mehrzahl und Verschachtelung überstehen die Speicherung; wörtlicher Text ohne Code; Rückfalltext bei unbrauchbarem Code; unbekannte Felder ignoriert, Tiefe begrenzt; Anzeige in der aktiven statt der Schreibsprache; `isIdle` über Schlüssel bzw. Merkmal-Wörter ohne Code; Log-Zeilen aus Code oder Rückfalltext; `NOT_IDLE_KEYS` sind echte Ressourcen; seit 0.12.0 | 11 (QA-Lauf 2026-11-09 bestanden) |
 | `StringsParityTest.kt` | `res/values*/strings*.xml` über `TestTexts` | gleiche Schlüssel, Plural-Formen `one`/`other`, gleiche Platzhalter, Formate funktionieren, Apostrophe maskiert | 5 |
 
 ### 4.3 Instrumentation
 
 `app/src/androidTest/java/com/sync2pc/app/MigrationTest.kt` (`@RunWith(AndroidJUnit4)`, `MigrationTestHelper`, braucht Gerät/Emulator):
 
-- `fromVersion1ToLatest`: Profil der DB-Version 1 durchläuft `MIGRATION_1_2` … `MIGRATION_5_6` und `runMigrationsAndValidate(..., 6, true, …)`; prüft Schema und eine übernommene Spalte (Prüfung an → „Wenig“).
+- `fromVersion1ToLatest`: Profil der DB-Version 1 durchläuft `MIGRATION_1_2` … `MIGRATION_6_7` und `runMigrationsAndValidate(..., 7, true, …)`; prüft Schema und eine übernommene Spalte (Prüfung an → „Wenig“).
 - `verifyLevelFromVersion5`: `MIGRATION_5_6` mit Datenzeilen (KEEP/Prüfung aus → „Aus“; TRASH/Prüfung aus → „Wenig“; Prüfung an → „Wenig“).
+- `runCodesFromVersion6` (seit 0.12.0): `MIGRATION_6_7`; bestehender Lauf und bestehende Log-Zeile behalten ihren Text, die neuen Spalten `messageCode`, `triggerCode`, `code` sind `NULL`; eine Kennung lässt sich danach schreiben. Ausgeführt durch QA 2026-11-09 (Emulator API 29): bestanden.
 
 Einzelne Migrationen 1→2, 2→3, 3→4, 4→5 werden **nur als Teil der Kette** gegen das Schema validiert, nicht mit eigenen Datenprüfungen (nachweisbar nur die oben genannten Datenprüfungen).
 
@@ -165,8 +167,9 @@ Einzelne Migrationen 1→2, 2→3, 3→4, 4→5 werden **nur als Teil der Kette*
 
 | Aspekt | Stand |
 |---|---|
-| Migrationskette 1→6 | **[vorhanden]** `MigrationTest.fromVersion1ToLatest` (Gerät/Emulator) |
+| Migrationskette 1→7 | **[vorhanden]** `MigrationTest.fromVersion1ToLatest` (Gerät/Emulator) |
 | Datenerhalt bei 5→6 (`verifyLevel`) | **[vorhanden]** `MigrationTest.verifyLevelFromVersion5` |
+| Datenerhalt bei 6→7 (Kennungsspalten) | **[vorhanden]** `MigrationTest.runCodesFromVersion6` (QA 2026-11-09 bestanden) |
 | Datenerhalt bei 1→2, 2→3, 3→4, 4→5 mit eigenen Daten | **[fehlt]** (nur Schema-Validierung innerhalb der Kette) |
 | Spalten `mirrorState`, `syncedFile`, `folderMapping`, `pendingRestore` usw. nach Migration | **[fehlt]** (nicht geprüft; nur eine Spalte des Profils) |
 | DAO-Tests (`SyncDao`) | **[fehlt]** |
@@ -174,7 +177,7 @@ Einzelne Migrationen 1→2, 2→3, 3→4, 4→5 werden **nur als Teil der Kette*
 | Persistierung von Sync-Ständen (`MirrorState`, `SyncedFile`) | **[fehlt]** als Datenbanktest; `MirrorState` wird nur als Datenobjekt in `MirrorGuardTest`/`BackupCodecTest` verwendet |
 | Duplikaterkennung über Datenbank | **[fehlt]** |
 | Backup/Restore der Profil-Daten (JSON, kein Room) | **[vorhanden]** `BackupCodecTest`, `VerifyLevelTest` |
-| Schema-Datei zur aktuellen DB-Version vorhanden | `6.json` ist im Repository; der Test prüft sie nur, wenn `connectedDebugAndroidTest` läuft |
+| Schema-Datei zur aktuellen DB-Version vorhanden | `7.json` ist jetzt vorhanden (Befund aus Development -009/QA -040 erledigt); der Test prüft die Schemas nur, wenn `connectedDebugAndroidTest` läuft |
 
 Wichtig: Das Gradle-Setup führt `MigrationTest` **nicht** beim Standard-Build (`build.bat`) aus. Ohne manuellen Lauf mit Gerät/Emulator ist eine Datenbankänderung beim Build ungeprüft. `build.md` verlangt zusätzlich einen Update-Test über die bestehende Installation.
 
@@ -335,6 +338,8 @@ flowchart TD
 Testlücken mit höchster Priorität (ableitbar, [Empfehlung], nicht umgesetzt): (1) `MirrorEngine.plan()` mit Entscheidungstabellen aus `docs/SYNC-ENGINE.md` als Unit-Test, dafür reine Funktion ohne SMB nötig; (2) Fake für `SmbSession` hinter einer Schnittstelle; (3) Migrations-Datenprüfungen für alle Schritte und alle Tabellen; (4) DAO-Tests mit In-Memory-Room; (5) `work-testing` für `SyncWorker`; (6) CI-Lauf von `testDebugUnitTest` auf GitHub; (7) Nach 0.11.7 sind Netzregeln (`NetworkRulesTest`) und `syncOffWifi`-Round-Trip getestet. Weiter ohne Test (QA 2026-11-08): Orchestrierung in `SyncWorker` (Wartestufen, `handleUnreachable` mit `midRun`/Schalter), `SyncScheduler.onOffWifiChanged`, Aufhebung der Wartezeit in `WifiNetworkReceiver`, „Problem melden“ (`reportProblem`). Manuelle Gerätetests (Netzwechsel, Mail-App, Sicherung) bleiben beim Inhaber und wurden nicht ausgeführt. Die Gesamtzahl: 109 → 110 (0.11.7) nicht erklärt; 118 = 110 + 5 + 3 (0.11.8, laut QA -029).
 (8) Ohne Test nach 0.11.8/0.11.9 (QA -029; `deleteDirIfEmpty` mit `rawChildCount` und `RestoreFailures` sind nicht JVM-testbar): `FolderFreer.verifyAndDelete`, `LocalTree.deleteDirIfEmpty` (SAF), `RestoreFailures` (Prefs), `runRestores`-Filter und Rollback, Kartenarithmetik „vorgemerkt − fehlgeschlagen“ auf der Startseite, `RestoreManager.retryFailed`; `isProtectedDir` nur mit handgeschriebenen Labels, nicht mit der echten Ausgabe von `LocalTree.label`; Verhalten von `deleteDocument` auf Ordnern am echten Anbieter nicht automatisierbar. Manuelle Gerätetests beim Inhaber (nicht ausgeführt): Ordner leeren (Unterordner, `DCIM/Camera`, SD-Karte, `.nomedia`, Netzabbruch) und 5 Fehlversuche provozieren (Erneut versuchen, Verwerfen, Papierkorb leeren).
 (9) Ohne Test nach 0.11.10 (QA -035/-038): `TrashCleaner.purgeConfirmed`/`deleteEntries` mit I/O; `FolderFreer.verifyAndDelete` mit `onStart`; `MirrorEngine` Leeren nach Stichprobe (Development -034); `Notifications`; Abbrechen genau zwischen Sperrerwerb und `onStart`. Die Zustandslogik der Eingriffe (`InterventionRegistry`, früher `PendingIntervention`) ist seit -036 getestet. Manuelle Gerätetests beim Inhaber (nicht ausgeführt): Aufräumen während laufendem Sync (Wartezustand, Ansicht verlassen, Ergebnis als Hinweis); „Abbrechen“ im Wartezustand, auch kurz vor Sync-Ende wiederholt; PC aus → „Alles“ → Ordnerwechsel → Sync mit Ersetzungen → nächster Sync (ersetzte Versionen bleiben); Speicher freigeben während Sync; Prozess beenden im Wartezustand (nichts gelöscht); System-Hinweise für LeoSync aus → Eingriff → Ansicht schliessen → Ergebnis prüfen.
+(10) Ohne Test nach 0.12.1 (QA -040): `SyncScheduler.triggerData`/`triggerOf`, `SyncDao.closeDanglingRuns`, Auflösung der Kennungen per Name mit echten Android-Ressourcen (`MsgTest` nutzt nur `TestTexts`), Sprachwechsel im Verlauf. Manuelle Gerätetests beim Inhaber (nicht ausgeführt): Update von 0.11.x mit bestehendem Verlauf (alte Einträge als Text); Sprachwechsel DE↔EN mit Verlauf (Lauf-Karte, aufgeklappte Zeilen, Export); Release-APK starten und Verlauf prüfen.
+**Qualitätsrisiko (möglich, nicht belegt): Ressourcen-Namen im App-Bundle.** Kennungen speichern Ressourcen-**Namen** (`getResourceEntryName`) und lösen per `getIdentifier` auf. Im APK bleiben die Namen erhalten (QA: `aapt2 dump resources` am Release-APK 0.12.1, 799 Strings lesbar, u. a. `run_nothing`, `run_trashed`, `run_conflicts`). Für ein App-Bundle (AAB, Play Store) nicht geprüft; Bundle-Optimierung kann Namen verkürzen, dann würden gespeicherte Kennungen nach einem Update falsch oder nicht aufgelöst (Rückfalltext). Vor dem ersten AAB-Upload prüfen.
 
 ---
 
@@ -370,4 +375,4 @@ Testlücken mit höchster Priorität (ableitbar, [Empfehlung], nicht umgesetzt):
 
 ## 13. Pflege dieser Datei
 
-Bei neuen Testklassen: Abschnitt 4 und die Tabellen in 6, 9, 10 aktualisieren. Anzahl und Pfade der Tests sind in `docs/ARCHITECTURE.md` 4.7 ebenfalls erwähnt; bei Änderungen dort mitführen. Die Testanzahl (Stand QA-Lauf 2026-11-08: 24 Klassen, 132 Tests) ist bei jeder Änderung neu zu prüfen.
+Bei neuen Testklassen: Abschnitt 4 und die Tabellen in 6, 9, 10 aktualisieren. Anzahl und Pfade der Tests sind in `docs/ARCHITECTURE.md` 4.7 ebenfalls erwähnt; bei Änderungen dort mitführen. Die Testanzahl (Stand QA-Lauf 2026-11-09: 25 Klassen, 143 Tests; `MigrationTest` 3) ist bei jeder Änderung neu zu prüfen.

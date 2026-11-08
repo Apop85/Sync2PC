@@ -3,6 +3,21 @@
 
 Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISIONS.md` Anhang A/B (Antworten des Inhabers vom 2026-11-08). Umsetzung ist vom Inhaber freigegeben, ausser wo „prüfen“ steht. Jede Umsetzung: Doku gemäss `CLAUDE.md` §11 an Documentation melden.
 
+### SYNC-20261109-043 – Instrumentierter Test für Kennungen mit echten Android-Ressourcen (optional, aus QA -040)
+- Erstellt am: 2026-11-09
+- Absender: QA
+- Empfänger: Development
+- Priorität: LOW
+- Status: COMPLETED (Test geschrieben, auf Emulator noch nicht ausgeführt)
+- Übergabegrund: Fehlender Test (keine nachgewiesene Fehlfunktion). Die JVM-Tests (`MsgTest`) lösen Namen über `TestTexts` auf; die echte `AndroidResolver`-Auflösung (`getResourceEntryName`/`getIdentifier`, DE/EN) ist nicht automatisiert abgedeckt, obwohl DEC-159 davon abhängt. Ein Emulator steht zur Verfügung (QA hat `connectedDebugAndroidTest` ausgeführt).
+- Aufgabenbeschreibung: androidTest ergänzen (z. B. `MsgInstrumentedTest`): `Texts.init` mit Anwendungs-Kontext; `Msg.of(R.string.run_nothing)` → `toCode()` → `Msg.render(code, "x")` ergibt den echten Text, nicht den Rückfall; ein Plural und ein verschachteltes Beispiel; Sprachwechsel (Locale auf `de`/`en`) ergibt jeweils den passenden Text bei gleicher Kennung; unbekannter Schlüssel → Rückfall. Optional: `SyncScheduler.triggerData/triggerOf` (WorkManager `Data`) Round-Trip und `SyncDao.closeDanglingRuns` mit In-Memory-Room.
+- Technischer Kontext: QA -040, Version 0.12.1; Entscheid, ob umgesetzt wird, bei Development. Neue Tests gehören laut `docs/TESTING.md` zu Abschnitt 4/9.
+- Betroffene Dateien: `app/src/androidTest/…` (neu)
+- Erwartetes Ergebnis: Test vorhanden und auf dem Emulator grün, oder begründeter Verzicht; Rückmeldung an QA/Documentation.
+- Tatsächlich durchgeführte Arbeiten: Neu `app/src/androidTest/.../MsgInstrumentedTest.kt` (6 Tests): Namen-Round-Trip mit echtem `AndroidResolver` (echter Text, nicht Rückfall), Plural und verschachtelt, `RunSummary`, unbekannter Schlüssel/kaputter Code → Rückfall, gleiche Kennung in DE und EN (erwartete Texte aus den echten Ressourcen per Konfigurations-Kontext), gespeicherter Lauf in aktiver Sprache, `SyncScheduler.triggerData/triggerOf` (mit/ohne Kennung, Standard). Sprachwechsel per Prefs „lang“ nur bis Android 12 (`assumeTrue`, auf API 33+ übersprungen). Keine Produktionsänderung, Version bleibt 0.12.1.
+- Ergebnis und Rückmeldung: Nicht gebaut, nicht ausgeführt (Inhaberregel); Syntax von Hand geprüft. Bitte `gradlew connectedDebugAndroidTest` (QA/Inhaber) und Ergebnis an Documentation (TESTING.md Abschnitt 4/9). Nicht abgedeckt: `closeDanglingRuns` (In-Memory-Room), Compose-Anzeige.
+- Abgeschlossen am: 2026-11-09
+
 ### SYNC-20261108-039 – Ergebnis des Eingriffs geht bei abgeschalteten System-Hinweisen verloren (optional, aus QA -038)
 - Erstellt am: 2026-11-08
 - Absender: QA
@@ -204,7 +219,7 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Absender: Documentation
 - Empfänger: Development
 - Priorität: LOW
-- Status: OPEN
+- Status: COMPLETED (Umsetzung 0.12.0 + 0.12.1; QA offen)
 - Übergabegrund: Umsetzung vom Inhaber freigegeben (Anhang A Punkt 19).
 - Aufgabenbeschreibung: Verlaufseinträge nicht als fertige Texte, sondern mit Kennungen speichern, sodass sie in der aktiven Sprache angezeigt werden. Löst auch das Risiko D35 (gemischtsprachiger Verlauf, `isIdle` über Merkmal-Wörter). Bei Schema- oder Sicherungsformat-Änderung: Migration, `MigrationTest`, Rückwärtskompatibilität der Sicherung prüfen; bei Bedarf vorher Rückfrage an Architecture.
 - Hinweis Development (2026-11-08): Wartet auf Entscheidung Architecture, siehe SYNC-20261108-015 (`inbox/architecture.md`).
@@ -212,9 +227,9 @@ Hinweis: Die Aufträge -002 bis -011 stammen aus der Durchsicht von `docs/DECISI
 - Technischer Kontext: DEC-159, `RunSummary`, `isIdle`.
 - Betroffene Dateien: `sync/RunSummary.kt`, `data/*`, `ui/LogScreen.kt`, `backup/*`
 - Erwartetes Ergebnis: Umsetzung, Tests, Hinweis auf nötige Doku-Änderungen (DATA-MODEL, DECISIONS).
-- Tatsächlich durchgeführte Arbeiten: –
-- Ergebnis und Rückmeldung: –
-- Abgeschlossen am: –
+- Tatsächlich durchgeführte Arbeiten: Nach Vorgabe -015 (a–e) in zwei Stufen. **Stufe 1, 0.12.0 (neue Minor-Reihe):** DB-Version 7, `MIGRATION_6_7` (nur `ADD COLUMN`, nullable: `sync_runs.messageCode`, `sync_runs.triggerCode`, `log_entries.code`), `MigrationTest.runCodesFromVersion6`. Neu `l10n/Msg.kt`: Kennung als JSON-Baum (wörtlich `t`, Text `k`+`a`, Mehrzahl `k`+`n`+`a`, Verkettung `j`+`p`), Ressourcen-Name statt R-ID, Tiefe ≤ 12; unbekannter Schlüssel/Format-/Parsefehler → Rückfalltext. `Texts.Resolver` um `entryName`/`stringByName`/`pluralByName` erweitert (`TestTexts` löst Namen auf, D33). `RunSummary` liefert `Msg`, `NOT_IDLE_KEYS`; `RunGrouping.isIdle` prüft Schlüssel, Merkmal-Wörter nur noch ohne Kennung (D35). `message`/`trigger` bleiben Rückfalltext; Anzeige über `messageText()`/`triggerText()` (`data/RunTexts.kt`) in LogScreen, HomeParts, PreviewScreen, SyncWorker, Verlauf-Export. Engines nehmen den Auslöser als `Msg`; `SyncScheduler.triggerData/triggerOf` mit `KEY_TRIGGER_CODE` (fehlt bei bereits eingeplanten Aufträgen → Text). **Stufe 2, 0.12.1:** `log(level, Msg)` schreibt Text + `code`; wörtliche Zeilen (↑ ↓ ✗ mit Dateinamen) ohne Kennung; Auslöser, Richtung (`SyncDirection.labelMsg`), Unterbrechungsgrund, Schutzbremse-Titel, „Ende“ verschachtelt; `DeletionManager.sweep` liefert `Msg`; LogScreen und Export rendern `LogEntry.text()`. Diagnose (DEC-160) und Sicherung (Formatversion 1) unverändert. Tests: neu `MsgTest`, `RunSummaryTest` angepasst.
+- Ergebnis und Rückmeldung: Nicht gebaut, Tests nicht ausgeführt (Inhaberregel); Syntax von Hand geprüft. Schema-Datei `app/schemas/.../7.json` erzeugt erst der Build (Room-Export) – danach behalten und `MigrationTest` auf Gerät ausführen. Restrisiken: Formatierung von Zahlen in wörtlichen Argumenten (z. B. Bytes bei „fortgesetzt“) bleibt in der Schreibsprache; Auftrag mit Sprachwechsel mitten im Lauf nicht geprüft. Roadmap: 0.12.0 war für Play Store vorgesehen, jetzt belegt (Inhaber bitte Versionsplan anpassen). Doku an Documentation (-041), unabhängige QA an QA (-040).
+- Abgeschlossen am: 2026-11-09
 
 ### SYNC-20261108-008 – „Problem melden“ umsetzen (DEC-121, DEC-123)
 - Erstellt am: 2026-11-08

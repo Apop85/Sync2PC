@@ -1,7 +1,7 @@
 # Datenmodell – LeoSync (Sync2PC)
 
 Technische Referenz der **aktuell implementierten** persistenten Datenstrukturen.
-Stand: Quellcode, App-Version 0.11.0 (`version.properties`), **Room-Datenbankversion 6**.
+Stand: Quellcode, App-Version 0.12.1 (`version.properties`), **Room-Datenbankversion 7**. Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
 Der Quellcode ist massgeblich; `docs/DECISIONS.md` liefert Hintergründe (DEC-IDs). Geplantes steht nur in Abschnitt 17 und ist dort als solches gekennzeichnet.
 
 > **Hinweis zu Dateinamen:** Massgeblich sind die Dateien mit Bindestrich: `docs/DATA-MODEL.md` (diese Datei) und `docs/SYNC-ENGINE.md` (Sync-Abläufe).
@@ -248,7 +248,7 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `id` | INTEGER | nein | `0` | **PK**, autoGenerate | Lauf-ID |
 | `profileId` | INTEGER | nein | – | | Profil (kein FK; Lauf überlebt das Profil) |
 | `profileName` | TEXT | nein | – | | Profilname zum Zeitpunkt des Laufs (Kopie, DEC-173) |
-| `trigger` | TEXT | nein | – | | Auslöser als fertiger Text in der damaligen App-Sprache (DEC-159) |
+| `trigger` | TEXT | nein | – | | Auslöser als fertiger Text in der damaligen App-Sprache; Rückfalltext, wenn `triggerCode` fehlt (DEC-159) |
 | `dryRun` | INTEGER | nein | – | | `true` = Simulation (Vorschau); wird aus Verlauf und Statistik ausgeblendet |
 | `startedAt` | INTEGER | nein | – | | Start (ms) |
 | `finishedAt` | INTEGER | ja | `null` | | Ende (ms); `null` solange offen |
@@ -258,7 +258,9 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `failed` | INTEGER | nein | `0` | | Anzahl Datei-Fehler |
 | `waiting` | INTEGER | nein | `0` | | Foto: auf Ordnerentscheid wartende Dateien; Ordner: neue Konflikte |
 | `bytes` | INTEGER | nein | `0` | | übertragene Bytes |
-| `message` | TEXT | nein | `""` | | Kurzzusammenfassung in der damaligen App-Sprache |
+| `message` | TEXT | nein | `""` | | Kurzzusammenfassung in der damaligen App-Sprache; Rückfalltext, wenn `messageCode` fehlt |
+| `messageCode` | TEXT | ja | `null` | | seit DB v7 (0.12.0): Kurzzusammenfassung als Kennung (JSON, Abschnitt 3.11); `null` = nur `message` |
+| `triggerCode` | TEXT | ja | `null` | | seit DB v7 (0.12.0): Auslöser als Kennung (JSON); `null` = nur `trigger` |
 
 **Indizes:** keine (Abfragen nach `status`, `dryRun`, `startedAt`, `profileId` laufen ohne Index – Verlauf ist auf 90 Tage begrenzt).
 **Besonderheiten:** `trigger` ist ein SQL-Schlüsselwort; Room quotet die Spalte automatisch (`` `trigger` ``), handgeschriebene SQL-Abfragen auf diese Spalte müssten es ebenfalls tun (derzeit keine). Aufbewahrung: `pruneRuns` löscht Läufe **älter als 90 Tage** (`startedAt`), beim Start jedes echten Laufs. Läufe mit `dryRun = true` werden ebenfalls angelegt (`insertRun` ohne Prüfung), nicht aber deren Log-Einträge.
@@ -273,10 +275,24 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `runId` | INTEGER | nein | – | | Verweis auf `sync_runs.id` (kein FK) |
 | `time` | INTEGER | nein | – | | Zeit (ms) |
 | `level` | TEXT | nein | – | | `I`, `W`, `E` (freier String) |
-| `message` | TEXT | nein | – | | Text in der damaligen App-Sprache |
+| `message` | TEXT | nein | – | | Text in der damaligen App-Sprache; Rückfalltext, wenn `code` fehlt, und Text der Diagnose (DEC-160) |
+| `code` | TEXT | ja | `null` | | seit DB v7 (0.12.0): Zeile als Kennung (JSON, Abschnitt 3.11); `null` = nur `message` (alte Einträge, wörtliche Texte) |
 
 **Indizes:** `index_log_entries_runId` auf `runId`.
 **Besonderheiten:** Aufbewahrung 30 Tage (`pruneLogs(time < …)`), beim Start jedes echten Laufs. Dadurch können `log_entries` **früher** verschwinden als ihr `sync_run`; umgekehrt löscht `pruneRuns` keine zugehörigen Log-Einträge (diese altern über `time` selbst aus; ein Log-Eintrag eines Laufs, der älter als 90 Tage ist, ist zwangsläufig auch älter als 30 Tage). Simulationen schreiben keine Log-Einträge.
+
+### 3.11 Kennung (`Msg`) in `messageCode`, `triggerCode` und `code` (seit 0.12.0, DEC-159)
+
+Statt nur eines fertigen Textes speichern Läufe und Log-Zeilen zusätzlich eine Kennung (`l10n/Msg.kt`), die beim Anzeigen in der aktiven App-Sprache gerendert wird. Format: kleiner JSON-Baum (org.json) mit dem Ressourcen-**Namen** (nie der R-ID, die sich mit jedem Build ändert):
+
+| Form | Bedeutung |
+|---|---|
+| `{"t":"Text"}` | wörtlicher Text (Dateinamen, Fehlertexte); als alleinige Meldung nicht als Kennung gespeichert (Spalte bleibt `null`, der Text steht in `message`/`trigger`); als Argument oder Teil einer Verkettung kommt die Form vor |
+| `{"k":"name","a":[…]}` | Text aus `res/values*/` mit Argumenten |
+| `{"k":"name","n":3,"a":[…]}` | Mehrzahl (`plurals`) mit Anzahl `n` |
+| `{"j":", ","p":[…]}` | Verkettung mehrerer Teile |
+
+Argumente sind Text, Zahl oder eine verschachtelte Kennung; die Verschachtelungstiefe ist auf 12 begrenzt. Regeln: Felder sind optional, Leser ignorieren unbekannte Felder. Anzeige: `Msg.render(code, fallback)` liefert die Kennung in der aktiven Sprache; bei leerer oder unlesbarer Kennung, unbekanntem Schlüssel, Format- oder Parsefehler wird der gespeicherte Text (`message`/`trigger`) angezeigt. Alte Einträge (Code `null`) zeigen daher unverändert ihren Text; sie werden nicht umgerechnet und altern mit der Aufbewahrung (Logs 30, Läufe 90 Tage) aus. Die Sicherung (Abschnitt 11.2) enthält weder Läufe noch Log-Einträge und bleibt unverändert (Formatversion 1). Die Diagnose (`Diagnostics.build/compress`) arbeitet weiter mit dem gespeicherten Text (DEC-160), der Verlauf-Export (`logExport`) rendert in der aktiven Sprache.
 
 ---
 
@@ -713,7 +729,7 @@ Legende: **DB** = von SQLite/Room erzwungen · **App** = durch Anwendungscode ab
 
 ## 10. Migrationen und Versionshistorie
 
-**Aktuelle Version:** 6 (`@Database(version = 6, exportSchema = true)`). Schemas 1–6 liegen vor (`app/schemas/…/1.json … 6.json`). **Migrationen 1→2, 2→3, 3→4, 4→5, 5→6** sind registriert (`addMigrations` in `AppDatabase.get`). **Destruktive Migrationen: keine** (`fallbackToDestructiveMigration` wird nicht aufgerufen; Kommentar und DEC-084). Alle Migrationen sind rein additiv (`ALTER TABLE … ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`) bzw. enthalten `UPDATE`-Datenkonvertierung.
+**Aktuelle Version:** 7 (`@Database(version = 7, exportSchema = true)`). Schemas 1–6 liegen vor (`app/schemas/…/1.json … 6.json`); `7.json` lag beim Nachführen (2026-11-09) noch nicht im Ordner, es entsteht beim nächsten Build (Room-Export). **Migrationen 1→2, 2→3, 3→4, 4→5, 5→6, 6→7** sind registriert (`addMigrations` in `AppDatabase.get`). **Destruktive Migrationen: keine** (`fallbackToDestructiveMigration` wird nicht aufgerufen; Kommentar und DEC-084). Alle Migrationen sind rein additiv (`ALTER TABLE … ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`) bzw. enthalten `UPDATE`-Datenkonvertierung.
 
 | Von → Nach | App-Version | Änderungen am Schema | Datenkonvertierung | Hinweise für bestehende Installationen |
 |---|---|---|---|---|
@@ -723,6 +739,7 @@ Legende: **DB** = von SQLite/Room erzwungen · **App** = durch Anwendungscode ab
 | **3 → 4** | 0.4.2 | `profiles.massDeletePercent INTEGER NOT NULL DEFAULT 20` | keine | |
 | **4 → 5** | 0.5.0 | `profiles.keepVersions INTEGER NOT NULL DEFAULT 1`; neue Tabelle `pending_restores` | keine | Versionsschutz ist für bestehende Ordner-Profile standardmässig **an** |
 | **5 → 6** | 0.9.0 | `profiles.verifyLevel INTEGER NOT NULL DEFAULT 2` | `verifyLevel = CASE WHEN verifyUpload = 0 AND deleteMode = 'KEEP' THEN 0 ELSE 1 END`; `UPDATE profiles SET name = TRIM(name)` | Bestehende Profile behalten ihr bisheriges Prüfverhalten (an → „Wenig“, aus → „Aus“); `verifyUpload` bleibt als Spalte (Tabellenneuaufbau vermieden) |
+| **6 → 7** | 0.12.0 | `sync_runs` + `messageCode TEXT`, `triggerCode TEXT`; `log_entries` + `code TEXT` (alle nullable, ohne DEFAULT) | keine | Bestehende Läufe und Log-Zeilen behalten ihren Text, Kennung `NULL` → Anzeige des gespeicherten Textes (Abschnitt 3.11) |
 
 Versionsangaben aus den KDoc-Kommentaren der Migrationen und DEC-084/-172; die Zuordnung `1.json`-Inhalt zu „0.0.x“ ist aus dem Quellcode **nicht** belegt (Git-Historie liegt nicht vor; das Projekt ist kein Git-Repository). **Dies ist eine offene Frage.**
 
@@ -730,7 +747,7 @@ Versionsangaben aus den KDoc-Kommentaren der Migrationen und DEC-084/-172; die Z
 - **Durchgehende Regel (DEC-084):** neue Spalten per `ALTER TABLE … DEFAULT …`, Entity bekommt denselben Kotlin-Default, **kein** `@ColumnInfo(defaultValue)`. Folge: Migrierte DBs haben SQL-DEFAULTs, frische nicht (Abschnitt 3.1).
 - **Fehlende Migrationen = Absturz**, nicht stilles Löschen. Eine Schemaänderung ohne Migration bricht Bestandsinstallationen.
 - **Sicherung/Import** ist die einzige Brücke bei Paket-/DB-Wechsel (DEC-110), Format `leosync-backup` Version 1 (Abschnitt 11).
-- `MigrationTest` (instrumentiert, `app/src/androidTest/…`) prüft 1→6 und 5→6; die Zwischenstufen 2→3, 3→4, 4→5 laufen nur als Teil der Kette 1→6 (Abschnitt 14).
+- `MigrationTest` (instrumentiert, `app/src/androidTest/…`) prüft 1→7, 5→6 und 6→7; die Zwischenstufen 2→3, 3→4, 4→5 laufen nur als Teil der Kette 1→7 (Abschnitt 14).
 
 ```mermaid
 timeline
@@ -741,6 +758,7 @@ timeline
     v4 (0.4.2) : massDeletePercent
     v5 (0.5.0) : keepVersions : pending_restores
     v6 (0.9.0) : verifyLevel : Namen getrimmt
+    v7 (0.12.0) : messageCode, triggerCode, log code
 ```
 
 ---
@@ -812,7 +830,7 @@ Verschieben in `.LeoSync-Bin/<yyyy-MM-dd>/<relativer Pfad>` (alte Namen `.LeoSyn
 
 ### 12.4 Lauf (`sync_runs`, `log_entries`)
 
-`insertRun(RUNNING)` zu Beginn → `insertLog` während des Laufs → `updateRun` in `finish`. Beim Start jedes echten Laufs: `pruneLogs(30 Tage)`, `pruneRuns(90 Tage)`. Verwaiste `RUNNING`-Läufe werden vom nächsten `SyncWorker` mit `closeDanglingRuns` auf `INTERRUPTED` gesetzt (ein Log-Eintrag `W` wird nachgetragen). Manuell: `clearRuns`, `clearLogs` (`LogScreen`).
+`insertRun(RUNNING)` zu Beginn (Auslöser mit `triggerCode`) → `insertLog` während des Laufs (Text und `code` aus derselben `Msg`) → `updateRun` in `finish`. Beim Start jedes echten Laufs: `pruneLogs(30 Tage)`, `pruneRuns(90 Tage)`. Verwaiste `RUNNING`-Läufe werden vom nächsten `SyncWorker` mit `closeDanglingRuns` auf `INTERRUPTED` gesetzt (ein Log-Eintrag `W` wird nachgetragen). Manuell: `clearRuns`, `clearLogs` (`LogScreen`).
 
 ### 12.5 Profil
 
@@ -848,7 +866,8 @@ Ausgewertet wurde **nur der vorhandene Testcode**; es wurden **keine Tests ausge
 
 | Test | Typ | Datenmodellbezug |
 |---|---|---|
-| `androidTest/…/MigrationTest` (2 Tests) | instrumentiert (Gerät/Emulator) | `fromVersion1ToLatest` (alle 5 Migrationen, `MigrationTestHelper.runMigrationsAndValidate(…, 6, true, …)`, Prüfung von Defaults und Trim); `verifyLevelFromVersion5` (Konvertierung 5→6) |
+| `androidTest/…/MigrationTest` (3 Tests) | instrumentiert (Gerät/Emulator) | `fromVersion1ToLatest` (alle 6 Migrationen, `MigrationTestHelper.runMigrationsAndValidate(…, 7, true, …)`, Prüfung von Defaults und Trim); `verifyLevelFromVersion5` (Konvertierung 5→6); `runCodesFromVersion6` (6→7: Kennungsspalten `NULL`, Texte erhalten); nicht ausgeführt (Gerät nötig) |
+| `MsgTest` (11) | Unit | Kennung (`Msg`): JSON-Form, Rendern in der aktiven Sprache, Rückfalltext, `isIdle` über Schlüssel (`RunSummary.NOT_IDLE_KEYS`) |
 | `BackupCodecTest` (8) | Unit | Sicherungsformat, Passwort/Verschlüsselung, Altformate |
 | `MirrorGuardTest` (15) | Unit | Schwellen der Schutzbremse, Stichprobe (`GuardPolicy`) |
 | `TrashIndexTest` (9), `TrashPurgeTest` (6), `TrashPolicyTest` (4) | Unit | Papierkorb-Namen/-Fristen/-Schutz vorgemerkter Einträge |
@@ -867,7 +886,7 @@ Ausgewertet wurde **nur der vorhandene Testcode**; es wurden **keine Tests ausge
 | Entity-Tests | indirekt (`VerifyLevelTest`, `ProfileOverlapTest`) | keine eigenen Entity-/Enum-Parser-Tests (`DeleteMode.of` usw.) |
 | DAO-Tests | **keine** | keine Room-In-Memory-Tests der Abfragen |
 | Datenbanktests | **keine** ausser `MigrationTest` | |
-| Migrationstests | `MigrationTest` (nur instrumentiert; DEC-113/-180: vom Builder nicht ausgeführt) | Einzelmigrationen 2→3, 3→4, 4→5 nur als Kette 1→6 |
+| Migrationstests | `MigrationTest` (nur instrumentiert; DEC-113/-180: vom Builder nicht ausgeführt) | Einzelmigrationen 2→3, 3→4, 4→5 nur als Kette 1→7 |
 | Integritätsbedingungen | nur für Teile der App-Logik (Schutzbremse, Papierkorb) | keine PK-/REPLACE-Tests |
 | Statusübergänge | **keine** für `DeleteState`/`RunStatus` | `DeletionManager` (Android-abhängig) nicht getestet |
 | Duplikaterkennung | Profile (`ProfileOverlapTest`), Ordnernamen (`FolderNamesTest`) | Datei-Duplikaterkennung der Engine (`SyncEngine.transfer`) nicht automatisiert getestet |
@@ -932,7 +951,7 @@ Ausgewertet wurde **nur der vorhandene Testcode**; es wurden **keine Tests ausge
 6. `lastLogTime`/`runningRuns` nur intern genutzt; Simulationen mit Status `RUNNING` nach hartem Kill (siehe Abschnitt 9, Lücke 5).
 
 **Geplant / nicht umgesetzt (Quelle DECISIONS.md, Abschnitt A):**
-- Verlauf mit Kennungen statt fertiger Texte (offene Entscheidung 19, DEC-159) – würde das Datenmodell von `trigger`/`message`/`log_entries.message` ändern.
-- Versionsplan: 0.12.0 Play Store, 0.13.0 PC-Erkennung (DEC-188); PC-Erkennung (Server-GUID, DEC-109) könnte Profilfelder ergänzen – noch keine Entscheidung, keine Felder vorhanden.
+- ~~Verlauf mit Kennungen statt fertiger Texte (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1, siehe Abschnitt 3.11.
+- Versionsplan: 0.12.0 ist laut Inhaber (2026-11-09) durch den Verlauf mit Kennungen belegt; die Nummer für den Play Store ist nicht entschieden. 0.13.0 PC-Erkennung (DEC-188); PC-Erkennung (Server-GUID, DEC-109) könnte Profilfelder ergänzen – noch keine Entscheidung, keine Felder vorhanden.
 
 **Nicht mehr verwendet:** `profiles.verifyUpload` (nur noch gespiegelt), `profiles.remoteSubfolder` (wird beim Öffnen in `smbPath` überführt, aber weiter ausgewertet), Updater-Schlüssel `updateRepo` (`GlobalSettings.importFrom` ignoriert ihn seit 0.4.0). Papierkorb-Namen `.LeoSync-Papierkorb`, `.Sync2PC-Papierkorb` sind historisch, werden aber weiter erkannt.

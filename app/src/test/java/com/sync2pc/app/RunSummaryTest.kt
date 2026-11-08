@@ -10,21 +10,21 @@ import org.junit.Test
 
 class RunSummaryTest {
     @Test fun photosSummaryOnlyShowsWhatHappened() {
-        assertEquals("3 übertragen", RunSummary.photos(3, 0, 0, 0))
-        assertEquals("3 übertragen, 12 bereits vorhanden", RunSummary.photos(3, 12, 0, 0))
-        assertEquals("12 bereits vorhanden", RunSummary.photos(0, 12, 0, 0))
-        assertEquals("1 übertragen, 2 Fehler, 4 warten auf Ordnerauswahl", RunSummary.photos(1, 0, 2, 4))
-        assertEquals(RunSummary.NOTHING, RunSummary.photos(0, 0, 0, 0))
+        assertEquals("3 übertragen", RunSummary.photos(3, 0, 0, 0).text())
+        assertEquals("3 übertragen, 12 bereits vorhanden", RunSummary.photos(3, 12, 0, 0).text())
+        assertEquals("12 bereits vorhanden", RunSummary.photos(0, 12, 0, 0).text())
+        assertEquals("1 übertragen, 2 Fehler, 4 warten auf Ordnerauswahl", RunSummary.photos(1, 0, 2, 4).text())
+        assertEquals(RunSummary.NOTHING.text(), RunSummary.photos(0, 0, 0, 0).text())
     }
 
     @Test fun mirrorSummarySkipsZeros() {
-        assertEquals("↓ 3 heruntergeladen", RunSummary.mirror(0, 3, 0, 0, 0, false))
-        assertEquals("↑ 1 hochgeladen, 2 in Papierkorb", RunSummary.mirror(1, 0, 2, 0, 0, false))
-        assertEquals(RunSummary.NOTHING, RunSummary.mirror(0, 0, 0, 0, 0, false))
-        assertEquals("Speicher voll", RunSummary.mirror(0, 0, 0, 0, 0, true))
+        assertEquals("↓ 3 heruntergeladen", RunSummary.mirror(0, 3, 0, 0, 0, false).text())
+        assertEquals("↑ 1 hochgeladen, 2 in Papierkorb", RunSummary.mirror(1, 0, 2, 0, 0, false).text())
+        assertEquals(RunSummary.NOTHING.text(), RunSummary.mirror(0, 0, 0, 0, 0, false).text())
+        assertEquals("Speicher voll", RunSummary.mirror(0, 0, 0, 0, 0, true).text())
     }
 
-    private fun run(id: Long, status: String = "OK", up: Int = 0, msg: String = RunSummary.NOTHING) =
+    private fun run(id: Long, status: String = "OK", up: Int = 0, msg: String = RunSummary.NOTHING.text()) =
         SyncRun(id = id, profileId = 1, profileName = "Fotos", trigger = "WLAN", dryRun = false,
             startedAt = id * 1000, finishedAt = id * 1000 + 500, status = status, uploaded = up, message = msg)
 

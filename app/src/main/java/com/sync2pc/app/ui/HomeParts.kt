@@ -83,6 +83,7 @@ import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncRun
+import com.sync2pc.app.data.messageText
 import com.sync2pc.app.mirror.Guard
 import com.sync2pc.app.mirror.GuardKind
 import com.sync2pc.app.mirror.GuardStore
@@ -277,7 +278,7 @@ internal fun StatusCard(
             lastRun != null -> {
                 Text(str(R.string.home_last_sync, formatTime(lastRun.finishedAt ?: lastRun.startedAt), lastRun.profileName.trim()))
                 val nothing = lastRun.status == RunStatus.OK && lastRun.uploaded == 0 && lastRun.failed == 0
-                Hint(if (nothing) str(R.string.home_nothing_to_do) else lastRun.message)
+                Hint(if (nothing) str(R.string.home_nothing_to_do) else lastRun.messageText())
             }
             else -> Text(str(R.string.home_no_sync_yet))
         }

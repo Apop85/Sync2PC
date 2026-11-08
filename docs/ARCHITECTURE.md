@@ -186,7 +186,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `sync/StaleCheck.kt` | Tägliche Erinnerung „lange nicht gesichert“ (`StaleCheckWorker`) | `PendingCheck`, `Notifications` | ○ |
 | `sync/TransferLocks.kt` | WLAN-/CPU-Wakelock nur während eines Laufs | `SyncWorker` | ○ |
 | `sync/Errors.kt` | Klassifiziert Netzwerk- gegenüber Datei-Fehlern; verständliche Fehlermeldungen (`friendlyError`) | Engines, UI | ● |
-| `sync/RunSummary.kt` | Kurztext eines Laufs für Verlauf und Benachrichtigung | Engines, `RunGrouping` | ○ rein |
+| `sync/RunSummary.kt` | Kurztext eines Laufs für Verlauf und Benachrichtigung; `NOT_IDLE_KEYS` (Schlüssel, die einen Lauf „nicht ruhig“ machen, für `RunGrouping.isIdle`) | Engines, `RunGrouping` | ○ rein |
 
 ### 4.3 `mirror/` – Ordner-Spiegelung
 
@@ -228,7 +228,8 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `diag/VendorHints.kt` | Hersteller-spezifische Stromspar-Hinweise (OnePlus/Oppo/Realme, Samsung, Xiaomi, Huawei/Honor) | ○ |
 | `backup/BackupCodec.kt` | Format `leosync-backup` (v1), Serialisierung/Verschlüsselung mit Export-Passwort (`BackupContent`, `ParsedBackup`, `BackupException`) | ● rein |
 | `backup/BackupManager.kt` | Export/Import: Profile, Einstellungen, Sync-Status; prüft Überlappung | ● |
-| `l10n/Texts.kt` | Textzugriff ausserhalb von Compose (`Texts.init`, `str`, `plural`, `locale`) | ● |
+| `l10n/Texts.kt` | Textzugriff ausserhalb von Compose (`Texts.init`, `str`, `plural`, `locale`); `Texts.Resolver` löst auch Ressourcen-Namen auf (`entryName`, `stringByName`, `pluralByName`, seit 0.12.0) | ● |
+| `l10n/Msg.kt` | Meldung mit Kennung statt fertigem Text (JSON: Ressourcen-Name, Argumente, Mehrzahl, Verkettung); `render` in der aktiven Sprache mit Rückfalltext; gespeichert in `sync_runs.messageCode/triggerCode`, `log_entries.code` (seit 0.12.0, DEC-159/DEC-202) | ○ |
 | `l10n/AppLanguage.kt` | Sprachwahl (System/DE/EN), `localized(context)`; SharedPreferences „lang“ | ○ |
 
 ### 4.6 `ui/`
@@ -252,7 +253,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 
 ### 4.7 Tests und Konfiguration
 
-- `app/src/test/java/com/sync2pc/app/` – 24 Testklassen (QA-Lauf 2026-11-08 nach 0.11.8: 132 Tests) plus `TestTexts` als Hilfsklasse. Abgedeckt sind die reinen Logikklassen (`MirrorGuard`, `RemoteFolderName`, `FreeRules`, `TrashIndex/Policy/Purge`, `BackupCodec`, `Diagnostics`, `FileFilter`, `FolderNames`, `FilenameDateParser`, `ProfileOverlap/Wizard`, `CredentialGroups`, `RunSummary`, `TransferPlan`, `VerifyLevel`, `LocalTree`-Label) sowie `StringsParityTest` (DE/EN-Textparität). Details: `docs/TESTING.md`.
+- `app/src/test/java/com/sync2pc/app/` – 25 Testklassen (QA-Lauf 2026-11-09 nach 0.12.1: 143 Tests; `MigrationTest` 3 auf Emulator bestanden) plus `TestTexts` als Hilfsklasse. Abgedeckt sind die reinen Logikklassen (`MirrorGuard`, `RemoteFolderName`, `FreeRules`, `TrashIndex/Policy/Purge`, `BackupCodec`, `Diagnostics`, `FileFilter`, `FolderNames`, `FilenameDateParser`, `ProfileOverlap/Wizard`, `CredentialGroups`, `RunSummary`, `TransferPlan`, `VerifyLevel`, `LocalTree`-Label) sowie `StringsParityTest` (DE/EN-Textparität). Details: `docs/TESTING.md`.
 - `app/src/androidTest/java/com/sync2pc/app/MigrationTest.kt` – Room-Migrationen auf Gerät/Emulator (Schemas aus `app/schemas`).
 - `app/build.gradle.kts`, `proguard-rules.pro`, `AndroidManifest.xml`, `res/xml/*` – siehe Abschnitte 8 und 9.
 
@@ -447,7 +448,7 @@ Build: Android Gradle Plugin 9 mit eingebautem Kotlin, Compose-Compiler-Plugin u
 
 ## 11. Architekturregeln und Einschränkungen
 
-1. **Keine Texte im Code** – alle sichtbaren Texte in `strings_*.xml` (DE + EN); gespeicherte Verlaufstexte sind in der aktiven Sprache (DEC-159).
+1. **Keine Texte im Code** – alle sichtbaren Texte in `strings_*.xml` (DE + EN); Verlaufseinträge werden als Kennung (`Msg`) plus Rückfalltext gespeichert und in der aktiven Sprache angezeigt (DEC-159, DEC-202; Details `DATA-MODEL.md` 3.11).
 2. **Migrationen nie destruktiv**, neue Spalten mit `DEFAULT`; kein `fallbackToDestructiveMigration()` (DEC-084). DB-Name, Paket-ID und Keystore-Alias nicht ändern.
 3. **Eine Engine pro Profil, ein Lauf zugleich** (`SyncWorker`-Mutex). Neue Auslöser müssen über `SyncScheduler` gehen, nicht direkt Engines starten.
 4. **Nebenläufigkeit:** `SyncWorker.doWork` läuft auf `Dispatchers.IO`; geteilter Zustand in Engines ist `@Volatile`/atomar; jede parallele Übertragung nutzt eine eigene `SmbSession`.
@@ -489,6 +490,6 @@ Massgeblich sind die Dateien mit Bindestrich (alle vorhanden); die Unterstrich-V
 
 ## 14. Geplant oder noch nicht umgesetzt (Quelle: DECISIONS, **nicht** implementiert)
 
-- Paketwechsel zu `ch.leo.sync` und Play-Store-Vorbereitung (0.12.0), PC-Erkennung (0.13.0) – Beschluss, Umsetzung steht aus (DEC-110, DEC-188).
+- Paketwechsel zu `ch.leo.sync` und Play-Store-Vorbereitung (Versionsnummer offen: 0.12.0 ist seit 2026-11-09 durch den Verlauf mit Kennungen belegt), PC-Erkennung (0.13.0) – Beschluss, Umsetzung steht aus (DEC-110, DEC-188).
 - Heimnetz-Berechtigung ab targetSdk 37 voraussichtlich nötig (DEC-183).
-- „Verlauf mit Kennungen statt fertiger Texte“ (DEC-159, vorgemerkt).
+- ~~„Verlauf mit Kennungen statt fertiger Texte“ (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1 (DEC-202).

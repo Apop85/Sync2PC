@@ -8,6 +8,7 @@ import android.os.Environment
 import android.os.StatFs
 import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.l10n.Msg
 import com.sync2pc.app.l10n.plural
 import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.ConflictMode
@@ -57,12 +58,12 @@ import java.util.Locale
 class MirrorEngine(
     private val context: Context,
     private val profile: Profile,
-    private val trigger: String,
+    private val trigger: Msg,
     private val dryRun: Boolean = false,
     private val shouldContinue: () -> Boolean = { true },
     private val onProgress: (SyncProgress) -> Unit = {},
     /** Bei einem Stopp: Grund, wenn Android unterbrochen hat (z. B. "WLAN getrennt"); null = vom Benutzer abgebrochen */
-    private val interruptReason: () -> String? = { null },
+    private val interruptReason: () -> Msg? = { null },
     /** Simulation (dryRun): höchstens so viele Einträge anzeigen */
     private val previewLimit: Int = Int.MAX_VALUE,
 ) : SyncRunner {
@@ -113,14 +114,19 @@ class MirrorEngine(
     private var remote: Map<String, Pair<String, RemoteEntry>> = emptyMap()
 
     private var run = SyncRun(
-        profileId = profile.id, profileName = profile.name, trigger = trigger,
+        profileId = profile.id, profileName = profile.name, trigger = trigger.text(), triggerCode = trigger.toCode(),
         dryRun = dryRun, startedAt = System.currentTimeMillis()
     )
 
-    private suspend fun log(level: String, msg: String) {
+    /** Log-Zeile als Kennung (DEC-159): Text in der Schreibsprache als Rückfall, Kennung für die Anzeige */
+    private suspend fun log(level: String, msg: Msg) {
         if (dryRun) return
-        dao.insertLog(LogEntry(runId = run.id, time = System.currentTimeMillis(), level = level, message = msg))
+        dao.insertLog(LogEntry(runId = run.id, time = System.currentTimeMillis(), level = level,
+            message = msg.text(), code = msg.toCode()))
     }
+
+    /** Wörtliche Zeile (Symbole, Dateinamen, Fehlertexte): bleibt wie sie ist, ohne Kennung */
+    private suspend fun log(level: String, text: String) = log(level, Msg.lit(text))
 
     // Zähler (threadsicher, parallele Übertragungen)
     private val up = AtomicInteger(); private val down = AtomicInteger(); private val failed = AtomicInteger()
@@ -145,15 +151,15 @@ class MirrorEngine(
     private suspend fun runInner(): SyncRun {
         run = run.copy(id = dao.insertRun(run))
         var status = RunStatus.OK
-        var message = ""
-        var massWarn: String? = null
+        var message: Msg? = null
+        var massWarn: Msg? = null
         try {
             if (!dryRun) {
                 val day = 24L * 3600 * 1000
                 val now = System.currentTimeMillis()
                 dao.pruneLogs(now - 30 * day); dao.pruneRuns(now - 90 * day)
             }
-            log("I", str(R.string.eng_start_mirror, trigger, profile.name, dir.label))
+            log("I", Msg.of(R.string.eng_start_mirror, trigger, profile.name, dir.labelMsg))
             // Offene Entscheidung der Schutzbremse -> nichts tun, bis der Benutzer entschieden hat
             if (!dryRun) guards.get(profile.id)?.let { return block(it) }
             emit(str(R.string.eng_reading_folders), 0, 0, 0, 0, null)
@@ -175,7 +181,7 @@ class MirrorEngine(
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {
-                if (dryRun) { message = str(R.string.eng_offline_preview, e.message ?: ""); null }
+                if (dryRun) { message = Msg.of(R.string.eng_offline_preview, e.message ?: ""); null }
                 else { if (isNetworkError(e)) connectionFailed = true; throw e }
             }
             val s = smb
@@ -208,7 +214,7 @@ class MirrorEngine(
                     .entries.associate { it.key.lowercase() to (it.key to it.value) } else emptyMap()
             }
             val conflicts = dao.conflicts(profile.id).associateBy { it.relPath.lowercase() }
-            log("I", str(R.string.eng_counts, local.size, remote.size))
+            log("I", Msg.of(R.string.eng_counts, local.size, remote.size))
 
             // Nach einem Ordnerwechsel: Stichprobe, ob der neue Ordner zum Sync-Stand passt
             val pending = guards.pendingCheck(profile.id)
@@ -228,7 +234,7 @@ class MirrorEngine(
             // "Nicht löschen" bei der Schutzbremse: dieser Lauf übernimmt keine Löschungen
             if (!dryRun && guards.takeKeepFiles(profile.id)) {
                 propagate = false
-                log("I", str(R.string.eng_keep_files))
+                log("I", Msg.of(R.string.eng_keep_files))
             }
             if (!dryRun) purgeTrash()
 
@@ -269,9 +275,9 @@ class MirrorEngine(
                 val g = Guard(profile.id, GuardKind.MASS_DELETE, toTrash, states.size,
                     folder = if (GuardPolicy.massDelete(toTrash, states.size, profile.massDeletePercent)) "" else vanished.orEmpty())
                 if (!dryRun) return block(g)
-                massWarn = str(R.string.eng_would_stop,
-                    if (g.folder.isNotEmpty()) str(R.string.eng_would_trash_folder, g.folder)
-                    else str(R.string.eng_would_trash_files, toTrash, states.size))
+                massWarn = Msg.of(R.string.eng_would_stop,
+                    if (g.folder.isNotEmpty()) Msg.of(R.string.eng_would_trash_folder, g.folder)
+                    else Msg.of(R.string.eng_would_trash_files, toTrash, states.size))
             }
             if (!dryRun) for (p in doneConflicts) dao.deleteConflict(profile.id, p)
 
@@ -282,9 +288,9 @@ class MirrorEngine(
             if (dryRun) {
                 for (a in actions) { if (preview.size >= previewLimit) break; previewOf(a) }
                 val visible = actions.count { it.kind != Kind.RECORD && it.kind != Kind.DROP }
-                if (message.isEmpty()) message = str(if (preview.size < visible) R.string.eng_actions_first else R.string.eng_actions_all,
+                if (message == null) message = Msg.of(if (preview.size < visible) R.string.eng_actions_first else R.string.eng_actions_all,
                     visible, preview.size)
-                massWarn?.let { message = "$it\n$message" }
+                massWarn?.let { w -> message = Msg.join("\n", listOfNotNull(w, message)) }
             } else {
                 val admin = actions.filter { it !in transfers }
                 for ((index, a) in admin.withIndex()) {
@@ -303,36 +309,36 @@ class MirrorEngine(
                 }
                 if (!wifiLost && transfers.isNotEmpty()) runTransfers(transfers)
                 if (wifiLost) {
-                    status = RunStatus.PARTIAL; message = str(R.string.eng_wifi_lost)
-                    log("W", message)
+                    status = RunStatus.PARTIAL; message = Msg.of(R.string.eng_wifi_lost)
+                    log("W", Msg.of(R.string.eng_wifi_lost))
                 }
             }
 
             if (status == RunStatus.OK && (failed.get() > 0 || spaceShortage)) status = RunStatus.PARTIAL
-            if (message.isEmpty()) message = com.sync2pc.app.sync.RunSummary.mirror(
+            val summary = message ?: com.sync2pc.app.sync.RunSummary.mirror(
                 up.get(), down.get(), trashed.get(), newConflicts, failed.get(), spaceShortage
             )
-            return finish(status, message)
+            return finish(status, summary)
         } catch (e: CancellationException) {
             withContext(NonCancellable) {
                 val reason = interruptReason()
                 if (reason != null) {
-                    log("W", str(R.string.eng_interrupted_log, reason))
-                    finish(RunStatus.INTERRUPTED, str(R.string.eng_interrupted_mirror, reason, up.get(), down.get()))
+                    log("W", Msg.of(R.string.eng_interrupted_log, reason))
+                    finish(RunStatus.INTERRUPTED, Msg.of(R.string.eng_interrupted_mirror, reason, up.get(), down.get()))
                 } else {
-                    log("W", str(R.string.eng_paused_log))
-                    finish(RunStatus.CANCELLED, str(R.string.eng_paused_log))
+                    log("W", Msg.of(R.string.eng_paused_log))
+                    finish(RunStatus.CANCELLED, Msg.of(R.string.eng_paused_log))
                 }
             }
             throw e
         } catch (e: Exception) {
             if (isNetworkError(e)) {
                 connectionFailed = true
-                log("W", str(R.string.eng_connection_log_mirror, com.sync2pc.app.sync.shortError(e)))
-                return finish(RunStatus.INTERRUPTED, str(R.string.eng_connection_mirror, up.get(), down.get()))
+                log("W", Msg.of(R.string.eng_connection_log_mirror, com.sync2pc.app.sync.shortError(e)))
+                return finish(RunStatus.INTERRUPTED, Msg.of(R.string.eng_connection_mirror, up.get(), down.get()))
             }
-            log("E", str(R.string.eng_run_failed, com.sync2pc.app.sync.shortError(e)))
-            return finish(RunStatus.FAILED, com.sync2pc.app.sync.userError(e))
+            log("E", Msg.of(R.string.eng_run_failed, com.sync2pc.app.sync.shortError(e)))
+            return finish(RunStatus.FAILED, com.sync2pc.app.sync.userErrorMsg(e))
         } finally {
             smb?.close()
         }
@@ -415,8 +421,8 @@ class MirrorEngine(
      * In der Simulation wird nur gemeldet, dass der Lauf anhalten würde.
      */
     private suspend fun block(g: Guard): SyncRun {
-        val msg = if (dryRun) str(R.string.eng_would_stop, MirrorGuard.title(g))
-        else str(R.string.eng_waiting_decision, MirrorGuard.title(g))
+        val msg = if (dryRun) Msg.of(R.string.eng_would_stop, MirrorGuard.titleMsg(g))
+        else Msg.of(R.string.eng_waiting_decision, MirrorGuard.titleMsg(g))
         if (!dryRun) { guards.set(g); blocked = true }
         log("W", msg)
         return finish(RunStatus.WAITING, msg)
@@ -451,12 +457,12 @@ class MirrorEngine(
                 l ?: return
                 tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet()
                 dao.deleteMirrorState(profile.id, a.key)
-                log("I", str(R.string.eng_trash_local, a.rel))
+                log("I", Msg.of(R.string.eng_trash_local, a.rel))
             }
             Kind.TRASH_REMOTE -> {
                 trashRemote(s, a.rel)
                 dao.deleteMirrorState(profile.id, a.key)
-                log("I", str(R.string.eng_trash_remote, a.rel))
+                log("I", Msg.of(R.string.eng_trash_remote, a.rel))
             }
             Kind.RECORD -> if (l != null && r != null) record(a.key, l, r)
             Kind.DROP -> dao.deleteMirrorState(profile.id, a.key)
@@ -468,7 +474,7 @@ class MirrorEngine(
                         profile.id, a.rel, l.size, l.modified, r.size, r.modified, System.currentTimeMillis()
                     )
                 )
-                log("W", str(R.string.eng_conflict, a.rel))
+                log("W", Msg.of(R.string.eng_conflict, a.rel))
             }
             Kind.UPLOAD, Kind.DOWNLOAD, Kind.KEEP_BOTH -> {} // Phase B
         }
@@ -484,7 +490,7 @@ class MirrorEngine(
         val sh = Shared(ordered.size, ordered.sumOf { sizeOf(it) }, freeSpace() - RESERVE_BYTES)
         val queue = ConcurrentLinkedQueue(ordered)
         val parallel = GlobalSettings(context).parallelUploads.coerceIn(1, 4).coerceAtMost(ordered.size)
-        log("I", plural(R.plurals.eng_transfer_mirror, ordered.size, ordered.size, parallel))
+        log("I", Msg.plural(R.plurals.eng_transfer_mirror, ordered.size, ordered.size, parallel))
         emitShared(sh, null, force = true)
         coroutineScope {
             repeat(parallel) { launch { transferWorker(queue, sh) } }
@@ -507,7 +513,7 @@ class MirrorEngine(
                 if (needs > 0 && sh.budget.addAndGet(-needs) < 0) {
                     sh.budget.addAndGet(needs)
                     spaceShortage = true
-                    log("W", str(R.string.eng_no_space, a.rel))
+                    log("W", Msg.of(R.string.eng_no_space, a.rel))
                     countDone(sh, size)
                     continue
                 }
@@ -553,7 +559,7 @@ class MirrorEngine(
             Kind.UPLOAD -> {
                 l ?: return
                 // Während des Laufs auf dem PC geändert? Dann nicht überschreiben – der nächste Lauf entscheidet
-                if (!unchanged(s.stat(remotePath(s, a.rel)), r)) return skipChanged(a.rel, str(R.string.eng_on_pc))
+                if (!unchanged(s.stat(remotePath(s, a.rel)), r)) return skipChanged(a.rel, Msg.of(R.string.eng_on_pc))
                 if (a.trashOther && r != null) {
                     // Zuerst den Sync-Stand vergessen: Scheitert der Upload, gilt die Datei beim nächsten Lauf
                     // als neu (wird übertragen) statt als "auf dem PC gelöscht" (würde sonst auch das Handy löschen)
@@ -568,7 +574,7 @@ class MirrorEngine(
                 if (l != null) {
                     // Per Ordnerliste lesen wie beim Einlesen (stat() liefert bei manchen Speicherorten andere Werte)
                     val nowLocal = try { tree.find(a.rel) } catch (e: Exception) { null }
-                    if (!unchanged(nowLocal, l)) return skipChanged(a.rel, str(R.string.eng_on_phone))
+                    if (!unchanged(nowLocal, l)) return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
                 }
                 if (a.trashOther && l != null) {
                     dao.deleteMirrorState(profile.id, a.key)
@@ -624,7 +630,7 @@ class MirrorEngine(
                 s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
             }
         } catch (e: ChangedDuringRunException) {
-            return skipChanged(rel, str(R.string.eng_on_phone))
+            return skipChanged(rel, Msg.of(R.string.eng_on_phone))
         }
         // Stand so lesen wie beim nächsten Einlesen (Ordnerliste statt Einzelabfrage): Manche Speicherorte (z. B.
         // "Downloads") liefern sonst andere Zeitstempel -> der nächste Lauf hielte die Datei für geändert (0.5.1)
@@ -633,7 +639,8 @@ class MirrorEngine(
         if (ls.size != r.size) throw IOException(str(R.string.eng_err_after_download_size))
         record(key, ls, r)
         down.incrementAndGet(); bytes.addAndGet(r.size)
-        log("I", "↓ $rel" + if (resumedAt > 0) " " + str(R.string.eng_resumed_at, com.sync2pc.app.sync.Notifications.formatBytes(resumedAt)) else "")
+        log("I", if (resumedAt > 0) Msg.join("", listOf(Msg.lit("↓ $rel "),
+            Msg.of(R.string.eng_resumed_at, com.sync2pc.app.sync.Notifications.formatBytes(resumedAt)))) else Msg.lit("↓ $rel"))
     }
 
     /**
@@ -647,7 +654,7 @@ class MirrorEngine(
         // (schützt die Papierkorb-Version), der Benutzer wählt auf der Startseite "Erneut versuchen" oder "Verwerfen"
         val list = dao.pendingRestores(profile.id).filterNot { failures.isExhausted(it.id) }
         if (list.isEmpty()) return false
-        log("I", plural(R.plurals.eng_restoring, list.size))
+        log("I", Msg.plural(R.plurals.eng_restoring, list.size))
         val oldStates = dao.mirrorStates(profile.id).associateBy { it.relPath }
         for (r in list) {
             currentCoroutineContext().ensureActive()
@@ -663,7 +670,7 @@ class MirrorEngine(
                 val localSource = if (fromPc) null else tree.find(r.trashPath)
                 val remoteSource = if (fromPc) s.stat(trashFull) else null
                 if (localSource == null && remoteSource == null) {
-                    log("W", str(R.string.eng_restore_gone, r.origPath))
+                    log("W", Msg.of(R.string.eng_restore_gone, r.origPath))
                     dao.deleteRestore(r.id); failures.clear(r.id)
                     continue
                 }
@@ -688,7 +695,7 @@ class MirrorEngine(
                 }
                 dao.deleteConflict(profile.id, r.origPath)
                 dao.deleteRestore(r.id); failures.clear(r.id)
-                log("I", str(R.string.eng_restored, r.origPath, r.trashPath.split('/').getOrNull(1) ?: "?"))
+                log("I", Msg.of(R.string.eng_restored, r.origPath, r.trashPath.split('/').getOrNull(1) ?: "?"))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -701,10 +708,10 @@ class MirrorEngine(
                 val attempts = failures.mark(profile.id, r.id)
                 val err = com.sync2pc.app.sync.shortError(e)
                 log("E", when {
-                    !rolledBack -> str(R.string.eng_restore_failed_partial, r.origPath, err)
+                    !rolledBack -> Msg.of(R.string.eng_restore_failed_partial, r.origPath, err)
                     RestoreRetryPolicy.exhausted(attempts) ->
-                        str(R.string.eng_restore_gave_up, r.origPath, err, RestoreRetryPolicy.MAX_ATTEMPTS)
-                    else -> str(R.string.eng_restore_failed_rolled_back, r.origPath, err)
+                        Msg.of(R.string.eng_restore_gave_up, r.origPath, err, RestoreRetryPolicy.MAX_ATTEMPTS)
+                    else -> Msg.of(R.string.eng_restore_failed_rolled_back, r.origPath, err)
                 })
             }
         }
@@ -751,19 +758,19 @@ class MirrorEngine(
             var n = 0
             for (f in files) if (f.lowercase() !in keep && TrashCleaner.deleteRemoteFile(s, f)) n++
             store.clear(profile.id)
-            log("I", str(R.string.eng_purged_pc, dirs, n))
+            log("I", Msg.of(R.string.eng_purged_pc, dirs, n))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             if (isNetworkError(e)) { connectionFailed = true; throw e } // bleibt vorgemerkt
             store.clear(profile.id)
-            log("E", str(R.string.eng_purge_pc_failed, com.sync2pc.app.sync.shortError(e)))
+            log("E", Msg.of(R.string.eng_purge_pc_failed, com.sync2pc.app.sync.shortError(e)))
         }
     }
 
     /** Datei wurde seit dem Einlesen geändert -> nicht überschreiben; der nächste Lauf sieht beide Stände */
-    private suspend fun skipChanged(rel: String, where: String) {
-        log("W", str(R.string.eng_changed_during_run, rel, where))
+    private suspend fun skipChanged(rel: String, where: Msg) {
+        log("W", Msg.of(R.string.eng_changed_during_run, rel, where))
     }
 
     /**
@@ -805,7 +812,7 @@ class MirrorEngine(
         try {
             n += tree.purgeTrash(rule, TrashPurge.reservedPaths(pending, Side.LOCAL))
         } catch (e: Exception) {
-            log("W", str(R.string.eng_purge_local_failed, com.sync2pc.app.sync.shortError(e)))
+            log("W", Msg.of(R.string.eng_purge_local_failed, com.sync2pc.app.sync.shortError(e)))
         }
         val s = smb
         if (s != null) {
@@ -813,10 +820,10 @@ class MirrorEngine(
                 n += TrashCleaner.purgeRemote(s, rule, TrashPurge.reservedPaths(pending, Side.REMOTE))
             } catch (e: Exception) {
                 if (isNetworkError(e)) throw e
-                log("W", str(R.string.eng_purge_remote_failed, com.sync2pc.app.sync.shortError(e)))
+                log("W", Msg.of(R.string.eng_purge_remote_failed, com.sync2pc.app.sync.shortError(e)))
             }
         }
-        if (n > 0) log("I", str(R.string.eng_purged_expired, n, days))
+        if (n > 0) log("I", Msg.of(R.string.eng_purged_expired, n, days))
     }
 
     private suspend fun record(key: String, l: LocalEntry, r: RemoteEntry) {
@@ -843,13 +850,14 @@ class MirrorEngine(
         StatFs(Environment.getExternalStorageDirectory().path).availableBytes
     } catch (e: Exception) { Long.MAX_VALUE / 2 }
 
-    private suspend fun finish(status: String, message: String): SyncRun {
+    private suspend fun finish(status: String, message: Msg): SyncRun {
+        val text = message.text()
         run = run.copy(
-            finishedAt = System.currentTimeMillis(), status = status, message = message,
+            finishedAt = System.currentTimeMillis(), status = status, message = text, messageCode = message.toCode(),
             uploaded = up.get() + down.get(), skipped = 0, failed = failed.get(), waiting = newConflicts, bytes = bytes.get()
         )
         dao.updateRun(run)
-        if (!dryRun) log("I", str(R.string.eng_end, message))
+        if (!dryRun) log("I", Msg.of(R.string.eng_end, message))
         return run
     }
 

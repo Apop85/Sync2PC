@@ -12,6 +12,8 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.messageText
+import com.sync2pc.app.l10n.Msg
 import com.sync2pc.app.l10n.Texts
 import com.sync2pc.app.l10n.plural
 import com.sync2pc.app.l10n.str
@@ -79,17 +81,17 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
      * Warum Android den Lauf gestoppt hat (für den Verlauf). null = nicht von Android gestoppt bzw.
      * "Abbrechen" durch den Benutzer – das gilt als echter Abbruch.
      */
-    private fun interruptReason(): String? {
+    private fun interruptReason(): Msg? {
         if (!isStopped) return null
         return when (val r = stopReason) {
             WorkInfo.STOP_REASON_CANCELLED_BY_APP -> null
-            WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> str(R.string.stop_wifi)
-            WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> str(R.string.stop_charger)
-            WorkInfo.STOP_REASON_TIMEOUT -> str(R.string.stop_timeout)
+            WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> Msg.of(R.string.stop_wifi)
+            WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> Msg.of(R.string.stop_charger)
+            WorkInfo.STOP_REASON_TIMEOUT -> Msg.of(R.string.stop_timeout)
             WorkInfo.STOP_REASON_QUOTA, WorkInfo.STOP_REASON_APP_STANDBY,
             WorkInfo.STOP_REASON_BACKGROUND_RESTRICTION, WorkInfo.STOP_REASON_DEVICE_STATE,
-            WorkInfo.STOP_REASON_SYSTEM_PROCESSING -> str(R.string.stop_system, r)
-            else -> str(R.string.stop_android, r)
+            WorkInfo.STOP_REASON_SYSTEM_PROCESSING -> Msg.of(R.string.stop_system, r)
+            else -> Msg.of(R.string.stop_android, r)
         }
     }
 
@@ -115,7 +117,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val ctx = applicationContext
         val startedAt = System.currentTimeMillis()
         val manual = inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)
-        val trigger = inputData.getString(SyncScheduler.KEY_TRIGGER) ?: str(R.string.trigger_auto)
+        val trigger = SyncScheduler.triggerOf(inputData, Msg.of(R.string.trigger_auto))
         val dao = AppDatabase.get(ctx).dao()
         dao.closeDanglingRuns()
 
@@ -275,7 +277,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 if (engine.spaceShortage) spaceShortage = true
                 if (engine.wifiLost && !manual) markInterrupted()
                 if (engine.connectionFailed) { unreachable += p; interruptedMidRun = true }
-                else if (r.status == RunStatus.FAILED) hardFailure = "${p.name}: ${r.message}"
+                else if (r.status == RunStatus.FAILED) hardFailure = "${p.name}: ${r.messageText()}"
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
             }
         } finally {

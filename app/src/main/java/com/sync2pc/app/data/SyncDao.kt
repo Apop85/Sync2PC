@@ -198,11 +198,12 @@ interface SyncDao {
     suspend fun closeDanglingRuns() {
         for (r in runningRuns()) {
             val end = lastLogTime(r.id) ?: r.startedAt
-            insertLog(LogEntry(runId = r.id, time = end, level = "W",
-                message = com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.run_dangling_log)))
+            val logMsg = com.sync2pc.app.l10n.Msg.of(com.sync2pc.app.R.string.run_dangling_log)
+            val runMsg = com.sync2pc.app.l10n.Msg.of(com.sync2pc.app.R.string.run_dangling)
+            insertLog(LogEntry(runId = r.id, time = end, level = "W", message = logMsg.text(), code = logMsg.toCode()))
             updateRun(r.copy(
                 status = RunStatus.INTERRUPTED, finishedAt = end,
-                message = com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.run_dangling),
+                message = runMsg.text(), messageCode = runMsg.toCode(),
             ))
         }
     }

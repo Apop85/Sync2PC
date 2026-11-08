@@ -51,7 +51,7 @@ fun ConflictScreen(onBack: () -> Unit) {
                 list.forEach { dao.resolveConflict(it.profileId, it.relPath, choose(it)) }
             }
             NotificationManagerCompat.from(ctx).cancel(Notifications.ID_CONFLICT)
-            SyncScheduler.enqueueAuto(ctx, str(R.string.trigger_conflicts))
+            SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.Msg.of(R.string.trigger_conflicts))
         }
     }
 

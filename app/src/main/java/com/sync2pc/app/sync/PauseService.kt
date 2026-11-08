@@ -118,7 +118,7 @@ class PauseService : Service() {
                     val targets = com.sync2pc.app.data.AppDatabase.get(ctx).dao().profiles()
                         .filter { it.enabled }.flatMap { it.ssids() }
                     if (ssid != null && ssid in targets) {
-                        SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.trigger_resume_wifi, ssid))
+                        SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.Msg.of(com.sync2pc.app.R.string.trigger_resume_wifi, ssid))
                         stopSelf()
                         return@launch
                     }

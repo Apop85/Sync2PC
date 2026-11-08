@@ -236,12 +236,17 @@ object MirrorGuard {
     }
 
     /** Text der Warnung (Startseite und Benachrichtigung) */
-    fun title(g: Guard): String = when (g.kind) {
-        GuardKind.REMOTE_MISSING -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_title_remote)
-        GuardKind.LOCAL_MISSING -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_title_local)
-        GuardKind.MASS_DELETE -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.guard_title_mass)
-        GuardKind.CHECK_FOLDER -> com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.profile_folder_warning_title)
-    }
+    fun title(g: Guard): String = titleMsg(g).text()
+
+    /** Wie [title], als Kennung für den Verlauf (0.12.0) */
+    fun titleMsg(g: Guard): com.sync2pc.app.l10n.Msg = com.sync2pc.app.l10n.Msg.of(
+        when (g.kind) {
+            GuardKind.REMOTE_MISSING -> com.sync2pc.app.R.string.guard_title_remote
+            GuardKind.LOCAL_MISSING -> com.sync2pc.app.R.string.guard_title_local
+            GuardKind.MASS_DELETE -> com.sync2pc.app.R.string.guard_title_mass
+            GuardKind.CHECK_FOLDER -> com.sync2pc.app.R.string.profile_folder_warning_title
+        }
+    )
 
     /**
      * Speichern eines Profils mit gewechseltem Ordner abschliessen: [result] der Stichprobe bzw. die

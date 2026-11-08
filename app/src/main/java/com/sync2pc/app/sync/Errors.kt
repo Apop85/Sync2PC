@@ -24,7 +24,13 @@ fun isNetworkError(e: Throwable): Boolean {
  * Verständliche Meldung mit nächstem Schritt für häufige Fehler (0.11.0), sonst null.
  * Der technische Text ([shortError]) bleibt im Verlauf (aufklappen) und in der Diagnose.
  */
-fun friendlyError(e: Throwable): String? {
+fun friendlyError(e: Throwable): String? = friendlyErrorId(e)?.let { com.sync2pc.app.l10n.str(it) }
+
+/** Als Kennung (Verlauf, 0.12.0): verständlicher Text in der aktiven Sprache, sonst der technische Text wörtlich */
+fun userErrorMsg(e: Throwable): com.sync2pc.app.l10n.Msg =
+    friendlyErrorId(e)?.let { com.sync2pc.app.l10n.Msg.of(it) } ?: com.sync2pc.app.l10n.Msg.lit(shortError(e))
+
+private fun friendlyErrorId(e: Throwable): Int? {
     val chain = generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).toList()
     val text = chain.joinToString(" | ") { "${it.javaClass.name} ${it.message.orEmpty()}" }
     fun has(vararg keys: String) = keys.any { text.contains(it, ignoreCase = true) }
@@ -43,7 +49,7 @@ fun friendlyError(e: Throwable): String? {
             has("ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "ETIMEDOUT") -> com.sync2pc.app.R.string.err_friendly_unreachable
         else -> return null
     }
-    return com.sync2pc.app.l10n.str(id)
+    return id
 }
 
 /** Für Anzeigen (Statuskachel, Verlauf-Karte): verständlich, wenn bekannt, sonst technisch */

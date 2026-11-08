@@ -217,7 +217,7 @@ Kein Vergleich mit dem Zustand des PCs; der Lauf entscheidet allein aus dem Hand
 
 | # | Schritt | Details / Code |
 |---|---|---|
-| 1 | Lauf anlegen | `dao.insertRun(SyncRun(...))`; Status `RUNNING`; Logs älter 30 Tage und Läufe älter 90 Tage werden gelöscht (nicht bei `dryRun`) |
+| 1 | Lauf anlegen | `dao.insertRun(SyncRun(...))`; Status `RUNNING`; Logs älter 30 Tage und Läufe älter 90 Tage werden gelöscht (nicht bei `dryRun`). Seit 0.12.0 trägt der Lauf den Auslöser zusätzlich als Kennung (`triggerCode`, aus den Auftragsdaten `KEY_TRIGGER_CODE`, Rückfall auf den Text) und beim Abschluss den Kurztext als `messageCode`; `log()` schreibt Text und `code` aus derselben `Msg` (siehe `DATA-MODEL.md` 3.11). Anzeige und `RunGrouping.isIdle` lesen die Kennung (`RunSummary.NOT_IDLE_KEYS`), die Sync-Entscheidungen ändern sich nicht |
 | 2 | Lokalen Bestand ermitteln | `MediaScanner.scan(...)` über MediaStore (`RELATIVE_PATH LIKE`, `IS_PENDING = 0`, `size > 0`) |
 | 3 | Filter | `FileFilter(includePatterns, excludePatterns)` auf `relativePath + displayName` |
 | 4 | Bekanntes aussortieren | `dao.syncedLite(profileId)` → Map `sourceKey`; **bekannt** = gleiche `size` **und** gleiches `dateModified` (Sekunden) → übersprungen ohne I/O |
@@ -1197,8 +1197,7 @@ WLAN verschwindet bei 60 %. Worker: Netzwerkfehler ⇒ Sitzung schliessen, 2 s w
 - Ob `SyncWorker`-Abbrüche in allen Android-Versionen gleich `STOP_REASON_*` melden.
 
 ### 18.2 Geplant bzw. nicht umgesetzt (nur zur Abgrenzung, nicht Teil des Ist-Stands)
-Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Vorbereitung (0.12.0), PC-Erkennung (0.13.0),
-„Verlauf mit Kennungen statt fertiger Texte“ (DEC-159), „Ordner anlegen“ in der PC-Auswahl (DEC-192). Sie betreffen die Synchronisationslogik nicht.
+Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Vorbereitung (Versionsnummer offen; 0.12.0 ist durch den Verlauf mit Kennungen belegt), PC-Erkennung (0.13.0). Sie betreffen die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
 
 ### 18.3 Offene Dokumentationspunkte
 - Ergänzung nach Prüfung von `MediaAnalyzer`, `Notifications`, `WifiHelper`, `PauseService` (Abschnitte 2.3 und 11).

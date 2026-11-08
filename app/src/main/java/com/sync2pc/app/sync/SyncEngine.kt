@@ -11,6 +11,7 @@ import android.provider.MediaStore
 import androidx.core.content.ContextCompat
 import com.sync2pc.app.R
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.l10n.Msg
 import com.sync2pc.app.l10n.plural
 import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.DeleteMode
@@ -74,13 +75,13 @@ data class PreviewEntry(val targetFolder: String, val fileName: String, val need
 class SyncEngine(
     private val context: Context,
     private val profile: Profile,
-    private val trigger: String,
+    private val trigger: Msg,
     private val dryRun: Boolean = false,
     /** false zurückgeben, um den Lauf sauber zu beenden (z. B. WLAN getrennt) */
     private val shouldContinue: () -> Boolean = { true },
     private val onProgress: (SyncProgress) -> Unit = {},
     /** Bei einem Stopp: Grund, wenn Android unterbrochen hat (z. B. "WLAN getrennt"); null = vom Benutzer abgebrochen */
-    private val interruptReason: () -> String? = { null },
+    private val interruptReason: () -> Msg? = { null },
     /** Simulation (dryRun): nur die ersten so vielen neuen Dateien analysieren (EXIF/GPS lesen kostet Zeit) */
     private val previewLimit: Int = Int.MAX_VALUE,
 ) : SyncRunner {
@@ -105,14 +106,19 @@ class SyncEngine(
         private set
 
     private var run = SyncRun(
-        profileId = profile.id, profileName = profile.name, trigger = trigger,
+        profileId = profile.id, profileName = profile.name, trigger = trigger.text(), triggerCode = trigger.toCode(),
         dryRun = dryRun, startedAt = System.currentTimeMillis()
     )
 
-    private suspend fun log(level: String, msg: String) {
+    /** Log-Zeile als Kennung (DEC-159): Text in der Schreibsprache als Rückfall, Kennung für die Anzeige */
+    private suspend fun log(level: String, msg: Msg) {
         if (dryRun) return
-        dao.insertLog(LogEntry(runId = run.id, time = System.currentTimeMillis(), level = level, message = msg))
+        dao.insertLog(LogEntry(runId = run.id, time = System.currentTimeMillis(), level = level,
+            message = msg.text(), code = msg.toCode()))
     }
+
+    /** Wörtliche Zeile (Symbole, Dateinamen, Fehlertexte): bleibt wie sie ist, ohne Kennung */
+    private suspend fun log(level: String, text: String) = log(level, Msg.lit(text))
 
     private class DecisionAcc(
         val year: Int, val month: Int, val countryIso: String?, val countryName: String?,
@@ -157,7 +163,7 @@ class SyncEngine(
         sh.alreadyPending.set(0)
         for ((folder, counter) in sh.already.entries.sortedBy { it.key }) {
             val n = counter.getAndSet(0)
-            if (n > 0) log("I", plural(R.plurals.eng_already_in, n, n, folder))
+            if (n > 0) log("I", Msg.plural(R.plurals.eng_already_in, n, n, folder))
         }
     }
 
@@ -168,7 +174,7 @@ class SyncEngine(
         var waiting = 0
         var shared: Shared? = null
         var status = RunStatus.OK
-        var message = ""
+        var message: Msg? = null
         fun up() = shared?.uploaded?.get() ?: 0
         fun sk() = skippedKnown + (shared?.skipped?.get() ?: 0)
         fun fl() = shared?.failed?.get() ?: 0
@@ -180,7 +186,7 @@ class SyncEngine(
                 dao.pruneLogs(now - 30 * day)   // Detail-Logs 30 Tage
                 dao.pruneRuns(now - 90 * day)   // Verlaufseinträge 90 Tage
             }
-            log("I", str(R.string.eng_start_photos, trigger, profile.name, profile.smbPath))
+            log("I", Msg.of(R.string.eng_start_photos, trigger, profile.name, profile.smbPath))
 
             // --- 1. Quellen scannen und bekannte Dateien ohne I/O aussortieren --------
             emit(str(R.string.eng_searching), 0, 0, 0, 0, null)
@@ -192,7 +198,7 @@ class SyncEngine(
             val filter = com.sync2pc.app.mirror.FileFilter(profile.includePatterns, profile.excludePatterns)
             val filtered = items.size
             items.retainAll { filter.accepts(it.relativePath + it.displayName) }
-            if (items.size < filtered) log("I", plural(R.plurals.eng_filtered, filtered - items.size))
+            if (items.size < filtered) log("I", Msg.plural(R.plurals.eng_filtered, filtered - items.size))
             val known = dao.syncedLite(profile.id).associateBy { it.sourceKey }
             val nowSec = System.currentTimeMillis() / 1000
             val minAge = settings.minFileAgeMinutes * 60L
@@ -210,8 +216,9 @@ class SyncEngine(
                 }
                 todo += m
             }
-            log("I", plural(R.plurals.eng_found, items.size, items.size, todo.size, skippedKnown) +
-                (if (young > 0) ", " + str(R.string.eng_too_young, young, settings.minFileAgeMinutes) else ""))
+            log("I", Msg.join("", listOfNotNull(
+                Msg.plural(R.plurals.eng_found, items.size, items.size, todo.size, skippedKnown),
+                if (young > 0) Msg.join("", listOf(Msg.lit(", "), Msg.of(R.string.eng_too_young, young, settings.minFileAgeMinutes))) else null)))
             if (todo.isEmpty()) {
                 return finish(RunStatus.OK, RunSummary.NOTHING, 0, skippedKnown, 0, 0, 0)
             }
@@ -226,11 +233,11 @@ class SyncEngine(
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {
-                if (dryRun) { message = str(R.string.eng_offline_preview, e.message ?: ""); null }
+                if (dryRun) { message = Msg.of(R.string.eng_offline_preview, e.message ?: ""); null }
                 else throw e
             }
             val countries = CountryLookup.get(context)
-            if (!countries.isAvailable) log("W", str(R.string.eng_no_geo))
+            if (!countries.isAvailable) log("W", Msg.of(R.string.eng_no_geo))
             val offline = smb == null
             // Die Nachschlage-Verbindung bleibt während langer Uploads ungenutzt; Windows trennt sie nach
             // ca. 15 Minuten. Deshalb vor jeder Nutzung prüfen und bei Bedarf neu aufbauen.
@@ -247,7 +254,7 @@ class SyncEngine(
             val resolver = TargetResolver(producerSmb, dao, profile.id, countries.allCountryNames, dryRun, offline,
                 namesOfCountry = { countries.namesOf(it) })
             val analyzer = MediaAnalyzer(context, canReadLocation)
-            if (!canReadLocation) log("W", str(R.string.eng_no_media_location))
+            if (!canReadLocation) log("W", Msg.of(R.string.eng_no_media_location))
             val home = settings.homeCountryIso
             val decisions = LinkedHashMap<String, DecisionAcc>()
             if (!dryRun) dao.deleteDecisionsOfProfile(profile.id)
@@ -293,13 +300,13 @@ class SyncEngine(
                     try { plan(item) } catch (e: CancellationException) { throw e } catch (ignored: Exception) {}
                     if (index % 25 == 0) emit(str(R.string.eng_analysing), index, simulated.size, 0, totalBytes, null)
                 }
-                if (message.isEmpty()) message = plural(
+                if (message == null) message = Msg.plural(
                     if (simulated.size < todo.size) R.plurals.eng_new_files_first else R.plurals.eng_new_files_all,
                     todo.size, todo.size, simulated.size)
             } else {
                 val sh = Shared(todo.size, totalBytes).also { shared = it }
                 val parallel = settings.parallelUploads
-                log("I", str(R.string.eng_transfer_photos, parallel))
+                log("I", Msg.of(R.string.eng_transfer_photos, parallel))
                 coroutineScope {
                     val channel = Channel<Job>(capacity = 32)
                     val workers = List(parallel) { launch { worker(channel, sh) } }
@@ -309,8 +316,8 @@ class SyncEngine(
                             if (index % 20 == 0 && !shouldContinue()) {
                                 sh.stop.set(true)
                                 wifiLost = true
-                                status = RunStatus.PARTIAL; message = str(R.string.eng_wifi_lost)
-                                log("W", message); break
+                                status = RunStatus.PARTIAL; message = Msg.of(R.string.eng_wifi_lost)
+                                log("W", Msg.of(R.string.eng_wifi_lost)); break
                             }
                             val job = try {
                                 plan(item)
@@ -321,7 +328,7 @@ class SyncEngine(
                                 // bei jeder Nutzung ohnehin geprüft und neu aufgebaut – scheitert das, ist das Netz weg.
                                 if (isConnectionError(e)) throw e
                                 sh.failed.incrementAndGet()
-                                log("E", str(R.string.eng_analysis_failed, item.displayName, e.message ?: ""))
+                                log("E", Msg.of(R.string.eng_analysis_failed, item.displayName, e.message ?: ""))
                                 null
                             }
                             if (job != null) channel.send(job) else countDone(sh, item.size)
@@ -347,24 +354,24 @@ class SyncEngine(
                         )
                     )
                 }
-                if (decisions.isNotEmpty()) log("W", plural(R.plurals.eng_waiting_groups, waiting, waiting, plural(R.plurals.home_groups, decisions.size)))
+                if (decisions.isNotEmpty()) log("W", Msg.plural(R.plurals.eng_waiting_groups, waiting, waiting, Msg.plural(R.plurals.home_groups, decisions.size)))
                 DeletionManager.sweep(context) { log("I", it) }
             }
 
             if (status == RunStatus.OK && fl() > 0) status = RunStatus.PARTIAL
-            if (message.isEmpty()) message = RunSummary.photos(up(), shared?.skipped?.get() ?: 0, fl(), waiting)
-            return finish(status, message, up(), sk(), fl(), waiting, by())
+            val summary = message ?: RunSummary.photos(up(), shared?.skipped?.get() ?: 0, fl(), waiting)
+            return finish(status, summary, up(), sk(), fl(), waiting, by())
         } catch (e: CancellationException) {
             withContext(NonCancellable) {
                 flushAlready(shared)
                 val reason = interruptReason()
                 if (reason != null) {
-                    log("W", str(R.string.eng_interrupted_log, reason))
-                    finish(RunStatus.INTERRUPTED, str(R.string.eng_interrupted_photos, reason, up()),
+                    log("W", Msg.of(R.string.eng_interrupted_log, reason))
+                    finish(RunStatus.INTERRUPTED, Msg.of(R.string.eng_interrupted_photos, reason, up()),
                         up(), sk(), fl(), waiting, by())
                 } else {
-                    log("W", str(R.string.eng_paused_log))
-                    finish(RunStatus.CANCELLED, str(R.string.eng_paused_photos, up()),
+                    log("W", Msg.of(R.string.eng_paused_log))
+                    finish(RunStatus.CANCELLED, Msg.of(R.string.eng_paused_photos, up()),
                         up(), sk(), fl(), waiting, by())
                 }
             }
@@ -375,14 +382,14 @@ class SyncEngine(
                 // Erwartbar (WLAN weg, PC im Ruhezustand …): kein Fehler, offene Dateien folgen beim nächsten Sync.
                 // Abgebrochene Uploads werden dort an der Abbruchstelle fortgesetzt (.s2ptmp).
                 connectionFailed = true
-                log("W", str(R.string.eng_connection_log_photos, shortError(e)))
+                log("W", Msg.of(R.string.eng_connection_log_photos, shortError(e)))
                 return finish(
-                    RunStatus.INTERRUPTED, str(R.string.eng_connection_photos, up()),
+                    RunStatus.INTERRUPTED, Msg.of(R.string.eng_connection_photos, up()),
                     up(), sk(), fl(), waiting, by()
                 )
             }
-            log("E", str(R.string.eng_run_failed, shortError(e)))
-            return finish(RunStatus.FAILED, userError(e), up(), sk(), fl(), waiting, by())
+            log("E", Msg.of(R.string.eng_run_failed, shortError(e)))
+            return finish(RunStatus.FAILED, userErrorMsg(e), up(), sk(), fl(), waiting, by())
         } finally {
             smb?.close()
         }
@@ -455,14 +462,15 @@ class SyncEngine(
     }
 
     private suspend fun finish(
-        status: String, message: String, uploaded: Int, skipped: Int, failed: Int, waiting: Int, bytes: Long,
+        status: String, message: Msg, uploaded: Int, skipped: Int, failed: Int, waiting: Int, bytes: Long,
     ): SyncRun {
+        val text = message.text()
         run = run.copy(
-            finishedAt = System.currentTimeMillis(), status = status, message = message,
+            finishedAt = System.currentTimeMillis(), status = status, message = text, messageCode = message.toCode(),
             uploaded = uploaded, skipped = skipped, failed = failed, waiting = waiting, bytes = bytes
         )
         dao.updateRun(run)
-        if (!dryRun) log("I", str(R.string.eng_end, message))
+        if (!dryRun) log("I", Msg.of(R.string.eng_end, message))
         return run
     }
 

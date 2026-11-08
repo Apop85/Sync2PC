@@ -17,6 +17,13 @@ object Texts {
         fun string(id: Int, args: Array<out Any>): String
         fun plural(id: Int, count: Int, args: Array<out Any>): String
         val locale: Locale
+
+        /** Ressourcen-Name zu einer ID (für [Msg]-Kennungen), null wenn unbekannt */
+        fun entryName(id: Int): String?
+
+        /** Text per Ressourcen-Name (0.12.0); null, wenn es den Namen nicht (mehr) gibt */
+        fun stringByName(name: String, args: Array<out Any>): String?
+        fun pluralByName(name: String, count: Int, args: Array<out Any>): String?
     }
 
     @Volatile
@@ -50,6 +57,19 @@ private class AndroidResolver(private val ctx: Context) : Texts.Resolver {
         ctx.resources.getQuantityString(id, count, *args)
 
     override val locale: Locale get() = ctx.resources.configuration.locales[0]
+
+    override fun entryName(id: Int): String? =
+        try { ctx.resources.getResourceEntryName(id) } catch (e: android.content.res.Resources.NotFoundException) { null }
+
+    override fun stringByName(name: String, args: Array<out Any>): String? {
+        val id = ctx.resources.getIdentifier(name, "string", ctx.packageName)
+        return if (id == 0) null else string(id, args)
+    }
+
+    override fun pluralByName(name: String, count: Int, args: Array<out Any>): String? {
+        val id = ctx.resources.getIdentifier(name, "plurals", ctx.packageName)
+        return if (id == 0) null else plural(id, count, args)
+    }
 }
 
 /** Text aus res/values*.xml, Platzhalter %1$s, %2$s … */

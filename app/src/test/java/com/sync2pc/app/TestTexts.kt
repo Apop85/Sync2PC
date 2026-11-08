@@ -97,6 +97,19 @@ object TestTexts {
         }
 
         override val locale: Locale = Locale.GERMAN
+
+        override fun entryName(id: Int): String? = stringNames[id] ?: pluralNames[id]
+
+        override fun stringByName(name: String, args: Array<out Any>): String? {
+            val v = de.strings[name] ?: return null
+            return if (args.isEmpty()) v else String.format(Locale.GERMAN, v, *args)
+        }
+
+        override fun pluralByName(name: String, count: Int, args: Array<out Any>): String? {
+            val items = de.plurals[name] ?: return null
+            val v = (if (count == 1) items["one"] else items["other"]) ?: items["other"] ?: return null
+            return String.format(Locale.GERMAN, v, *args)
+        }
     }
 
     @JvmStatic
