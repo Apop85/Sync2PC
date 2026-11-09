@@ -17,6 +17,7 @@ Diese Regeln sind hier abschliessend festgehalten (`.claude/README.md` entfällt
 - Jede Code-Änderung: PATCH in `version.properties` erhöhen. Neue Funktion = nächste Minor-Reihe.
 - Sichtbare Texte nur in beide Sprachdateien (`res/values/strings_*.xml` EN, `res/values-de/` DE), nie fest im Code; danach `tools/make-translations.ps1`. DE: „Handy“, „Freigabe“, „Synchronisierung“; EN: „Mobile“, „Share“. Nie Whitelist/Blacklist.
 - Jede Antwort, die eine Änderung abschliesst, endet mit der Versionsnummer in eigener Zeile (z. B. `Version 0.11.0`).
+- **Kodierung:** Alle Textdateien sind UTF-8 ohne BOM. In PowerShell 5.1 nie `Set-Content`, `Out-File` oder `Add-Content` ohne `-Encoding` verwenden, und auch `-Encoding utf8` schreibt dort ein BOM. Stattdessen `[IO.File]::WriteAllText(pfad, text, [Text.UTF8Encoding]::new($false))` nutzen. Beim Lesen immer `Get-Content -Encoding UTF8` angeben, sonst entstehen kaputte Umlaute.
 - Geheimnisse (Keystore) nie ins Repo; `.gitignore` aktuell halten; vor dem Anlegen einer Datei prüfen, ob sie existiert.
 - Jeder Chat führt nur Aufgaben aus, die zu seiner Rolle passen; andere Aufgaben werden an den jeweiligen Spezialisten delegiert (siehe 10).
 - Dokumentationen (inkl. `PATCHNOTES.md`) übernimmt der Dokumentationsspezialist; alle Dokumentationsaufgaben werden an ihn übergeben (siehe 11).

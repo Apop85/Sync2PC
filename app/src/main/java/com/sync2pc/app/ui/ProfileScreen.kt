@@ -108,6 +108,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var password by remember { mutableStateOf("") }
     var newSsid by remember { mutableStateOf("") }
     var testResult by remember { mutableStateOf<String?>(null) }
+    var testFailed by remember { mutableStateOf(false) }
     var testing by remember { mutableStateOf(false) }
     var testDetail by remember { mutableStateOf<String?>(null) }
     // PC-Erkennung (0.13.0): Modus vom Benutzer gewählt? Zuletzt "anderer PC" gemeldet? Rückfrage zum Neuvertrauen
@@ -202,7 +203,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     }
 
     fun runTest() {
-        testing = true; testResult = null; testDetail = null; pcChanged = false
+        testing = true; testResult = null; testFailed = false; testDetail = null; pcChanged = false
         scope.launch {
             val prof = withPassword()
             withContext(Dispatchers.IO) {
@@ -218,7 +219,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 } catch (e: Exception) {
                     if (e is PcIdentityException && e.decision == PcDecision.CHANGED) pcChanged = true
                     // 0.11.0: verständlich, technischer Text aufklappbar
-                    testResult = "✗ " + com.sync2pc.app.sync.userError(e)
+                    testResult = "✗ " + com.sync2pc.app.sync.userError(e); testFailed = true
                     testDetail = com.sync2pc.app.sync.shortError(e)
                 }
             }
@@ -484,7 +485,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         OutlinedButton(enabled = !testing, onClick = { runTest() }) { Text(str(R.string.profile_test)) }
                         if (testing) CircularProgressIndicator(Modifier.padding(start = 12.dp))
                     }
-                    testResult?.let { Text(it) }
+                    testResult?.let { if (testFailed) ErrorText(it) else Text(it) }
                     testDetail?.let { ErrorDetails(it) }
                 }
             }

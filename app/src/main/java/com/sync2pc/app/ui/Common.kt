@@ -154,6 +154,12 @@ fun Hint(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
+/** Fehlermeldung im Rotton des Themes (SYNC-20261109-071): gut lesbar in Hell und Dunkel, nur für echte Fehler. */
+@Composable
+fun ErrorText(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier = modifier, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Medium)
+}
+
 /**
  * Langer Hinweis, aufgeräumt (0.11.0): sichtbar ist nur der erste Satz, der Rest hinter "Mehr dazu".
  * Kurze Texte (bis [limit] Zeichen oder nur ein Satz) erscheinen wie [Hint].

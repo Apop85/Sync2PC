@@ -1,4 +1,4 @@
-﻿package com.sync2pc.app.smb
+package com.sync2pc.app.smb
 
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.sync.PcAccess
@@ -8,7 +8,7 @@ import com.sync2pc.app.sync.PcIdentity
 import com.sync2pc.app.sync.PcIdentityException
 
 /**
- * Anmeldelogik der PC-Erkennung (SYNC-20261109-047/-055/-058), getrennt von smbj, damit sie ohne GerÃ¤t testbar ist (T1):
+ * Anmeldelogik der PC-Erkennung (SYNC-20261109-047/-055/-058), getrennt von smbj, damit sie ohne Gerät testbar ist (T1):
  * connect -> Kennung lesen -> entscheiden -> erst dann anmelden. [SmbSession] liefert die smbj-Verbindung dahinter.
  * Es gibt keinen zweiten Weg zum Anmelden.
  */
@@ -58,7 +58,7 @@ class PcChecked<S>(val decision: PcDecision) {
 
 object PcLogin {
 
-    /** Stand fÃ¼r die Entscheidung: wirksamer Modus, gespeicherte Kennung (nach V7), in der Datenbank?, Datenbank-Modus */
+    /** Stand für die Entscheidung: wirksamer Modus, gespeicherte Kennung (nach V7), in der Datenbank?, Datenbank-Modus */
     class Ident(
         val mode: PcCheckMode, val guid: String, val guidHost: String,
         val inDb: Boolean, val id: Long, val dbMode: PcCheckMode, val dbHost: String = "",
@@ -97,8 +97,8 @@ object PcLogin {
      * mit [seenCache] wird je Host nur einmal ausgehandelt. [learn] true: eine unbekannte Kennung darf nach erfolgreicher
      * Anmeldung gelernt werden (nur Speichern und Verbindung testen, V4); bei WIFI lernt der Weg still wie bisher.
      * [onChangedGuid]: nur bei [PcAccess.SETUP] und abweichender Kennung. Ablauf (-055 Punkt 3): aushandeln, Kennung lesen,
-     * Verbindung schliessen, fragen, neu verbinden, die gesehene Kennung muss GENAU der bestÃ¤tigten entsprechen, erst dann
-     * anmelden; Ãœbernahme erst nach erfolgreicher Anmeldung. Wirft [PcIdentityException], ohne Zugangsdaten zu senden.
+     * Verbindung schliessen, fragen, neu verbinden, die gesehene Kennung muss GENAU der bestätigten entsprechen, erst dann
+     * anmelden; Übernahme erst nach erfolgreicher Anmeldung. Wirft [PcIdentityException], ohne Zugangsdaten zu senden.
      */
     fun <S> connect(
         profile: Profile, host: String, transport: PcTransport<S>, store: PcStore?, access: PcAccess,
@@ -130,8 +130,8 @@ object PcLogin {
             when (decision) {
                 PcDecision.ALLOW -> {}
                 PcDecision.ALLOW_AND_LEARN ->
-                    // Lernen nur, wenn der Modus in der Datenbank dem wirksamen entspricht (kein Lernen fÃ¼r einen noch
-                    // ungespeicherten Moduswechsel, V7) und nur auf ausdrÃ¼ckliche Anforderung (V4); bei WIFI wie bisher still
+                    // Lernen nur, wenn der Modus in der Datenbank dem wirksamen entspricht (kein Lernen für einen noch
+                    // ungespeicherten Moduswechsel, V7) und nur auf ausdrückliche Anforderung (V4); bei WIFI wie bisher still
                     // und nur, wenn der Host der Verbindung dem gespeicherten Host des Profils entspricht (Editor mit ungespeichertem
                     // Hostwechsel lernt nicht, M1); das DAO prüft den Modus zusätzlich beim Schreiben (L1)
                     if (cur.inDb && seen != null && cur.dbMode == cur.mode && cur.sameHost(host) && (learn || cur.mode == PcCheckMode.WIFI))
@@ -140,12 +140,12 @@ object PcLogin {
                     val old = PcIdentity.storedFor(cur.guid, cur.guidHost, host)
                     if (access != PcAccess.SETUP || !cur.inDb || !cur.sameHost(host) || old == null || seen == null || onChangedGuid == null)
                         throw PcIdentityException(decision, host)
-                    // RÃ¼ckfrage ohne offene, nicht angemeldete Verbindung (Windows kann sie trennen)
+                    // Rückfrage ohne offene, nicht angemeldete Verbindung (Windows kann sie trennen)
                     link?.close(); link = null; c.link = null
                     if (!onChangedGuid(PcIdentity.normalizeHost(host), old, seen)) throw PcIdentityException(decision, host)
                     val (l2, g2) = negotiate(transport, host)
                     link = l2; c.link = l2
-                    if (g2 != seen) throw PcIdentityException(decision, host) // nicht die bestÃ¤tigte Kennung: nicht anmelden
+                    if (g2 != seen) throw PcIdentityException(decision, host) // nicht die bestätigte Kennung: nicht anmelden
                     c.trust = Triple(PcIdentity.normalizeHost(host), old, seen)
                 }
                 PcDecision.UNKNOWN, PcDecision.NO_ID, PcDecision.WRONG_NET -> throw PcIdentityException(decision, host)
@@ -159,8 +159,8 @@ object PcLogin {
     }
 
     /**
-     * Lernen/Neuvertrauen NACH erfolgreicher Anmeldung (und connectShare bzw. Freigabenliste). Nie still Ã¼berschreiben: das DAO
-     * Ã¤ndert nur bei leerer Kennung bzw. passender alter Kennung. Ein Fehler hier darf die Sitzung nicht beenden.
+     * Lernen/Neuvertrauen NACH erfolgreicher Anmeldung (und connectShare bzw. Freigabenliste). Nie still überschreiben: das DAO
+     * ändert nur bei leerer Kennung bzw. passender alter Kennung. Ein Fehler hier darf die Sitzung nicht beenden.
      */
     fun <S> commit(c: PcChecked<S>, store: PcStore?) {
         val s = store ?: return

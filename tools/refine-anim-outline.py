@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Nachbearbeitung der festen Leo-Frames (SYNC-20261109-066, Ergaenzung): Aussenlinie neu zeichnen.
 

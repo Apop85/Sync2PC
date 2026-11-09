@@ -154,6 +154,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
     var busy by remember { mutableStateOf<String?>(null) }
     var progress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var resultText by remember(profile.id) { mutableStateOf<String?>(null) }
+    var resultFailed by remember(profile.id) { mutableStateOf(false) }
     var confirmFolder by remember { mutableStateOf(false) }
     var confirmDirect by remember { mutableStateOf<List<SpaceFreer.Candidate>?>(null) }
 
@@ -209,7 +210,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
     fun runPhotos() {
         val data = photoData ?: return
         val list = final.mapNotNull { data.candidates[it.key] }
-        busy = str(R.string.free_checking_pc); progress = 0 to list.size; resultText = null
+        busy = str(R.string.free_checking_pc); progress = 0 to list.size; resultText = null; resultFailed = false
         scope.launch {
             try {
                 val v = SpaceFreer.verify(ctx, list) { d, t -> progress = d to t }
@@ -223,13 +224,13 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                     else confirmDirect = v.confirmed
                 }
             } catch (e: Exception) {
-                resultText = str(R.string.free_check_failed, e.message ?: "")
+                resultText = str(R.string.free_check_failed, e.message ?: ""); resultFailed = true
             } finally { busy = null; progress = null }
         }
     }
 
     fun runFolder() {
-        resultText = null
+        resultText = null; resultFailed = false
         val list = final
         val app = ctx.applicationContext
         // Wartet auf einen laufenden Ordner-Sync und überlebt das Verlassen der Ansicht (0.11.10, DEC-144).
@@ -335,7 +336,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 }
             }
         }
-        resultText?.let { t -> item { SectionCard(str(R.string.free_result)) { Text(t) } } }
+        resultText?.let { t -> item { SectionCard(str(R.string.free_result)) { if (resultFailed) ErrorText(t) else Text(t) } } }
 
         // Vorschau: nach Ordnern gruppiert, einzelne Dateien und ganze Ordner abwählbar
         if (showPreview) {

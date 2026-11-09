@@ -60,6 +60,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
     var profile by remember { mutableStateOf<Profile?>(null) }
     var running by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
+    var statusFailed by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<List<PreviewEntry>?>(null) }
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
     // 0 = alle
@@ -75,7 +76,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
         val p = profile ?: return
         val max = if (all) Int.MAX_VALUE else (limit ?: return)
         settings.previewLimit = if (all) 0 else max
-        running = true; result = null; status = str(R.string.preview_starting); expanded.clear()
+        running = true; result = null; statusFailed = false; status = str(R.string.preview_starting); expanded.clear()
         scope.launch {
             val onProgress: (com.sync2pc.app.sync.SyncProgress) -> Unit = { pr ->
                 status = if (pr.totalFiles > 0) "${pr.phase} ${pr.doneFiles} / ${pr.totalFiles}" else pr.phase
@@ -87,6 +88,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
             val run = withContext(Dispatchers.IO) { engine.run() }
             result = engine.preview.toList()
             status = run.messageText()
+            statusFailed = run.status == com.sync2pc.app.data.RunStatus.FAILED
             running = false
         }
     }
@@ -120,7 +122,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
                         Text(str(R.string.preview_start))
                     }
                     if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    status?.let { Text(it) }
+                    status?.let { if (statusFailed) ErrorText(it) else Text(it) }
                 }
             }
             val r = result
