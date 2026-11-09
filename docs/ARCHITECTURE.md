@@ -94,7 +94,7 @@ Zentrale Schnittstellen:
 
 - **`SyncRunner`** (`sync/SyncRunner.kt`): gemeinsames Interface der beiden Engines (`run()`, `preview`, `connectionFailed`, `wifiLost`, `blocked`, `newConflicts`, `spaceShortage`, `nextYoungFileAt`). `SyncWorker` kennt nur dieses Interface.
 - **`SyncDao`** (`data/SyncDao.kt`): einziger DB-Zugang; liefert für die UI `Flow`s (`profilesFlow()`, `decisionsFlow()` …).
-- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen.
+- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. *(Geplant, nicht umgesetzt: zentrale PC-Kennungs-Prüfung vor `authenticate`, siehe DEC-204.)*
 - **`GlobalSettings`** (`data/GlobalSettings.kt`): profilübergreifende Einstellungen und Zustandsmerker (SharedPreferences „global“).
 - **`Notifications`** (`sync/Notifications.kt`): einziger Ort, der Benachrichtigungen erzeugt; öffnet die UI über Intent-Extra `EXTRA_OPEN`.
 

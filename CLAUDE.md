@@ -1,15 +1,15 @@
 # CLAUDE.md – LeoSync (Projektordner: Sync2PC)
 
-Android-App (Kotlin, Room, SMB) zur Synchronisierung Handy ⇄ PC. Gilt für alle vier Chat-Rollen (siehe 9). Sprache: Doku/Kommentare Deutsch, Schweizer Schreibweise (kein ß).
+Android-App (Kotlin, Room, SMB) zur Synchronisierung Handy ⇄ PC. Gilt für alle fünf Chat-Rollen (siehe 9). Sprache: Doku/Kommentare Deutsch, Schweizer Schreibweise (kein ß).
 
 ## 0. Rollen
-Du hast eine der vier möglichen Rollen. Dein master Prompt für deine Rolle findest du hier:
+Du hast eine der fünf möglichen Rollen (Projektmanager ist seit 2026-11-09 Teil des Systems). Dein master Prompt für deine Rolle findest du hier:
 Architecture & Complex Issues: .claude\roles\ARCHITECTURE-Specialist.md
 Documentation: .claude\roles\DOCUMENTATION-Specialist.md
 QA & Testing: .claude\roles\QA-Specialist.md
 Development: .claude\roles\DEVELOPMENT-Specialist.md
 Projektmanager: .claude\roles\Project-manager.md
-Lese den für dich bestimmten Masterprompt einmalig ein. 
+Lese den für dich bestimmten Masterprompt einmalig ein. **Nach Chatstart oder `/clear`** nennt der Benutzer die Rolle oder ruft den Rollen-Skill auf (`/rolle-pm`, `/rolle-development`, `/rolle-architecture`, `/rolle-qa`, `/rolle-documentation`): dann Masterprompt und eigenen Posteingang (siehe 10) lesen. Ohne Rollenangabe zuerst nach der Rolle fragen.
 
 ## 1. Verbindliche Inhaberregeln
 Diese Regeln sind hier abschliessend festgehalten (`.claude/README.md` entfällt). Sie gelten verbindlich:
@@ -64,7 +64,9 @@ Regeln: Hauptagent bleibt für die Gesamtaufgabe verantwortlich und prüft Agent
 | Gezielte Tests | `run-targeted-tests` (nach `docs/TESTING.md`) |
 | Dokumentation | `update-docs` |
 
-Keiner der Skills ist auf manuellen Aufruf beschränkt (kein `disable-model-invocation`); einsetzen, wenn der Ablauf sinnvoll ist. Skill-Inhalte nicht hier duplizieren.
+Keiner dieser Skills ist auf manuellen Aufruf beschränkt (kein `disable-model-invocation`); einsetzen, wenn der Ablauf sinnvoll ist. Skill-Inhalte nicht hier duplizieren.
+
+**Rollen-Skills** (nur manuell durch den Benutzer, `disable-model-invocation`): `rolle-pm`, `rolle-development`, `rolle-architecture`, `rolle-qa`, `rolle-documentation`. Sie laden nach Chatstart/`/clear` Masterprompt und Posteingang der Rolle (siehe 0 und 10).
 
 ## 7. Abläufe
 - **Klein**: Dateien lesen → ändern → gezielte Tests → kurzer Bericht. Keine Agents.
@@ -78,9 +80,10 @@ Keiner der Skills ist auf manuellen Aufruf beschränkt (kein `disable-model-invo
 - Sonnet als Standard; Opus nur für aussergewöhnlich komplexe Architektur-/Analyseaufgaben. Qualität und Datensicherheit gehen vor.
 - **Git**: Der Ordner ist derzeit **kein Git-Repository** (Stand 2026-11-08, `.git` fehlt) – ohne Repository gilt: vor Änderungen an gemeinsam genutzten Dateien den aktuellen Dateistand lesen, nichts überschreiben, was ein anderer Chat geändert hat. Mit Repository: Status vor grösseren Änderungen prüfen, fremde Änderungen schützen. **Nie selbst committen oder pushen.** Gemeinsame Dateien nicht gleichzeitig bearbeiten.
 
-## 9. Vier Chat-Rollen (dieselbe CLAUDE.md, dieselben Agents/Skills)
+## 9. Fünf Chat-Rollen (dieselbe CLAUDE.md, dieselben Agents/Skills)
 | Rolle | Modell / Effort | Auftrag |
 |---|---|---|
+| Project Manager | Sonnet | Anforderungen mit dem Benutzer klären, Aufträge formulieren und verteilen, Duplikate prüfen, offene/blockierte Aufgaben überwachen; **ändert keine Projektdateien** (`coordination/` ausgenommen) |
 | Development | Sonnet / Medium | Entwicklung, Fehlerbehebung, Integration, gezielte Tests, Doku-Übergaben |
 | Architecture & Complex Issues | Opus / High | Analysen, Architekturentscheidungen, Alternativen, technische Vorgaben; grössere Implementierung erst nach Freigabe des Benutzers |
 | QA & Testing | Sonnet / Medium | Unabhängige Prüfung, Abdeckung, Regressionen, Risikobewertung; **ändert keine Produktions- oder Testdateien** |
@@ -88,13 +91,15 @@ Keiner der Skills ist auf manuellen Aufruf beschränkt (kein `disable-model-invo
 
 Modell und Effort stellt der Benutzer pro Chat ein; die Rolle nennt der Benutzer zu Beginn des Chats.
 
-## 10. Koordination: `coordination/TASK-HANDOVER.md`
-Verbindliches Übergabeprotokoll zwischen den Rollen (keine automatische Kommunikation). Matrix, Statusmodell, Vorlage und Ablauf stehen **dort** und gelten verbindlich.
-- Übergaben nur laut Matrix: Development → Architecture, QA & Testing, Documentation · Architecture → Development, Documentation · QA & Testing → Development, Documentation · Documentation → Development, Architecture.
-- Übergabepflicht, wenn die Aufgabe ausserhalb der eigenen Rolle liegt oder ein eigenständiges Ergebnis einer anderen Rolle nötig ist. Kleine Aufgaben der eigenen Rolle ohne Übergabe erledigen; interne Agents ersetzen keine Übergabe.
-- Vor Übergabe Datei lesen und Dubletten prüfen; Auftrag mit Task-ID `SYNC-YYYYMMDD-NNN`, Status `OPEN`, im eigenen Chat mitteilen.
-- Empfänger bestätigt die Übernahme ausdrücklich (→ `IN_PROGRESS`), setzt bei Lücken `BLOCKED`, `COMPLETED` erst nach dokumentierter Arbeit. Nur an die eigene Rolle adressierte, offene Aufträge lesen; erledigte nicht neu analysieren.
-- Vor Änderungen Datei und Dateistand erneut lesen. Der übergebende Chat bleibt für Integration und Bewertung verantwortlich. Keine Chatverläufe oder Quellcodekopien eintragen.
+## 10. Koordination: `coordination/` (Anleitung: `coordination/README.md`)
+Verbindliches, dezentrales Übergabesystem (keine automatische Kommunikation, keine technische Sperre; `TASK-HANDOVER.md` ist nur noch eine Verweisdatei). Bedienung, Statuswechsel, Vorlage, Beispiele und Wiederherstellung stehen **in der README**, nicht hier.
+- **Struktur:** `TASK-INDEX.md` (aktive Aufträge, nur Metadaten) · `inbox/<rolle>.md` (Posteingang je Rolle: `project-manager`, `development`, `architecture`, `qa-testing`, `documentation`; nur Verweiszeilen) · `tasks/{OPEN,IN_PROGRESS,BLOCKED,COMPLETED}/<ID>.md` (ein Auftrag je Datei, einzige Quelle für Inhalt und Status) · `archive/` (Altbestand, nicht lesen).
+- **Lesen:** Jeder Chat liest bei Start/`/clear` und vor Übernahmen **nur seinen Posteingang** und nur die dort verwiesenen Task-Dateien. Index nur bei Übergabe/Statusprüfung. `tasks/COMPLETED` und `archive/` nie standardmässig.
+- **Matrix (nur diese Richtungen):** Project Manager → Development, Architecture, QA, Documentation · Development → Project Manager, Architecture, QA, Documentation · Architecture → Project Manager, Development, Documentation · QA → Project Manager, Development, Documentation · Documentation → Project Manager, Development, Architecture. Nur Aufträge bearbeiten, die an die eigene Rolle adressiert sind.
+- **Neuer Auftrag:** Index und `tasks/OPEN|IN_PROGRESS|BLOCKED` auf Dubletten prüfen → Matrix prüfen → ID `SYNC-YYYYMMDD-NNN` (NNN global fortlaufend, Datei zuerst ohne Überschreiben anlegen) → Task-Datei → Index → Posteingang des Empfängers → Status `OPEN` → im Chat mitteilen. Keine unnötigen Übergaben; kleine Aufgaben der eigenen Rolle ohne Übergabe erledigen; interne Agents ersetzen keine Übergabe.
+- **Status:** `OPEN` → `IN_PROGRESS` erst nach ausdrücklicher Übernahmebestätigung des Empfängers (in der Task-Datei) · fehlende Information → `BLOCKED` mit Frage · `COMPLETED` erst nach dokumentierter Arbeit, Tests und Restrisiken (Datei nach `tasks/COMPLETED/`, Eintrag aus Index und Posteingang entfernen) · `CANCELLED` mit Begründung. Reihenfolge bei jeder Änderung: Task-Datei (Status-Zeile, dann Ordner) → Index → Posteingang. Bei Abweichung gilt die Status-Zeile der Task-Datei.
+- **Parallel/Git:** Vor Übernahme Git-/Dateistand prüfen; vor jeder Änderung Task-Datei bzw. gemeinsame Datei erneut lesen und nur gezielt ändern; keine fremden Änderungen überschreiben; bei Konflikt stoppen und beim Benutzer abstimmen; nie committen/pushen. Task-Dateien: keine Chatverläufe, keine Quellcodekopien.
+- Der Project Manager darf Dateien unter `coordination/` bearbeiten (sie sind keine Projektdateien); alle übrigen Rollen pflegen sie gemäss den obigen Regeln. Der übergebende Chat bleibt für Integration und Bewertung verantwortlich.
 
 ## 11. Doku-Übergaben
 Entscheidung → `DECISIONS.md` · Architektur → `ARCHITECTURE.md` · Sync → `SYNC-ENGINE.md` · Datenmodell → `DATA-MODEL.md` · Tests → `TESTING.md` · Release → `PATCHNOTES.md`. Selbst ändern oder an Documentation übergeben (mit technischem Kontext und betroffenen Dateien).

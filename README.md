@@ -22,6 +22,8 @@ Es gibt zwei Profiltypen:
 | Löschen | optional nach geprüftem Upload | optional Löschungen übernehmen (Papierkorb) |
 
 - **Automatisch im Heim-WLAN.** Sobald das Telefon mit einem eingetragenen WLAN verbunden ist, startet der Sync. Neue Fotos werden direkt nachgeladen. Ist der PC aus, prüft die App alle 30 Minuten erneut. Nach einem WLAN-Unterbruch setzt sie sofort beim Wiederverbinden fort.
+- **Auch über mobile Daten bzw. VPN** (Schalter in *Einstellungen → Übertragung*, Standard aus). Ausserhalb des WLAN prüft die App bei nicht erreichbarem PC nur alle 2 Stunden erneut. Achtung: Datenverbrauch und mögliche Kosten beim Mobilfunkabo.
+- **Pause:** Das Symbol oben rechts pausiert die Automatik für eine wählbare Zeit oder „für immer (nur manuell)“. Auf der Startseite lässt sich auch nach unten ziehen, um eine Synchronisierung zu starten.
 - **Sortierung nach Aufnahmedatum.** Die App liest EXIF bzw. Video-Metadaten, sonst das Datum im Dateinamen, sonst das Änderungsdatum.
 - **Länderordner aus GPS, offline.** Es gibt keine Online-Abfrage. Fotos aus dem Heimatland (Standard: Schweiz) bekommen keinen Länderzusatz.
 - **Eigene Ordnernamen.** Monatsordner dürfen umbenannt werden, solange die Monatszahl erhalten bleibt (`06 - Ägypten mit Familie`). Bei Mehrdeutigkeit fragt die App einmal pro Monat und Land, nicht pro Bild.
@@ -40,14 +42,18 @@ Es gibt zwei Profiltypen:
 - **Sicherung:** Profile, Einstellungen und Sync-Status als Datei exportieren und importieren. SMB-Passwörter werden nur mit Export-Passwort verschlüsselt mitgesichert.
 - **Erinnerung**, wenn seit 7 Tagen (einstellbar) nichts gesichert wurde, obwohl neue Fotos warten.
 - **Speicher freigeben:** Alte Dateien, die nachweislich auf dem PC liegen, verschwinden vom Handy. Fotos und Videos kommen in den Papierkorb der Galerie. Bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“ werden die Dateien direkt gelöscht; auf dem PC bleiben sie erhalten. Vorher wird jede Datei auf dem PC geprüft. Die Auswahl läuft nach Alter, Ordner, Dateityp, Grösse und Ausnahmen, mit Vorschau.
-- **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Diagnose* kopiert Diagnosedaten (ohne Passwörter) mit einer zufälligen Geräte-ID in die Zwischenablage. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
+- **Fehlersuche:** Der Verlauf lässt sich über das Android-Teilen-Menü exportieren. *Einstellungen → Diagnose* kopiert Diagnosedaten mit einer zufälligen Geräte-ID in die Zwischenablage; Benutzernamen, IP-Adressen, Rechner-, Freigabe-, WLAN-, Profil- und Ordnernamen, Pfade und Dateinamen sind durch Platzhalter ersetzt, Passwörter sind nie enthalten (der Verlauf-Export ist davon ausgenommen). „Problem melden“ öffnet die Mail-App mit vorbereitetem Text und Diagnose; gesendet wird erst, wenn du selbst absendest. Für OnePlus/Oppo/Realme, Samsung, Xiaomi und Huawei/Honor zeigt die App, welche Hersteller-Einstellungen den Hintergrundbetrieb sichern.
+- **Versionsschutz** (Ordner-Profile, Standard an): Die überschriebene Version der Gegenseite bleibt im Papierkorb.
+- **Profil löschen** mit „Rückgängig“ (15 Sekunden). **Zugangsdaten übernehmen** aus anderen Profilen über einen Knopf.
+- **Hilfe & Produktseite** im Zahnrad-Menü: <https://apop85.github.io/leosync/>.
+- **Datenschutz:** Siehe [PRIVACY_GER.md](PRIVACY_GER.md) bzw. [PRIVACY_EN.md](PRIVACY_EN.md). Die einzige Internetverbindung ausser der SMB-Synchronisierung ist die Update-Prüfung bei GitHub.
 - **Filter:** „Nur diese Dateien“ und „Diese Dateien ausschliessen“ mit Mustern wie `*.pdf` oder `Temp/**`.
 - **Prüfung nach dem Hochladen** in Stufen von „Aus“ bis „Komplett“ (Fotos-Profile, Standard „Mittel“).
 - **Deutsch und Englisch:** Ist das Handy auf Deutsch eingestellt, erscheint die App auf Deutsch, sonst auf Englisch. Unter *Einstellungen → Sprache & Sicherung → Sprache* lässt sich die Sprache fest wählen (ab Android 13 auch in den Android-Einstellungen der App). Länderordner auf dem PC heissen in der App-Sprache; bestehende Ordner der anderen Sprache werden weiterverwendet.
 
 ## Download
 
-Status: **Beta (0.1.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/releases/latest). Danach aktualisiert sich die App selbst.
+Status: **Beta (0.12.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/releases/latest). Danach aktualisiert sich die App selbst.
 
 ## Voraussetzungen
 
@@ -57,9 +63,9 @@ Status: **Beta (0.1.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter 
 ## Einrichtung
 
 1. App installieren (siehe [build.md](build.md)).
-2. Berechtigungen erteilen. Die Startseite führt durch alle nötigen Schritte:
+2. Berechtigungen erteilen. Die Startseite fragt nur nach dem, was deine Profile brauchen:
    - **Fotos & Videos** und **Standort in Fotos** (für Länderordner)
-   - **Standort „Immer zulassen“**: Android gibt den WLAN-Namen nur mit Standortberechtigung heraus. Die App nutzt den Standort **nicht**.
+   - **Standort „Immer zulassen“** (nur bei Profilen mit WLAN-Namen): Android gibt den WLAN-Namen nur mit Standortberechtigung heraus. Die App nutzt den Standort **nicht**.
    - **Benachrichtigungen** und **Akku-Optimierung aus**
 3. Profil anlegen: Freigabe (`\\server\freigabe`), Benutzer und Passwort, WLAN und Quellordner. Die Quellordner wählst du über die Android-Dateiauswahl, z. B. `DCIM › Camera`.
 4. Nach dem Speichern fragt die App, wie es weitergeht: **Simulieren** (zeigt ohne Übertragung, was passieren würde), **Synchronisieren** oder **Später**. Ein neues Profil startet erst automatisch, nachdem es einmal von Hand synchronisiert wurde. Die erste Synchronisierung am besten am Ladegerät ausführen.
@@ -88,7 +94,7 @@ app/src/main/java/com/sync2pc/app/
   sync/    Sync-Engine, Zielordner-Logik, Worker, WLAN-Trigger, Benachrichtigungen, Löschen
   mirror/  Ordner-Spiegelung (Handy-Ordner via Android-Ordnerfreigabe, 3-Wege-Abgleich, Filter)
   update/  Selbst-Update (GitHub Releases, PackageInstaller)
-  diag/    Diagnosedaten, Verlauf-Export, Absturzberichte, Hersteller-Hinweise
+  diag/    Diagnosedaten (maskiert), Verlauf-Export, Absturzberichte, Hersteller-Hinweise
   backup/  Sicherung (Export/Import, Verschlüsselung mit Export-Passwort)
   ui/      Jetpack Compose Oberfläche
 tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten), Übersetzungstabelle und LeoSync-Import (PC → Share)

@@ -20,6 +20,7 @@ Thumbs.db
 captures/
 .externalNativeBuild/
 .cxx/
+coordination/
 
 # --- Geheimnisse (NIE committen!) --------------------------------------------
 keystore/

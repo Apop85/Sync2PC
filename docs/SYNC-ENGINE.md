@@ -558,6 +558,8 @@ stateDiagram-v2
 
 ## 6. Dateioperationen und Übertragung
 
+> **Geplant, nicht umgesetzt:** Prüfung der PC-Kennung (SMB-Server-GUID) vor dem Anmelden in `SmbSession.open`/`listShares`, siehe DEC-204. Der Ist-Stand (nur Port-445-Test ohne Anmeldung) gilt bis zur Umsetzung (Development SYNC-20261109-047).
+
 ### 6.1 Hochladen (`SmbSession.upload`, `SmbSession.kt:301`) **[IMPL]**
 
 1. Zieldatei `<finalPath>.s2ptmp` (Konstante `SmbSession.TEMP_SUFFIX`).

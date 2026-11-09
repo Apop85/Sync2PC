@@ -16,7 +16,7 @@
 > **Session 4** („Lokalisierung“, 0.8.0, Entscheidungen vom 2026-11-03): DEC-155 bis DEC-166; dazu Aktualisierungen an DEC-001, DEC-018, DEC-019, DEC-036, DEC-037, DEC-099 und DEC-125.
 > - Session 4: 0.8.0 umgesetzt. Der erste Build scheiterte nur an der Kompilierung der Unit-Tests (Kommentar-Falle in `TestTexts.kt`), behoben ohne neue Version (DEC-120). Ein erfolgreicher Build und ein Gerätetest sind im Verlauf **nicht** belegt.
 >
-> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-202 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
+> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-204 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted; DEC-203 Implemented; DEC-204 am 2026-11-09, Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 >
 > **Hinweis:** Die frühere Notiz „Änderungen aus späteren Sessions sind nicht erfasst“ (Statistik-Symbol 0.9.0, Begriffe „Mobile/Share“, Roadmap ab 0.10.0) ist mit Session 5 erledigt.
@@ -25,12 +25,12 @@
 
 | Status | Anzahl |
 |---|---|
-| Accepted | 14 |
+| Accepted | 15 |
 | Implemented | 153 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
-| **Total** | **203** |
+| **Total** | **204** |
 
 ---
 
@@ -48,7 +48,7 @@ Die Entscheidungen sind nach Themen gruppiert (innerhalb eines Themas nach DEC-I
 6. [Datenbank und Datenmodell](#6-datenbank-und-datenmodell) (7) – Room, Migrationen, DB-Versionen, gespeicherte Namen und Texte.
 7. [Datenintegrität und Duplikaterkennung](#7-datenintegrität-und-duplikaterkennung) (11) – Prüfsummen, Prüfstufen, Duplikatsuche, Namenskonflikte, sichere Vergleiche, doppelte Profile.
 8. [Lösch- und Wiederherstellungslogik](#8-lösch--und-wiederherstellungslogik) (16) – Löschen nach dem Sync, Papierkorb, Versionsschutz, Wiederherstellen, Schutzbremse, Speicher freigeben.
-9. [Android und Hintergrundprozesse](#9-android-und-hintergrundprozesse) (22) – WorkManager, Auslöser, WLAN-Erkennung, Pause, Vordergrunddienst, Akku, Berechtigungen, Zielversion.
+9. [Android und Hintergrundprozesse](#9-android-und-hintergrundprozesse) (23) – WorkManager, Auslöser, WLAN-Erkennung, PC-Kennung, Pause, Vordergrunddienst, Akku, Berechtigungen, Zielversion.
 10. [Benutzeroberfläche und UX](#10-benutzeroberfläche-und-ux) (39) – Startseite, Profil-Editor, Statusanzeigen, Verlauf, Einstellungen, Hinweise, Barrierefreiheit.
 11. [Lokalisierung und Sprache](#11-lokalisierung-und-sprache) (6) – Zweisprachigkeit, Textzugriff, Sprachwahl, Übersetzungsregeln.
 12. [Performance und Optimierungen](#12-performance-und-optimierungen) (6) – R8, Parallelität, Protokollierung, Symbole, Neuzeichnen.
@@ -174,6 +174,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-101: PC nur bei Bedarf kontaktieren, Foto-Auslöser wartet das Mindestalter ab
 - DEC-102: Sicherheitsnetz 6 Stunden nach dem letzten Sync
 - DEC-126: Option „auch über mobile Daten bzw. VPN synchronisieren“
+- DEC-204: PC-Erkennung per PC-Kennung (SMB-Server-GUID), Modus je Profil
 - DEC-152: App nur im Hochformat
 - DEC-183: Ziel-Version Android 16 (API 36) vorgezogen
 - DEC-190: Berechtigungen erst bei Bedarf
@@ -519,6 +520,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-201 | Accepted | 2. Synchronisationsengine und 3-Wege-Abgleich |
 | DEC-202 | Implemented | 6. Datenbank und Datenmodell |
 | DEC-203 | Implemented | 13. Sicherheit, Datenschutz und Diagnose |
+| DEC-204 | Accepted | 9. Android und Hintergrundprozesse |
 
 ---
 
@@ -1667,7 +1669,25 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
   - Hinweis auf Datenverbrauch in der App; 0.11.6 nennt zusätzlich mögliche Kosten beim Mobilfunkabo (z. B. Ausland) und verwirft beim Umschalten die Wartezeit „PC nicht erreichbar“ (`cancelShareRetry`).
   - Folgeauftrag SYNC-20261108-019 (Wiederholungen über Mobilfunk begrenzen) umgesetzt in 0.11.7 (siehe Präzisierung 0.11.7 oben).
 - **Betroffene Komponenten:** `sync/NetworkRules.kt` (0.11.7), `sync/WifiHelper.kt` (`onAllowedNetwork`), `sync/SyncScheduler.kt` (`autoConstraints`), `sync/SyncWorker.kt`, `GlobalSettings.syncOffWifi`
-- **Abhängigkeiten:** DEC-044, DEC-109
+- **Abhängigkeiten:** DEC-044, DEC-109, DEC-204
+
+### DEC-204: PC-Erkennung per PC-Kennung (SMB-Server-GUID), Modus je Profil
+- **Status:** Accepted (noch nicht umgesetzt; Umsetzung Development SYNC-20261109-047, Ziel 0.13.0)
+- **Datum:** 2026-11-09 (2026-11-09, Freigabe Inhaber; Vorgabe Architecture SYNC-20261109-048)
+- **Kategorie:** Synchronisation
+- **Entscheidung:** Zusätzlich zur WLAN-Erkennung gibt es die Erkennung des PCs über seine SMB-Server-GUID („PC-Kennung“), geprüft **vor** dem Senden der Zugangsdaten. Der Benutzer wählt je Profil den Modus `pcCheck` = `WIFI` (nur WLAN-Name) | `GUID` (nur PC-Kennung) | `BOTH` (beides muss erfüllt sein, nicht „eines von beiden“).
+  1. **Modus und Lernen:** Bestehende Profile → `WIFI` (heutiges Verhalten, keine Verhaltensänderung durch die Migration). Neue Profile → `BOTH` bei eingetragenem WLAN-Namen, sonst `GUID` (gefahrlos wegen `awaitingFirstStart`, DEC-103: der erste Start von Hand lernt die Kennung). Gelernt wird nur nach erfolgreicher Anmeldung und `connectShare`, nur wenn für den aktuellen Host keine Kennung gespeichert ist, nie still überschreibend. `WIFI`: still bei jeder erfolgreichen Verbindung. `GUID`/`BOTH`: nur bei Zugriffsart `USER` (Verbindung testen, manueller Sync, Freigaben durchsuchen, Papierkorb/Wiederherstellen/Speicher freigeben aus der Ansicht); `AUTO` ohne bekannte Kennung meldet sich nicht an. Ein Wechsel auf `GUID`/`BOTH` im Profil startet sofort „Verbindung testen“.
+  2. **Speicherort (DB v8):** drei neue Profilfelder, `MIGRATION_7_8` nur `ADD COLUMN` (DEC-084): `pcCheck TEXT NOT NULL DEFAULT 'WIFI'`, `pcGuid TEXT NOT NULL DEFAULT ''`, `pcGuidHost TEXT NOT NULL DEFAULT ''` (Host kleingeschrieben beim Lernen); Schema-Export und `MigrationTest` 7→8. Die Kennung gilt nur, wenn `pcGuidHost` dem aktuellen Host entspricht, sonst „unbekannt“. **Sicherung:** die drei Felder im Profil-JSON, `BackupCodec.VERSION` bleibt 1; fehlend oder unbekannt → `WIFI` und leer.
+  3. **Kennungswechsel (z. B. Windows-Neuinstallation):** `AUTO` meldet sich nicht an, überspringt das Profil (`noteSkip` „Unter <Host> antwortet ein anderer PC“), benachrichtigt einmal je Profil bis zur Klärung, wartet wie bei „nicht erreichbar“ (30 min bzw. 2 h, DEC-048, DEC-126), kein FAILED-Lauf. Manueller Sync bricht das Profil mit Hinweis „Verbindung testen“ ab. Neu vertrauen nur in „Verbindung testen“ mit Rückfrage **vor** `authenticate`; die neue Kennung gilt für alle Profile mit gleichem Host und gleicher alter Kennung. Keine Kennung (null/Null-UUID) → bei `GUID`/`BOTH` nie anmelden, Hinweis „nur WLAN-Namen verwenden“. Instabile Kennung: kein Automatismus, nur Hinweistext.
+  4. **Ort der Prüfung:** zentral. Reine Regel `PcIdentity.decide(mode, pcGuid, pcGuidHost, host, seenGuid, access)` → ALLOW / ALLOW_AND_LEARN / UNKNOWN / CHANGED / NO_ID. `SmbSession`: ein privater Weg connect → prüfen → authenticate für `open` und `listShares`; Standard `AUTO`; kein ungeprüfter öffentlicher Weg. Geprüft wird gegen den aktuellen DB-Stand (Profil per ID neu lesen; ungespeichertes Profil im Editor: Kopie); Lernen per bedingtem UPDATE. Eigene `PcIdentityException`, von `isNetworkError` ausdrücklich **nicht** als Netzwerkfehler gewertet. `SyncWorker` prüft nach dem Port-445-Test vorab (nur Aushandeln, je Host einmal) für `GUID`/`BOTH`; die Prüfung in `open` bleibt zweite Sicherung. Vorschau: Offline-Vorschau mit Meldung.
+  5. **Eignung je Modus:** `SyncWorker` (Filter `p.ssids()`), `mayContinue`, `handleUnreachable`, `WifiNetworkReceiver`, `PauseService`: `WIFI`/`BOTH` wie heute (unlesbarer WLAN-Name = nicht erfüllt, nie stillschweigend erfüllt); `GUID` jedes WLAN bzw. erlaubte Netzart. Mobile Daten/VPN mit Schalter (DEC-126): `WIFI` wie heute, `BOTH`/`GUID` Kennung Pflicht. Das 15-s-Warten (DEC-044) nur, wenn ein Profil den Namen braucht; Standortberechtigung nur bei `WIFI`/`BOTH` mit Namen (DEC-190). Manueller Sync: `WIFI` ohne Prüfung, `GUID`/`BOTH` prüfen (unbekannt → lernen). DEC-126 bleibt unverändert (Wartezeiten, Versuche, Netzbedingungen).
+  6. **Oberfläche:** Profil „PC-Erkennung“ (DE „PC-Kennung“, EN „PC ID“), drei Optionen mit je einem Satz Sicherheitsaussage, Status „PC erkannt / noch nicht erkannt / anderer PC“; WLAN-Liste nur bei `WIFI`/`BOTH`; Profilkarte zeigt den Status; die Kennung erscheint nur pseudonymisiert in der Diagnose (DEC-203).
+  - **Tests:** Unit `PcIdentity` (Tabelle), `NetworkRules` je Modus, `BackupCodec` Rundlauf und alte Sicherung, `MigrationTest` 7→8, `isNetworkError(PcIdentityException) == false`; Gerätetest QA: ein fremder PC unter gleicher IP erhält keinen SESSION_SETUP. Version: neue Funktion → **0.13.0** (DEC-188, DEC-077).
+- **Begründung:** Der WLAN-Name schützt heute nur automatische Läufe davor, Zugangsdaten an einen fremden Server mit gleicher IP zu senden; manueller Sync, Test, Freigaben durchsuchen, Papierkorb und Wiederherstellen senden ungeprüft (Befund F2). Ohne lesbaren WLAN-Namen (keine Standortfreigabe) versagen `PauseService` (Fortsetzen unterbleibt), das 15-s-Warten und `handleUnreachable` (Befund F3). Die Kennung liegt nach dem Aushandeln vor, vor `authenticate` (Befund F1: smbj 0.13.0, `connection.getConnectionContext().getServerGuid()`, per `javap` geprüft; nicht `getConnectionInfo()`).
+- **Alternativen:** Speicherung in Prefs/Einstellungen ohne Schema-Änderung – verworfen: Zustand ausserhalb des Profils, verwaist beim Löschen des Profils, beim Einspielen einer Sicherung wäre eine Bindung an die Profil-ID nötig.
+- **Konsequenzen:** DB v8 und eine erweiterte Sicherung (abwärtskompatibel, `VERSION` 1). Befund F4: Die Kennung ist nicht geheim (unverschlüsselt in der Aushandlung); sie schützt zuverlässig gegen einen fremden Server in fremdem Netz, nicht gegen einen gezielten Angreifer, der sie zuvor im eigenen Netz las (dieselbe Schwäche wie beim WLAN-Namen); angemeldet wird per NTLM (offline knackbare Antwort, kein Klartextpasswort). Sicherheitsaussage je Modus: `WIFI` behält die bekannte Schwäche (fremdes Netz mit gleichem Namen und gleicher IP), `GUID` und `BOTH` prüfen vor dem Senden der Zugangsdaten. **Restrisiken:** Akku bei `GUID` in fremden WLANs (Test ca. 1 min je Verbindung, dann alle 30 min); Stabilität der Kennung bei Samba/NAS ungeprüft. Kritische Änderung → Review und QA (Datenverlust/Sicherheit). Quelle: Rückmeldung Architecture, Code und smbj-Bibliothek von Architecture geprüft, von Documentation nicht selbst nachgeprüft.
+- **Betroffene Komponenten:** geplant: `smb/SmbSession.kt`, neue Klasse `PcIdentity`, `PcIdentityException`, `sync/SyncWorker.kt`, `sync/NetworkRules.kt`, `sync/WifiHelper.kt`, `sync/Receivers.kt`, `sync/PauseService.kt`, `data/*` (Profil, `MIGRATION_7_8`), `backup/BackupCodec`, `ui/ProfileScreen.kt`, `ui/HomeScreen.kt`
+- **Abhängigkeiten:** DEC-044, DEC-045, DEC-048, DEC-084, DEC-109, DEC-126, DEC-190
 
 ### DEC-152: App nur im Hochformat
 - **Status:** Implemented
@@ -2467,7 +2487,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Geschlossener Test mit 12 Testern über 14 Tage, 25 USD, Identitätsprüfung. Paketwechsel nötig (DEC-110).
 - **Aktualisierung (Session 3):** Feedback per E-Mail-Knopf „Problem melden“ (DEC-121), Kontakt `leotools@protonmail.com` (DEC-123), nur die Play-Variante bekommt die neue Paket-ID (DEC-124). Die Versionsnummer wurde zuerst 0.7.0, dann 0.8.0 (DEC-125); laut Memory hat eine spätere Session die Reihenfolge erneut geändert.
 - **Aktualisierung (Session 5):** Das aktuelle targetSdk (36) ist vorgezogen und seit 0.9.5 umgesetzt (DEC-183). Die Play-Store-Vorbereitung ist jetzt Version 0.12.0 (DEC-188).
-- **Aktualisierung (2026-11-09, Entscheid Inhaber, SYNC-20261109-046):** Die Play-Store-Integration bleibt vorerst unspezifiziert und wird nur als offene Punkte geführt (unten). Die PC-Erkennung ist nicht mehr Teil der Play-Vorbereitung und hängt nicht vom Play Store ab; sie wird eigenständig umgesetzt (Development SYNC-20261109-047). Heutige Erreichbarkeit: TCP-Port 445, 3 s, ohne Anmeldung (`SmbSession.isReachable`).
+- **Aktualisierung (2026-11-09, Entscheid Inhaber, SYNC-20261109-046):** Die Play-Store-Integration bleibt vorerst unspezifiziert und wird nur als offene Punkte geführt (unten). Die PC-Erkennung ist nicht mehr Teil der Play-Vorbereitung und hängt nicht vom Play Store ab; sie wird eigenständig umgesetzt (Development SYNC-20261109-047); verbindliche Vorgabe: DEC-204 (Version 0.13.0). Heutige Erreichbarkeit: TCP-Port 445, 3 s, ohne Anmeldung (`SmbSession.isReachable`).
 - **Offene Punkte Play-Store-Integration:**
   - Play-Konto und Tester fehlen. Geschlossener Test mit 12 Testern über 14 Tage, 25 USD, Identitätsprüfung. Kein Früh-Upload zur Reservierung der Paket-ID.
   - Flavors `github`/`play`: `play` ohne Selbst-Update und ohne `REQUEST_INSTALL_PACKAGES`. Paket-ID `ch.leo.sync` nur für `play` (DEC-110, DEC-124). Die GitHub-Variante entfällt nach dem Play-Start, Umzug per Export/Import.
@@ -2702,12 +2722,12 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Status:** Accepted
 - **Datum:** 2026-11-08 (2026-11-03 bis 2026-11-08)
 - **Kategorie:** Sonstiges
-- **Entscheidung:** 0.9.x UX-Überarbeitung und Prüfstufen; 0.10.0 Herunterziehen und Zugangsdaten-Auswahl; 0.11.0 Umsetzung der Design-Prüfung; **0.12.0** Play-Store-Vorbereitung; **0.13.0** PC-Erkennung inkl. mobile Daten/VPN. *(Überholt, Stand 2026-11-09: 0.12.0 ist durch den Verlauf mit Kennungen belegt; die Play-Store-Integration ist nur noch als offene Punkte geführt und ohne Versionsnummer (DEC-109); die PC-Erkennung ist davon entkoppelt und wird eigenständig umgesetzt, ihre Versionsnummer ist im Auftrag nicht genannt. Mobile Daten/VPN ist seit 0.11.5 umgesetzt, DEC-126.)*
+- **Entscheidung:** 0.9.x UX-Überarbeitung und Prüfstufen; 0.10.0 Herunterziehen und Zugangsdaten-Auswahl; 0.11.0 Umsetzung der Design-Prüfung; **0.12.0** Play-Store-Vorbereitung; **0.13.0** PC-Erkennung inkl. mobile Daten/VPN. *(Überholt, Stand 2026-11-09: 0.12.0 ist durch den Verlauf mit Kennungen belegt; die Play-Store-Integration ist nur noch als offene Punkte geführt und ohne Versionsnummer (DEC-109); die PC-Erkennung ist davon entkoppelt und wird eigenständig umgesetzt, ihre Versionsnummer ist 0.13.0, festgelegt in DEC-204. Mobile Daten/VPN ist seit 0.11.5 umgesetzt, DEC-126.)*
 - **Begründung:** Neue Funktionen eröffnen jeweils eine neue Reihe (DEC-077); vom Inhaber jeweils bestätigt.
 - **Alternativen:** Play Store als 0.10.0 bzw. 0.11.0 (verschoben).
 - **Konsequenzen:** —
 - **Betroffene Komponenten:** `.claude/README.md` (Roadmap), Memory
-- **Abhängigkeiten:** DEC-165 (ersetzt), DEC-109, DEC-126
+- **Abhängigkeiten:** DEC-165 (ersetzt), DEC-109, DEC-126, DEC-204
 
 ---
 
@@ -3099,7 +3119,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 10. ~~**Kontakt-E-Mail**~~ – erledigt: `leotools@protonmail.com` (DEC-123).
 11. **Play-Protect-Einspruch** (DEC-111): Text vorbereitet; ob eingereicht und mit welchem Ergebnis, ist offen.
 12. **Wirksamkeit der Erinnerung „lange nicht gesichert“** (DEC-090): auf dem Gerät noch nicht beobachtet.
-13. **Verwendung der Server-GUID** (DEC-109): Konkreter Ablauf beim Wechsel der GUID (z. B. nach Windows-Neuinstallation: einmal nachfragen) ist nur skizziert. Inhaber 2026-11-08: hängt an der PC-Erkennung, bleibt vorerst offen.
+13. ~~**Verwendung der Server-GUID** (DEC-109)~~ – erledigt: Inhaber 2026-11-09 Vorgabe freigegeben, als DEC-204 festgelegt (Ablauf bei Kennungswechsel dort, Punkt 3); Umsetzung offen (Development SYNC-20261109-047).
 
 *Session 3:*
 

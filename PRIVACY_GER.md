@@ -1,7 +1,7 @@
 # Datenschutzerklärung – LeoSync
 
-**Stand:** 4. November 2026  
-**Version:** 1.0
+**Stand:** 9. November 2026  
+**Version:** 1.1
 
 Diese Datenschutzerklärung informiert darüber, welche Daten durch die Android-App LeoSync verarbeitet werden und wie mit diesen Daten umgegangen wird.
 
@@ -13,7 +13,7 @@ Verantwortlich für die Datenverarbeitung:
 
 - **Entwickler:** [Vor- und Nachname]
 - **Land:** Schweiz
-- **Kontakt:** [E-Mail-Adresse]
+- **Kontakt:** leotools@protonmail.com
 
 ## 2. Grundsätze der Datenverarbeitung
 
@@ -32,6 +32,8 @@ LeoSync verwendet keine:
 - Werbe- oder Analyse-SDKs
 
 Es findet keine automatische Übermittlung von Nutzungsstatistiken oder persönlichen Daten an den Entwickler statt.
+
+Einzige Verbindung ins Internet ausserhalb der SMB-Synchronisierung ist die Prüfung auf App-Updates bei GitHub (siehe Abschnitt 8).
 
 ## 3. Fotos und Videos
 
@@ -56,6 +58,12 @@ Dafür werden keine externen Geolocation-, Karten- oder Standortdienste kontakti
 GPS-Koordinaten werden nicht automatisch an den Entwickler übertragen.
 
 Bei der Übertragung von Originalfotos können deren ursprüngliche EXIF-Metadaten Bestandteil der übertragenen Dateien bleiben.
+
+### 4.1 WLAN-Name und Standortberechtigung
+
+Damit automatische Synchronisierungen nur in den vom Nutzer festgelegten WLAN-Netzen starten, liest LeoSync den Namen (SSID) des aktuell verbundenen WLANs. Android gibt diesen Namen nur mit der Standortberechtigung heraus. Für den automatischen Start im Hintergrund wird die Berechtigung «Immer zulassen» benötigt, ausserdem muss der Standortdienst eingeschaltet sein. Zusätzlich benötigt die App Zugriff auf den Medienstandort (Berechtigung für GPS-Daten in Fotos, siehe Abschnitt 4).
+
+Der WLAN-Name wird ausschliesslich lokal auf dem Gerät ausgewertet und nicht an den Entwickler oder Dritte übertragen. LeoSync erstellt keine Standortverläufe und verwendet den Gerätestandort nicht für andere Zwecke. Die Berechtigung kann jederzeit in den Android-Einstellungen widerrufen werden; die automatische Synchronisierung über den WLAN-Namen ist dann nicht möglich, die manuelle Synchronisierung bleibt nutzbar.
 
 ## 5. SMB-Verbindungen und Zugangsdaten
 
@@ -117,9 +125,13 @@ Ein Diagnosebericht kann abhängig von der Implementierung und dem jeweiligen Ge
 - Synchronisationsstatistiken
 - Zeitstempel relevanter Ereignisse
 
-Je nach Umfang des Diagnoseberichts können auch technische Angaben wie WLAN-Namen, lokale Serveradressen, Freigabepfade oder Dateinamen enthalten sein.
+Diagnoseberichte («Problem melden», «Diagnosedaten kopieren») werden vor der Ausgabe pseudonymisiert und maskiert: Benutzernamen, IP-Adressen, Rechner-, Freigabe-, WLAN-, Profil- und Ordnernamen, Pfade und genaue Dateinamen werden durch Platzhalter (z. B. «Host-1», «WLAN-1») ersetzt; Freitext wie Fehlermeldungen wird zusätzlich nach Mustern maskiert (z. B. IP-Adressen, E-Mail-Adressen, Pfade, Koordinaten). Erhalten bleiben unter anderem Gerätemodell, Android-Version, Einstellungen, Zähler, Jahr-/Monat-Ordner, Standardordner wie DCIM sowie Dateiendungen. Die Maskierung kann nicht ausschliessen, dass einzelne Angaben in ungewöhnlichen Textformaten unmaskiert bleiben.
 
-**SMB-Passwörter werden nicht absichtlich in Diagnoseberichte aufgenommen.**
+**SMB-Passwörter werden nicht in Diagnoseberichte aufgenommen.**
+
+Der exportierte **Verlauf** («Verlauf teilen») ist davon ausgenommen: Er ist ein Export des Nutzers für sich selbst und kann IP-Adressen, Serverangaben und Dateinamen enthalten. Er sollte vor einer Weitergabe geprüft werden.
+
+Die letzten Abstürze der App werden mit gekürztem Fehlerprotokoll lokal auf dem Gerät gespeichert und sind nur im Diagnosebericht enthalten.
 
 ### 6.5 Pseudonyme Installationskennung
 
@@ -140,7 +152,7 @@ Die UUID ermöglicht keine direkte Identifizierung einer Person. Da sie jedoch z
 
 Diagnoseberichte werden nicht automatisch übertragen.
 
-Der Nutzer entscheidet selbst, ob er einen Bericht exportiert und per E-Mail an den Entwickler sendet.
+Der Nutzer entscheidet selbst, ob er einen Bericht exportiert und per E-Mail an den Entwickler sendet. Die Funktion «Problem melden» öffnet dazu die E-Mail-Anwendung mit vorbereitetem Text und Diagnosebericht; gesendet wird erst, wenn der Nutzer die E-Mail selbst absendet.
 
 Der Versand erfolgt über die vom Nutzer ausgewählte E-Mail-Anwendung beziehungsweise den gewählten E-Mail-Dienst.
 
@@ -150,7 +162,7 @@ Vor dem Versand sollte der Nutzer den Bericht prüfen und berücksichtigen, dass
 
 Für die Verarbeitung der E-Mail gelten zusätzlich die Datenschutzbestimmungen des jeweiligen E-Mail-Anbieters.
 
-Der Entwickler verwendet freiwillig übermittelte Diagnoseberichte ausschließlich zur Untersuchung technischer Probleme und zur Verbesserung von LeoSync.
+Der Entwickler verwendet freiwillig übermittelte Diagnoseberichte ausschliesslich zur Untersuchung technischer Probleme und zur Verbesserung von LeoSync.
 
 ## 8. Drittanbieter und externe Dienste
 
@@ -158,10 +170,21 @@ LeoSync verwendet keine externen Analytics-, Werbe-, Tracking- oder Cloud-SDKs.
 
 Es findet keine automatische Weitergabe von Nutzerdaten an Werbe- oder Analyseanbieter statt.
 
+### 8.1 Update-Prüfung über GitHub
+
+Die über GitHub verteilte Variante der App prüft regelmässig (täglich, im WLAN) und beim Öffnen der Update-Seite, ob auf GitHub (api.github.com, öffentliches Repository von LeoSync) eine neuere Version veröffentlicht ist. Dabei wird eine Anfrage an GitHub gesendet; GitHub erhält technisch bedingt die IP-Adresse des Geräts sowie die Angabe «LeoSync» mit der installierten App-Version (User-Agent). Weitere Nutzerdaten, Profile, Dateien oder Zugangsdaten werden nicht übermittelt. Bei einer neueren Version lädt die App die Installationsdatei erst nach Tippen des Nutzers von GitHub herunter und installiert sie über den Android-Paketinstaller. Es gelten die Datenschutzbestimmungen von GitHub.
+
+### 8.2 Hilfe und Produktseite
+
+Der Menüpunkt «Hilfe & Produktseite» öffnet die Produktseite von LeoSync (apop85.github.io/leosync) im Browser des Nutzers. Es werden keine Daten aus der App übergeben.
+
+### 8.3 Weitere Datenabflüsse
+
 Daten können das Gerät insbesondere im Rahmen folgender, vom Nutzer veranlasster Aktionen verlassen:
 
 - Synchronisierung mit der konfigurierten SMB-Netzwerkfreigabe.
 - Freiwilliger Versand eines Diagnoseberichts per E-Mail.
+- Teilen des Verlaufs oder einer Sicherungsdatei über das Android-Teilen-Menü an eine vom Nutzer gewählte App.
 
 Das Android-Betriebssystem sowie vom Nutzer verwendete E-Mail- und Netzwerkdienste können im Rahmen ihrer eigenen Funktionen zusätzliche technische Daten verarbeiten. Dafür gelten die jeweiligen Datenschutzbestimmungen der Anbieter.
 
@@ -187,6 +210,10 @@ Nutzer sollten ihre Netzwerkfreigaben angemessen absichern und SMB-Dienste nicht
 LeoSync betreibt keinen eigenen Cloud-Speicher für Nutzerdaten.
 
 Dateien werden auf dem Android-Gerät und den vom Nutzer konfigurierten SMB-Speicherorten gespeichert.
+
+**Sicherung (Export/Import):** LeoSync kann Profile, Einstellungen und optional den Synchronisationsstatus in eine Datei exportieren. Sie enthält unter anderem Serveradressen, Freigabepfade und Benutzernamen. SMB-Passwörter werden nur auf Wunsch aufgenommen und dann mit einem vom Nutzer gewählten Export-Passwort verschlüsselt (AES-256); ohne Export-Passwort enthält die Datei keine Passwörter. Die Datei wird dort gespeichert beziehungsweise hin geteilt, wo der Nutzer es bestimmt; sie sollte entsprechend geschützt werden. Die App selbst legt keine automatische Android-Datensicherung (allowBackup) an.
+
+**Papierkorb und Versionsschutz:** Beim Ersetzen oder Löschen von Dateien in Ordner-Profilen werden Dateien je nach Einstellung in einen versteckten Papierkorb-Ordner (`.LeoSync-Bin`) auf dem Handy beziehungsweise der Freigabe verschoben und nach der eingestellten Frist automatisch oder von Hand endgültig gelöscht. Diese Ordner liegen ausschliesslich auf den Speicherorten des Nutzers.
 
 Lokale App-Daten und Einstellungen können über die Android-App-Verwaltung gelöscht werden. Beim Deinstallieren der Anwendung werden die zugehörigen lokalen App-Daten im Rahmen der Android-Systemfunktionen entfernt.
 
@@ -227,4 +254,4 @@ Bei Fragen zur Anwendung oder zum Datenschutz:
 
 Land: Schweiz
 
-E-Mail: [Kontakt-E-Mail]
+E-Mail: leotools@protonmail.com

@@ -952,6 +952,7 @@ Ausgewertet wurde **nur der vorhandene Testcode**; es wurden **keine Tests ausge
 
 **Geplant / nicht umgesetzt (Quelle DECISIONS.md, Abschnitt A):**
 - ~~Verlauf mit Kennungen statt fertiger Texte (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1, siehe Abschnitt 3.11.
-- Versionsplan: 0.12.0 ist laut Inhaber (2026-11-09) durch den Verlauf mit Kennungen belegt; die Nummer für den Play Store ist nicht entschieden. 0.13.0 PC-Erkennung (DEC-188); PC-Erkennung (Server-GUID, DEC-109) könnte Profilfelder ergänzen – noch keine Entscheidung, keine Felder vorhanden.
+- Versionsplan: 0.12.0 ist laut Inhaber (2026-11-09) durch den Verlauf mit Kennungen belegt; die Nummer für den Play Store ist nicht entschieden. 0.13.0 PC-Erkennung (DEC-188).
+- **Geplant (DEC-204, Accepted, noch nicht umgesetzt; Umsetzung Development SYNC-20261109-047, Ziel 0.13.0):** DB v8 mit `MIGRATION_7_8` nur `ADD COLUMN` und drei neuen Profilfeldern: `pcCheck TEXT NOT NULL DEFAULT 'WIFI'` (`WIFI`/`GUID`/`BOTH`), `pcGuid TEXT NOT NULL DEFAULT ''`, `pcGuidHost TEXT NOT NULL DEFAULT ''`. Aufnahme in die Sicherung (`BackupCodec.VERSION` bleibt 1; fehlende Felder → `WIFI`/leer). Aktuell sind diese Felder **nicht** vorhanden (DB v7).
 
 **Nicht mehr verwendet:** `profiles.verifyUpload` (nur noch gespiegelt), `profiles.remoteSubfolder` (wird beim Öffnen in `smbPath` überführt, aber weiter ausgewertet), Updater-Schlüssel `updateRepo` (`GlobalSettings.importFrom` ignoriert ihn seit 0.4.0). Papierkorb-Namen `.LeoSync-Papierkorb`, `.Sync2PC-Papierkorb` sind historisch, werden aber weiter erkannt.
