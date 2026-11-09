@@ -20,7 +20,6 @@ Thumbs.db
 captures/
 .externalNativeBuild/
 .cxx/
-coordination/
 
 # --- Geheimnisse (NIE committen!) --------------------------------------------
 keystore/
@@ -33,10 +32,10 @@ keystore.properties
 *.tmp
 *.download
 
-# --- Claude Code: lokale Einstellungen privat, README/Icon sind Teil des Projekts
-.claude/settings.local.json
+# App-Screenshots (koennen persoenliche Daten zeigen)
+.claude/AppScreenshots/
+
 # Vom Inhaber abgelegte Verlauf-Exporte / Diagnosen (persoenliche Daten, IPs, Dateinamen)
-.claude/*.txt
 LeoSync-Verlauf_*.txt
 
 # Hinweis: gradle/wrapper/gradle-wrapper.jar und app/src/main/assets/geo/countries.geojson

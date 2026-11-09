@@ -176,6 +176,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-126: Option „auch über mobile Daten bzw. VPN synchronisieren“
 - DEC-204: PC-Erkennung per PC-Kennung (SMB-Server-GUID), Modus je Profil
 - DEC-205: PC-Kennung nur beim Speichern und in „Verbindung testen“ lernen (ändert DEC-204 Punkte 1 und 5)
+- DEC-206: Laufanimation: Einzelbilder als feste Quell-Assets (ersetzt DEC-060)
 - DEC-152: App nur im Hochformat
 - DEC-183: Ziel-Version Android 16 (API 36) vorgezogen
 - DEC-190: Berechtigungen erst bei Bedarf
@@ -523,6 +524,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-203 | Implemented | 13. Sicherheit, Datenschutz und Diagnose |
 | DEC-204 | Accepted | 9. Android und Hintergrundprozesse |
 | DEC-205 | Accepted | 9. Android und Hintergrundprozesse |
+| DEC-206 | Accepted | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -1712,6 +1714,17 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Betroffene Komponenten:** `sync/PcIdentity.kt` (`PcAccess.SETUP`, `WRONG_NET`), `sync/NetworkRules.kt` (`learnNetOk`), `smb/SmbSession.kt` (`currentIdentity`), `sync/SyncWorker.kt` (`precheckPc`), `ui/ProfileScreen.kt` (`save`, `runTest`, `setPcMode`), `ui/ProfileParts.kt`
 - **Abhängigkeiten:** DEC-204 (ändert Punkte 1 und 5), DEC-103, DEC-126
 
+### DEC-206: Laufanimation: Einzelbilder als feste Quell-Assets
+- **Status:** Accepted (im Code laut Development SYNC-20261109-066, Version 0.13.11, ungebaut)
+- **Datum:** 2026-11-09 (Entscheid Inhaber im PM-Chat, Quelle SYNC-20261109-066/-067)
+- **Kategorie:** UI
+- **Entscheidung:** Die Einzelbilder der Laufanimation (`anim_dog_*.png`, `notif_dog_flipper.xml`) werden einmalig aus dem Video exportiert, von Hand veredelt und als feste Quell-Assets eingefroren. Der Build erzeugt sie nie neu; ffmpeg ist keine Build-Voraussetzung mehr. Endstand: nur die ersten 16 Bilder; Frames aus der Sicherung `.build/anim_backup_0.13.6` mit `tools/refine-anim-outline.py` nachbearbeitet (Aussenlinie neu gezeichnet, konstant 2.6 px, Einrisse geschlossen, dunkle Schattenreste transparent; Python, numpy, scipy, Pillow; nur manuelles Archivwerkzeug, nicht im Bau, überschreibt die Frames). `tools/export-anim-frames.py` bleibt Archivwerkzeug für den Einmal-Export (37 Bilder). Tempo: feste Konstante `FRAME_MS` = 42 ms je Bild in `ui/DogStatus.kt` und `flipInterval` 42 in `notif_dog_flipper.xml`; `LOOP_MS` (1542 ms) steuert nur noch den Statusbogen; eine Schleife dauert 672 ms. Referenzbilder: `.claude/images/animation_frames/leo_frame_01-16.png`.
+- **Begründung:** Die automatische Freistellung per Helligkeits-Schwelle lieferte auch in 0.13.4 fehlerhafte Transparenz; Handnacharbeit würde bei jedem Neuexport überschrieben.
+- **Alternativen:** Schwellenlogik weiter nachschärfen (verworfen); höhere Auflösung (nicht nötig, bleibt 320 px); 32-Bilder-Zyklus (Bilder 17–24 ×4) und 37 Bilder (verworfen: Hinterbein-Wechsel im Quellvideo uneinheitlich bzw. Entscheid Inhaber).
+- **Konsequenzen:** Änderungen an der Animation erfolgen von Hand an den Assets; der Bau prüft und erzeugt sie nicht. Quelle: Nachtrag Development in -067, von Documentation nicht im Code nachgeprüft (`tools/build.ps1` Z. 119–120 bestätigt «Bau erzeugt nie neu»).
+- **Betroffene Komponenten:** `tools/build.ps1`, `tools/export-anim-frames.py`, `tools/refine-anim-outline.py`, `res/drawable-nodpi/anim_dog_*`, `layout/notif_dog_flipper.xml`, `ui/DogStatus.kt`
+- **Abhängigkeiten:** ersetzt DEC-060 (Erzeugung im Build); DEC-088
+
 ### DEC-152: App nur im Hochformat
 - **Status:** Implemented
 - **Datum:** 2026-11-08 (2026-11-03)
@@ -1761,7 +1774,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** ersetzt DEC-032
 
 ### DEC-060: Animation in der Fortschrittsanzeige als Einzelbilder aus dem Video
-- **Status:** Implemented
+- **Status:** Implemented (Erzeugung im Build seit 2026-11-09 durch DEC-206 abgelöst: Bilder sind feste Quell-Assets; der Rest bleibt gültig)
 - **Datum:** 2026-11-08 (2026-11-01)
 - **Kategorie:** UI
 - **Entscheidung:**

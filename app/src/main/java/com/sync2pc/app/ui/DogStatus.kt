@@ -50,10 +50,12 @@ import kotlinx.coroutines.withContext
 enum class DogState { RUNNING, WAITING, SLEEPING, PAUSED, ATTENTION }
 
 /**
- * Dauer einer Schleife wie im Video (37 Bilder bei 24 fps, siehe tools/make-anim-video.ps1).
- * Die Zeit pro Bild ergibt sich aus der Anzahl Einzelbilder – gleiches Tempo wie in der Benachrichtigung.
+ * Referenzdauer wie im Video (37 Bilder bei 24 fps); steuert nur noch den Statusbogen.
  */
 private const val LOOP_MS = 1542L
+
+/** Zeit pro Laufbild (Video-Tempo 100 %, 1542 ms / 37 Bilder); gleich wie flipInterval in notif_dog_flipper.xml. */
+private const val FRAME_MS = 42L
 
 // Höhen in dp. Wichtig: Jedes Bild bekommt Höhe UND volle Breite (ContentScale.Fit). Nur mit einer Höhe
 // zeichnet Compose ein Bild in seiner Pixelgrösse – so war es bis 0.1.4 (laufender Hund 160 px, sitzender 256 px).
@@ -162,7 +164,7 @@ private fun RunningDog(modifier: Modifier) {
 
     LaunchedEffect(Unit) {
         frames = withContext(Dispatchers.Default) {
-            // anim_dog_01, anim_dog_02 … – die Anzahl hängt von tools/make-anim-video.ps1 ab
+            // anim_dog_01, anim_dog_02 … – feste Quell-Assets (16 Bilder, siehe SYNC-20261109-066)
             generateSequence(1) { it + 1 }
                 .map { ctx.resources.getIdentifier("anim_dog_%02d".format(it), "drawable", ctx.packageName) }
                 .takeWhile { it != 0 }
@@ -176,7 +178,7 @@ private fun RunningDog(modifier: Modifier) {
             ctx.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f
         if (animationsOff) return@LaunchedEffect
-        val frameMs = (LOOP_MS / frames.size).coerceAtLeast(16L)
+        val frameMs = FRAME_MS
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 delay(frameMs)

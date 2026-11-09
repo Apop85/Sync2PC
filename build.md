@@ -26,8 +26,8 @@ Das SDK sucht er unter `ANDROID_HOME`, `ANDROID_SDK_ROOT` und `%LOCALAPPDATA%\An
 1. Prüft JDK und SDK und schreibt `local.properties`.
 2. Lädt `gradle\wrapper\gradle-wrapper.jar`, falls es fehlt.
 3. Lädt die Länderdaten (`tools\fetch-geodata.ps1`), falls sie fehlen.
-4. Erzeugt die App-Icons und das einfarbige Benachrichtigungs-Symbol aus `.claude\icon.png` neu, wenn sich das Bild geändert hat (`tools\make-icons.ps1`). Eine grosse Vorschau des Benachrichtigungs-Symbols liegt dann unter `.build\ic_notification_preview.png`.
-5. Zerlegt `.claude\gif_frames.png` in die Animationsbilder für die Benachrichtigung, wenn sich die Vorlage geändert hat (`tools\make-anim.ps1`).
+4. Erzeugt die App-Icons und das einfarbige Benachrichtigungs-Symbol aus `.claude\images\icon.png` neu, wenn sich das Bild geändert hat (`tools\make-icons.ps1`). Eine grosse Vorschau des Benachrichtigungs-Symbols liegt dann unter `.build\ic_notification_preview.png`.
+5. Die Laufbilder der Benachrichtigung (`anim_dog_*.png`, `notif_dog_flipper.xml`) sind feste, von Hand veredelte Quell-Assets (DEC-206). Der Bau erzeugt sie **nicht** neu, ffmpeg wird nicht gebraucht. Einmal-Export und Nachbearbeitung nur von Hand mit `tools\export-anim-frames.py` bzw. `tools\refine-anim-outline.py` (Python, numpy, scipy, Pillow; überschreibt die Bilder).
 6. Berechnet einen Hash über alle Quelldateien. **Ohne Änderung wird nicht gebaut.**
 7. Existiert die APK der aktuellen Version schon, wird `VERSION_PATCH` in `version.properties` um 1 erhöht und in `PATCHNOTES.md` ein Platzhalter-Eintrag angelegt.
 8. Beim ersten Release-Build wird ein Signatur-Schlüssel erstellt (`keystore\`, `keystore.properties`).

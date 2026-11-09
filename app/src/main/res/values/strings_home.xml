@@ -15,6 +15,7 @@
     <string name="home_undo">Undo</string>
     <string name="home_pull_tip">Tip: Pulling down at the very top also starts a sync.</string>
     <string name="home_eta">about %1$s left</string>
+    <string name="home_eta_calculating">Calculating remaining time…</string>
     <plurals name="eta_minutes">
         <item quantity="one">%1$s min</item>
         <item quantity="other">%1$s min</item>

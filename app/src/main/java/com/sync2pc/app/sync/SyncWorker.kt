@@ -2,6 +2,7 @@ package com.sync2pc.app.sync
 
 import com.sync2pc.app.data.RunStatus
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.Data
@@ -66,7 +67,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             Notifications.cancelProgress(applicationContext)
             // Von Android gestoppt (z. B. WLAN weg -> Netzwerk-Bedingung verletzt): beim Wiederverbinden fortsetzen
             // ("Abbrechen" durch den Benutzer ist kein Unterbruch -> nicht fortsetzen)
-            if (isStopped && stopReason != WorkInfo.STOP_REASON_CANCELLED_BY_APP &&
+            if (isStopped && stopReasonCompat() != WorkInfo.STOP_REASON_CANCELLED_BY_APP &&
                 !inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)
             ) markInterrupted()
             mutex.unlock()
@@ -79,12 +80,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     private val isResumeRun: Boolean get() = inputData.getBoolean(SyncScheduler.KEY_RESUME, false)
 
     /**
+     * Stoppgrund (SYNC-20261109-063): `getStopReason()` ist in WorkManager 2.10 mit @RequiresApi(31) markiert, liest
+     * aber nur einen intern gesetzten Wert (kein Framework-Aufruf, daher auch unter API 29/30 ohne Absturz).
+     * "Abbrechen" durch den Benutzer meldet WorkManager selbst als STOP_REASON_CANCELLED_BY_APP (auf allen API-Stufen);
+     * Systemstopps liefern unter API < 31 STOP_REASON_UNKNOWN. Bewusst KEINE SDK_INT-Abfrage: sie würde unter API < 31
+     * einen Benutzerabbruch als Unterbruch werten (ungewolltes Fortsetzen).
+     */
+    @SuppressLint("NewApi")
+    private fun stopReasonCompat(): Int = stopReason
+
+    /**
      * Warum Android den Lauf gestoppt hat (für den Verlauf). null = nicht von Android gestoppt bzw.
      * "Abbrechen" durch den Benutzer – das gilt als echter Abbruch.
      */
     private fun interruptReason(): Msg? {
         if (!isStopped) return null
-        return when (val r = stopReason) {
+        return when (val r = stopReasonCompat()) {
             WorkInfo.STOP_REASON_CANCELLED_BY_APP -> null
             WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> Msg.of(R.string.stop_wifi)
             WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> Msg.of(R.string.stop_charger)

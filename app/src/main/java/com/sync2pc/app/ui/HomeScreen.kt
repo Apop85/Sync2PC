@@ -171,13 +171,15 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         }
     }
     val progress = running?.let { SyncWorker.progressFrom(it.progress) }
-    // Restzeit (0.11.0): Tempo seit Beginn dieses Laufs, angezeigt erst nach einer Minute (vorher zu ungenau)
+    // Restzeit (0.11.0): Tempo seit Beginn dieses Laufs. Erst bei belastbarer Rate (etaSeconds, 063), sonst «wird berechnet»
     val runStart = remember(running?.id) { System.currentTimeMillis() to (progress?.doneBytes ?: 0L) }
     val etaText = progress?.let { pr ->
-        val elapsed = System.currentTimeMillis() - runStart.first
-        val done = pr.doneBytes - runStart.second
-        if (elapsed < 60_000 || done <= 0 || pr.totalBytes <= pr.doneBytes) null
-        else formatEta(((pr.totalBytes - pr.doneBytes) * elapsed / done) / 1000)
+        if (pr.totalBytes <= pr.doneBytes) null
+        else {
+            val elapsed = System.currentTimeMillis() - runStart.first
+            etaSeconds(elapsed, pr.doneBytes - runStart.second, pr.totalBytes - runStart.second)
+                ?.let { formatEta(it) } ?: str(R.string.home_eta_calculating)
+        }
     }
     // Grund, falls der letzte automatische Start nicht synchronisiert hat (max. 24 h alt)
     val skipInfo = remember(tick, workKey) {

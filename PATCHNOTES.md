@@ -2,6 +2,28 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.13.4 (2026-11-09, ungebaut)
+
+### Behoben
+- **Laufanimation von Leo:** ohne graue Flächen und «Geisterbeine» zwischen den Beinen und ohne Löcher im Fell (36 Bilder neu erzeugt).
+
+### Intern
+- Animation wird aus dem Video `.claude\images\new_animation.mp4` mit `tools\make-anim-video.ps1` erzeugt (eingeschlossene dunkle Lücken `-GapErode 12` entfernt, kleine umschlossene Löcher `-HoleMax 3000` wieder deckend); Quellbilder liegen unter `.claude\images\`. Neuerzeugung beim nächsten Bau (Hash-Kennung `v3-320px-alpha`). `build.md` angepasst.
+
+## 0.13.2 (2026-11-09, ungebaut, Sichtprüfung offen)
+
+### Geändert
+- **Statuskachel:** hinter Leo ein farbiger Kreis zum Status (grün schlafend/laufend, hellblau sitzend, grau pausiert, rot Aufmerksamkeit); bei «laufend» mit drehendem Bogen; im Dunkelmodus helle Kontur beim pausierten Zustand. Rein visuell, keine Änderung an Synchronisierung, Datenbank oder Dateiformaten (`ui/DogStatus.kt`).
+
+## 0.13.1 (2026-11-09, ungebaut und ungetestet)
+
+### Geändert
+- **PC-Erkennung, Nachbesserungen (DEC-205):** Die PC-Kennung wird bei `GUID`/`BOTH` nur nach dem Speichern des Profils und in «Verbindung testen» gelernt, nach erfolgreicher Anmeldung (neue Zugriffsart `SETUP`, Netzbedingung `learnNetOk`, Entscheidung `WRONG_NET`). Manueller Sync und automatische Läufe lernen nie («PC unbekannt», Hinweis «Profil öffnen → Verbindung testen»). Eine bei `WIFI` still gelernte Kennung erzeugt nie Vertrauen. Kennungswechsel: aushandeln, Verbindung schliessen, fragen, neu verbinden, bestätigte Kennung prüfen, dann anmelden. Kein automatischer Test mehr beim Moduswechsel.
+- **Wartezeit:** abgewiesene Profile und Fehler der Vorab-Prüfung setzen keinen Timer (eine Meldung je Profil); Timer für nicht erreichbare PCs nur, wenn kein Profil lief oder die Verbindung mitten im Lauf abbrach. Vorab-Prüfung je Host und Lauf einmal (nur Speicher, keine Schemaänderung).
+
+### Intern
+- Neu: `smb/PcLogin.kt`, `sync/PcLearner.kt`, `PcEditorRules`. Neue/erweiterte Tests: `PcLoginTest`, `PcIdentityTest`, `NetworkRulesTest`, `DiagnosticsTest`, androidTest `PcGuidDaoTest`. Nicht ausgeführt, nichts im Gerät geprüft.
+
 ## 0.13.0 (2026-11-09, ungebaut und ungetestet)
 
 ### Neu

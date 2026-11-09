@@ -104,6 +104,20 @@ import kotlinx.coroutines.flow.combine
 /** Produktseite mit Hilfe (0.11.0, Inhaber) */
 internal const val HELP_URL = "https://apop85.github.io/leosync/"
 
+// Restzeit nur bei belastbarer Übertragungsrate (SYNC-20261109-063): mindestens so lange gemessen, so viel übertragen
+// und höchstens so lang (sonst «wird berechnet»). Verhindert Anzeigen wie «noch ca. 411967 Std.» zu Beginn eines Laufs.
+internal const val ETA_MIN_ELAPSED_MS = 60_000L
+internal const val ETA_MIN_BYTES = 2L * 1024 * 1024
+internal const val ETA_MAX_SECONDS = 72L * 3600
+
+/** Geschätzte Restzeit in Sekunden oder null, wenn die Schätzung (noch) nicht belastbar ist. */
+internal fun etaSeconds(elapsedMs: Long, doneBytes: Long, totalBytes: Long): Long? {
+    val remaining = totalBytes - doneBytes
+    if (remaining <= 0 || elapsedMs < ETA_MIN_ELAPSED_MS || doneBytes < ETA_MIN_BYTES) return null
+    val seconds = remaining.toDouble() * elapsedMs / doneBytes / 1000.0
+    return if (seconds.isFinite() && seconds <= ETA_MAX_SECONDS) seconds.toLong() else null
+}
+
 /** Geschätzte Restzeit: "noch ca. 5 Min." bzw. "noch ca. 2 Std. 10 Min." (0.11.0) */
 internal fun formatEta(seconds: Long): String {
     val min = ((seconds + 59) / 60).coerceAtLeast(1)

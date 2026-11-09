@@ -15,6 +15,7 @@
     <string name="home_undo">Rückgängig</string>
     <string name="home_pull_tip">Tipp: Ganz oben nach unten ziehen startet ebenfalls eine Synchronisierung.</string>
     <string name="home_eta">noch ca. %1$s</string>
+    <string name="home_eta_calculating">Restzeit wird berechnet …</string>
     <plurals name="eta_minutes">
         <item quantity="one">%1$s Min.</item>
         <item quantity="other">%1$s Min.</item>

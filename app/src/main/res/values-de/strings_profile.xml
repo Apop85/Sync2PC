@@ -90,7 +90,7 @@
     <string name="profile_section_unset">Nicht eingestellt – antippen zum Öffnen</string>
     <string name="profile_section_collapse">Einklappen</string>
     <string name="profile_guard">Schutzbremse (optional)</string>
-    <string name="profile_guard_percent">Nachfragen, wenn mehr als … % gelöscht würden</string>
+    <string name="profile_guard_percent" formatted="false">Nachfragen, wenn mehr als … % gelöscht würden</string>
     <string name="profile_guard_hint">Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält die Synchronisierung an und fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.</string>
     <string name="profile_next">Weiter</string>
     <string name="profile_optional_hint">Die weiteren Schritte sind optional – du kannst jetzt schon speichern.</string>

@@ -116,31 +116,8 @@ if (Test-Path $iconSrc) {
     } else { Write-Host "Icons aktuell" }
 }
 
-# Animation: bevorzugt aus dem Video (.claude\new_animation.mp4, braucht ffmpeg),
-# sonst aus der Bildvorlage (.claude\gif_frames.png). Nur neu erzeugen, wenn sich die Quelle geaendert hat.
-$animVideo = Join-Path $Root ".claude\images\new_animation.mp4"
-if (-not (Test-Path $animVideo)) { $animVideo = Join-Path $Root ".claude\new_animation.mp4" }
-$animSheet = Join-Path $Root ".claude\images\gif_frames.png"
-if (-not (Test-Path $animSheet)) { $animSheet = Join-Path $Root ".claude\gif_frames.png" }
-$animHashFile = Join-Path $StateDir "anim.hash"
-$animSrc = if (Test-Path $animVideo) { $animVideo } elseif (Test-Path $animSheet) { $animSheet } else { $null }
-if ($animSrc) {
-    # Kennung der Erzeugungs-Einstellungen anhaengen: Aendert sie sich (z. B. Bildgroesse), wird neu erzeugt
-    $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash + "|v3-320px-alpha"
-    $oldA = if (Test-Path $animHashFile) { (Get-Content $animHashFile -Raw).Trim() } else { "" }
-    $firstFrame = Join-Path $Root "app\src\main\res\drawable-nodpi\anim_dog_01.png"
-    if ($ah -ne $oldA -or -not (Test-Path $firstFrame)) {
-        if ($animSrc -eq $animVideo) {
-            if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
-                & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-anim-video.ps1") -Root $Root
-                if ($LASTEXITCODE -eq 0) { [IO.File]::WriteAllText($animHashFile, $ah, $Utf8) }
-            } else { Write-Warning "ffmpeg nicht gefunden - Animation bleibt unveraendert" }
-        } else {
-            & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "make-anim.ps1") -Root $Root
-            [IO.File]::WriteAllText($animHashFile, $ah, $Utf8)
-        }
-    } else { Write-Host "Animation aktuell" }
-}
+# Animation: Die Laufbilder (anim_dog_*.png, notif_dog_flipper.xml) sind feste, von Hand veredelte Quell-Assets
+# (eingefroren seit SYNC-20261109-066) und werden vom Bau NIE neu erzeugt. Einmal-Export: tools\export-anim-frames.py.
 
 # Zustandsbilder (wartet / alles aktuell / pausiert / wartet auf dich)
 $stateSrcs = @((Join-Path $Root ".claude\wait_cleaned.png"), (Join-Path $Root ".claude\idle_cleaned.png"), (Join-Path $Root ".claude\pause.png"), (Join-Path $Root ".claude\attention.png")) | Where-Object { Test-Path $_ }
