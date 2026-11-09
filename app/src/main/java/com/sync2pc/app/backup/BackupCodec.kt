@@ -4,6 +4,8 @@ import com.sync2pc.app.data.FolderMapping
 import com.sync2pc.app.data.MirrorState
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.SyncedFile
+import com.sync2pc.app.sync.PcCheckMode
+import com.sync2pc.app.sync.PcIdentity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.SecureRandom
@@ -193,6 +195,7 @@ object BackupCodec {
         put("massDeletePercent", p.massDeletePercent)
         put("keepVersions", p.keepVersions)
         put("verifyLevel", p.verifyLevel)
+        put("pcCheck", p.pcCheck); put("pcGuid", p.pcGuid); put("pcGuidHost", p.pcGuidHost)
     }
 
     /** Prüfstufe (0.9.0); ältere Sicherungen kennen nur verifyUpload: an = "Wenig" (wie bisher), aus = "Aus" */
@@ -223,6 +226,10 @@ object BackupCodec {
             massDeletePercent = o.optInt("massDeletePercent", d.massDeletePercent).coerceIn(1, 100),
             keepVersions = o.optBoolean("keepVersions", d.keepVersions),
             verifyLevel = verifyLevelFromJson(o, d),
+            // PC-Erkennung (0.13.0): fehlend/unbekannt = WIFI und keine Kennung; Kennung/Host normalisiert (Kleinbuchstaben)
+            pcCheck = PcCheckMode.parse(o.optString("pcCheck", "")).name,
+            pcGuid = PcIdentity.normalize(o.optString("pcGuid", "")).orEmpty(),
+            pcGuidHost = PcIdentity.normalizeHost(o.optString("pcGuidHost", "")),
         )
     }
 

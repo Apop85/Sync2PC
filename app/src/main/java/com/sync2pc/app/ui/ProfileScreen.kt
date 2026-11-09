@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
@@ -85,6 +86,10 @@ import com.sync2pc.app.mirror.MirrorGuard
 import com.sync2pc.app.mirror.Side
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
+import com.sync2pc.app.sync.PcCheckMode
+import com.sync2pc.app.sync.PcDecision
+import com.sync2pc.app.sync.PcEditorRules
+import com.sync2pc.app.sync.PcIdentityException
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.sync.WifiHelper
 import kotlinx.coroutines.Dispatchers
@@ -105,6 +110,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var testResult by remember { mutableStateOf<String?>(null) }
     var testing by remember { mutableStateOf(false) }
     var testDetail by remember { mutableStateOf<String?>(null) }
+    // PC-Erkennung (0.13.0): Modus vom Benutzer gewählt? Zuletzt "anderer PC" gemeldet? Rückfrage zum Neuvertrauen
+    var pcTouched by remember { mutableStateOf(false) }
+    var pcChanged by remember { mutableStateOf(false) }
+    var trustAsk by remember { mutableStateOf<TrustAsk?>(null) }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -179,7 +188,59 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         }
     }
 
-    fun withPassword(): Profile = p.copy(smbPasswordEnc = CredentialCrypto.encrypt(password))
+    /** Neues Profil ohne eigene Wahl: BOTH mit WLAN-Namen, sonst GUID (Vorgabe SYNC-20261109-048); sonst der gewählte Modus */
+    fun pcModeNow(): PcCheckMode =
+        if (profileId == 0L && !pcTouched) (if (p.ssids().isNotEmpty()) PcCheckMode.BOTH else PcCheckMode.GUID) else p.pcMode()
+
+    fun withPassword(): Profile = p.copy(smbPasswordEnc = CredentialCrypto.encrypt(password), pcCheck = pcModeNow().name)
+
+    /** Rückfrage VOR dem Anmelden (blockiert den IO-Thread, bis der Benutzer antwortet; ohne Antwort = nicht vertrauen) */
+    fun askTrust(host: String): Boolean {
+        val answer = java.util.concurrent.CompletableFuture<Boolean>()
+        trustAsk = TrustAsk(host, answer)
+        return try { answer.get(45, java.util.concurrent.TimeUnit.SECONDS) } catch (e: Exception) { false } finally { trustAsk = null }
+    }
+
+    fun runTest() {
+        testing = true; testResult = null; testDetail = null; pcChanged = false
+        scope.launch {
+            val prof = withPassword()
+            withContext(Dispatchers.IO) {
+                try {
+                    // Netzbedingung fürs erste Kennenlernen (BOTH: WLAN muss in der Liste stehen), Test lernt als einziger Weg neben dem Speichern
+                    val netOk = com.sync2pc.app.sync.PcLearner.learnNetOk(ctx, prof)
+                    testResult = "✓ " + SmbSession.test(prof, netOk) { host, _, _ -> askTrust(host) }
+                    // Gelernte/übernommene Kennung in die Ansicht holen (übrige Eingaben bleiben unangetastet)
+                    if (prof.id != 0L) dao.profile(prof.id)?.let { db ->
+                        p = p.copy(pcGuid = db.pcGuid, pcGuidHost = db.pcGuidHost)
+                        baseline = baseline?.copy(pcGuid = db.pcGuid, pcGuidHost = db.pcGuidHost)
+                    }
+                } catch (e: Exception) {
+                    if (e is PcIdentityException && e.decision == PcDecision.CHANGED) pcChanged = true
+                    // 0.11.0: verständlich, technischer Text aufklappbar
+                    testResult = "✗ " + com.sync2pc.app.sync.userError(e)
+                    testDetail = com.sync2pc.app.sync.shortError(e)
+                }
+            }
+            testing = false
+        }
+    }
+
+    /**
+     * Wechsel der Erkennungsart. WIFI → GUID/BOTH: still gelernte Kennung zählt nicht als Vertrauen und wird gelöscht (verringert
+     * nur Vertrauen). Kein automatischer Test mehr (V6): Zugangsdaten werden nicht durch blosses Antippen einer Option gesendet;
+     * die Kennung wird nach dem Speichern bzw. mit «Verbindung testen» gelernt.
+     */
+    fun setPcMode(m: PcCheckMode) {
+        val old = pcModeNow()
+        pcTouched = true
+        p = p.copy(pcCheck = m.name)
+        if (PcEditorRules.clearOnModeChange(old, m) && p.id != 0L) scope.launch {
+            withContext(Dispatchers.IO) { dao.clearPcGuid(p.id) }
+            p = p.copy(pcGuid = "", pcGuidHost = "")
+            baseline = baseline?.copy(pcGuid = "", pcGuidHost = "")
+        }
+    }
 
     /**
      * Speichern. [force] = Überschneidung bestätigt. [folderChoice] = Antwort auf "Ist das wirklich der richtige
@@ -215,7 +276,14 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             }
             if (folderChoice == FolderChoice.ACCEPT) checked = true
             val savedId = withContext(Dispatchers.IO) {
-                val id = if (isNew) dao.insertProfile(toSave) else { dao.updateProfile(toSave); toSave.id }
+                // Gelernte Kennung stammt immer aus der Datenbank (der Editor kann veraltet sein) und gilt nur für den
+                // aktuellen Host; bei Hostwechsel wird sie verworfen (nie eine Kennung eines anderen PCs behalten)
+                val db = if (isNew) null else dao.profile(toSave.id)
+                val host = SmbTarget.hostOf(toSave.smbPath)?.let { com.sync2pc.app.sync.PcIdentity.normalizeHost(it) }.orEmpty()
+                // V7: eine bei WIFI still gelernte Kennung wird nie zu Vertrauen (Modus in der Datenbank WIFI, neu GUID/BOTH)
+                val keep = PcEditorRules.keepStoredOnSave(db?.pcMode(), toSave.pcMode(), db?.pcGuidHost, host)
+                val finalProfile = toSave.copy(pcGuid = if (keep) db!!.pcGuid else "", pcGuidHost = if (keep) db!!.pcGuidHost else "")
+                val id = if (isNew) dao.insertProfile(finalProfile) else { dao.updateProfile(finalProfile); toSave.id }
                 if (changedSides.isNotEmpty()) MirrorGuard.afterFolderChange(
                     ctx, id, changedSides, resetState = folderChoice == FolderChoice.RESET, checked = checked,
                 )
@@ -226,9 +294,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 id
             }
             SyncScheduler.setupAll(ctx)
+            // PC-Kennung nach dem Speichern lernen (V5): app-weit, nach dem DB-Schreiben; Speichern gelingt unabhängig vom Ergebnis
+            com.sync2pc.app.sync.PcLearner.learnAfterSave(ctx, savedId)
             Toast.makeText(ctx, str(R.string.profile_saved_toast), Toast.LENGTH_SHORT).show()
             if (isNew) {
                 // Stand gilt jetzt als gespeichert (keine Nachfrage beim Verlassen)
+                pcTouched = true
                 p = toSave.copy(id = savedId); baseline = p; basePassword = password
                 createdId = savedId
             } else onBack()
@@ -250,6 +321,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     BackHandler(enabled = wizard && typeChosen && stepIndex > 0) { showMissing = false; step = steps[stepIndex - 1] }
 
     val trashName = MirrorEngine.TRASH_DIR
+
+    // Anderer PC unter demselben Server: Rückfrage VOR dem Senden der Zugangsdaten (nur "Verbindung testen")
+    trustAsk?.let { ask ->
+        AlertDialog(
+            onDismissRequest = { ask.answer.complete(false) },
+            title = { Text(str(R.string.profile_pc_trust_title)) },
+            text = { Text(str(R.string.profile_pc_trust_body, ask.host)) },
+            confirmButton = { TextButton(onClick = { ask.answer.complete(true) }) { Text(str(R.string.profile_pc_trust_yes)) } },
+            dismissButton = { TextButton(onClick = { ask.answer.complete(false) }) { Text(str(R.string.profile_pc_trust_no)) } },
+        )
+    }
 
     ScreenScaffold(
         title = str(if (profileId == 0L) R.string.profile_title_new else R.string.profile_title_edit),
@@ -399,20 +481,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         onClick = { showRemotePicker = true },
                     ) { Text(str(R.string.profile_pick_pc_folder)) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(enabled = !testing, onClick = {
-                            testing = true; testResult = null; testDetail = null
-                            scope.launch {
-                                val prof = withPassword()
-                                withContext(Dispatchers.IO) {
-                                    try { testResult = "✓ " + SmbSession.test(prof) } catch (e: Exception) {
-                                        // 0.11.0: verständlich, technischer Text aufklappbar
-                                        testResult = "✗ " + com.sync2pc.app.sync.userError(e)
-                                        testDetail = com.sync2pc.app.sync.shortError(e)
-                                    }
-                                }
-                                testing = false
-                            }
-                        }) { Text(str(R.string.profile_test)) }
+                        OutlinedButton(enabled = !testing, onClick = { runTest() }) { Text(str(R.string.profile_test)) }
                         if (testing) CircularProgressIndicator(Modifier.padding(start = 12.dp))
                     }
                     testResult?.let { Text(it) }
@@ -421,6 +490,39 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             }
 
             if (show(Step.OPTIONS)) item {
+                SectionCard(str(R.string.profile_pc_check)) {
+                    val mode = pcModeNow()
+                    HintMore(str(R.string.profile_pc_check_hint))
+                    listOf(
+                        Triple(PcCheckMode.WIFI, R.string.profile_pc_opt_wifi, R.string.profile_pc_opt_wifi_sub),
+                        Triple(PcCheckMode.GUID, R.string.profile_pc_opt_guid, R.string.profile_pc_opt_guid_sub),
+                        Triple(PcCheckMode.BOTH, R.string.profile_pc_opt_both, R.string.profile_pc_opt_both_sub),
+                    ).forEach { (m, title, sub) ->
+                        Row(Modifier.fillMaxWidth().clickable { setPcMode(m) }, verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = mode == m, onClick = { setPcMode(m) })
+                            Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
+                                Text(str(title))
+                                Hint(str(sub))
+                            }
+                        }
+                    }
+                    val host = SmbTarget.hostOf(p.smbPath).orEmpty()
+                    val known = com.sync2pc.app.sync.PcIdentity.storedFor(p.pcGuid, p.pcGuidHost, host) != null
+                    Text(
+                        str(when {
+                            !mode.checksGuid -> R.string.profile_pc_status_wifi
+                            pcChanged -> R.string.profile_pc_status_changed
+                            known -> R.string.profile_pc_status_known
+                            p.id == 0L -> R.string.profile_pc_status_new
+                            else -> R.string.profile_pc_status_unknown
+                        }),
+                        color = if (pcChanged && mode.checksGuid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            if (show(Step.OPTIONS) && com.sync2pc.app.sync.NetworkRules.needsWifiName(pcModeNow())) item {
                 SectionCard(str(R.string.profile_wifi)) {
                     // Standort nur, wenn ein WLAN eingetragen ist bzw. werden soll (Android braucht ihn für den WLAN-Namen)
                     PermissionRows(perms, showDone = false, needs = PermNeeds(media = false, wifi = true, base = false))
@@ -576,10 +678,20 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     // Nach dem Anlegen: zuerst simulieren, gleich synchronisieren oder später (bis dahin keine Automatik)
     createdId?.let { id ->
+        // Kennung wird gerade gelernt (V5): kurze Anzeige, damit ein sofortiger Start nicht an «PC unbekannt» scheitert
+        val learning by com.sync2pc.app.sync.PcLearner.running.collectAsState()
         AlertDialog(
             onDismissRequest = { createdId = null; onBack() },
             title = { Text(str(R.string.profile_created_title)) },
-            text = { Text(str(R.string.profile_created_text)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(str(R.string.profile_created_text))
+                    if (id in learning) Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Text(str(R.string.profile_pc_learning), Modifier.padding(start = 8.dp), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
                     createdId = null
@@ -776,3 +888,6 @@ fun treeUriToRelativePath(uri: Uri): String? {
     val path = docId.substringAfter(':', "").trim('/')
     return if (path.isEmpty()) null else "$path/"
 }
+
+/** Offene Rückfrage zum Neuvertrauen eines anderen PCs (Antwort kommt vom Dialog, wartet der IO-Thread) */
+private class TrustAsk(val host: String, val answer: java.util.concurrent.CompletableFuture<Boolean>)

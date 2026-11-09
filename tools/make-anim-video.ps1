@@ -16,10 +16,13 @@ param(
     [int]$FillMax = 80,             # Helligkeit bis zu der Hintergrund/Schein gefuellt wird
     [int]$OutlineMax = 26,          # dunkler als das = Umrisslinie (stoppt die Fuellung)
     [int]$RingMax = 165,            # heller Schein direkt an der Figur bis zu dieser Helligkeit entfernen
-    [int]$RingSteps = 4             # wie viele Pixel Schein abgetragen werden
+    [int]$RingSteps = 4,            # wie viele Pixel Schein abgetragen werden
+    [int]$GapErode = 12,            # eingeschlossene dunkle Luecken (zwischen den Beinen) entfernen, wenn mind. so dick (0 = aus; Halsband bleibt)
+    [int]$HoleMax = 3000            # umschlossene transparente Loecher kleiner als so viele Pixel wieder deckend machen (0 = aus)
 )
 $ErrorActionPreference = 'Stop'
-$video = Join-Path $Root ".claude\new_animation.mp4"
+$video = Join-Path $Root ".claude\images\new_animation.mp4"
+if (-not (Test-Path $video)) { $video = Join-Path $Root ".claude\new_animation.mp4" }
 if (-not (Test-Path $video)) { throw "Nicht gefunden: $video" }
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { throw "ffmpeg nicht gefunden (PATH)" }
 Add-Type -AssemblyName System.Drawing
@@ -41,7 +44,7 @@ public static class Sync2PcVideoAnim {
         Marshal.Copy(buf, 0, d.Scan0, buf.Length); b.UnlockBits(d); return b;
     }
     // Hintergrund entfernen; liefert neues Bild mit Alpha
-    public static Bitmap Key(Bitmap src, int wx1, int wy1, int wx2, int wy2, int fillMax, int outlineMax, int ringMax, int ringSteps) {
+    public static Bitmap Key(Bitmap src, int wx1, int wy1, int wx2, int wy2, int fillMax, int outlineMax, int ringMax, int ringSteps, int gapErode, int holeMax) {
         int w = src.Width, h = src.Height, stride;
         var buf = Read(src, out stride);
         var lum = new int[w*h];
@@ -60,6 +63,34 @@ public static class Sync2PcVideoAnim {
             int p = q.Dequeue(); int x = p % w, y = p / w;
             if (x>0) tryAdd(p-1); if (x<w-1) tryAdd(p+1); if (y>0) tryAdd(p-w); if (y<h-1) tryAdd(p+w);
         }
+        // Vom Rand aus nicht erreichte Hintergrundluecken (z. B. dunkle Flaeche zwischen den Beinen, von der
+        // Umrisslinie eingeschlossen) ebenfalls entfernen. Als Hintergrund gilt nur, was mindestens gapErode Pixel
+        // dick dunkel (outlineMax < Helligkeit <= fillMax) ist; dadurch bleibt das schwarze Halsband erhalten.
+        var isGap = new bool[w*h];
+        if (gapErode > 0) {
+            var rest = new bool[w*h];
+            for (int p=0;p<w*h;p++) rest[p] = !bg[p] && lum[p] > outlineMax && lum[p] <= fillMax;
+            var core = (bool[])rest.Clone();
+            for (int s=0; s<gapErode; s++) {
+                var nxt = new bool[w*h];
+                for (int y=1;y<h-1;y++) for (int x=1;x<w-1;x++) {
+                    int p = y*w+x;
+                    if (!core[p]) continue;
+                    nxt[p] = core[p-1] && core[p+1] && core[p-w] && core[p+w]
+                          && core[p-w-1] && core[p-w+1] && core[p+w-1] && core[p+w+1];
+                }
+                core = nxt;
+            }
+            var gq = new Queue<int>();
+            for (int p=0;p<w*h;p++) if (core[p]) { bg[p] = true; isGap[p] = true; gq.Enqueue(p); }
+            while (gq.Count > 0) {
+                int p = gq.Dequeue(); int x = p % w, y = p / w;
+                if (x>0 && rest[p-1] && !bg[p-1]) { bg[p-1] = true; isGap[p-1] = true; gq.Enqueue(p-1); }
+                if (x<w-1 && rest[p+1] && !bg[p+1]) { bg[p+1] = true; isGap[p+1] = true; gq.Enqueue(p+1); }
+                if (y>0 && rest[p-w] && !bg[p-w]) { bg[p-w] = true; isGap[p-w] = true; gq.Enqueue(p-w); }
+                if (y<h-1 && rest[p+w] && !bg[p+w]) { bg[p+w] = true; isGap[p+w] = true; gq.Enqueue(p+w); }
+            }
+        }
         // Hellen Schein an der Figur abtragen (stoppt an der schwarzen Umrisslinie)
         for (int s=0; s<ringSteps; s++) {
             var add = new List<int>();
@@ -72,6 +103,26 @@ public static class Sync2PcVideoAnim {
         }
         // Wasserzeichen sicher entfernen
         for (int y=Math.Max(0,wy1); y<Math.Min(h,wy2); y++) for (int x=Math.Max(0,wx1); x<Math.Min(w,wx2); x++) bg[y*w+x] = true;
+        // Kleine, vollstaendig umschlossene Loecher in der Figur (Fell) wieder deckend machen
+        if (holeMax > 0) {
+            var seen = new bool[w*h];
+            var comp = new List<int>();
+            var cq = new Queue<int>();
+            for (int s0=0; s0<w*h; s0++) {
+                if (!bg[s0] || seen[s0]) continue;
+                comp.Clear(); bool border = false, hasGap = false;
+                seen[s0] = true; cq.Enqueue(s0);
+                while (cq.Count > 0) {
+                    int p = cq.Dequeue(); comp.Add(p); int x = p % w, y = p / w; if (isGap[p]) hasGap = true;
+                    if (x==0 || y==0 || x==w-1 || y==h-1) border = true;
+                    if (x>0 && bg[p-1] && !seen[p-1]) { seen[p-1] = true; cq.Enqueue(p-1); }
+                    if (x<w-1 && bg[p+1] && !seen[p+1]) { seen[p+1] = true; cq.Enqueue(p+1); }
+                    if (y>0 && bg[p-w] && !seen[p-w]) { seen[p-w] = true; cq.Enqueue(p-w); }
+                    if (y<h-1 && bg[p+w] && !seen[p+w]) { seen[p+w] = true; cq.Enqueue(p+w); }
+                }
+                if (!border && !hasGap && comp.Count < holeMax) foreach (var p in comp) bg[p] = false;
+            }
+        }
         for (int y=0;y<h;y++) for (int x=0;x<w;x++) {
             int i = y*stride + x*4;
             if (bg[y*w+x]) { buf[i]=0; buf[i+1]=0; buf[i+2]=0; buf[i+3]=0; } else buf[i+3]=255;
@@ -110,7 +161,7 @@ $wm = $Watermark.Split(',') | ForEach-Object { [int]$_ }
 $keyed = @()
 foreach ($f in $files) {
     $src = New-Object System.Drawing.Bitmap -ArgumentList $f.FullName
-    $keyed += [Sync2PcVideoAnim]::Key($src, $wm[0], $wm[1], $wm[2], $wm[3], $FillMax, $OutlineMax, $RingMax, $RingSteps)
+    $keyed += [Sync2PcVideoAnim]::Key($src, $wm[0], $wm[1], $wm[2], $wm[3], $FillMax, $OutlineMax, $RingMax, $RingSteps, $GapErode, $HoleMax)
     $src.Dispose()
 }
 

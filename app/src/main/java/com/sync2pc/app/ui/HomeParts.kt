@@ -446,7 +446,14 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 Text("📷 $target")
                 Hint(str(R.string.home_profile_sources, p.folders().joinToString(", ").ifBlank { str(R.string.home_profile_none) }))
             }
-            Hint(str(R.string.home_wifi, p.ssids().joinToString(", ").ifBlank { str(R.string.home_profile_no_wifi) }))
+            val pcMode = p.pcMode()
+            if (com.sync2pc.app.sync.NetworkRules.needsWifiName(pcMode))
+                Hint(str(R.string.home_wifi, p.ssids().joinToString(", ").ifBlank { str(R.string.home_profile_no_wifi) }))
+            if (pcMode.checksGuid) {
+                val known = com.sync2pc.app.sync.PcIdentity.storedFor(
+                    p.pcGuid, p.pcGuidHost, com.sync2pc.app.smb.SmbTarget.hostOf(p.smbPath).orEmpty()) != null
+                Hint(str(if (known) R.string.home_profile_pc_known else R.string.home_profile_pc_unknown))
+            }
             val sc = synced; val oc = open
             if (isPhotos && sc != null && oc != null) Hint(str(R.string.home_profile_counts, sc, oc))
             if (!isPhotos && sc != null) Hint(

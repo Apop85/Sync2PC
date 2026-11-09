@@ -1,7 +1,7 @@
 # Datenmodell – LeoSync (Sync2PC)
 
 Technische Referenz der **aktuell implementierten** persistenten Datenstrukturen.
-Stand: Quellcode, App-Version 0.12.1 (`version.properties`), **Room-Datenbankversion 7**. Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
+Stand: Quellcode, App-Version 0.13.0 (`version.properties`, ungebaut), **Room-Datenbankversion 8** (neu: `pcCheck`, `pcGuid`, `pcGuidHost`, 3.1; Stand der übrigen Abschnitte: s. u.). Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
 Der Quellcode ist massgeblich; `docs/DECISIONS.md` liefert Hintergründe (DEC-IDs). Geplantes steht nur in Abschnitt 17 und ist dort als solches gekennzeichnet.
 
 > **Hinweis zu Dateinamen:** Massgeblich sind die Dateien mit Bindestrich: `docs/DATA-MODEL.md` (diese Datei) und `docs/SYNC-ENGINE.md` (Sync-Abläufe).
@@ -103,6 +103,9 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `massDeletePercent` | INTEGER | nein | `20` | | MIRROR: Schwelle der Schutzbremse in Prozent (v4) |
 | `keepVersions` | INTEGER | nein | `true` | | MIRROR: Versionsschutz – überschriebene Version in den Papierkorb (v5) |
 | `verifyLevel` | INTEGER | nein | `2` | | `VerifyLevel.code` 0–4, Standard MEDIUM (v6) |
+| `pcCheck` | TEXT | nein | `"WIFI"` | | PC-Erkennung (DEC-204): `WIFI` (nur WLAN-Name) / `GUID` (nur PC-Kennung) / `BOTH` (beides). Abgeleitet: `Profile.pcMode()` (`PcCheckMode.parse`, unbekannt oder leer → `WIFI`) (v8, 0.13.0) |
+| `pcGuid` | TEXT | nein | `""` | | Gelernte PC-Kennung (SMB-Server-GUID, kleingeschrieben); leer = unbekannt (v8) |
+| `pcGuidHost` | TEXT | nein | `""` | | Host (kleingeschrieben), zu dem `pcGuid` gelernt wurde; die Kennung gilt nur für diesen Host (`PcIdentity.storedFor`) (v8) |
 
 **Indizes:** keine.
 **Beziehungen:** `profiles.id` wird von allen anderen Tabellen (ausser `media_info`) als `profileId` referenziert – ohne Fremdschlüssel.
@@ -759,6 +762,7 @@ timeline
     v5 (0.5.0) : keepVersions : pending_restores
     v6 (0.9.0) : verifyLevel : Namen getrimmt
     v7 (0.12.0) : messageCode, triggerCode, log code
+    v8 (0.13.0) : pcCheck, pcGuid, pcGuidHost
 ```
 
 ---
@@ -953,6 +957,7 @@ Ausgewertet wurde **nur der vorhandene Testcode**; es wurden **keine Tests ausge
 **Geplant / nicht umgesetzt (Quelle DECISIONS.md, Abschnitt A):**
 - ~~Verlauf mit Kennungen statt fertiger Texte (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1, siehe Abschnitt 3.11.
 - Versionsplan: 0.12.0 ist laut Inhaber (2026-11-09) durch den Verlauf mit Kennungen belegt; die Nummer für den Play Store ist nicht entschieden. 0.13.0 PC-Erkennung (DEC-188).
-- **Geplant (DEC-204, Accepted, noch nicht umgesetzt; Umsetzung Development SYNC-20261109-047, Ziel 0.13.0):** DB v8 mit `MIGRATION_7_8` nur `ADD COLUMN` und drei neuen Profilfeldern: `pcCheck TEXT NOT NULL DEFAULT 'WIFI'` (`WIFI`/`GUID`/`BOTH`), `pcGuid TEXT NOT NULL DEFAULT ''`, `pcGuidHost TEXT NOT NULL DEFAULT ''`. Aufnahme in die Sicherung (`BackupCodec.VERSION` bleibt 1; fehlende Felder → `WIFI`/leer). Aktuell sind diese Felder **nicht** vorhanden (DB v7).
+- ~~DB v8 mit `pcCheck`, `pcGuid`, `pcGuidHost` (DEC-204)~~ – im Code umgesetzt (0.13.0, DB v8, `MIGRATION_7_8` nur `ADD COLUMN`, Schema `8.json` vorhanden), **noch nicht gebaut und nicht getestet** (Stand 2026-11-09, Development SYNC-20261109-047). Felder: Abschnitt 3.1. **Sicherung:** die drei Felder stehen im Profil-JSON, `BackupCodec.VERSION` bleibt 1; fehlende oder unbekannte Werte → `WIFI` und leer (alte Sicherung), Host und Kennung werden beim Einlesen normalisiert (Kleinbuchstaben; ungültige Kennung wie die Null-UUID → leer). `Diagnostics` nennt Modus sowie pseudonymisierte Kennung und Host.
+- **Beschlossen, Umsetzung offen (Entscheidung Inhaber 2026-11-09, Architecture SYNC-20261109-058, Umsetzung in SYNC-20261109-055 Punkt 6):** keine Schemaänderung; es ändert sich nur, wann die Kennung gelernt wird (siehe DEC-205). Bis zur Umsetzung gilt das beschriebene Verhalten nach DEC-204.
 
 **Nicht mehr verwendet:** `profiles.verifyUpload` (nur noch gespiegelt), `profiles.remoteSubfolder` (wird beim Öffnen in `smbPath` überführt, aber weiter ausgewertet), Updater-Schlüssel `updateRepo` (`GlobalSettings.importFrom` ignoriert ihn seit 0.4.0). Papierkorb-Namen `.LeoSync-Papierkorb`, `.Sync2PC-Papierkorb` sind historisch, werden aber weiter erkannt.

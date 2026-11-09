@@ -144,6 +144,16 @@ class GlobalSettings(context: Context) {
         prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
     }
 
+    // ---- PC nicht erkannt: Benachrichtigung einmal je Profil, bis geklärt (SYNC-20261109-047) ----
+    fun pcNotified(profileId: Long): Boolean =
+        (prefs.getStringSet("pcNotified", emptySet()) ?: emptySet()).contains(profileId.toString())
+
+    fun setPcNotified(profileId: Long, notified: Boolean) {
+        val cur = (prefs.getStringSet("pcNotified", emptySet()) ?: emptySet()).toMutableSet()
+        if (!(if (notified) cur.add(profileId.toString()) else cur.remove(profileId.toString()))) return
+        prefs.edit().putStringSet("pcNotified", cur).apply()
+    }
+
     // ---- Neue Profile warten auf den ersten manuellen Start (0.3.6) ------------------
     /** IDs neu angelegter Profile, für die noch kein manueller Sync lief -> keine automatischen Syncs */
     fun awaitingFirstStart(): Set<Long> =

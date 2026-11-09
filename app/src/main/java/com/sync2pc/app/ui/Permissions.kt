@@ -17,7 +17,8 @@ data class PermNeeds(val media: Boolean, val wifi: Boolean, val base: Boolean) {
         val ALL = PermNeeds(media = true, wifi = true, base = true)
         fun of(profiles: List<com.sync2pc.app.data.Profile>) = PermNeeds(
             media = profiles.any { it.type() == com.sync2pc.app.data.ProfileType.PHOTOS },
-            wifi = profiles.any { it.ssids().isNotEmpty() },
+            // Standort nur, wenn ein Profil den WLAN-Namen braucht (WIFI/BOTH mit Namen; GUID nie)
+            wifi = profiles.any { com.sync2pc.app.sync.NetworkRules.needsWifiName(it.pcMode()) && it.ssids().isNotEmpty() },
             base = profiles.isNotEmpty(),
         )
     }

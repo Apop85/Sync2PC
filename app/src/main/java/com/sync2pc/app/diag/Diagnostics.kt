@@ -83,6 +83,7 @@ object Diagnostics {
             p.smbUser.split('\\', '@').forEach { r.register("Benutzer", it) }
             r.registerFolders(p.remoteSubfolder)
             r.registerAll("WLAN", p.ssids())
+            if (p.pcGuid.isNotBlank()) r.register("PC-Kennung", p.pcGuid)
             p.folders().forEach { r.registerFolders(it) }
             p.localTreeUri.takeIf { it.isNotBlank() }?.let { r.registerFolders(safe { LocalTree.label(Uri.parse(it)) } ?: "") }
         }
@@ -181,6 +182,9 @@ object Diagnostics {
                 kv("  Unterordner am PC gesetzt", p.remoteSubfolder.isNotBlank())
                 kv("  Benutzer gesetzt", p.smbUser.isNotBlank())
                 kv("  Passwort gesetzt", p.smbPasswordEnc.isNotBlank())
+                kv("  PC-Erkennung", p.pcMode().name)
+                kv("  PC-Kennung", if (p.pcGuid.isBlank()) "-" else
+                    "${r.pseudo("PC-Kennung", p.pcGuid)} (Host ${if (p.pcGuidHost.isBlank()) "-" else r.pseudo("Host", p.pcGuidHost)})")
                 kv("  WLANs", p.ssids().joinToString(", ") { r.pseudo("WLAN", it) }.ifEmpty { "-" })
                 if (p.type() == ProfileType.PHOTOS) {
                     kv("  Quellordner", p.folders().joinToString(", ") { r.folderPath(it) }.ifEmpty { "-" })

@@ -118,13 +118,15 @@ if (Test-Path $iconSrc) {
 
 # Animation: bevorzugt aus dem Video (.claude\new_animation.mp4, braucht ffmpeg),
 # sonst aus der Bildvorlage (.claude\gif_frames.png). Nur neu erzeugen, wenn sich die Quelle geaendert hat.
-$animVideo = Join-Path $Root ".claude\new_animation.mp4"
-$animSheet = Join-Path $Root ".claude\gif_frames.png"
+$animVideo = Join-Path $Root ".claude\images\new_animation.mp4"
+if (-not (Test-Path $animVideo)) { $animVideo = Join-Path $Root ".claude\new_animation.mp4" }
+$animSheet = Join-Path $Root ".claude\images\gif_frames.png"
+if (-not (Test-Path $animSheet)) { $animSheet = Join-Path $Root ".claude\gif_frames.png" }
 $animHashFile = Join-Path $StateDir "anim.hash"
 $animSrc = if (Test-Path $animVideo) { $animVideo } elseif (Test-Path $animSheet) { $animSheet } else { $null }
 if ($animSrc) {
     # Kennung der Erzeugungs-Einstellungen anhaengen: Aendert sie sich (z. B. Bildgroesse), wird neu erzeugt
-    $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash + "|v2-320px"
+    $ah = (Get-FileHash $animSrc -Algorithm SHA256).Hash + "|v3-320px-alpha"
     $oldA = if (Test-Path $animHashFile) { (Get-Content $animHashFile -Raw).Trim() } else { "" }
     $firstFrame = Join-Path $Root "app\src\main\res\drawable-nodpi\anim_dog_01.png"
     if ($ah -ne $oldA -or -not (Test-Path $firstFrame)) {

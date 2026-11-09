@@ -26,6 +26,18 @@ interface SyncDao {
     @Update
     suspend fun updateProfile(p: Profile)
 
+    /** Lernt die PC-Kennung nur, wenn noch keine (oder nur die eines anderen Hosts) gespeichert ist; nie still überschreiben. [host] kleingeschrieben. Rückgabe: geänderte Zeilen. */
+    @Query("UPDATE profiles SET pcGuid = :guid, pcGuidHost = :host WHERE id = :id AND pcCheck = :mode AND (pcGuid = '' OR pcGuidHost <> :host)")
+    suspend fun learnPcGuid(id: Long, host: String, guid: String, mode: String): Int
+
+    /** Gelernte Kennung vergessen (Wechsel auf GUID/BOTH, Hostwechsel): verringert nur das Vertrauen */
+    @Query("UPDATE profiles SET pcGuid = '', pcGuidHost = '' WHERE id = :id")
+    suspend fun clearPcGuid(id: Long): Int
+
+    /** Übernimmt eine neue PC-Kennung für alle Profile desselben Hosts mit der alten Kennung. Rückgabe: geänderte Zeilen. */
+    @Query("UPDATE profiles SET pcGuid = :newGuid WHERE pcGuidHost = :host AND pcGuid = :oldGuid")
+    suspend fun trustNewPcGuid(host: String, oldGuid: String, newGuid: String): Int
+
     @Query("DELETE FROM profiles WHERE id = :id")
     suspend fun deleteProfileRow(id: Long)
 

@@ -17,6 +17,8 @@ import com.hierynomus.smbj.share.DiskShare
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.sync.PartialHash
+import com.sync2pc.app.sync.PcAccess
+import com.sync2pc.app.sync.PcDecision
 import java.io.Closeable
 import java.io.InputStream
 import java.util.EnumSet
@@ -65,56 +67,120 @@ class SmbSession private constructor(
             else t.copy(basePath = (listOf(t.basePath) + sub).filter { it.isNotEmpty() }.joinToString("\\"))
         }
 
-        fun open(profile: Profile): SmbSession {
+        /**
+         * Zugriff auf den aktuellen Stand der PC-Kennung (SYNC-20261109-047). Wird in [com.sync2pc.app.App] gesetzt.
+         * Ohne Speicher und mit gespeichertem Profil (id != 0) wird nie angemeldet (sicherer Ausfall).
+         */
+        @Volatile var pcStore: PcStore? = null
+
+        /** smbj-Verbindung hinter der Schnittstelle von [PcLogin] (Aushandlung hier, Anmeldung erst in [authenticate]) */
+        private class SmbLink(
+            private val client: SMBClient, private val connection: Connection, private val profile: Profile,
+        ) : PcLink<Session> {
+            override fun serverGuid(): String? = connection.getConnectionContext().getServerGuid()?.toString()
+            override fun authenticate(): Session = connection.authenticate(AuthenticationContext(
+                profile.smbUser,
+                CredentialCrypto.decrypt(profile.smbPasswordEnc).toCharArray(),
+                profile.smbDomain.ifBlank { null },
+            ))
+            override fun close() {
+                try { connection.close() } catch (ignored: Exception) {}
+                try { client.close() } catch (ignored: Exception) {}
+            }
+            val rawClient: SMBClient get() = client
+            val rawConnection: Connection get() = connection
+        }
+
+        private class SmbTransport(private val config: SmbConfig, private val profile: Profile) : PcTransport<Session> {
+            override fun connect(host: String): PcLink<Session> {
+                val client = SMBClient(config)
+                return try { SmbLink(client, client.connect(host), profile) } catch (e: Exception) {
+                    try { client.close() } catch (ignored: Exception) {}
+                    throw e
+                }
+            }
+        }
+
+        private fun connectChecked(
+            profile: Profile, host: String, config: SmbConfig, access: PcAccess,
+            learn: Boolean, learnNetOk: Boolean,
+            onChangedGuid: ((host: String, oldGuid: String, newGuid: String) -> Boolean)?,
+            authenticate: Boolean, seen: PcSeen? = null,
+        ): PcChecked<Session> = PcLogin.connect(
+            profile, host, SmbTransport(config, profile), pcStore, access, learn, learnNetOk, onChangedGuid, authenticate, seen,
+        )
+
+        /**
+         * Öffnet eine Verbindung. [access]: SETUP (Profil-Editor) darf bei GUID/BOTH eine unbekannte Kennung anmelden
+         * ([learnNetOk] = Netzbedingung, [learn] = nach Erfolg lernen), USER/AUTO (Standard AUTO) melden bei unbekannter Kennung nie
+         * an. Wirft [PcIdentityException], wenn der PC nicht sicher erkannt ist (dann wurden keine Zugangsdaten gesendet).
+         * [quick]: kurze Zeitlimits (30 s) für das Lernen nach dem Speichern.
+         */
+        fun open(
+            profile: Profile,
+            access: PcAccess = PcAccess.AUTO,
+            onChangedGuid: ((host: String, oldGuid: String, newGuid: String) -> Boolean)? = null,
+            learn: Boolean = false,
+            learnNetOk: Boolean = true,
+            quick: Boolean = false,
+        ): SmbSession {
             val target = targetOf(profile)
                 ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
-            val config = SmbConfig.builder()
-                .withTimeout(60, TimeUnit.SECONDS)
-                .withSoTimeout(90, TimeUnit.SECONDS)
+            val config = (if (quick) SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).withSoTimeout(30, TimeUnit.SECONDS)
+                else SmbConfig.builder().withTimeout(60, TimeUnit.SECONDS).withSoTimeout(90, TimeUnit.SECONDS))
                 .withMultiProtocolNegotiate(true)
                 .build()
-            val client = SMBClient(config)
-            var connection: Connection? = null
+            val c = connectChecked(profile, target.host, config, access, learn, learnNetOk, onChangedGuid, authenticate = true)
             try {
-                connection = client.connect(target.host)
-                val auth = AuthenticationContext(
-                    profile.smbUser,
-                    CredentialCrypto.decrypt(profile.smbPasswordEnc).toCharArray(),
-                    profile.smbDomain.ifBlank { null }
-                )
-                val session = connection.authenticate(auth)
+                val link = c.link as SmbLink
+                val session = c.session!!
                 val share = session.connectShare(target.share) as? DiskShare
                     ?: throw IllegalStateException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_not_disk, target.share))
-                return SmbSession(client, connection, session, share, target)
+                PcLogin.commit(c, pcStore)
+                return SmbSession(link.rawClient, link.rawConnection, session, share, target)
             } catch (e: Exception) {
-                try { connection?.close() } catch (ignored: Exception) {}
-                try { client.close() } catch (ignored: Exception) {}
+                c.close()
                 throw e
             }
         }
 
         /**
-         * Freigaben des PCs auflisten (0.11.0, über den Windows-Dienst "srvsvc", Bibliothek dcerpc).
-         * Nur normale Datei-Freigaben, keine versteckten/administrativen ("C$", "IPC$" …).
+         * Vorab-Prüfung ohne Anmeldung (nur Aushandeln, es werden keine Zugangsdaten gesendet): Entscheidung für den
+         * Host des Profils. Verbindungsfehler (PC aus, Netz) werden als Exception geworfen. Mit [seen] wird je Host und Lauf
+         * nur einmal ausgehandelt (die Entscheidung gilt weiter je Profil mit dessen eigener Kennung).
          */
-        fun listShares(profile: Profile): List<String> {
+        fun checkPc(profile: Profile, access: PcAccess = PcAccess.AUTO, seen: PcSeen? = null): PcDecision {
             val host = SmbTarget.hostOf(profile.smbPath)
                 ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
-            val client = SMBClient(SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).build())
+            val config = SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).build()
+            return connectChecked(profile, host, config, access, false, true, null, authenticate = false, seen = seen).decision
+        }
+
+        /**
+         * Freigaben des PCs auflisten (0.11.0, über den Windows-Dienst "srvsvc", Bibliothek dcerpc).
+         * Nur normale Datei-Freigaben, keine versteckten/administrativen ("C$", "IPC$" …).
+         * Gleiche Kennungsprüfung wie [open] (Standard AUTO; der Profil-Editor übergibt SETUP, lernt hier aber nie).
+         */
+        fun listShares(
+            profile: Profile,
+            access: PcAccess = PcAccess.AUTO,
+            onChangedGuid: ((host: String, oldGuid: String, newGuid: String) -> Boolean)? = null,
+            learnNetOk: Boolean = true,
+        ): List<String> {
+            val host = SmbTarget.hostOf(profile.smbPath)
+                ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
+            val config = SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).build()
+            val c = connectChecked(profile, host, config, access, false, learnNetOk, onChangedGuid, authenticate = true)
             try {
-                client.connect(host).use { connection ->
-                    val session = connection.authenticate(AuthenticationContext(
-                        profile.smbUser, CredentialCrypto.decrypt(profile.smbPasswordEnc).toCharArray(),
-                        profile.smbDomain.ifBlank { null },
-                    ))
-                    val transport = com.rapid7.client.dcerpc.transport.SMBTransportFactories.SRVSVC.getTransport(session)
-                    return com.rapid7.client.dcerpc.mssrvs.ServerService(transport).shares1
-                        .filter { (it.type and 0x0FFFFFFF) == 0 && !it.netName.endsWith("$") }
-                        .map { it.netName }
-                        .sortedBy { it.lowercase() }
-                }
+                val transport = com.rapid7.client.dcerpc.transport.SMBTransportFactories.SRVSVC.getTransport(c.session!!)
+                val shares = com.rapid7.client.dcerpc.mssrvs.ServerService(transport).shares1
+                    .filter { (it.type and 0x0FFFFFFF) == 0 && !it.netName.endsWith("$") }
+                    .map { it.netName }
+                    .sortedBy { it.lowercase() }
+                PcLogin.commit(c, pcStore)
+                return shares
             } finally {
-                try { client.close() } catch (ignored: Exception) {}
+                c.close()
             }
         }
 
@@ -130,7 +196,11 @@ class SmbSession private constructor(
         }
 
         /** Verbindung testen: verbinden, Zielordner prüfen. Liefert eine lesbare Meldung. */
-        fun test(profile: Profile): String = open(profile).use { s ->
+        fun test(
+            profile: Profile,
+            learnNetOk: Boolean = true,
+            onChangedGuid: ((host: String, oldGuid: String, newGuid: String) -> Boolean)? = null,
+        ): String = open(profile, PcAccess.SETUP, onChangedGuid, learn = true, learnNetOk = learnNetOk).use { s ->
             val base = s.target.basePath
             if (base.isNotEmpty() && !s.share.folderExists(base))
                 com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_test_missing_folder, base)

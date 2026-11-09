@@ -26,6 +26,7 @@
     <string name="skip_ssid_unreadable">WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen</string>
     <string name="skip_ssid_unknown">WLAN „%1$s“ ist in keinem Profil eingetragen</string>
     <string name="skip_pc_unreachable">PC nicht erreichbar: %1$s</string>
+    <string name="skip_pc_not_recognised">PC nicht erkannt: %1$s</string>
     <string name="wait_for_pc">Warte auf PC (%1$s) – Versuch %2$s/%3$s…</string>
     <string name="summary_failed">Synchronisierung fehlgeschlagen – %1$s</string>
     <plurals name="summary_transferred">
@@ -98,6 +99,10 @@
     <string name="smb_err_not_disk">„%1$s“ ist keine Datei-Freigabe</string>
     <string name="smb_err_incomplete">Upload unvollständig: %1$s von %2$s Bytes</string>
     <string name="smb_err_resume">Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen</string>
+    <string name="smb_err_pc_changed">Unter %1$s antwortet ein anderer PC als bisher. Es wurden keine Anmeldedaten gesendet. Mit „Verbindung testen“ prüfen und den neuen PC übernehmen.</string>
+    <string name="smb_err_pc_unknown">Der PC unter %1$s ist noch nicht erkannt. Es wurden keine Anmeldedaten gesendet. Profil öffnen und „Verbindung testen“ tippen (oder das Profil speichern), damit die App den PC kennenlernt.</string>
+    <string name="smb_err_pc_wrong_net">Der PC unter %1$s ist noch nicht erkannt, und das aktuelle WLAN steht nicht in der Liste des Profils (oder der WLAN-Name ist nicht lesbar). Es wurden keine Anmeldedaten gesendet. Im eingetragenen WLAN „Verbindung testen“ tippen, den Standortzugriff erlauben oder die PC-Kennung auf „Nur PC-Kennung“ stellen.</string>
+    <string name="smb_err_pc_no_id">Der PC unter %1$s liefert keine Kennung und kann nicht erkannt werden. Es wurden keine Anmeldedaten gesendet. Die PC-Kennung auf „Nur WLAN-Name“ stellen.</string>
     <string name="smb_test_missing_folder">Verbunden, aber Ordner „%1$s“ existiert nicht (wird bei der ersten Synchronisierung angelegt).</string>
     <plurals name="smb_test_ok">
         <item quantity="one">Verbindung OK – %1$s (%2$s Eintrag)</item>

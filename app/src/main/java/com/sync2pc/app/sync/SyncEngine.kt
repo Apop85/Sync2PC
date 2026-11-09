@@ -425,6 +425,7 @@ class SyncEngine(
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
+                            if (isPendingOrTrashed(e)) break // leise überspringen; nicht als "uploaded"/"failed" gezählt -> nächster Lauf
                             if (isConnectionError(e)) {
                                 try { session?.close() } catch (ignored: Exception) {}
                                 session = null
@@ -512,8 +513,12 @@ class SyncEngine(
         else item.uri
 
     private fun openLocal(item: MediaItem): ParcelFileDescriptor.AutoCloseInputStream {
-        val pfd = context.contentResolver.openFileDescriptor(readUri(item), "r")
-            ?: throw java.io.IOException(str(R.string.eng_err_unreadable, item.displayName))
+        val pfd = try {
+            context.contentResolver.openFileDescriptor(readUri(item), "r")
+        } catch (e: IllegalStateException) {
+            // pending/trashed: kein Dateifehler, Datei folgt beim nächsten Lauf
+            if (isPendingOrTrashed(e)) throw LocalItemNotReadyException(item.displayName, e) else throw e
+        } ?: throw java.io.IOException(str(R.string.eng_err_unreadable, item.displayName))
         return ParcelFileDescriptor.AutoCloseInputStream(pfd)
     }
 

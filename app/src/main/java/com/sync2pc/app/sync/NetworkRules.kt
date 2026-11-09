@@ -25,6 +25,49 @@ object NetworkRules {
     fun mayContinue(ssid: String?, profileSsids: List<String>, onAllowedNetwork: Boolean): Boolean =
         if (ssid != null) profileSsids.contains(ssid) else onAllowedNetwork
 
+    // ---- PC-Erkennung je Modus (SYNC-20261109-047, Stufe 2): GUID = jedes WLAN bzw. jede erlaubte Netzart ----
+
+    /** Braucht das Profil den WLAN-Namen? (WIFI und BOTH; GUID nie) */
+    fun needsWifiName(mode: PcCheckMode): Boolean = mode != PcCheckMode.GUID
+
+    /**
+     * Darf ein automatischer Lauf das Profil berücksichtigen? WIFI/BOTH: wie bisher (mobile Daten/VPN mit Schalter: ja,
+     * sonst muss der lesbare Name in der Liste stehen; unlesbar = nicht erfüllt). GUID: jede erlaubte Netzart.
+     * Bei BOTH/GUID über mobile Daten/VPN entscheidet danach die Kennung (Pflicht, Vorab-Prüfung im Worker).
+     */
+    fun eligible(
+        mode: PcCheckMode, ssid: String?, profileSsids: List<String>, onAllowedNetwork: Boolean, offWifiActive: Boolean,
+    ): Boolean = when {
+        offWifiActive -> true
+        mode == PcCheckMode.GUID -> onAllowedNetwork
+        else -> ssid != null && profileSsids.contains(ssid)
+    }
+
+    /** Wie [mayContinue], aber je Modus: GUID prüft nur die erlaubte Netzart */
+    fun mayContinue(mode: PcCheckMode, ssid: String?, profileSsids: List<String>, onAllowedNetwork: Boolean): Boolean =
+        if (mode == PcCheckMode.GUID) onAllowedNetwork else mayContinue(ssid, profileSsids, onAllowedNetwork)
+
+    /**
+     * Passt ein neu verbundenes WLAN zum Profil (Auslöser/Fortsetzen)? GUID: jedes WLAN. WIFI/BOTH: Name in der Liste;
+     * [unreadableMatches] = unlesbarer Name zählt als Treffer (der Worker prüft erneut), beim Fortsetzen nicht.
+     */
+    fun wifiTriggerMatches(
+        mode: PcCheckMode, ssid: String?, profileSsids: List<String>, unreadableMatches: Boolean,
+    ): Boolean = when {
+        mode == PcCheckMode.GUID -> true
+        ssid == null -> unreadableMatches
+        else -> profileSsids.contains(ssid)
+    }
+
+    /**
+     * Netzbedingung fürs erste Kennenlernen des PCs (V3, SYNC-20261109-058). BOTH: aktueller WLAN-Name lesbar und in der Liste
+     * des Profils (unlesbar = nicht erfüllt). GUID: immer erfüllt (Lernen nur in der bewussten Einrichtung). WIFI: nicht relevant.
+     */
+    fun learnNetOk(mode: PcCheckMode, ssid: String?, profileSsids: List<String>): Boolean = when (mode) {
+        PcCheckMode.BOTH -> ssid != null && profileSsids.contains(ssid)
+        else -> true
+    }
+
     /**
      * Minuten bis zum nächsten Versuch, wenn der PC nicht erreichbar ist.
      * Nur mobile Daten/VPN: lange Wartezeit (schont Akku und Datenvolumen), auch nach Abbruch mitten im Lauf.

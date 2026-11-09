@@ -2,6 +2,24 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.13.0 (2026-11-09, ungebaut und ungetestet)
+
+### Neu
+- **PC-Erkennung per PC-Kennung (SMB-Server-GUID, DEC-204):** Pro Profil wählbar: nur WLAN-Name (Standard für bestehende Profile, bisheriges Verhalten), nur PC-Kennung oder beides. Die Kennung wird vor dem Senden der Zugangsdaten geprüft; bei unbekanntem oder anderem PC meldet sich die App nicht an, überspringt das Profil (`skip_pc_not_recognised`), benachrichtigt einmal je Profil und wartet wie bei «nicht erreichbar». Bei Kennungswechsel (z. B. Neuinstallation von Windows) nur über «Verbindung testen» mit Rückfrage neu vertrauen. Oberfläche: Karte «PC-Kennung» im Profil, Status «PC erkannt / noch nicht erkannt» auf der Startseite. Funktioniert ohne Play Store und ohne WLAN-Namen (Standortfreigabe nur bei WLAN-Modus).
+- **Datenbank Version 8:** neue Profilfelder `pcCheck`, `pcGuid`, `pcGuidHost` (`MIGRATION_7_8`, nur `ADD COLUMN`). **Sicherung:** die drei Felder im Profil-JSON, Format-Version 1 bleibt; ältere Sicherungen ergeben «nur WLAN-Name».
+
+### Intern
+- Neue Klasse `sync/PcIdentity.kt`, `smb/PcStore.kt`; einziger Anmeldeweg `SmbSession.connectChecked`. Neue/erweiterte Tests: `PcIdentityTest`, `NetworkRulesTest`, `BackupCodecTest`, `MigrationTest` (7→8). Nicht ausgeführt.
+- Beschlossen, noch nicht umgesetzt (DEC-205): Die Kennung wird nur beim Speichern des Profils und in «Verbindung testen» gelernt, nicht mehr beim manuellen Sync.
+
+## 0.12.5 (2026-11-09)
+
+### Behoben
+- **Foto-Scan: Einträge im Papierkorb oder noch in Bearbeitung:** Der Scan ignoriert zusätzlich Einträge im Papierkorb (`IS_TRASHED = 0`, ab Android 11). Wechselt ein Eintrag zwischen Scan und Lesen auf pending/trashed, wird die Datei still übersprungen (kein Fehler, kein Ausschluss) und im nächsten Lauf erneut versucht.
+
+### Intern
+- Neue Testklasse `PendingTrashedErrorTest` (4 Tests). Nicht auf dem Gerät getestet.
+
 ## 0.12.4 (2026-11-09)
 
 ### Geändert

@@ -3,6 +3,7 @@ package com.sync2pc.app.media
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 
 data class MediaItem(
@@ -59,7 +60,10 @@ object MediaScanner {
                 "${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
             }
         }
-        val selection = "$typeSel AND $folderSel AND ${MediaStore.MediaColumns.IS_PENDING} = 0"
+        // IS_TRASHED gibt es erst ab Android 11 (API 30); minSdk ist 29
+        val trashedSel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            " AND ${MediaStore.MediaColumns.IS_TRASHED} = 0" else ""
+        val selection = "$typeSel AND $folderSel AND ${MediaStore.MediaColumns.IS_PENDING} = 0$trashedSel"
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
             MediaStore.Files.FileColumns.MEDIA_TYPE,

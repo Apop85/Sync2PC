@@ -115,10 +115,12 @@ class PauseService : Service() {
                 if (!GlobalSettings(ctx).resumeOnWifi) { stopSelf(); return@launch } // anderweitig fortgesetzt/abgebrochen
                 if (WifiHelper.isOnWifi(ctx)) {
                     val ssid = WifiHelper.currentSsid(ctx)
-                    val targets = com.sync2pc.app.data.AppDatabase.get(ctx).dao().profiles()
-                        .filter { it.enabled }.flatMap { it.ssids() }
-                    if (ssid != null && ssid in targets) {
-                        SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.Msg.of(com.sync2pc.app.R.string.trigger_resume_wifi, ssid))
+                    val targets = com.sync2pc.app.data.AppDatabase.get(ctx).dao().profiles().filter { it.enabled }
+                    // GUID-Profile: jedes WLAN genügt; WIFI/BOTH: Name in der Liste (unlesbar = noch warten)
+                    if (targets.any { NetworkRules.wifiTriggerMatches(it.pcMode(), ssid, it.ssids(), unreadableMatches = false) }) {
+                        SyncScheduler.enqueueAuto(ctx, com.sync2pc.app.l10n.Msg.of(
+                            if (ssid != null) com.sync2pc.app.R.string.trigger_resume_wifi else com.sync2pc.app.R.string.trigger_resume,
+                            *(if (ssid != null) arrayOf<Any>(ssid) else emptyArray())))
                         stopSelf()
                         return@launch
                     }

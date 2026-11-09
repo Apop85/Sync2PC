@@ -133,4 +133,25 @@
     <string name="wizard_intro_options_photos">When does it sync, and what happens to the photos on the mobile afterwards?</string>
     <string name="wizard_intro_filter">Optional: sync only certain files or exclude some. Without entries everything is synced.</string>
     <string name="wizard_intro_guard">Optional: from when LeoSync asks first when there are many deletions. The default suits most people.</string>
-</resources>
+    <!-- PC recognition (0.13.0) -->
+    <string name="profile_pc_check">PC ID</string>
+    <string name="profile_pc_check_hint">How LeoSync recognises your PC before it sends the sign-in data.</string>
+    <string name="profile_pc_opt_wifi">Wi-Fi name only</string>
+    <string name="profile_pc_opt_wifi_sub">As before. Weaker: a foreign network with the same Wi-Fi name and the same address could receive the sign-in data.</string>
+    <string name="profile_pc_opt_guid">PC ID only</string>
+    <string name="profile_pc_opt_guid_sub">Works in any Wi-Fi. The PC must be recognised before the sign-in data is sent.</string>
+    <string name="profile_pc_opt_both">Both</string>
+    <string name="profile_pc_opt_both_sub">Wi-Fi name and PC ID must both match. Safest.</string>
+    <string name="profile_pc_status_known">PC recognised</string>
+    <string name="profile_pc_status_unknown">PC not recognised yet. Tap “Test connection” once.</string>
+    <string name="profile_pc_status_new">The PC is recognised when you save, as soon as it is reachable (with “Both” in the listed Wi-Fi).</string>
+    <string name="profile_pc_learning">Recognising the PC …</string>
+    <string name="profile_pc_status_changed">A different PC answered. Tap “Test connection” to check it.</string>
+    <string name="profile_pc_status_wifi">Not used with “Wi-Fi name only”.</string>
+    <string name="profile_pc_switch_hint">The PC ID is checked now: the connection is tested once.</string>
+    <string name="profile_pc_trust_title">Trust a different PC?</string>
+    <string name="profile_pc_trust_body">At %1$s a different PC answers than before. Only continue if you reinstalled the PC or replaced it. Your sign-in data is only sent if you trust the new PC.</string>
+    <string name="profile_pc_trust_yes">Trust new PC</string>
+    <string name="profile_pc_trust_no">Do not trust</string>
+    <string name="home_profile_pc_known">PC recognised</string>
+    <string name="home_profile_pc_unknown">PC not recognised yet</string></resources>

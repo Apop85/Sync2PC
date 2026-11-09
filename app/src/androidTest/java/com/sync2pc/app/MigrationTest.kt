@@ -20,6 +20,7 @@ class MigrationTest {
     private val all = arrayOf(
         AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4,
         AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7,
+        AppDatabase.MIGRATION_7_8,
     )
 
     @get:Rule
@@ -35,7 +36,7 @@ class MigrationTest {
             )
             close()
         }
-        val d = helper.runMigrationsAndValidate(db, 7, true, *all)
+        val d = helper.runMigrationsAndValidate(db, 8, true, *all)
         d.query("SELECT name, profileType, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel FROM profiles").use { c ->
             c.moveToFirst()
             assertEquals("Fotos", c.getString(0))
@@ -98,6 +99,33 @@ class MigrationTest {
         }
         // Neue Zeilen mit Kennung lassen sich schreiben
         d.execSQL("UPDATE sync_runs SET messageCode = '{\"k\":\"run_nothing\"}' WHERE id = 1")
+        d.close()
+    }
+
+    /** 7 -> 8 (SYNC-20261109-047): PC-Erkennung; bestehende Profile behalten ihre Daten, Standard WLAN, keine Kennung */
+    @Test fun pcCheckFromVersion7() {
+        helper.createDatabase(db, 7).apply {
+            execSQL(
+                "INSERT INTO profiles (id, name, enabled, smbPath, smbUser, smbDomain, smbPasswordEnc, sourceFolders, " +
+                    "wifiSsids, includeImages, includeVideos, includeSubfolders, deleteMode, verifyUpload, profileType, " +
+                    "direction, localTreeUri, remoteSubfolder, propagateDeletes, conflictMode, includePatterns, " +
+                    "excludePatterns, remotePollMinutes, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel) VALUES " +
+                    "(1, 'Fotos', 1, '\\\\pc\\Fotos', 'leo', '', 'enc', 'DCIM/Camera/', 'heim', 1, 1, 1, 'KEEP', 1, 'PHOTOS', " +
+                    "'UPLOAD', '', '', 0, 'ASK', '', '', 60, 30, 20, 1, 2)"
+            )
+            close()
+        }
+        val d = helper.runMigrationsAndValidate(db, 8, true, AppDatabase.MIGRATION_7_8)
+        d.query("SELECT name, smbPath, smbPasswordEnc, wifiSsids, pcCheck, pcGuid, pcGuidHost FROM profiles WHERE id = 1").use { c ->
+            c.moveToFirst()
+            assertEquals("Fotos", c.getString(0))
+            assertEquals("\\\\pc\\Fotos", c.getString(1))
+            assertEquals("enc", c.getString(2))
+            assertEquals("heim", c.getString(3))
+            assertEquals("WIFI", c.getString(4))
+            assertEquals("", c.getString(5))
+            assertEquals("", c.getString(6))
+        }
         d.close()
     }
 }

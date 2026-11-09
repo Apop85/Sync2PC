@@ -87,13 +87,17 @@ fun RemoteFolderPicker(
     var createError by remember { mutableStateOf<String?>(null) }
     var createBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(parts) {
         entries = null; error = null; detail = null
         val result = withContext(Dispatchers.IO) {
             try {
-                if (parts.isEmpty()) Result.success(SmbSession.listShares(start))
-                else SmbSession.open(start.copy(smbPath = "\\\\$host\\${parts.first()}", remoteSubfolder = "")).use { s ->
+                // Profil-Editor (SETUP): meldet sich an, lernt aber nie (Host der Kopie kann ungespeichert sein); bei BOTH ohne
+                // bekannte Kennung nur im eingetragenen WLAN, abweichende Kennung wird hier nur gemeldet
+                val netOk = com.sync2pc.app.sync.PcLearner.learnNetOk(ctx, start)
+                if (parts.isEmpty()) Result.success(SmbSession.listShares(start, com.sync2pc.app.sync.PcAccess.SETUP, null, netOk))
+                else SmbSession.open(start.copy(smbPath = "\\\\$host\\${parts.first()}", remoteSubfolder = ""), com.sync2pc.app.sync.PcAccess.SETUP, learnNetOk = netOk).use { s ->
                     Result.success(s.listDir(parts.drop(1).joinToString("\\"))
                         .filter { it.isDirectory && !it.name.startsWith(".LeoSync") && !it.name.startsWith(".Sync2PC") }
                         .map { it.name }.sortedBy { it.lowercase() })
@@ -184,7 +188,8 @@ fun RemoteFolderPicker(
                             scope.launch {
                                 val r = withContext(Dispatchers.IO) {
                                     try {
-                                        SmbSession.open(start.copy(smbPath = "\\\\$host\\$share", remoteSubfolder = "")).use { s ->
+                                        SmbSession.open(start.copy(smbPath = "\\\\$host\\$share", remoteSubfolder = ""), com.sync2pc.app.sync.PcAccess.SETUP,
+                                            learnNetOk = com.sync2pc.app.sync.PcLearner.learnNetOk(ctx, start)).use { s ->
                                             s.ensureDir(full)
                                             // Nur als Erfolg werten, wenn der Ordner wirklich da ist
                                             if (!s.dirExists(full)) throw java.io.IOException(str(R.string.remote_picker_create_failed))

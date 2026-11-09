@@ -133,4 +133,25 @@
     <string name="wizard_intro_options_photos">Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Handy?</string>
     <string name="wizard_intro_filter">Optional: Nur bestimmte Dateien synchronisieren oder einzelne ausschliessen. Ohne Angaben wird alles synchronisiert.</string>
     <string name="wizard_intro_guard">Optional: Ab wann LeoSync bei vielen Löschungen zuerst nachfragt. Der Standard passt für die meisten.</string>
-</resources>
+    <!-- PC-Erkennung (0.13.0) -->
+    <string name="profile_pc_check">PC-Kennung</string>
+    <string name="profile_pc_check_hint">Woran LeoSync deinen PC erkennt, bevor es die Anmeldedaten sendet.</string>
+    <string name="profile_pc_opt_wifi">Nur WLAN-Name</string>
+    <string name="profile_pc_opt_wifi_sub">Wie bisher. Schwächer: Ein fremdes Netz mit gleichem WLAN-Namen und gleicher Adresse könnte die Anmeldedaten erhalten.</string>
+    <string name="profile_pc_opt_guid">Nur PC-Kennung</string>
+    <string name="profile_pc_opt_guid_sub">Funktioniert in jedem WLAN. Der PC muss erkannt sein, bevor die Anmeldedaten gesendet werden.</string>
+    <string name="profile_pc_opt_both">Beides</string>
+    <string name="profile_pc_opt_both_sub">WLAN-Name und PC-Kennung müssen beide stimmen. Am sichersten.</string>
+    <string name="profile_pc_status_known">PC erkannt</string>
+    <string name="profile_pc_status_unknown">PC noch nicht erkannt. Einmal „Verbindung testen“ tippen.</string>
+    <string name="profile_pc_status_new">Der PC wird beim Speichern erkannt, sobald er erreichbar ist (bei „Beides“ im eingetragenen WLAN).</string>
+    <string name="profile_pc_learning">PC wird erkannt …</string>
+    <string name="profile_pc_status_changed">Ein anderer PC hat geantwortet. Mit „Verbindung testen“ prüfen.</string>
+    <string name="profile_pc_status_wifi">Bei „Nur WLAN-Name“ nicht verwendet.</string>
+    <string name="profile_pc_switch_hint">Die PC-Kennung wird jetzt geprüft: Die Verbindung wird einmal getestet.</string>
+    <string name="profile_pc_trust_title">Anderem PC vertrauen?</string>
+    <string name="profile_pc_trust_body">Unter %1$s antwortet ein anderer PC als bisher. Nur fortfahren, wenn du den PC neu installiert oder ersetzt hast. Deine Anmeldedaten werden nur gesendet, wenn du dem neuen PC vertraust.</string>
+    <string name="profile_pc_trust_yes">Neuem PC vertrauen</string>
+    <string name="profile_pc_trust_no">Nicht vertrauen</string>
+    <string name="home_profile_pc_known">PC erkannt</string>
+    <string name="home_profile_pc_unknown">PC noch nicht erkannt</string></resources>

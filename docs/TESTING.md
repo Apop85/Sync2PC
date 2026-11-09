@@ -29,7 +29,7 @@ Mocking-Bibliotheken (Mockito, MockK, Robolectric, Turbine …) sind **nicht** e
 |---|---|---|
 | Unit-Tests beim Standard-Build | `build.bat` ruft `gradlew testDebugUnitTest assembleRelease` auf; ein Testfehler bricht den Build ab (ausser `-SkipTests`) | `build.md` |
 | Kompilierung mit R8 im Release | `isMinifyEnabled`/`isShrinkResources` = true; deckt fehlende Keep-Regeln erst zur Laufzeit auf, nicht im Test | `app/build.gradle.kts` |
-| Room-Schema-Export | `exportSchema = true`, Schemas `1.json`–`7.json` in `app/schemas/…/`; Grundlage für `MigrationTest` | `AppDatabase.kt`, `app/build.gradle.kts` |
+| Room-Schema-Export | `exportSchema = true`, Schemas `1.json`–`8.json` in `app/schemas/…/`; Grundlage für `MigrationTest` | `AppDatabase.kt`, `app/build.gradle.kts` |
 | Strings-Parität | schlägt fehl, wenn DE/EN-Schlüssel, Platzhalter oder Plural-Formen abweichen | `StringsParityTest.kt` |
 | Schutzbremse etc. zur Laufzeit | Fachliche Sicherungen der App (Löschschutz, Prüfstufen), keine Testmechanismen; Logik teilweise per Unit-Test abgesichert | `MirrorGuardTest`, `VerifyLevelTest` |
 | Manuelle Release-Checkliste | Deckt Engine, SMB, Hintergrund, Migration auf echtem Gerät ab | `build.md` |
@@ -138,14 +138,15 @@ Pfade relativ zu `app/src/test/java/com/sync2pc/app/` (Ausnahme: `MigrationTest`
 
 | Datei | Getestet | Geprüfte Szenarien | Tests |
 |---|---|---|---|
-| `BackupCodecTest.kt` | `backup/BackupCodec`; zusätzlich `StaleCheck`, `SpaceFreer` | Round-Trip ohne Passwort; Passwörter verschlüsselt und wiederhergestellt; falsches/fehlendes Passwort importiert Profile trotzdem; ältere Sicherung bekommt Standardwerte; fremde und zukünftige Dateien werden abgelehnt; Erinnerung „veraltet“ alle drei Tage; Live-Photo-Paare bleiben zusammen; Schalter `syncOffWifi` im Round-Trip (Boolean) und fehlender Schlüssel bleibt fehlend (seit 0.11.7) | 9 |
+| `BackupCodecTest.kt` | `backup/BackupCodec`; zusätzlich `StaleCheck`, `SpaceFreer` | Round-Trip ohne Passwort; Passwörter verschlüsselt und wiederhergestellt; falsches/fehlendes Passwort importiert Profile trotzdem; ältere Sicherung bekommt Standardwerte; fremde und zukünftige Dateien werden abgelehnt; Erinnerung „veraltet“ alle drei Tage; Live-Photo-Paare bleiben zusammen; Schalter `syncOffWifi` im Round-Trip (Boolean) und fehlender Schlüssel bleibt fehlend (seit 0.11.7). Seit 0.13.0 drei Tests zur PC-Erkennung: Round-Trip von `pcCheck`/`pcGuid`/`pcGuidHost`; ältere Sicherung ohne diese Felder → `WIFI` und leer; Normalisierung beim Einlesen (Kleinbuchstaben/Host getrimmt; unbekannter Modus oder Null-UUID → `WIFI`/leer) | 12 (laut Quelltext, 3 neu; **nicht ausgeführt**) |
 | `ProfileOverlapTest.kt` | `data/ProfileOverlap` | gleiche Quelle trotz anderer Schreibweise; zusätzlicher Ordner = teilweise; Oberordner = teilweise; anderes Ziel/andere Ordner = ok; Bearbeiten desselben Profils ist kein Konflikt; Ordner-Profile vergleichen lokalen Ordner; verschachtelte Ordner-Profile warnen | 7 |
 | `ProfileWizardTest.kt` | `data/ProfileWizard` | Schritte je Profiltyp (Schutzbremse nur bei Ordner-Profilen, zuletzt); Pflichtfelder (WLAN optional); Speichern ab erstem optionalem Schritt | 3 |
 | `CredentialGroupsTest.kt` | `data/CredentialGroups` | gleicher Benutzer/Server/Passwort = ein Eintrag; Abweichungen getrennt; Profile ohne Benutzer ignoriert | 3 |
 | `RunSummaryTest.kt` | `sync/RunSummary`, `data/RunGrouping` | Zusammenfassung zeigt nur Geschehenes; Nullwerte entfallen; aufeinanderfolgende ruhige Läufe gruppiert; einzelner ruhiger Lauf bleibt einzeln; Filter Fehler/Übertragung; „gefunden auf PC/Papierkorb“ ist nicht ruhig; Altformat bis 0.3.3 | 6 |
 | `DiagnosticsTest.kt` | `diag/Diagnostics`, `VendorHints`, `CrashReporter` | Log-Verdichtung (neues/altes Format, Einzelzeile); Herstellererkennung; Absturzprotokoll behält neueste drei; Trace gekürzt; seit 0.12.4 Maskierung/Pseudonymisierung über `Redactor` (DEC-203) | 15 (laut Development, grüner Gesamtlauf `testDebugUnitTest` 2026-11-09; vorher 6; nicht von QA gemessen) |
 | `RemoteFolderNameTest.kt` | `invalidFolderName` (Ordnername in der PC-Auswahl) | Namensprüfung (leer, Länge, verbotene Zeichen, „.“/„..“, Ende mit Punkt/Leerzeichen, Dublette); seit 0.11.3; im QA-Lauf 2026-11-08 ausgeführt und bestanden | 4 |
-| `NetworkRulesTest.kt` | `sync/NetworkRules` (reine Netzentscheidungen, DEC-126) | Tabelle erlaubte Netzart (`onAllowedNetwork`); Schalter + mobile Daten/VPN nötig (`offWifiSyncActive`); Weiterlaufen nach SSID bzw. Netzart (`mayContinue`); Wartezeiten (`retryMinutes`); Erreichbarkeitsversuche (`reachabilityWaits`); seit 0.11.7 | 5 |
+| `NetworkRulesTest.kt` | `sync/NetworkRules` (reine Netzentscheidungen, DEC-126) | Tabelle erlaubte Netzart (`onAllowedNetwork`); Schalter + mobile Daten/VPN nötig (`offWifiSyncActive`); Weiterlaufen nach SSID bzw. Netzart (`mayContinue`); Wartezeiten (`retryMinutes`); Erreichbarkeitsversuche (`reachabilityWaits`); seit 0.11.7. Seit 0.13.0 (DEC-204) zusätzlich je Modus `WIFI`/`GUID`/`BOTH`: `needsWifiName`, `eligible`, `mayContinue(mode, …)`, `wifiTriggerMatches` | 11 (laut Quelltext, 6 neu; **nicht ausgeführt**) |
+| `PcIdentityTest.kt` | `sync/PcIdentity`, `PcIdentityException` (DEC-204) | Normalisierung der Kennung (Kleinbuchstaben, Null-UUID/leer ungültig); `PcCheckMode.parse` fällt auf `WIFI` zurück; gespeicherte Kennung gilt nur für denselben Host (ohne Gross-/Kleinschreibung); Tabelle `decide` je Modus: `WIFI` blockiert nie, `GUID`/`BOTH` ohne Kennung nie anmelden, ohne gespeicherte Kennung nur bei `USER` lernen, mit gespeicherter Kennung gleich/abweichend; nur `ALLOW`/`ALLOW_AND_LEARN` dürfen anmelden; `PcIdentityException` ist kein Netzwerkfehler (auch verschachtelt) und keine `IOException`, echte Netzwerkfehler werden weiter erkannt; Meldungen lesbar mit Host. Neu seit 0.13.0 | 13 (laut Quelltext; **nicht ausgeführt**) |
 | `FolderFreerTest.kt` | `mirror/FolderFreer` (`isProtectedDir`, `emptyDirCandidates`; DEC-147) | Profil-Wurzel immer geschützt; `DCIM/Camera` geschützt (handgeschriebene Labels); andere Ordner nicht geschützt; Kandidaten tiefster Ordner zuerst ohne geschützte; geschützte übersprungen, andere bleiben; seit 0.11.8 | 5 |
 | `RestoreRetryPolicyTest.kt` | `mirror/RestoreRetryPolicy` (DEC-146) | ab dem 5. Fehlversuch erschöpft; Zähler je Wiederherstellungs-ID; ID-Präfix wird nicht verwechselt (1/12); seit 0.11.8 | 3 |
 | `MsgTest.kt` | `l10n/Msg` (Kennung), `data/RunTexts`, `RunGrouping.isIdle`, `RunSummary.NOT_IDLE_KEYS` (DEC-159/DEC-202) | Code rendert wie der Originaltext; Ressourcen-Namen statt IDs gespeichert; Mehrzahl und Verschachtelung überstehen die Speicherung; wörtlicher Text ohne Code; Rückfalltext bei unbrauchbarem Code; unbekannte Felder ignoriert, Tiefe begrenzt; Anzeige in der aktiven statt der Schreibsprache; `isIdle` über Schlüssel bzw. Merkmal-Wörter ohne Code; Log-Zeilen aus Code oder Rückfalltext; `NOT_IDLE_KEYS` sind echte Ressourcen; seit 0.12.0 | 11 (QA-Lauf 2026-11-09 bestanden) |
@@ -155,9 +156,10 @@ Pfade relativ zu `app/src/test/java/com/sync2pc/app/` (Ausnahme: `MigrationTest`
 
 `app/src/androidTest/java/com/sync2pc/app/MigrationTest.kt` (`@RunWith(AndroidJUnit4)`, `MigrationTestHelper`, braucht Gerät/Emulator):
 
-- `fromVersion1ToLatest`: Profil der DB-Version 1 durchläuft `MIGRATION_1_2` … `MIGRATION_6_7` und `runMigrationsAndValidate(..., 7, true, …)`; prüft Schema und eine übernommene Spalte (Prüfung an → „Wenig“).
+- `fromVersion1ToLatest`: Profil der DB-Version 1 durchläuft `MIGRATION_1_2` … `MIGRATION_7_8` und `runMigrationsAndValidate(..., 8, true, …)` (seit 0.13.0; vorher bis 7); prüft Schema und eine übernommene Spalte (Prüfung an → „Wenig“).
 - `verifyLevelFromVersion5`: `MIGRATION_5_6` mit Datenzeilen (KEEP/Prüfung aus → „Aus“; TRASH/Prüfung aus → „Wenig“; Prüfung an → „Wenig“).
 - `runCodesFromVersion6` (seit 0.12.0): `MIGRATION_6_7`; bestehender Lauf und bestehende Log-Zeile behalten ihren Text, die neuen Spalten `messageCode`, `triggerCode`, `code` sind `NULL`; eine Kennung lässt sich danach schreiben. Ausgeführt durch QA 2026-11-09 (Emulator API 29): bestanden.
+- `pcCheckFromVersion7` (seit 0.13.0, DEC-204): `MIGRATION_7_8`; ein bestehendes Profil behält Name, Pfad, verschlüsseltes Passwort und WLAN-Liste, die neuen Spalten stehen auf `pcCheck = 'WIFI'`, `pcGuid = ''`, `pcGuidHost = ''`. **Nicht ausgeführt.** Der Quelltext hat jetzt 4 `@Test`; die Zahl „3“ in Abschnitt 1 gilt nur für den ausgeführten Stand 0.12.1.
 
 `app/src/androidTest/java/com/sync2pc/app/MsgInstrumentedTest.kt` (seit 0.12.2, 6 Tests laut Development -043/-039): Namen-Round-Trip mit echtem `AndroidResolver`, Plural/verschachtelt, Rückfall, DE/EN, `triggerData/triggerOf`; Sprachwechsel nur bis Android 12. **Noch nicht ausgeführt:** Testzahl der instrumentierten Tests erst nach grünem `connectedDebugAndroidTest` (QA/Inhaber) eintragen; die Zahlen in Abschnitt 1 (3 Tests) gelten nur für `MigrationTest`. Zusätzlicher Gerätetest beim Inhaber (nicht ausgeführt): Hinweise für LeoSync aus → Eingriff → Ansicht öffnen (Ergebnis bleibt stehen).
 
@@ -169,7 +171,8 @@ Einzelne Migrationen 1→2, 2→3, 3→4, 4→5 werden **nur als Teil der Kette*
 
 | Aspekt | Stand |
 |---|---|
-| Migrationskette 1→7 | **[vorhanden]** `MigrationTest.fromVersion1ToLatest` (Gerät/Emulator) |
+| Migrationskette 1→8 | **[vorhanden]** `MigrationTest.fromVersion1ToLatest` (Gerät/Emulator); bis 1→7 am 2026-11-09 bestanden, die Erweiterung auf 8 ist **nicht ausgeführt** |
+| Datenerhalt bei 7→8 (`pcCheck`, `pcGuid`, `pcGuidHost`) | **[vorhanden, nicht ausgeführt]** `MigrationTest.pcCheckFromVersion7` |
 | Datenerhalt bei 5→6 (`verifyLevel`) | **[vorhanden]** `MigrationTest.verifyLevelFromVersion5` |
 | Datenerhalt bei 6→7 (Kennungsspalten) | **[vorhanden]** `MigrationTest.runCodesFromVersion6` (QA 2026-11-09 bestanden) |
 | Datenerhalt bei 1→2, 2→3, 3→4, 4→5 mit eigenen Daten | **[fehlt]** (nur Schema-Validierung innerhalb der Kette) |
@@ -225,6 +228,14 @@ Wichtig: Das Gradle-Setup führt `MigrationTest` **nicht** beim Standard-Build (
 
 Nachweislich **keine** Tests für Verbindungsaufbau, Authentifizierung, Freigabenliste (`listShares`), Verzeichnisoperationen, Upload/Download, `isReachable` (TCP 445), Timeouts, Wiederverbindung oder Netzwerkfehler. Es gibt weder echte SMB-Tests noch Fake-/Mock-Implementierungen. Das Einzige, was aus der SMB-Schicht getestet ist: der Pfad-Parser `SmbTarget` (in `FilenameDateParserTest.smbPaths`) und der Teilhash-Berechnungsteil (`PartialHash`, in `FolderNamesTest`/`MirrorGuardTest`/`VerifyLevelTest`) mit lokalen Byte-Arrays.
 
+### PC-Erkennung (DEC-204, DEC-205; Stand 2026-11-09, Code 0.13.0 ungebaut, nichts ausgeführt)
+
+- **Unit (vorhanden, nicht ausgeführt):** `PcIdentityTest`, `NetworkRulesTest` (je Modus), `BackupCodecTest` (3 neue Tests), Instrumentation `MigrationTest` 7→8 (Abschnitte 4.2, 4.3, 5). Beim Bau durch den Inhaber: `PcIdentityTest`, `NetworkRulesTest`, `BackupCodecTest`, `StringsParityTest` (neue Texte `profile_pc_*`, `home_profile_pc_*`, `skip_pc_not_recognised`, `smb_err_pc_*`) und `MigrationTest` (mit `8.json`).
+- **Neu/erweitert in 0.13.1 (vorhanden, nicht ausgeführt, Development SYNC-20261109-055):** `PcLoginTest` (Fake-Verbindung: kein `authenticate` bei UNKNOWN/CHANGED/NO_ID/WRONG_NET, Reihenfolge connect → Kennung → Entscheidung → authenticate, Lernen/Neuvertrauen nur nach Commit, strengerer Modus, Grundsatz V7, Host-Zwischenspeicher, Host-Prüfung); `PcIdentityTest` erweitert (Modus × Zugriffsart × `learnNetOk`, V7, `PcEditorRules`, `WRONG_NET`-Meldung); `NetworkRulesTest` (`learnNetOk`); `DiagnosticsTest` (PC-Kennung/Host pseudonymisiert; die Zeilen in `Diagnostics.build` selbst nicht JVM-testbar); androidTest `PcGuidDaoTest` (SQL `learnPcGuid`/`trustNewPcGuid`/`clearPcGuid` inkl. Moduswächter, In-Memory-Room). Auch zu bauen: `StringsParityTest`, `MigrationTest` (mit `8.json`).
+- **Lücken:** keine Tests für `SyncWorker.precheckPc` und die Oberfläche (`ProfileScreen`, `HomeParts`; nur die ausgelagerte reine Regel `PcEditorRules` ist per JVM-Test abgedeckt).
+- **Gerätetest (QA, ausstehend; SYNC-20261109-053):** ein fremder PC unter gleicher IP erhält keinen SESSION_SETUP; Verhalten bei Kennungswechsel; Stabilität der Kennung bei Samba/NAS (ungeprüft); Akku bei `GUID` in fremden WLANs.
+- **Gerätetest (DEC-205, ausstehend, QA):** Speichern und «Verbindung testen» in fremdem WLAN bei `BOTH` ohne Kennung → kein SESSION_SETUP; manueller Sync ohne Kennung → keine Anmeldung (Hinweis «Profil öffnen → Verbindung testen»). Unsicher bei der Kompilierung (nicht gebaut, laut Development): `ConnectionContext.getServerGuid()`, Compose `collectAsState` in `createdId?.let`.
+
 ### Android-spezifisch
 
 | Bereich | Stand |
@@ -233,7 +244,7 @@ Nachweislich **keine** Tests für Verbindungsaufbau, Authentifizierung, Freigabe
 | ViewModels | im Projekt nicht als eigene Klassen erfasst; **keine** ViewModel-Tests |
 | Compose-UI / Navigation | **[fehlt]** (keine `compose-ui-test`-Abhängigkeit) |
 | Berechtigungen (`Permissions.kt`, `PermissionRows.kt`) | **[fehlt]**, nur manuell |
-| Speicherzugriff (SAF, `LocalTree`, MediaStore) | **[fehlt]**; nur Label-Funktion getestet |
+| Speicherzugriff (SAF, `LocalTree`, MediaStore) | **[fehlt]**; nur Label-Funktion getestet. `PendingTrashedErrorTest` (4 Tests, **[vorhanden]**) prüft nur die Fehlererkennung (`isPendingOrTrashed`, `LocalItemNotReadyException`, keine Verwechslung mit Netzwerkfehlern); reale Verifikation des MediaStore-Verhaltens (`IS_TRASHED`-Filter, Überspringen) auf dem Gerät fehlt |
 | WorkManager (`SyncWorker`, `TriggerWorker`, `UpdateWorker`, `SyncScheduler`) | **[fehlt]** (kein `work-testing`) |
 | Benachrichtigungen (`Notifications.kt`) | **[fehlt]** |
 | Receivers (`Receivers.kt`), `PauseService` | **[fehlt]** |

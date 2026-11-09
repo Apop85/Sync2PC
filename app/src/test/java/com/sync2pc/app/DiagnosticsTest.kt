@@ -56,6 +56,20 @@ class DiagnosticsTest {
         assertEquals("WLAN-2", r.pseudo("WLAN", "Büro"))
     }
 
+    /** T5 (-055): PC-Kennung und Host der Kennung erscheinen nie im Klartext, gleiche Kennung = gleiches Pseudonym */
+    @Test fun pcGuidAndItsHostArePseudonymised() {
+        val guid = "11111111-2222-3333-4444-555555555555"
+        val r = Redactor()
+        r.register("Host", "nas-wohnzimmer"); r.register("PC-Kennung", guid)
+        val pseudo = r.pseudo("PC-Kennung", guid)
+        assertEquals("PC-Kennung-1", pseudo)
+        assertEquals(pseudo, r.pseudo("PC-Kennung", guid.uppercase()))
+        assertTrue(!pseudo.contains("1111"))
+        val out = r.scrub("PC $guid unter nas-wohnzimmer als anderer PC erkannt")
+        assertTrue(out, !out.contains(guid) && !out.contains("nas-wohnzimmer"))
+        assertEquals("Host-1", r.pseudo("Host", "NAS-Wohnzimmer"))
+    }
+
     @Test fun fileNamesLoseNameButKeepExtension() {
         val r = Redactor()
         assertEquals("↑ <Datei>.jpg → 2026\\10 - <Name>", r.scrub("↑ IMG_2031 Urlaub Rom.JPG → 2026\\10 - Ägypten"))

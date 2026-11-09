@@ -26,6 +26,7 @@
     <string name="skip_ssid_unreadable">Wi-Fi name not readable – check location “Allow all the time” and the location service</string>
     <string name="skip_ssid_unknown">Wi-Fi “%1$s” is not set in any profile</string>
     <string name="skip_pc_unreachable">PC not reachable: %1$s</string>
+    <string name="skip_pc_not_recognised">PC not recognised: %1$s</string>
     <string name="wait_for_pc">Waiting for PC (%1$s) – attempt %2$s/%3$s…</string>
     <string name="summary_failed">Sync failed – %1$s</string>
     <plurals name="summary_transferred">
@@ -98,6 +99,10 @@
     <string name="smb_err_not_disk">“%1$s” is not a file Share</string>
     <string name="smb_err_incomplete">Upload incomplete: %1$s of %2$s bytes</string>
     <string name="smb_err_resume">Resumed upload does not match the file – will be transferred again</string>
+    <string name="smb_err_pc_changed">A different PC answers at %1$s than before. No sign-in data was sent. Use “Test connection” to check it and trust the new PC.</string>
+    <string name="smb_err_pc_unknown">The PC at %1$s is not recognised yet. No sign-in data was sent. Open the profile and tap “Test connection” (or save the profile) so the app learns the PC.</string>
+    <string name="smb_err_pc_wrong_net">The PC at %1$s is not recognised yet, and the current Wi-Fi is not in the profile’s list (or the Wi-Fi name cannot be read). No sign-in data was sent. Tap “Test connection” in the listed Wi-Fi, allow location access, or set the PC ID to “PC ID only”.</string>
+    <string name="smb_err_pc_no_id">The PC at %1$s provides no ID, so it cannot be recognised. No sign-in data was sent. Set the PC ID to “Wi-Fi name only”.</string>
     <string name="smb_test_missing_folder">Connected, but folder “%1$s” does not exist (will be created at the first sync).</string>
     <plurals name="smb_test_ok">
         <item quantity="one">Connection OK – %1$s (%2$s entry)</item>

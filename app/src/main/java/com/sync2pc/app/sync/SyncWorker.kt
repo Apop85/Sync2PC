@@ -22,6 +22,7 @@ import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.mirror.MirrorEngine
 import com.sync2pc.app.media.MediaScanner
+import com.sync2pc.app.smb.PcSeen
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
@@ -144,7 +145,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         // --- Ziel-WLAN? Direkt nach dem Verbinden liefert Android den Namen evtl. noch nicht -> kurz nachlesen
         var ssid = WifiHelper.currentSsid(ctx)
-        if (!manual && ssid == null && WifiHelper.isOnWifi(ctx)) {
+        // Nur warten, wenn ein Profil den Namen braucht (PC-Erkennung GUID kommt ohne aus)
+        if (!manual && ssid == null && WifiHelper.isOnWifi(ctx) && all.any { NetworkRules.needsWifiName(it.pcMode()) }) {
             for (i in 1..3) {
                 delay(5_000)
                 ssid = WifiHelper.currentSsid(ctx)
@@ -153,7 +155,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         val currentSsid = ssid
         // 0.11.5 (DEC-126): über mobile Daten/VPN (Schalter an) gibt es keinen WLAN-Namen -> alle aktiven Profile
-        val eligible = if (manual || WifiHelper.offWifiSyncActive(ctx)) all else all.filter { p -> currentSsid != null && p.ssids().contains(currentSsid) }
+        // Je PC-Erkennung (Stufe 2): GUID = jede erlaubte Netzart, WIFI/BOTH = Name in der Liste
+        val offWifi = WifiHelper.offWifiSyncActive(ctx)
+        val onAllowed = WifiHelper.onAllowedNetwork(ctx)
+        val eligible = if (manual) all else all.filter { p ->
+            NetworkRules.eligible(p.pcMode(), currentSsid, p.ssids(), onAllowed, offWifi)
+        }
         if (eligible.isEmpty()) {
             if (!manual && WifiHelper.isOnWifi(ctx)) settings.noteSkip(
                 if (currentSsid == null) str(R.string.skip_ssid_unreadable)
@@ -181,6 +188,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val reach = HashMap<String, Boolean>()
         val unreachable = ArrayList<Profile>()
         val runnable = ArrayList<Profile>()
+        val rejected = ArrayList<PcRejection>()
+        // Vorab-Prüfung der Kennung je Host und Lauf nur einmal aushandeln (F5, nur im Speicher); entschieden wird je Profil
+        val pcSeen = PcSeen()
         for (p in eligible) {
             // Akku (0.3.4): Bildordner ohne übertragungsbereite Dateien brauchen den PC nicht – kein
             // Erreichbarkeitstest, keine Verbindung. SyncEngine meldet dann ohne Netzwerk "Nichts zu tun"
@@ -206,11 +216,36 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 reach[host.lowercase()] = r
                 r
             }
-            if (ok) runnable += p else unreachable += p
+            if (!ok) { unreachable += p; continue }
+            // PC-Erkennung GUID/BOTH: Kennung VOR jeder Anmeldung prüfen (nur Aushandeln, keine Zugangsdaten).
+            // WIFI: keine Prüfung, wie bisher (die Prüfung in SmbSession.open lernt dort still, ohne Vertrauen zu erzeugen).
+            if (!p.pcMode().checksGuid) { runnable += p; continue }
+            when (val pre = precheckPc(p, manual, pcSeen)) {
+                PcPre.Run -> runnable += p
+                PcPre.Unreachable -> unreachable += p
+                is PcPre.Rejected -> rejected += PcRejection(p, pre.decision, host)
+                // F3: Fehler der Aushandlung (nur SMB1, unerwarteter Status, Kennung nicht lesbar) wie «abgewiesen»:
+                // eine Meldung, kein Timer, keine Dauerbenachrichtigung, kein stilles Überspringen
+                is PcPre.Failed -> rejected += PcRejection(p, null, host, pre.text)
+            }
         }
+        // PC erkannt/nicht mehr abgewiesen -> Benachrichtigungsmerker löschen (neue Meldung bei erneutem Wechsel)
+        for (p in runnable) if (p.pcMode().checksGuid) settings.setPcNotified(p.id, false)
         if (unreachable.isNotEmpty()) settings.noteSkip(str(R.string.skip_pc_unreachable, unreachable.joinToString(", ") { it.name }))
+        if (rejected.isNotEmpty()) {
+            settings.noteSkip(str(R.string.skip_pc_not_recognised, rejected.joinToString(", ") { it.profile.name }))
+            if (manual) {
+                Notifications.summary(ctx, rejected.joinToString("\n") { "${it.profile.name}: ${it.message()}" }, error = true)
+            } else for (r in rejected) if (!settings.pcNotified(r.profile.id)) {
+                settings.setPcNotified(r.profile.id, true)
+                Notifications.summary(ctx, "${r.profile.name}: ${r.message()}", error = true)
+            }
+        }
         if (runnable.isEmpty()) {
+            // F2: abgewiesene Profile setzen keinen Timer (Port 445 antwortet, die Abweisung ändert nur der Benutzer); nicht erreichbare schon
             handleUnreachable(unreachable, manual, isRetry)
+            // Fortsetzen-Auftrag: nichts mehr fortzusetzen, wenn alle abgewiesen wurden (Anzeige «Pausiert» nicht stehen lassen)
+            if (unreachable.isEmpty() && isResumeRun && settings.resumeOnWifi) { settings.resumeOnWifi = false; PauseService.stop(ctx) }
             return Result.success()
         }
         // Ein unterbrochener Sync wird jetzt fortgesetzt -> Merker, Hinweis und Fortsetzen-Auftrag aufräumen
@@ -220,7 +255,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         PauseService.stop(ctx) // "Pausiert" weg, ab jetzt normale Fortschrittsanzeige
         Notifications.cancelInterrupted(ctx)
-        if (unreachable.isEmpty()) settings.noteSkip("")
+        if (unreachable.isEmpty() && rejected.isEmpty()) settings.noteSkip("")
 
         val cancel = WorkManager.getInstance(ctx).createCancelPendingIntent(id)
         try {
@@ -232,6 +267,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         var uploaded = 0; var failed = 0; var waiting = 0; var bytes = 0L
         var hardFailure: String? = null
+        // Mitten im Lauf verlorene Verbindung (DEC-048): nur diese setzen nach einem Lauf einen Wiederholungs-Timer
+        val lostMidRun = ArrayList<Profile>()
         var youngAt = 0L
         var conflicts = 0
         var spaceShortage = false
@@ -242,7 +279,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             for (p in runnable) {
                 val shouldContinue: () -> Boolean = {
                     manual || NetworkRules.mayContinue(
-                        WifiHelper.currentSsid(ctx), p.ssids(), WifiHelper.onAllowedNetwork(ctx)
+                        p.pcMode(), WifiHelper.currentSsid(ctx), p.ssids(), WifiHelper.onAllowedNetwork(ctx)
                     )
                 }
                 val onProgress: (SyncProgress) -> Unit = progress@{ pr ->
@@ -276,7 +313,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 conflicts += engine.newConflicts
                 if (engine.spaceShortage) spaceShortage = true
                 if (engine.wifiLost && !manual) markInterrupted()
-                if (engine.connectionFailed) { unreachable += p; interruptedMidRun = true }
+                if (engine.connectionFailed) { unreachable += p; lostMidRun += p; interruptedMidRun = true }
                 else if (r.status == RunStatus.FAILED) hardFailure = "${p.name}: ${r.messageText()}"
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
             }
@@ -315,23 +352,65 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         if (youngAt > 0) SyncScheduler.enqueueFollowUp(ctx, youngAt)
         // Erfolgreich gesichert -> eine offene Erinnerung "lange nicht gesichert" ist erledigt
-        if (hardFailure == null && !interruptedMidRun && unreachable.isEmpty()) {
+        if (hardFailure == null && !interruptedMidRun && unreachable.isEmpty() && rejected.isEmpty()) {
             Notifications.cancelStale(ctx)
             GlobalSettings(ctx).lastStaleWarnAt = 0
         }
 
-        handleUnreachable(unreachable, manual, isRetry, midRun = interruptedMidRun)
+        // F2: Lief mindestens ein Profil, setzt ein nicht erreichbarer PC keinen Timer (ein erreichbares Profil darf die anderen
+        // nicht blockieren und der Akku wird geschont); die übrigen werden beim nächsten ohnehin stattfindenden Lauf neu bewertet.
+        // Ein Abbruch mitten im Lauf behält die kurze Wiederholung (DEC-048/DEC-126). Abgewiesene Profile setzen nie einen Timer.
+        handleUnreachable(lostMidRun, manual, isRetry, midRun = interruptedMidRun)
         return Result.success()
+    }
+
+    /**
+     * Ein vom Kennungs-Vorabtest abgewiesenes Profil (Zugangsdaten wurden nicht gesendet). [decision] null = Fehler der Aushandlung
+     * mit eigenem Text [text] (F3).
+     */
+    private class PcRejection(val profile: Profile, val decision: PcDecision?, val host: String, val text: String? = null) {
+        fun message(): String = text ?: PcIdentityException(decision ?: PcDecision.UNKNOWN, host).message
+    }
+
+    private sealed class PcPre {
+        object Run : PcPre()
+        object Unreachable : PcPre()
+        class Rejected(val decision: PcDecision) : PcPre()
+        class Failed(val text: String) : PcPre()
+    }
+
+    /**
+     * Vorab-Prüfung der PC-Kennung für GUID/BOTH (nur Aushandeln, keine Zugangsdaten, je Host einmal über [seen]). Hier wird nie
+     * gelernt (V1): eine unbekannte Kennung ergibt UNKNOWN, auch beim manuellen Start; gelernt wird nur beim Speichern und in
+     * «Verbindung testen». Alles ausser ALLOW wird abgewiesen (sicherer Ausfall).
+     */
+    private fun precheckPc(p: Profile, manual: Boolean, seen: PcSeen): PcPre {
+        val access = if (manual) PcAccess.USER else PcAccess.AUTO
+        return try {
+            when (val d = SmbSession.checkPc(p, access, seen)) {
+                PcDecision.ALLOW -> PcPre.Run
+                else -> PcPre.Rejected(d)
+            }
+        } catch (e: PcIdentityException) {
+            PcPre.Rejected(e.decision)
+        } catch (e: Exception) {
+            if (isNetworkError(e)) PcPre.Unreachable else PcPre.Failed(userError(e))
+        }
     }
 
     /**
      * Nicht erreichbare Shares: automatisch -> in 30 Minuten erneut prüfen (solange im WLAN),
      * manuell -> Hinweis. Alles erreichbar -> Wartezustand aufheben.
      */
-    private fun handleUnreachable(unreachable: List<Profile>, manual: Boolean, isRetry: Boolean, midRun: Boolean = false) {
+    private fun handleUnreachable(
+        unreachable: List<Profile>, manual: Boolean, isRetry: Boolean, midRun: Boolean = false,
+    ) {
         val ctx = applicationContext
         val s = GlobalSettings(ctx)
-        if (unreachable.isEmpty()) {
+        // Abgewiesene Profile (PC nicht sicher erkannt, SYNC-20261109-047/-055) kommen nicht hierher: ohne Timer, sie werden beim
+        // nächsten ohnehin stattfindenden Lauf neu bewertet (Port 445 antwortet, die Abweisung ändert nur der Benutzer).
+        val waiting = unreachable
+        if (waiting.isEmpty()) {
             s.shareRetryAt = 0; s.shareUnreachable = ""
             // Die laufende Wiederholung nicht selbst abbrechen
             if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
@@ -340,13 +419,14 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val names = unreachable.joinToString(", ") { it.name }
         // Abbruch mitten in der Übertragung behandeln wie automatisch (auch bei manuellem Start): still fortsetzen
         if (manual && !midRun) {
-            Notifications.summary(ctx, str(R.string.summary_pc_unreachable, names), error = true)
+            if (unreachable.isNotEmpty()) Notifications.summary(ctx, str(R.string.summary_pc_unreachable, names), error = true)
             return
         }
         // Noch im Ziel-WLAN? Dann ist der PC weg -> in 30 Minuten erneut prüfen.
         // WLAN selbst verloren -> kein Timer, sondern sofort beim nächsten Verbinden (WifiNetworkReceiver).
         val ssid = WifiHelper.currentSsid(ctx)
-        val stillOnTargetWifi = if (ssid != null) unreachable.any { it.ssids().contains(ssid) } else WifiHelper.onAllowedNetwork(ctx)
+        val onAllowed = WifiHelper.onAllowedNetwork(ctx)
+        val stillOnTargetWifi = waiting.any { NetworkRules.mayContinue(it.pcMode(), ssid, it.ssids(), onAllowed) }
         if (stillOnTargetWifi) {
             // Im WLAN: Abbruch mitten in der Übertragung = meist kurzer Aussetzer -> bald erneut (2 min).
             // Nur mobile Daten/VPN (0.11.7): immer 2 Stunden. Ein erfolgreicher Lauf (auch von Hand) hebt die

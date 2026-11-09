@@ -26,7 +26,8 @@ class WifiNetworkReceiver : BroadcastReceiver() {
                 val ssid = WifiHelper.currentSsid(ctx)
                 val profiles = AppDatabase.get(ctx).dao().profiles().filter { it.enabled }
                 // SSID nicht lesbar -> trotzdem einplanen, der Worker prüft erneut
-                val match = ssid == null || profiles.any { it.ssids().contains(ssid) }
+                // PC-Erkennung GUID: jedes WLAN passt (kein Name nötig)
+                val match = profiles.any { NetworkRules.wifiTriggerMatches(it.pcMode(), ssid, it.ssids(), unreadableMatches = true) }
                 if (match) {
                     s.lastWifiTriggerAt = now
                     // Neue WLAN-Verbindung -> PC sofort prüfen, eine laufende 30-Minuten-Wartezeit verfällt

@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MediaInfo::class, SyncRun::class, LogEntry::class, MirrorState::class, MirrorConflict::class,
         PendingRestore::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,12 +26,21 @@ abstract class AppDatabase : RoomDatabase() {
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "sync2pc.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build().also { instance = it }
             }
 
         // Wichtig: Kein fallbackToDestructiveMigration() – fehlt eine Migration, soll die App
         // lieber abstürzen, als still alle Daten zu löschen.
+
+        /** SYNC-20261109-047: PC-Erkennung per Kennung. Nur neue Spalten mit Standardwerten; bestehende Profile bleiben bei WLAN-Prüfung. */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN pcCheck TEXT NOT NULL DEFAULT 'WIFI'")
+                db.execSQL("ALTER TABLE profiles ADD COLUMN pcGuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE profiles ADD COLUMN pcGuidHost TEXT NOT NULL DEFAULT ''")
+            }
+        }
 
         /**
          * 0.12.0 (DEC-159): Verlauf mit Kennungen statt fertiger Texte. Nur neue, nullable Spalten (DEC-084):

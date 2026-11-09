@@ -94,7 +94,7 @@ Zentrale Schnittstellen:
 
 - **`SyncRunner`** (`sync/SyncRunner.kt`): gemeinsames Interface der beiden Engines (`run()`, `preview`, `connectionFailed`, `wifiLost`, `blocked`, `newConflicts`, `spaceShortage`, `nextYoungFileAt`). `SyncWorker` kennt nur dieses Interface.
 - **`SyncDao`** (`data/SyncDao.kt`): einziger DB-Zugang; liefert für die UI `Flow`s (`profilesFlow()`, `decisionsFlow()` …).
-- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. *(Geplant, nicht umgesetzt: zentrale PC-Kennungs-Prüfung vor `authenticate`, siehe DEC-204.)*
+- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. Seit 0.13.0 (ungebaut) führt ein einziger Anmeldeweg (`connectChecked`: connect → PC-Kennung prüfen → `authenticate`) die Prüfung der PC-Kennung aus (DEC-204, `docs/SYNC-ENGINE.md` 6.0); die Datenbank erreicht `SmbSession` nur über die Schnittstelle `PcStore` (`RoomPcStore`, gesetzt in `App.kt`).
 - **`GlobalSettings`** (`data/GlobalSettings.kt`): profilübergreifende Einstellungen und Zustandsmerker (SharedPreferences „global“).
 - **`Notifications`** (`sync/Notifications.kt`): einziger Ort, der Benachrichtigungen erzeugt; öffnet die UI über Intent-Extra `EXTRA_OPEN`.
 
@@ -167,7 +167,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | Datei | Verantwortlichkeit / Inhalt | Zusammenarbeit | Rel. |
 |---|---|---|---|
 | `sync/SyncScheduler.kt` | Alle WorkManager-Aufträge und Auslöser: `enqueueAuto/Manual/FollowUp/Resume`, `enqueueShareRetry`, `armContentTrigger` (MediaStore-Content-URI-Trigger), `scheduleSafetyNet` (6 h), `onOffWifiChanged` (Neuplanung und Verwerfen der Wartezeit bei Wechsel von `syncOffWifi`, auch nach Sicherung einspielen), `scheduleRemotePoll`, `pause/pauseForever/resume/cancelAll`, `setupAll` | `SyncWorker`, `TriggerWorker`, `WifiHelper`, `UpdateWorker`, `StaleCheck` | ● |
-| `sync/SyncWorker.kt` | `CoroutineWorker`; ein Lauf für alle passenden Profile: Pause/Wartebedingungen prüfen, WLAN-SSID abgleichen, PC-Erreichbarkeit testen, je Profil `SyncRunner` wählen und ausführen, Abschluss-Benachrichtigungen, Folgeaufträge; globaler `Mutex` gegen parallele Läufe | `SyncEngine`, `MirrorEngine`, `Notifications`, `PauseService`, `TransferLocks`, `GuardStore` | ● |
+| `sync/SyncWorker.kt` | `CoroutineWorker`; ein Lauf für alle passenden Profile: Pause/Wartebedingungen prüfen, WLAN-SSID abgleichen, PC-Erreichbarkeit testen, PC-Kennung vorab prüfen (`GUID`/`BOTH`), je Profil `SyncRunner` wählen und ausführen, Abschluss-Benachrichtigungen, Folgeaufträge; globaler `Mutex` gegen parallele Läufe | `SyncEngine`, `MirrorEngine`, `Notifications`, `PauseService`, `TransferLocks`, `GuardStore` | ● |
 | `sync/SyncRunner.kt` | Interface beider Engines | Worker, Engines | ● |
 | `sync/SyncEngine.kt` | Bildordner-Lauf pro Profil: Scan → bekannte Dateien per DB aussortieren → Analyse + Zielordner (sequenziell) → parallele Uploads (je eigene SMB-Verbindung), Verifikation, Log. Enthält `SyncProgress`, `PreviewEntry` | `MediaScanner`, `MediaAnalyzer`, `TargetResolver`, `SmbSession`, `PartialHash`, `DeletionManager`, DAO | ● |
 | `sync/TargetResolver.kt` | Bestimmt den Monatsordner (gespeicherte Entscheidung, Standardname, umbenannte Ordner → Rückfrage) | `SyncEngine`, `FolderNames`, `CountryLookup` | ● |
@@ -181,7 +181,8 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `sync/PauseService.kt` | Foreground-Service (`dataSync`) „Pausiert – wartet auf WLAN“ nach WLAN-Unterbruch | `SyncWorker`, `SyncScheduler` | ● |
 | `sync/Receivers.kt` | `WifiNetworkReceiver` (System-Callback bei WLAN-Verbindung), `BootReceiver` (Boot/App-Update) | `SyncScheduler`, `WifiHelper` | ● |
 | `sync/WifiHelper.kt` | SSID lesen, WLAN-Status, Registrierung des `NetworkCallback` über `PendingIntent`; liest die Netzeigenschaften (`isOnMobileOrVpn`) und ruft `NetworkRules` auf | Receiver, Worker, Scheduler | ● |
-| `sync/NetworkRules.kt` | Reine Netzentscheidungen (seit 0.11.7, DEC-126): erlaubte Netzart, SSID-Prüfung ja/nein, Wartezeit „PC nicht erreichbar“ (`retryMinutes`: 30 min / 2 min / 2 h ausserhalb WLAN), Erreichbarkeitsversuche (`reachabilityWaits`) | `WifiHelper`, `SyncWorker` | ○ |
+| `sync/NetworkRules.kt` | Reine Netzentscheidungen (seit 0.11.7, DEC-126): erlaubte Netzart, SSID-Prüfung ja/nein, Wartezeit „PC nicht erreichbar“ (`retryMinutes`: 30 min / 2 min / 2 h ausserhalb WLAN), Erreichbarkeitsversuche (`reachabilityWaits`); seit 0.13.0 je PC-Erkennungsmodus (`needsWifiName`, `eligible`, `mayContinue(mode, …)`, `wifiTriggerMatches`) | `WifiHelper`, `SyncWorker`, `Receivers`, `PauseService` | ○ |
+| `sync/PcIdentity.kt` | PC-Erkennung per SMB-Server-GUID (seit 0.13.0, DEC-204): `PcCheckMode` (`WIFI`/`GUID`/`BOTH`), `PcAccess` (`AUTO`/`USER`/`SETUP`, `SETUP` seit 0.13.1 als einzige lernende Art, DEC-205), `PcDecision` (inkl. `WRONG_NET`), reine Regel `PcIdentity.decide` (mit `learnNetOk`), `PcEditorRules` (Editor-Regeln, z. B. `keepStoredOnSave`), `PcIdentityException` (kein Netzwerkfehler) | `SmbSession`, `SyncWorker`, `NetworkRules`, `Profile` | ○ |
 | `sync/TriggerWorker.kt` | Leichtgewichtiger Auslöser (neue Medien, Sicherheitsnetz, PC-Abfrage, Pausenende): stellt nur einen Sync ein | `SyncScheduler` | ○ |
 | `sync/StaleCheck.kt` | Tägliche Erinnerung „lange nicht gesichert“ (`StaleCheckWorker`) | `PendingCheck`, `Notifications` | ○ |
 | `sync/TransferLocks.kt` | WLAN-/CPU-Wakelock nur während eines Laufs | `SyncWorker` | ○ |
@@ -209,7 +210,10 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 
 | Datei | Verantwortlichkeit / Inhalt | Zusammenarbeit | Rel. |
 |---|---|---|---|
-| `smb/SmbSession.kt` | `SmbTarget` (Pfad-Parser), `RemoteEntry`, `SmbSession`: `open`, `listShares` (dcerpc/srvsvc), `isReachable` (TCP 445), `test`, Listen/Stat/Upload mit Temp-Datei `.s2ptmp`/Download/Move/Delete/`partialHash` | smbj, dcerpc, `CredentialCrypto` | ● |
+| `smb/SmbSession.kt` | `SmbTarget` (Pfad-Parser), `RemoteEntry`, `SmbSession`: `open`, `listShares` (dcerpc/srvsvc), `isReachable` (TCP 445), `checkPc` (Vorab-Prüfung ohne Anmeldung), `test`, Listen/Stat/Upload mit Temp-Datei `.s2ptmp`/Download/Move/Delete/`partialHash`; seit 0.13.0 einziger Anmeldeweg `connectChecked` (connect → PC-Kennung prüfen → `authenticate`, Lernen nach der Anmeldung), Hook `pcStore` | smbj, dcerpc, `CredentialCrypto`, `PcIdentity`, `PcStore` | ● |
+| `smb/PcLogin.kt` | Anmeldelogik der PC-Erkennung (seit 0.13.1) hinter den Schnittstellen `PcLink`/`PcTransport` (Fake-testbar): connect → Kennung → Entscheidung → `authenticate` (einziger `authenticate`-Aufruf), Lernen/Neuvertrauen nach dem Commit; `PcSeen` (Host-Zwischenspeicher je Host und Lauf, nur Speicher). `SmbSession` ist dafür nur der smbj-Adapter | `SmbSession`, `PcIdentity`, `PcStore` | ● |
+| `sync/PcLearner.kt` | `PcLearner.learnAfterSave`: Lernen der PC-Kennung nach dem Speichern eines Profils (app-weiter Scope, nach dem DB-Schreiben, 30 s je SMB-Vorgang, Speichern gelingt immer; DEC-205) | `ProfileScreen`, `SmbSession`, `PcStore` | ○ |
+| `smb/PcStore.kt` | Schnittstelle `PcStore` (Profil lesen, Kennung lernen, neu vertrauen) und `RoomPcStore` über `SyncDao` (`learnPcGuid`, `trustNewPcGuid`, `clearPcGuid`); hält `SmbSession` frei von Room (gesetzt in `App.kt`; Fake für Tests möglich) | `SmbSession`, `App`, `SyncDao` | ● |
 | `media/MediaScanner.kt` | Fotos/Videos über MediaStore (`MediaItem`, `FolderInfo`), `hasAddedSince` | `SyncEngine`, `PendingCheck`, UI | ● |
 | `media/MediaAnalyzer.kt` | Aufnahmedatum (EXIF/Video-Metadaten → Dateiname → Änderungsdatum) und GPS; nutzt `MediaInfo`-Cache | `FilenameDateParser`, `CountryLookup`, ExifInterface | ● |
 | `media/FilenameDateParser.kt` | Datum aus Dateinamen (IMG_…, PXL_…, WhatsApp …) | `MediaAnalyzer` | ○ rein |
@@ -238,8 +242,8 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | Datei | Verantwortlichkeit / Inhalt | Rel. |
 |---|---|---|
 | `ui/MainActivity.kt` | Einzige Activity (`singleTop`, Hochformat). `sealed class Screen` (Navigationszustand), `AppRoot`, Splash, Intent-Verarbeitung (`Notifications.OPEN_*`, Installer-Status), Löschfluss | ● |
-| `ui/HomeScreen.kt`, `ui/HomeParts.kt` | Startseite: Status, Profile, Werkzeuge, Schutzbremse-Karten, Pause-Dialog | ● |
-| `ui/ProfileScreen.kt`, `ui/ProfileCards.kt`, `ui/ProfileParts.kt` | Profil anlegen/bearbeiten (Assistent, Mirror-/Foto-Optionen, Freigaben- und Ordnerauswahl; `RemoteFolderPicker` kann seit 0.11.3 Ordner unterhalb einer Freigabe anlegen, `SmbSession.ensureDir`, DEC-192) | ● |
+| `ui/HomeScreen.kt`, `ui/HomeParts.kt` | Startseite: Status, Profile, Werkzeuge, Schutzbremse-Karten, Pause-Dialog; seit 0.13.0 Profilkarte mit Status „PC erkannt / noch nicht erkannt“ bei `GUID`/`BOTH`, WLAN-Zeile nur bei `WIFI`/`BOTH` | ● |
+| `ui/ProfileScreen.kt`, `ui/ProfileCards.kt`, `ui/ProfileParts.kt` | Profil anlegen/bearbeiten (Assistent, Mirror-/Foto-Optionen, Freigaben- und Ordnerauswahl; `RemoteFolderPicker` kann seit 0.11.3 Ordner unterhalb einer Freigabe anlegen, `SmbSession.ensureDir`, DEC-192; seit 0.13.0 Karte „PC-Kennung“ in `ProfileScreen` mit drei Modi und Status, WLAN-Karte nur bei `WIFI`/`BOTH`, „Verbindung testen“ mit Rückfrage bei Kennungswechsel) | ● |
 | `ui/SettingsScreen.kt` | Einstellungen in Rubriken (`SettingsSection`: NOTIFICATIONS, TRANSFER, PERMISSIONS, APP, UPDATES, DIAGNOSE), Sprache | ● |
 | `ui/TrashScreen.kt` | Papierkorb: wiederherstellen, aufräumen | ● |
 | `ui/FreeSpaceScreen.kt` | „Speicher freigeben“ mit Vorschau | ● |
@@ -491,6 +495,6 @@ Massgeblich sind die Dateien mit Bindestrich (alle vorhanden); die Unterstrich-V
 
 ## 14. Geplant oder noch nicht umgesetzt (Quelle: DECISIONS, **nicht** implementiert)
 
-- Paketwechsel zu `ch.leo.sync` und Play-Store-Integration: nur als offene Punkte geführt, ohne Versionsnummer (DEC-109, DEC-110). PC-Erkennung: unabhängig vom Play Store, eigenständige Umsetzung (Development SYNC-20261109-047; DEC-109, DEC-188).
+- Paketwechsel zu `ch.leo.sync` und Play-Store-Integration: nur als offene Punkte geführt, ohne Versionsnummer (DEC-109, DEC-110). ~~PC-Erkennung~~ – im Code umgesetzt (0.13.0, DEC-204, ungebaut und ungetestet; Abschnitte 4.2, 4.4, `docs/SYNC-ENGINE.md` 6.0). Beschlossen, Umsetzung offen: Lernen der PC-Kennung nur beim Speichern und in „Verbindung testen“ (DEC-205, Development SYNC-20261109-055 Punkt 6).
 - Heimnetz-Berechtigung ab targetSdk 37 voraussichtlich nötig (DEC-183).
 - ~~„Verlauf mit Kennungen statt fertiger Texte“ (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1 (DEC-202).

@@ -92,6 +92,36 @@ class BackupCodecTest {
         assertEquals(Profile().profileType, p.profileType)
     }
 
+    @Test fun pcRecognitionRoundTrips() {
+        val g = "3f2504e0-4f89-11d3-9a0c-0305e82c3301"
+        val c = content().copy(profiles = listOf(content().profiles.single().copy(pcCheck = "BOTH", pcGuid = g, pcGuidHost = "192.168.3.3")))
+        val p = BackupCodec.parse(BackupCodec.encode(c, exportPassword = null, iterations = fast), null).content.profiles.single()
+        assertEquals("BOTH", p.pcCheck)
+        assertEquals(g, p.pcGuid)
+        assertEquals("192.168.3.3", p.pcGuidHost)
+    }
+
+    @Test fun olderBackupWithoutPcRecognitionIsWifiOnly() {
+        val json = """{"format":"leosync-backup","version":1,"profiles":[{"id":1,"name":"Alt","smbPath":"\\\\pc\\x"}]}"""
+        val p = BackupCodec.parse(json, null).content.profiles.single()
+        assertEquals("WIFI", p.pcCheck)
+        assertEquals("", p.pcGuid)
+        assertEquals("", p.pcGuidHost)
+    }
+
+    @Test fun pcRecognitionIsNormalisedOnImport() {
+        val json = """{"format":"leosync-backup","version":1,"profiles":[{"id":1,"name":"X","pcCheck":"guid","pcGuid":"{3F2504E0-4F89-11D3-9A0C-0305E82C3301}","pcGuidHost":" PC-Leo "}]}"""
+        val p = BackupCodec.parse(json, null).content.profiles.single()
+        assertEquals("GUID", p.pcCheck)
+        assertEquals("3f2504e0-4f89-11d3-9a0c-0305e82c3301", p.pcGuid)
+        assertEquals("pc-leo", p.pcGuidHost)
+        // unbekannter Modus und Null-Kennung: sicher auf WIFI bzw. leer
+        val bad = """{"format":"leosync-backup","version":1,"profiles":[{"id":1,"name":"X","pcCheck":"XYZ","pcGuid":"00000000-0000-0000-0000-000000000000"}]}"""
+        val b = BackupCodec.parse(bad, null).content.profiles.single()
+        assertEquals("WIFI", b.pcCheck)
+        assertEquals("", b.pcGuid)
+    }
+
     @Test fun rejectsForeignAndFutureFiles() {
         for (json in listOf("kein json", """{"format":"etwas"}""", """{"format":"leosync-backup","version":99}""")) {
             try { BackupCodec.parse(json, null); fail("erwartet: Fehler für $json") } catch (e: BackupException) { /* ok */ }

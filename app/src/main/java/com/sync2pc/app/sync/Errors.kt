@@ -5,6 +5,9 @@ package com.sync2pc.app.sync
  * Solche Fehler sind erwartbar: Sie unterbrechen den Lauf, zählen aber nicht als Datei-Fehler.
  */
 fun isNetworkError(e: Throwable): Boolean {
+    // PC nicht sicher erkannt (SYNC-20261109-047): nie ein Netzwerkfehler, auch nicht als Ursache in der Kette.
+    // Zuerst prüfen, damit eine umhüllende Netzwerk-Exception sie nicht überdeckt.
+    if (generateSequence(e) { x -> x.cause?.takeIf { it !== x } }.take(9).any { it is PcIdentityException }) return false
     var t: Throwable? = e
     var depth = 0
     while (t != null && depth < 8) {
@@ -20,15 +23,31 @@ fun isNetworkError(e: Throwable): Boolean {
     return false
 }
 
+/** Eintrag war beim Scan regulär, ist aber inzwischen pending/trashed (z. B. Umbenennung durch System-UI). */
+class LocalItemNotReadyException(message: String, cause: Throwable) : java.io.IOException(message, cause)
+
+/** Fehler des MediaProviders "Only owner is able to interact with pending/trashed item" (Android 10+) */
+fun isPendingOrTrashed(e: Throwable): Boolean =
+    generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).any {
+        it is LocalItemNotReadyException ||
+            (it is IllegalStateException && it.message?.contains("pending/trashed", ignoreCase = true) == true)
+    }
+
 /**
  * Verständliche Meldung mit nächstem Schritt für häufige Fehler (0.11.0), sonst null.
  * Der technische Text ([shortError]) bleibt im Verlauf (aufklappen) und in der Diagnose.
  */
-fun friendlyError(e: Throwable): String? = friendlyErrorId(e)?.let { com.sync2pc.app.l10n.str(it) }
+fun friendlyError(e: Throwable): String? =
+    pcIdentityOf(e)?.message ?: friendlyErrorId(e)?.let { com.sync2pc.app.l10n.str(it) }
 
 /** Als Kennung (Verlauf, 0.12.0): verständlicher Text in der aktiven Sprache, sonst der technische Text wörtlich */
 fun userErrorMsg(e: Throwable): com.sync2pc.app.l10n.Msg =
-    friendlyErrorId(e)?.let { com.sync2pc.app.l10n.Msg.of(it) } ?: com.sync2pc.app.l10n.Msg.lit(shortError(e))
+    pcIdentityOf(e)?.toMsg()
+        ?: friendlyErrorId(e)?.let { com.sync2pc.app.l10n.Msg.of(it) } ?: com.sync2pc.app.l10n.Msg.lit(shortError(e))
+
+/** "PC nicht sicher erkannt" (Text mit Host als Argument, deshalb ausserhalb von [friendlyErrorId]) */
+private fun pcIdentityOf(e: Throwable): PcIdentityException? =
+    generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).firstOrNull { it is PcIdentityException } as? PcIdentityException
 
 private fun friendlyErrorId(e: Throwable): Int? {
     val chain = generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).toList()

@@ -180,7 +180,7 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 3. **Pause:** Nicht-manuell und `settings.isPaused()` → Lauf entfällt (Grund wird notiert).
 4. **Profilauswahl:** aktiv (`enabled`), konfiguriert (`isConfigured`), bei automatischen Läufen nicht in `awaitingFirstStart` (neue Profile warten auf ersten manuellen Start, DEC-103), **nicht durch die Schutzbremse blockiert** (`GuardStore.blockedIds`), nicht gerade zum Löschen vorgemerkt (`PendingProfileDelete`).
 5. **WLAN:** Automatisch nur Profile, deren Ziel-SSID zur aktuellen SSID passt; bei noch unlesbarer SSID bis zu 3× 5 s nachlesen. Manuell: alle. Mit Schalter `syncOffWifi` (seit 0.11.5, DEC-126) entfällt die SSID-Prüfung ausserhalb des WLAN: alle aktiven Profile sind berechtigt; im WLAN (auch VPN über WLAN) gilt weiter die SSID-Regel.
-6. **PC-Erreichbarkeit** (`SmbSession.isReachable`, TCP Port 445, 3 s): automatisch im WLAN bis 5 Versuche (0, 5, 10, 15, 30 s), manuell 2 (0, 3 s), ausserhalb des WLAN (nur mobile Daten/VPN, seit 0.11.7) 2 (0, 5 s) (`NetworkRules.reachabilityWaits`). **Ausnahme:** Foto-Profile ohne übertragungsbereite Dateien (`PendingCheck.readyFiles == 0`) überspringen den Test.
+6. **PC-Erreichbarkeit** (`SmbSession.isReachable`, TCP Port 445, 3 s): automatisch im WLAN bis 5 Versuche (0, 5, 10, 15, 30 s), manuell 2 (0, 3 s), ausserhalb des WLAN (nur mobile Daten/VPN, seit 0.11.7) 2 (0, 5 s) (`NetworkRules.reachabilityWaits`). **Ausnahme:** Foto-Profile ohne übertragungsbereite Dateien (`PendingCheck.readyFiles == 0`) überspringen den Test. Danach folgt bei Profilen mit `GUID`/`BOTH` die Vorab-Prüfung der PC-Kennung (Abschnitt 6.0, seit 0.13.0).
 7. **Vordergrunddienst:** `setForeground(...)`; scheitert das (Android 12+), normale Benachrichtigung. `TransferLocks.acquire` hält WLAN- und CPU-Sperre (max. 4 h).
 8. **Schleife über alle lauffähigen Profile, nacheinander** (nicht parallel): Engine erzeugen (`MIRROR` → `MirrorEngine`, sonst `SyncEngine`), `engine.run()`, danach Flags auswerten:
    `engine.blocked` → Benachrichtigung „Entscheidung nötig“; `wifiLost && !manual` → `markInterrupted()`; `connectionFailed` → Profil zählt als „nicht erreichbar“ und der Lauf als mitten unterbrochen; `FAILED` → harter Fehler.
@@ -218,7 +218,7 @@ Kein Vergleich mit dem Zustand des PCs; der Lauf entscheidet allein aus dem Hand
 | # | Schritt | Details / Code |
 |---|---|---|
 | 1 | Lauf anlegen | `dao.insertRun(SyncRun(...))`; Status `RUNNING`; Logs älter 30 Tage und Läufe älter 90 Tage werden gelöscht (nicht bei `dryRun`). Seit 0.12.0 trägt der Lauf den Auslöser zusätzlich als Kennung (`triggerCode`, aus den Auftragsdaten `KEY_TRIGGER_CODE`, Rückfall auf den Text) und beim Abschluss den Kurztext als `messageCode`; `log()` schreibt Text und `code` aus derselben `Msg` (siehe `DATA-MODEL.md` 3.11). Anzeige und `RunGrouping.isIdle` lesen die Kennung (`RunSummary.NOT_IDLE_KEYS`), die Sync-Entscheidungen ändern sich nicht |
-| 2 | Lokalen Bestand ermitteln | `MediaScanner.scan(...)` über MediaStore (`RELATIVE_PATH LIKE`, `IS_PENDING = 0`, `size > 0`) |
+| 2 | Lokalen Bestand ermitteln | `MediaScanner.scan(...)` über MediaStore (`RELATIVE_PATH LIKE`, `IS_PENDING = 0`, `size > 0`; ab Android 11/API 30 zusätzlich `IS_TRASHED = 0`, minSdk 29) |
 | 3 | Filter | `FileFilter(includePatterns, excludePatterns)` auf `relativePath + displayName` |
 | 4 | Bekanntes aussortieren | `dao.syncedLite(profileId)` → Map `sourceKey`; **bekannt** = gleiche `size` **und** gleiches `dateModified` (Sekunden) → übersprungen ohne I/O |
 | 5 | Mindestalter | `age = jetzt − max(dateAdded, dateModified) < minFileAgeMinutes` → „zu jung“, frühester Nachholzeitpunkt in `nextYoungFileAt` (nicht bei `dryRun`) |
@@ -227,7 +227,7 @@ Kein Vergleich mit dem Zustand des PCs; der Lauf entscheidet allein aus dem Hand
 | 8 | Analyse + Zielordner (Produzent, sequenziell) | `mediaInfo()` (Cache `media_info`, gültig bei gleicher `size`/`dateModified`; sonst `MediaAnalyzer`), `TargetResolver.resolve` → `Folder` oder `Ask` |
 | 9 | Entscheidungsbedarf | `Ask` → Datei wird **nicht** übertragen, Gruppe wird gezählt; am Lauf-Ende als `PendingDecision` gespeichert (Abschnitt 13) |
 | 10 | Übertragung (parallel) | `Channel<Job>(32)`, `parallelUploads` (1–4, Standard 3) Worker mit je eigener `SmbSession` |
-| 11 | Pro Datei (`transfer`) | Namensvergabe unter `nameLock`, Duplikatprüfung, Upload mit Temp-Datei, Prüfung nach `verifyLevel`, erst dann `record()` |
+| 11 | Pro Datei (`transfer`) | Namensvergabe unter `nameLock`, Duplikatprüfung, Upload mit Temp-Datei, Prüfung nach `verifyLevel`, erst dann `record()`. Wechselt ein Eintrag zwischen Scan und Lesen auf pending/trashed (`IllegalStateException` „Only owner is able to interact with pending/trashed item“, in `openLocal` als `LocalItemNotReadyException` gekapselt), wird die Datei still übersprungen (kein ✗, kein Fehlerzähler, kein Ausschluss); der nächste Lauf versucht sie erneut |
 | 12 | Abschluss | Offene Entscheidungen speichern, `DeletionManager.sweep`, Status bestimmen, `finish(...)` |
 
 Statusbestimmung: Standard `OK`; `failed > 0` → `PARTIAL`; WLAN weg → `PARTIAL`; Abbruch durch Android → `INTERRUPTED`; durch Benutzer →
@@ -558,7 +558,45 @@ stateDiagram-v2
 
 ## 6. Dateioperationen und Übertragung
 
-> **Geplant, nicht umgesetzt:** Prüfung der PC-Kennung (SMB-Server-GUID) vor dem Anmelden in `SmbSession.open`/`listShares`, siehe DEC-204. Der Ist-Stand (nur Port-445-Test ohne Anmeldung) gilt bis zur Umsetzung (Development SYNC-20261109-047).
+### 6.0 PC-Erkennung vor dem Anmelden (DEC-204, DEC-205; im Code seit 0.13.0, Lernen überarbeitet in 0.13.1, **ungebaut und ungetestet**, Stand 2026-11-09)
+
+Je Profil wählt `Profile.pcCheck` (`PcCheckMode`) die Erkennung: `WIFI` (nur WLAN-Name, Standard und heutiges Verhalten), `GUID` (nur PC-Kennung = SMB-Server-GUID) oder `BOTH` (beides muss erfüllt sein). Die Kennung wird nach dem Aushandeln gelesen, **vor** `authenticate`; Zugangsdaten gehen nur bei einer zulässigen Entscheidung an den Server.
+
+**Ablauf (`SyncWorker`, `SmbSession`):**
+1. TCP-Port 445 (`SmbSession.isReachable`, wie bisher, Abschnitt 2 Schritt 6).
+2. **Vorab-Prüfung** nur bei `GUID`/`BOTH` (`SyncWorker.precheckPc` → `SmbSession.checkPc`): nur aushandeln und entscheiden, keine Anmeldung, **kein Lernzweig** (seit 0.13.1). Ergebnis: lauffähig / nicht erreichbar (Netzwerkfehler) / abgewiesen (`PcIdentityException`-Entscheidung) / sonstiger Fehler (wird wie «abgewiesen» behandelt, siehe unten). `WIFI` überspringt die Vorab-Prüfung. Je Host wird einmal je Lauf ausgehandelt (Host-Zwischenspeicher `PcSeen`, nur im Speicher, keine Datenbankänderung); die Entscheidung fällt je Profil mit dessen eigener gespeicherter Kennung.
+3. **Anmeldeweg:** der einzige `authenticate`-Aufruf steht in `smb/PcLogin.kt` (Anmeldelogik hinter den Schnittstellen `PcLink`/`PcTransport`; `SmbSession` ist nur noch der smbj-Adapter, `SmbSession.connectChecked` bleibt der Zugang für `open` und `listShares`): `connect` → Kennung lesen (`getConnectionContext().getServerGuid()`) → `PcIdentity.decide` gegen den aktuellen DB-Stand (Profil per ID neu gelesen, der strengere Modus von Kopie und Datenbank, `currentIdentity`; ungespeichertes Profil: Werte der Kopie, ohne Lernen) → erst bei zulässiger Entscheidung `authenticate`. Sonst wird die Verbindung geschlossen und `PcIdentityException` geworfen (keine Zugangsdaten gesendet). Die Datenbank erreicht `SmbSession` über die Schnittstelle `PcStore` (`RoomPcStore`, gesetzt in `App.kt`).
+4. **Lernen (nur Zugriffsart `SETUP`, DEC-205):** erst nach erfolgreicher Anmeldung **und** `connectShare` (bzw. Freigabenliste) schreibt der Commit die Kennung per bedingtem UPDATE (`SyncDao.learnPcGuid`: nur bei leerer Kennung oder anderem Host, mit Moduswächter `pcCheck = :mode`; nie still überschreibend). Gelernt wird nur an zwei Stellen: (a) nach dem Speichern des Profils (`PcLearner.learnAfterSave`, app-weiter Scope, nach dem Schreiben in der Datenbank, 30 s je SMB-Vorgang; Speichern gelingt immer; im Dialog «Wie weiter?» erscheint «PC wird erkannt …»), (b) in «Verbindung testen» (`SmbSession.test` mit `SETUP`). «Freigaben/Ordner wählen» meldet sich unter `SETUP` an, lernt aber nie. Ein automatischer Test beim Moduswechsel entfällt. Lernen und Neuvertrauen nur, wenn der Host der Verbindung dem gespeicherten Host des Profils entspricht.
+5. **Kennungswechsel (Neuvertrauen, nur `SETUP`):** aushandeln, Kennung lesen, Verbindung **schliessen**, Benutzer fragen (`onChangedGuid`, Host, alte/neue Kennung), bei «Ja» neu verbinden und prüfen, dass die gesehene Kennung **genau der bestätigten** entspricht (sonst abbrechen, nicht anmelden), erst dann `authenticate`, danach `trustNewPcGuid` (gilt für alle Profile mit gleichem Host und gleicher alter Kennung). «Nein»/Zeitüberschreitung = nicht vertrauen.
+
+**Grundsatz «`WIFI`-Kennung erzeugt nie Vertrauen» (V7):** eine im Modus `WIFI` still gelernte Kennung gilt bei `GUID`/`BOTH` als leer. Zentral in `currentIdentity` (`trustedStored`: gespeicherte Kennung zählt nur, wenn der DB-Modus nicht `WIFI` ist, wenn der wirksame Modus `GUID`/`BOTH` ist) und im Editor in `save()` über `PcEditorRules.keepStoredOnSave` (Kennung bleibt nur, wenn Host und Modus unverändert; sonst verworfen). Das Lernen im Modus `WIFI` bleibt still (Meldung aus -055), erzeugt aber nie Vertrauen.
+
+**Regel `PcIdentity.decide(mode, pcGuid, pcGuidHost, host, seenGuid, access, learnNetOk)`** (reine Funktion; `PcAccess.AUTO` = automatisch, `USER` = vom Benutzer ausgelöst (manueller Sync, Ansichten), `SETUP` = Profil-Editor):
+
+| Entscheidung | Bedingung |
+|---|---|
+| `ALLOW` | `WIFI` (mit bekannter oder fehlender Kennung); oder `GUID`/`BOTH` mit gespeicherter, gleicher Kennung |
+| `ALLOW_AND_LEARN` | `GUID`/`BOTH` ohne gespeicherte Kennung für den Host, nur bei `SETUP` **und** `learnNetOk`; `WIFI` lernt weiterhin still (ohne Vertrauenswirkung, siehe Grundsatz) |
+| `WRONG_NET` | wie `ALLOW_AND_LEARN`, aber `learnNetOk` nicht erfüllt: nicht anmelden (eigener Text `smb_err_pc_wrong_net`) |
+| `UNKNOWN` | `GUID`/`BOTH` ohne gespeicherte Kennung bei `AUTO`/`USER`: nicht anmelden (Hinweis «Profil öffnen → Verbindung testen», `smb_err_pc_unknown`) |
+| `CHANGED` | gespeicherte Kennung weicht von der gesehenen ab: nicht anmelden; Neuvertrauen nur durch den Benutzer unter `SETUP` (Ablauf Schritt 5, nur bei gespeichertem Profil) |
+| `NO_ID` | `GUID`/`BOTH`, der Server liefert keine brauchbare Kennung (leer oder Null-UUID): nie anmelden |
+
+**Netzbedingung `learnNetOk`** (reine Funktion `NetworkRules.learnNetOk`, im Aufrufer ermittelt): `BOTH` → WLAN-Name lesbar und in der Liste des Profils (unlesbar = nicht erfüllt); `GUID` → immer erfüllt. Einrichtungsausnahme (Restrisiko R1, DEC-205): unter `SETUP` wird bei `GUID` ohne bekannte Kennung in jedem Netz angemeldet, bei `BOTH` nur im eingetragenen WLAN.
+
+Eine gespeicherte Kennung gilt nur, wenn `pcGuidHost` dem aktuellen Host entspricht (ohne Gross-/Kleinschreibung), sonst gilt sie als unbekannt.
+
+**`PcIdentityException`** ist bewusst keine `IOException` und kein Netzwerkfehler (`isNetworkError` wertet sie als `false`): ein Wiederholen ändert nichts, es wurden keine Zugangsdaten gesendet. Die Vorschau (`SyncEngine`) fängt sie sicher als Offline ab.
+
+**Verhalten bei Abweisung (`SyncWorker`, seit 0.13.1):** das Profil wird übersprungen (`noteSkip` mit `skip_pc_not_recognised`), **kein** FAILED-Lauf. Das gilt auch für Fehler der Vorab-Aushandlung (`PcPre.Failed`, z. B. nur SMB1, unerwarteter Status, Kennung nicht lesbar): eine Meldung je Profil (`GlobalSettings.pcNotified`; der Merker wird gelöscht, sobald das Profil wieder lauffähig ist), keine Dauerbenachrichtigung, kein stilles Überspringen; manuell: Benachrichtigung mit Hinweis. **Kein Timer und kein `shareRetryAt`** für abgewiesene Profile (Port 445 antwortet, die Abweisung ändert nur der Benutzer); sie werden beim nächsten ohnehin stattfindenden Lauf mit einer einzelnen Aushandlung neu bewertet. Die mehrstufige Wartezeit `reachabilityWaits` betrifft nur Port 445 (nicht erreichbar). Der Timer für nicht erreichbare PCs (`handleUnreachable`: 30 min, mitten im Lauf 2 min, ausserhalb des WLAN 2 h) wird nur gesetzt, wenn **kein** Profil lief (frühe Rückkehr) bzw. wenn die Verbindung mitten im Lauf abbrach; ein erreichbares Profil blockiert die anderen nicht (DEC-126/DEC-048 unverändert). Ein Fortsetzen-Auftrag mit nur abgewiesenen Profilen räumt «Pausiert» auf. Die Trigger sind global (Content-Trigger, periodischer Poll, WLAN-Empfänger), nicht je Profil; die Logik fügt keine hinzu, nur eine Aushandlung je Host und Lauf.
+
+**Eignung je Modus:** `NetworkRules.needsWifiName(mode)` (nur `GUID` braucht keinen Namen), `eligible`, `mayContinue(mode, …)` (bei `GUID` nur die erlaubte Netzart) und `wifiTriggerMatches` (`GUID` = jedes WLAN; Parameter `unreadableMatches` für den Fall ohne lesbaren Namen). Genutzt von `SyncWorker` (das 15-s-Warten auf den WLAN-Namen nur, wenn ein Profil ihn braucht), `Receivers` (`WifiNetworkReceiver`, `unreadableMatches = true`) und `PauseService` (Fortsetzen, `unreadableMatches = false`). Bei `WIFI`/`BOTH` gilt ein unlesbarer Name als nicht erfüllt, nie stillschweigend als erfüllt (Ausnahme laut Code: `WifiNetworkReceiver` wertet einen unlesbaren Namen als Treffer, `unreadableMatches = true`). Der Standortzugriff (`Permissions`) wird nur bei `WIFI`/`BOTH` mit WLAN-Namen verlangt. Manueller Sync: `WIFI` ohne Prüfung, `GUID`/`BOTH` mit Vorab-Prüfung; er lernt **nie** (seit 0.13.1, DEC-205): ohne bekannte Kennung `UNKNOWN`, keine Anmeldung.
+
+**Nicht über die Vorab-Prüfung:** Papierkorb, Wiederherstellen, Speicher freigeben (`TrashCleaner`, `RestoreManager`, `FolderFreer`, `SpaceFreer`, `MirrorGuard`) und die Engines nutzen `AUTO`; ohne bekannte Kennung melden sie sich bei `GUID`/`BOTH` nicht an. `MirrorGuard`/`MirrorEngine` und `SyncEngine` laufen über denselben Anmeldeweg.
+
+**Sicherheitsaussage:** Die Kennung ist nicht geheim (unverschlüsselt in der Aushandlung). `GUID`/`BOTH` schützen vor einem fremden Server in einem fremden Netz mit gleicher IP, nicht vor einem gezielten Angreifer, der die Kennung zuvor im eigenen Netz las. `WIFI` behält die bekannte Schwäche (fremdes Netz mit gleichem Namen). Restrisiken: Akku bei `GUID` in fremden WLANs (Prüfung alle 30 min), Stabilität der Kennung bei Samba/NAS (ungeprüft).
+
+> **Umgesetzt in 0.13.1 (DEC-205, ungebaut, ungetestet, nichts im Gerät geprüft):** Beschreibung oben = Stand des Codes laut Development SYNC-20261109-055. Offen: Bau, Tests, Gerätetest (QA). Bekannte Restpunkte: Ein sofortiger manueller Start direkt nach dem Speichern kann das Lernen knapp verpassen (R5, einmalig «PC unbekannt»); manueller Sync und wiederhergestellte Sicherungen lernen nicht mehr (R3); das Zeitlimit von 30 s gilt je SMB-Vorgang, nicht gesamt; die Einrichtungsausnahme gilt auch bei Hostwechsel im Editor (Rückfrage bei jedem Hostwechsel wäre Inhaberentscheid).
 
 ### 6.1 Hochladen (`SmbSession.upload`, `SmbSession.kt:301`) **[IMPL]**
 
@@ -1199,7 +1237,7 @@ WLAN verschwindet bei 60 %. Worker: Netzwerkfehler ⇒ Sitzung schliessen, 2 s w
 - Ob `SyncWorker`-Abbrüche in allen Android-Versionen gleich `STOP_REASON_*` melden.
 
 ### 18.2 Geplant bzw. nicht umgesetzt (nur zur Abgrenzung, nicht Teil des Ist-Stands)
-Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Integration (nur offene Punkte, ohne Versionsnummer) sowie PC-Erkennung (eigenständig, unabhängig vom Play Store). Sie betreffen die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
+Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Integration (nur offene Punkte, ohne Versionsnummer) sowie die Umsetzung von DEC-205 (Lernen der PC-Kennung nur beim Speichern/Test, Abschnitt 6.0). Die PC-Erkennung nach DEC-204 ist im Code vorhanden (Abschnitt 6.0), aber ungebaut. Der Rest betrifft die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
 
 ### 18.3 Offene Dokumentationspunkte
 - Ergänzung nach Prüfung von `MediaAnalyzer`, `Notifications`, `WifiHelper`, `PauseService` (Abschnitte 2.3 und 11).
