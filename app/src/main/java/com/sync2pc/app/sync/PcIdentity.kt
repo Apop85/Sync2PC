@@ -127,6 +127,17 @@ object PcEditorRules {
         return !(dbMode == PcCheckMode.WIFI && newMode.checksGuid)
     }
 
+    /**
+     * Hostwechsel im Editor eines bereits gespeicherten Profils (nur GUID/BOTH): vor jedem Senden von Zugangsdaten an den neuen,
+     * unbekannten Host (Speichern mit Lernen, «Verbindung testen», Ordner wählen) bestätigen lassen (SYNC-20261109-079).
+     * Ersteinrichtung (neues Profil), WIFI, gleicher Host und ein in dieser Sitzung schon bestätigter Host fragen nicht.
+     */
+    fun needsHostConfirm(existing: Boolean, mode: PcCheckMode, savedHost: String?, newHost: String, confirmedHost: String?): Boolean {
+        if (!existing || !mode.checksGuid || newHost.isBlank() || savedHost.isNullOrBlank()) return false
+        val n = PcIdentity.normalizeHost(newHost)
+        return n != PcIdentity.normalizeHost(savedHost) && n != confirmedHost?.let { PcIdentity.normalizeHost(it) }
+    }
+
     /** Moduswechsel im Editor: still gelernte Kennung löschen (WIFI → GUID/BOTH); verringert nur Vertrauen (V6) */
     fun clearOnModeChange(old: PcCheckMode, new: PcCheckMode): Boolean = new.checksGuid && !old.checksGuid
 

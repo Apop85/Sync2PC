@@ -218,7 +218,9 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                     append(plural(R.plurals.free_confirmed, v.confirmed.size))
                     if (v.missing > 0) append(" ").append(plural(R.plurals.free_missing, v.missing))
                     if (v.unreachable.isNotEmpty()) append(" ").append(str(R.string.free_unreachable_hosts, v.unreachable.joinToString(", ")))
+                    if (v.rejected.isNotEmpty()) append(" ").append(str(R.string.free_other_pc_hosts, v.rejected.joinToString(", ")))
                 }
+                resultFailed = v.unreachable.isNotEmpty() || v.rejected.isNotEmpty()   // nichts verifiziert = Fehler (rot)
                 if (v.confirmed.isNotEmpty()) {
                     if (hasTrash) { moved = 0; requests = SpaceFreer.trashRequests(ctx, v.confirmed) }
                     else confirmDirect = v.confirmed
@@ -242,6 +244,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 if (r.foldersRemoved > 0) append(" ").append(plural(R.plurals.free_folders_removed, r.foldersRemoved))
                 if (r.kept > 0) append(" ").append(plural(R.plurals.free_kept, r.kept))
                 if (r.unreachable) append(" ").append(str(R.string.free_pc_lost))
+                r.rejectedMessage?.let { append(" ").append(it) }
             }
         }
         if (!started) Toast.makeText(ctx, str(R.string.intervention_already_pending), Toast.LENGTH_LONG).show()

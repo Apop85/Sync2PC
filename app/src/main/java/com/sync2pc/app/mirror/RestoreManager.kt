@@ -26,6 +26,8 @@ object RestoreManager {
         val existing: Set<String>,
         /** Zum Wiederherstellen vorgemerkte Einträge ([TrashPurge.key]) – werden nie gelöscht (0.7.0) */
         val reserved: Set<String> = emptySet(),
+        /** Antwortet unter der Adresse ein anderer/noch nicht erkannter PC: verständliche Meldung (keine Anmeldung erfolgt), sonst null */
+        val pcMessage: String? = null,
     )
 
     suspend fun load(context: Context, profile: Profile): Loaded = withContext(Dispatchers.IO) {
@@ -34,11 +36,13 @@ object RestoreManager {
             if (LocalTree.hasPermission(context, uri)) LocalTree(context, uri).listTrash() else emptyList()
         } catch (e: Exception) { emptyList() }
         var pcOk = false
+        var pcMessage: String? = null
         val remote = try {
             val host = SmbTarget.parse(profile.smbPath)?.host
             if (host != null && SmbSession.isReachable(host)) {
                 SmbSession.open(profile).use { s -> remoteTrash(s).also { pcOk = true } }
             } else emptyList()
+        } catch (e: com.sync2pc.app.sync.PcIdentityException) { pcMessage = e.message; emptyList()
         } catch (e: Exception) { emptyList() }
         val dao = AppDatabase.get(context).dao()
         val existing = dao.mirrorStates(profile.id).map { it.relPath }.toSet()
@@ -46,7 +50,7 @@ object RestoreManager {
         PurgeStore(context).saveSizes(profile.id, local.sumOf { it.size }, if (pcOk) remote.sumOf { it.size } else -1)
         Loaded(
             (local + remote).sortedWith(compareBy<TrashEntry>({ it.origPath.lowercase() }).thenByDescending { it.date }),
-            pcOk, existing, TrashPurge.reservedKeys(dao.pendingRestores(profile.id)),
+            pcOk, existing, TrashPurge.reservedKeys(dao.pendingRestores(profile.id)), pcMessage,
         )
     }
 

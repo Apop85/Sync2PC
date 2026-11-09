@@ -153,5 +153,8 @@
     <string name="profile_pc_trust_body">Unter %1$s antwortet ein anderer PC als bisher. Nur fortfahren, wenn du den PC neu installiert oder ersetzt hast. Deine Anmeldedaten werden nur gesendet, wenn du dem neuen PC vertraust.</string>
     <string name="profile_pc_trust_yes">Neuem PC vertrauen</string>
     <string name="profile_pc_trust_no">Nicht vertrauen</string>
+    <string name="profile_host_change_title">Anderen PC verwenden?</string>
+    <string name="profile_host_change_body">Du hast den Server von %1$s auf %2$s geändert. Dort ist noch kein PC erkannt. Deine Anmeldedaten werden an diesen PC gesendet, sobald du fortfährst. Nur fortfahren, wenn %2$s dein eigener PC ist.</string>
+    <string name="profile_host_change_yes">Anmeldedaten senden</string>
     <string name="home_profile_pc_known">PC erkannt</string>
     <string name="home_profile_pc_unknown">PC noch nicht erkannt</string></resources>

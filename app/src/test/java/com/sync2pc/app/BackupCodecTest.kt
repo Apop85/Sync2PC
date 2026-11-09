@@ -23,7 +23,7 @@ class BackupCodecTest {
         appVersion = "0.2.0", createdAt = 1_700_000_000_000,
         settings = mapOf("homeCountryIso" to "CH", "parallelUploads" to 3, "staleWarnEnabled" to true),
         profiles = listOf(
-            Profile(id = 7, name = "Fotos", smbPath = "\\\\192.168.3.3\\Fotos", smbUser = "leo",
+            Profile(id = 7, name = "Fotos", smbPath = "\\\\192.0.2.3\\Fotos", smbUser = "leo",
                 smbPasswordEnc = "wird-nie-exportiert", sourceFolders = "DCIM/Camera/", trashRetentionDays = 14),
         ),
         passwords = mapOf(7L to "geheim123"),
@@ -94,11 +94,11 @@ class BackupCodecTest {
 
     @Test fun pcRecognitionRoundTrips() {
         val g = "3f2504e0-4f89-11d3-9a0c-0305e82c3301"
-        val c = content().copy(profiles = listOf(content().profiles.single().copy(pcCheck = "BOTH", pcGuid = g, pcGuidHost = "192.168.3.3")))
+        val c = content().copy(profiles = listOf(content().profiles.single().copy(pcCheck = "BOTH", pcGuid = g, pcGuidHost = "192.0.2.3")))
         val p = BackupCodec.parse(BackupCodec.encode(c, exportPassword = null, iterations = fast), null).content.profiles.single()
         assertEquals("BOTH", p.pcCheck)
         assertEquals(g, p.pcGuid)
-        assertEquals("192.168.3.3", p.pcGuidHost)
+        assertEquals("192.0.2.3", p.pcGuidHost)
     }
 
     @Test fun olderBackupWithoutPcRecognitionIsWifiOnly() {

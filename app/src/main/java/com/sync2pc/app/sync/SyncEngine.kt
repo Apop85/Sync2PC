@@ -233,7 +233,7 @@ class SyncEngine(
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {
-                if (dryRun) { message = Msg.of(R.string.eng_offline_preview, e.message ?: ""); null }
+                if (dryRun) { message = Msg.of(R.string.eng_offline_preview, com.sync2pc.app.sync.userErrorMsg(e)); null }
                 else throw e
             }
             val countries = CountryLookup.get(context)

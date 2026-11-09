@@ -50,6 +50,8 @@ object SpaceFreer {
         val missing: Int,
         /** Profile, deren PC nicht erreichbar war */
         val unreachable: List<String>,
+        /** Profile, bei denen unter der Adresse ein anderer/noch nicht erkannter PC antwortet (keine Anmeldung erfolgt) */
+        val rejected: List<String> = emptyList(),
     )
 
     private data class Media(
@@ -100,12 +102,17 @@ object SpaceFreer {
         val profiles = dao.profiles().associateBy { it.id }
         val ok = HashSet<String>()
         val unreachable = ArrayList<String>()
+        val rejected = ArrayList<String>()
         var done = 0
         for ((profileId, list) in candidates.groupBy { it.profileId }) {
             val profile = profiles[profileId]
-            val session = try { profile?.let { SmbSession.open(it) } } catch (e: Exception) { null }
+            var notRecognised = false
+            val session = try { profile?.let { SmbSession.open(it) } }
+                catch (e: PcIdentityException) { notRecognised = true; null }   // anderer PC: keine Anmeldung, nichts geprüft
+                catch (e: Exception) { null }
             if (session == null) {
-                unreachable += profile?.name ?: com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.space_profile_id, profileId)
+                val label = profile?.name ?: com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.space_profile_id, profileId)
+                if (notRecognised) rejected += label else unreachable += label
                 done += list.size; onProgress(done, candidates.size)
                 continue
             }
@@ -121,7 +128,7 @@ object SpaceFreer {
         }
         // Fehlt ein Partner eines Live-Fotos auf dem PC, bleiben beide auf dem Handy
         val confirmed = wholeGroups(candidates, { it.group }) { it.sourceKey in ok }
-        VerifyResult(confirmed, candidates.size - confirmed.size, unreachable)
+        VerifyResult(confirmed, candidates.size - confirmed.size, unreachable, rejected)
     }
 
     /** Systemdialog-Anfragen "In den Papierkorb" (Android 11+), höchstens 500 Dateien je Anfrage */

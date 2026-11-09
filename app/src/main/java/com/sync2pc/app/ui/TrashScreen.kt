@@ -209,8 +209,9 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                     val local = data.entries.filter { it.side == Side.LOCAL }
                     val remote = data.entries.filter { it.side == Side.REMOTE }
                     Text(plural(R.plurals.trash_phone_summary, local.size, local.size, Notifications.formatBytes(TrashPurge.bytes(local))))
-                    Text(if (data.pcAvailable) plural(R.plurals.trash_pc_summary, remote.size, remote.size, Notifications.formatBytes(TrashPurge.bytes(remote)))
-                        else str(R.string.trash_pc_unreachable))
+                    if (data.pcAvailable) Text(plural(R.plurals.trash_pc_summary, remote.size, remote.size, Notifications.formatBytes(TrashPurge.bytes(remote))))
+                    else if (data.pcMessage != null) ErrorText(data.pcMessage)   // anderer/unbekannter PC antwortet
+                    else ErrorText(str(R.string.trash_pc_unreachable))
                     if (!data.pcAvailable) Text(
                         str(R.string.trash_pc_unreachable_hint),
                         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,

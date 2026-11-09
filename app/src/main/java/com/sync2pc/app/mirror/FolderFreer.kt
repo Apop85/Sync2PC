@@ -51,6 +51,8 @@ object FolderFreer {
         val unreachable: Boolean,
         /** Leer gewordene Ordner auf dem Handy, die entfernt wurden (0.11.8) */
         val foldersRemoved: Int = 0,
+        /** Unter der Adresse antwortet ein anderer/noch nicht erkannter PC (keine Anmeldung, nichts gelöscht): verständliche Meldung */
+        val rejectedMessage: String? = null,
     )
 
     /**
@@ -92,8 +94,11 @@ object FolderFreer {
             onStart() // Sperre erworben: ab jetzt läuft der Eingriff wirklich (0.11.10)
             val dao = AppDatabase.get(context).dao()
             val tree = tree(context, profile)
-            val s = try { SmbSession.open(profile) } catch (e: Exception) { null }
-                ?: return@withLock Result(0, 0, list.size, unreachable = true)
+            var rejected: String? = null
+            val s = try { SmbSession.open(profile) }
+                catch (e: com.sync2pc.app.sync.PcIdentityException) { rejected = e.message; null }
+                catch (e: Exception) { null }
+                ?: return@withLock Result(0, 0, list.size, unreachable = rejected == null, rejectedMessage = rejected)
             var deleted = 0; var bytes = 0L; var kept = 0; var unreachable = false
             val deletedRels = ArrayList<String>()
             s.use {

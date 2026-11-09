@@ -88,7 +88,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
             val run = withContext(Dispatchers.IO) { engine.run() }
             result = engine.preview.toList()
             status = run.messageText()
-            statusFailed = run.status == com.sync2pc.app.data.RunStatus.FAILED
+            statusFailed = run.status == com.sync2pc.app.data.RunStatus.FAILED || run.messageCode?.contains("eng_offline_preview") == true
             running = false
         }
     }

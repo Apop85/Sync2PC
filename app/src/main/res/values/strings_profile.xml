@@ -153,5 +153,8 @@
     <string name="profile_pc_trust_body">At %1$s a different PC answers than before. Only continue if you reinstalled the PC or replaced it. Your sign-in data is only sent if you trust the new PC.</string>
     <string name="profile_pc_trust_yes">Trust new PC</string>
     <string name="profile_pc_trust_no">Do not trust</string>
+    <string name="profile_host_change_title">Use a different PC?</string>
+    <string name="profile_host_change_body">You changed the server from %1$s to %2$s. No PC is recognised there yet. Your sign-in data will be sent to that PC as soon as you continue. Only continue if %2$s is your own PC.</string>
+    <string name="profile_host_change_yes">Send sign-in data</string>
     <string name="home_profile_pc_known">PC recognised</string>
     <string name="home_profile_pc_unknown">PC not recognised yet</string></resources>

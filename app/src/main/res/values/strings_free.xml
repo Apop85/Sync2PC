@@ -22,6 +22,7 @@
         <item quantity="other">%1$s were not found on the PC or are different – they stay.</item>
     </plurals>
     <string name="free_unreachable_hosts">PC not reachable: %1$s.</string>
+    <string name="free_other_pc_hosts">A different or not yet recognised PC answers: %1$s. No sign-in data was sent.</string>
     <string name="free_check_failed">Check failed: %1$s</string>
     <plurals name="free_deleted">
         <item quantity="one">%1$s file deleted, %2$s freed.</item>

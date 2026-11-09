@@ -229,4 +229,25 @@ class PcIdentityTest {
         val texts = all.map { PcIdentityException(it, host).message }
         assertEquals(4, texts.toSet().size)
     }
+
+    // --- SYNC-20261109-079: Rückfrage beim Hostwechsel eines bestehenden Profils ---
+    @Test fun hostChangeAsksOnlyForExistingGuidProfilesWithNewUnconfirmedHost() {
+        val g = PcCheckMode.GUID
+        // bestehendes Profil, neuer Host, noch nicht bestätigt -> Rückfrage
+        assertTrue(PcEditorRules.needsHostConfirm(true, g, "192.0.2.10", "192.0.2.20", null))
+        assertTrue(PcEditorRules.needsHostConfirm(true, PcCheckMode.BOTH, "pc-alt", "pc-neu", null))
+        // Ersteinrichtung (neues Profil): nie
+        assertFalse(PcEditorRules.needsHostConfirm(false, g, "", "192.0.2.20", null))
+        assertFalse(PcEditorRules.needsHostConfirm(false, g, "192.0.2.10", "192.0.2.20", null))
+        // gleicher Host (Gross-/Kleinschreibung egal): nie
+        assertFalse(PcEditorRules.needsHostConfirm(true, g, "PC-Alt", "pc-alt", null))
+        // WIFI-Modus: keine Kennungsprüfung, keine Rückfrage
+        assertFalse(PcEditorRules.needsHostConfirm(true, PcCheckMode.WIFI, "pc-alt", "pc-neu", null))
+        // in dieser Sitzung bestätigter Host: nicht erneut fragen; anderer Host: wieder fragen
+        assertFalse(PcEditorRules.needsHostConfirm(true, g, "pc-alt", "PC-Neu", "pc-neu"))
+        assertTrue(PcEditorRules.needsHostConfirm(true, g, "pc-alt", "pc-dritter", "pc-neu"))
+        // leere Angaben: keine Rückfrage (Host noch nicht eingegeben)
+        assertFalse(PcEditorRules.needsHostConfirm(true, g, "pc-alt", "", null))
+        assertFalse(PcEditorRules.needsHostConfirm(true, g, null, "pc-neu", null))
+    }
 }

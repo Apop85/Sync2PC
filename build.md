@@ -92,7 +92,7 @@ Vor jedem GitHub-Release:
 
 ### Test Ordner-Sync
 
-Vorbereitung auf dem PC: In der Freigabe einen Testordner anlegen, z. B. `\\192.168.3.3\Fotos\_Test-Ordnersync`, und darin:
+Vorbereitung auf dem PC: In der Freigabe einen Testordner anlegen, z. B. `\\192.0.2.3\Fotos\_Test-Ordnersync`, und darin:
 - einige hundert kleine Dateien (z. B. Textdateien oder kleine PDFs, gern in Unterordnern)
 - 2–3 grosse Dateien (je einige hundert MB, z. B. ein Video)
 

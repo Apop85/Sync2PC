@@ -181,7 +181,7 @@ class MirrorEngine(
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {
-                if (dryRun) { message = Msg.of(R.string.eng_offline_preview, e.message ?: ""); null }
+                if (dryRun) { message = Msg.of(R.string.eng_offline_preview, com.sync2pc.app.sync.userErrorMsg(e)); null }
                 else { if (isNetworkError(e)) connectionFailed = true; throw e }
             }
             val s = smb

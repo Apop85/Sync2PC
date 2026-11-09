@@ -14,12 +14,12 @@ class CredentialGroupsTest {
 
     @Test fun sameUserServerAndPasswordIsOneEntry() {
         val g = group(listOf(
-            p(1, "Fotos", "apop85", "\\\\192.168.3.3\\Fotos"),
-            p(2, "OrdnerTest", "Apop85", "\\\\192.168.3.3\\Fotos\\test"),
-            p(3, "Dokumente", "apop85", "\\\\192.168.3.3\\Dokumente"),
+            p(1, "Fotos", "tester", "\\\\192.0.2.3\\Fotos"),
+            p(2, "OrdnerTest", "Tester", "\\\\192.0.2.3\\Fotos\\test"),
+            p(3, "Dokumente", "tester", "\\\\192.0.2.3\\Dokumente"),
         ))
         assertEquals(1, g.size)
-        assertEquals("192.168.3.3", g.single().host)
+        assertEquals("192.0.2.3", g.single().host)
         assertEquals(listOf("Fotos", "OrdnerTest", "Dokumente"), g.single().profileNames)
         assertEquals(1L, g.single().source.id)
     }

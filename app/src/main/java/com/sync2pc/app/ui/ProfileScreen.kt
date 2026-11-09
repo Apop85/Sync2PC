@@ -115,6 +115,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var pcTouched by remember { mutableStateOf(false) }
     var pcChanged by remember { mutableStateOf(false) }
     var trustAsk by remember { mutableStateOf<TrustAsk?>(null) }
+    var hostAsk by remember { mutableStateOf<HostAsk?>(null) }
+    var confirmedHost by remember { mutableStateOf<String?>(null) }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -202,7 +204,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         return try { answer.get(45, java.util.concurrent.TimeUnit.SECONDS) } catch (e: Exception) { false } finally { trustAsk = null }
     }
 
-    fun runTest() {
+    /**
+     * Hostwechsel bei bestehendem Profil (GUID/BOTH): vor jedem Senden von Zugangsdaten an den neuen Host fragen (-079).
+     * Ohne Bestätigung wird [action] nicht ausgeführt (keine Anmeldung, nichts gespeichert).
+     */
+    fun confirmHost(action: () -> Unit) {
+        val oldHost = baseline?.let { SmbTarget.hostOf(it.smbPath) }
+        val newHost = SmbTarget.hostOf(p.smbPath).orEmpty()
+        if (PcEditorRules.needsHostConfirm(p.id != 0L && baseline != null, pcModeNow(), oldHost, newHost, confirmedHost))
+            hostAsk = HostAsk(oldHost.orEmpty(), newHost, action)
+        else action()
+    }
+
+    fun runTestNow() {
         testing = true; testResult = null; testFailed = false; testDetail = null; pcChanged = false
         scope.launch {
             val prof = withPassword()
@@ -243,11 +257,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         }
     }
 
-    /**
-     * Speichern. [force] = Überschneidung bestätigt. [folderChoice] = Antwort auf "Ist das wirklich der richtige
-     * Ordner?" (null = Stichprobe noch nicht gemacht).
-     */
-    fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
+    fun saveNow(force: Boolean, folderChoice: FolderChoice?) {
         scope.launch {
             // Leerzeichen am Rand des Namens entfernen (sonst "(Fotos )" im Verlauf); verifyUpload spiegelt die Stufe
             val toSave = withPassword().let { it.copy(name = it.name.trim(), verifyUpload = it.mustVerify()) }
@@ -307,6 +317,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         }
     }
 
+    /**
+     * Speichern. [force] = Überschneidung bestätigt. [folderChoice] = Antwort auf "Ist das wirklich der richtige
+     * Ordner?" (null = Stichprobe noch nicht gemacht).
+     */
+    fun save(force: Boolean = false, folderChoice: FolderChoice? = null) = confirmHost { saveNow(force, folderChoice) }
+
     // Ungespeicherte Änderungen? Dann beim Verlassen nachfragen (Zurück-Pfeil, Zurück-Geste, "Abbrechen")
     val dirty = typeChosen && baseline != null && (p != baseline || password != basePassword)
     fun leave() { if (dirty) askLeave = true else onBack() }
@@ -331,6 +347,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             text = { Text(str(R.string.profile_pc_trust_body, ask.host)) },
             confirmButton = { TextButton(onClick = { ask.answer.complete(true) }) { Text(str(R.string.profile_pc_trust_yes)) } },
             dismissButton = { TextButton(onClick = { ask.answer.complete(false) }) { Text(str(R.string.profile_pc_trust_no)) } },
+        )
+    }
+
+    // Hostwechsel bei bestehendem Profil: Rückfrage VOR dem Senden der Zugangsdaten (-079)
+    hostAsk?.let { ask ->
+        AlertDialog(
+            onDismissRequest = { hostAsk = null },
+            title = { Text(str(R.string.profile_host_change_title)) },
+            text = { Text(str(R.string.profile_host_change_body, ask.oldHost, ask.newHost)) },
+            confirmButton = { TextButton(onClick = { confirmedHost = ask.newHost; hostAsk = null; ask.action() }) { Text(str(R.string.profile_host_change_yes)) } },
+            dismissButton = { TextButton(onClick = { hostAsk = null }) { Text(str(R.string.common_cancel)) } },
         )
     }
 
@@ -479,10 +506,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     // Freigabe und Ordner auf dem PC auswählen (0.11.0): braucht nur Server und Zugangsdaten
                     OutlinedButton(
                         enabled = SmbTarget.hostOf(p.smbPath) != null && p.smbUser.isNotBlank(),
-                        onClick = { showRemotePicker = true },
+                        onClick = { confirmHost { showRemotePicker = true } },
                     ) { Text(str(R.string.profile_pick_pc_folder)) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(enabled = !testing, onClick = { runTest() }) { Text(str(R.string.profile_test)) }
+                        OutlinedButton(enabled = !testing, onClick = { confirmHost { runTestNow() } }) { Text(str(R.string.profile_test)) }
                         if (testing) CircularProgressIndicator(Modifier.padding(start = 12.dp))
                     }
                     testResult?.let { if (testFailed) ErrorText(it) else Text(it) }
@@ -891,4 +918,5 @@ fun treeUriToRelativePath(uri: Uri): String? {
 }
 
 /** Offene Rückfrage zum Neuvertrauen eines anderen PCs (Antwort kommt vom Dialog, wartet der IO-Thread) */
+private class HostAsk(val oldHost: String, val newHost: String, val action: () -> Unit)
 private class TrustAsk(val host: String, val answer: java.util.concurrent.CompletableFuture<Boolean>)

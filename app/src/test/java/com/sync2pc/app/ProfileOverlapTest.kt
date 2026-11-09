@@ -12,31 +12,31 @@ class ProfileOverlapTest {
     private fun photos(id: Long, path: String, folders: String, sub: Boolean = true, remoteSub: String = "") =
         Profile(id = id, name = "P$id", smbPath = path, sourceFolders = folders, includeSubfolders = sub, remoteSubfolder = remoteSub)
 
-    private val existing = photos(1, "\\\\192.168.3.3\\Fotos", "DCIM/Camera/")
+    private val existing = photos(1, "\\\\192.0.2.3\\Fotos", "DCIM/Camera/")
 
     @Test fun identicalIsDetectedDespiteSpelling() {
-        val p = photos(0, "//192.168.3.3/fotos/", "dcim/camera")
+        val p = photos(0, "//192.0.2.3/fotos/", "dcim/camera")
         assertEquals(Kind.IDENTICAL, ProfileOverlap.check(p, listOf(existing))?.kind)
     }
 
     @Test fun additionalFolderIsPartial() {
-        val p = photos(0, "\\\\192.168.3.3\\Fotos", "DCIM/Camera/\nPictures/Screenshots/")
+        val p = photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/Camera/\nPictures/Screenshots/")
         val hit = ProfileOverlap.check(p, listOf(existing))
         assertEquals(Kind.PARTIAL, hit?.kind)
         assertEquals(listOf("DCIM/Camera/"), hit?.sharedFolders)
     }
 
     @Test fun parentFolderWithSubfoldersIsPartial() {
-        val p = photos(0, "\\\\192.168.3.3\\Fotos", "DCIM/", sub = true)
+        val p = photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/", sub = true)
         assertEquals(Kind.PARTIAL, ProfileOverlap.check(p, listOf(existing))?.kind)
         // ohne Unterordner überschneidet sich DCIM/ nicht mit DCIM/Camera/
-        assertNull(ProfileOverlap.check(photos(0, "\\\\192.168.3.3\\Fotos", "DCIM/", sub = false), listOf(existing.copy(includeSubfolders = false))))
+        assertNull(ProfileOverlap.check(photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/", sub = false), listOf(existing.copy(includeSubfolders = false))))
     }
 
     @Test fun otherTargetOrOtherFoldersIsFine() {
-        assertNull(ProfileOverlap.check(photos(0, "\\\\192.168.3.3\\Archiv", "DCIM/Camera/"), listOf(existing)))
-        assertNull(ProfileOverlap.check(photos(0, "\\\\192.168.3.3\\Fotos", "DCIM/Camera/", remoteSub = "Leo"), listOf(existing)))
-        assertNull(ProfileOverlap.check(photos(0, "\\\\192.168.3.3\\Fotos", "Pictures/WhatsApp/"), listOf(existing)))
+        assertNull(ProfileOverlap.check(photos(0, "\\\\192.0.2.3\\Archiv", "DCIM/Camera/"), listOf(existing)))
+        assertNull(ProfileOverlap.check(photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/Camera/", remoteSub = "Leo"), listOf(existing)))
+        assertNull(ProfileOverlap.check(photos(0, "\\\\192.0.2.3\\Fotos", "Pictures/WhatsApp/"), listOf(existing)))
     }
 
     @Test fun editingTheSameProfileIsNoConflict() {

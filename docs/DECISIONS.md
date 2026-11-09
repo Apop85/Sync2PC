@@ -177,6 +177,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-204: PC-Erkennung per PC-Kennung (SMB-Server-GUID), Modus je Profil
 - DEC-205: PC-Kennung nur beim Speichern und in „Verbindung testen“ lernen (ändert DEC-204 Punkte 1 und 5)
 - DEC-206: Laufanimation: Einzelbilder als feste Quell-Assets (ersetzt DEC-060)
+- DEC-207: Fehlermeldungen im UI in einem zentralen Fehler-Rotton
+- DEC-208: Rückfrage beim Hostwechsel eines bestehenden Profils (schliesst R1 aus DEC-205 für diesen Fall)
 - DEC-152: App nur im Hochformat
 - DEC-183: Ziel-Version Android 16 (API 36) vorgezogen
 - DEC-190: Berechtigungen erst bei Bedarf
@@ -525,6 +527,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-204 | Accepted | 9. Android und Hintergrundprozesse |
 | DEC-205 | Accepted | 9. Android und Hintergrundprozesse |
 | DEC-206 | Accepted | 10. Benutzeroberfläche und UX |
+| DEC-207 | Accepted | 10. Benutzeroberfläche und UX |
+| DEC-208 | Accepted | 9. Android und Hintergrundprozesse |
 
 ---
 
@@ -1710,7 +1714,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** QA-Fund F1: Bei `GUID`/`BOTH` lernte nach DEC-204 auch ein manueller Sync die Kennung ohne Rückfrage und ohne WLAN-Prüfung; bei `BOTH` ohne bekannte Kennung konnte so ein fremder PC mit gleicher IP dauerhaft Vertrauen und Zugangsdaten erhalten. Nur die erfolgreiche Anmeldung samt `connectShare` belegt, dass der antwortende Server der eigene PC ist (ein fremder PC lehnt die Zugangsdaten fast immer ab); eine bloss ausgehandelte Kennung wäre unbestätigt. Lernen ist damit auf die bewusste Einrichtung im Editor beschränkt, in einem einzigen Mechanismus.
 - **Alternativen:** (A) Lernen beim Speichern nur per Aushandlung ohne Anmeldung – verworfen (Kennung unbestätigt, bei `GUID` kann ein fremder PC dauerhaft Vertrauen erhalten). (A+B gemischt: `BOTH` per Aushandlung, `GUID` per Anmeldung) – nicht empfohlen (zwei Wege, mehr Code und Tests, kaum Gewinn). (C) DEC-204 belassen und nur beim manuellen Sync die WLAN-Bedingung für `BOTH` ergänzen – nicht empfohlen (`GUID` lernt weiter beim beiläufigen Sync). (D) Zentrale Host-Tabelle (DB v9, Kennung je Host mit Herkunft „still/bestätigt“) – später, nur bei Bedarf (Migration, `MigrationTest`, Sicherungsformat, doppelter Zustand); Inhaber-Vorgabe: keine Schemaänderung vorerst.
 - **Konsequenzen:** Keine Schemaänderung. Manueller Sync und wiederhergestellte Sicherungen lernen nicht mehr; der Benutzer muss das Profil speichern oder testen. **Restrisiken:** (R1) Speichern oder Test bei `GUID` in einem fremden Netz mit gleicher IP sendet einmal die NTLM-Antwort; kein dauerhaftes Vertrauen, ausser der fremde Server akzeptiert beliebige Anmeldungen (Gast, Samba „map to guest“) und hat eine Freigabe gleichen Namens. (R2) Die Kennung ist nicht geheim und in der Aushandlung fälschbar (unverändert, DEC-204). (R3) Häufiger „noch nicht erkannt“, Hinweistexte nötig. (R4) `BOTH` ohne Standortfreigabe kann nicht lernen. (R5) Lernen nach dem Speichern läuft nebenläufig; ein sofortiger manueller Start kann es knapp verpassen (im Assistenten gemildert, Punkt 5). (R6) Nichts im Gerät geprüft. Quelle: Rückmeldung Architecture (SYNC-20261109-058), von Documentation nicht selbst nachgeprüft.
-- **Umsetzungsentscheidungen (Development SYNC-20261109-055, mitgeteilt via -059):** (a) Das Lernen im Modus `WIFI` bleibt still, erzeugt aber nie Vertrauen (Punkt 7). (b) Hostwechsel im Editor: kein Lernen und kein Neuvertrauen, solange der Host ungespeichert ist (Lernen/Neuvertrauen nur, wenn der Host der Verbindung dem gespeicherten Host des Profils entspricht). (c) Einrichtungsausnahme: unter `SETUP` wird bei `GUID` ohne bekannte Kennung in jedem Netz angemeldet (Restrisiko R1 aus -058), bei `BOTH` nur im eingetragenen WLAN. (d) Abgewiesene Profile (und Fehler der Vorab-Prüfung) warten ohne Timer (eine Meldung je Profil); nicht erreichbare PCs setzen den Timer nur, wenn kein Profil lief bzw. bei Verbindungsabbruch mitten im Lauf (DEC-126/DEC-048 unverändert). **Verworfen:** Host-Tabelle (DB v9); Rückfrage bei jedem Hostwechsel (offen, Inhaberentscheid). Quelle: -055 «Durchgeführte Arbeiten», nicht im Code nachgeprüft.
+- **Umsetzungsentscheidungen (Development SYNC-20261109-055, mitgeteilt via -059):** (a) Das Lernen im Modus `WIFI` bleibt still, erzeugt aber nie Vertrauen (Punkt 7). (b) Hostwechsel im Editor: kein Lernen und kein Neuvertrauen, solange der Host ungespeichert ist (Lernen/Neuvertrauen nur, wenn der Host der Verbindung dem gespeicherten Host des Profils entspricht). (c) Einrichtungsausnahme: unter `SETUP` wird bei `GUID` ohne bekannte Kennung in jedem Netz angemeldet (Restrisiko R1 aus -058), bei `BOTH` nur im eingetragenen WLAN. (d) Abgewiesene Profile (und Fehler der Vorab-Prüfung) warten ohne Timer (eine Meldung je Profil); nicht erreichbare PCs setzen den Timer nur, wenn kein Profil lief bzw. bei Verbindungsabbruch mitten im Lauf (DEC-126/DEC-048 unverändert). **Verworfen:** Host-Tabelle (DB v9); Rückfrage bei jedem Hostwechsel (offen, Inhaberentscheid) – für bestehende Profile inzwischen entschieden, siehe DEC-208. Quelle: -055 «Durchgeführte Arbeiten», nicht im Code nachgeprüft.
 - **Betroffene Komponenten:** `sync/PcIdentity.kt` (`PcAccess.SETUP`, `WRONG_NET`), `sync/NetworkRules.kt` (`learnNetOk`), `smb/SmbSession.kt` (`currentIdentity`), `sync/SyncWorker.kt` (`precheckPc`), `ui/ProfileScreen.kt` (`save`, `runTest`, `setPcMode`), `ui/ProfileParts.kt`
 - **Abhängigkeiten:** DEC-204 (ändert Punkte 1 und 5), DEC-103, DEC-126
 
@@ -1724,6 +1728,28 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Änderungen an der Animation erfolgen von Hand an den Assets; der Bau prüft und erzeugt sie nicht. Quelle: Nachtrag Development in -067, von Documentation nicht im Code nachgeprüft (`tools/build.ps1` Z. 119–120 bestätigt «Bau erzeugt nie neu»).
 - **Betroffene Komponenten:** `tools/build.ps1`, `tools/export-anim-frames.py`, `tools/refine-anim-outline.py`, `res/drawable-nodpi/anim_dog_*`, `layout/notif_dog_flipper.xml`, `ui/DogStatus.kt`
 - **Abhängigkeiten:** ersetzt DEC-060 (Erzeugung im Build); DEC-088
+
+### DEC-207: Fehlermeldungen im UI in einem zentralen Fehler-Rotton
+- **Status:** Accepted (im Code umgesetzt laut Development SYNC-20261109-071, Version 0.13.12; Punkt „nicht erreichbarer PC“ und Offline-Vorschau in 0.13.14, gebaut; Sichtprüfung durch QA nur teilweise, SYNC-20261109-075)
+- **Datum:** 2026-11-09 (Entscheid Inhaber im PM-Chat, Quellen SYNC-20261109-071, -076, -077)
+- **Kategorie:** UI
+- **Entscheidung:** Fehlermeldungen, die im UI erscheinen, werden über einen zentralen `ErrorText` (`ui/Common.kt`, Theme-Farbe `colorScheme.error`, kein fester Farbwert) in Rotton dargestellt. Ausgenommen: Verlauf und Statuskachel auf dem Startbildschirm. Auch ein **nicht erreichbarer PC** gilt als Fehler (rot; „nicht erreichbar“ heisst „nichts verifiziert“). Roher englischer Ausnahmetext wird nicht im UI angezeigt (Ersatz durch übersetzte Meldung, z. B. in der Offline-Vorschau). Angepasst laut -071: „Verbindung testen“ (`ProfileScreen`), Ergebniskarte „Speicher freigeben“ (`FreeSpaceScreen`), Statuszeile der Simulation bei `RunStatus.FAILED` (`PreviewScreen`); Erfolgsmeldungen bleiben in normaler Textfarbe.
+- **Begründung:** Meldungen, z. B. bei „Verbindung testen“, fielen kaum auf.
+- **Alternativen:** —  (nicht in den Quellen genannt).
+- **Konsequenzen:** Nicht färbbar bleiben Toasts (Backup, Log-Export, Diagnose, Update) und der Backup-Ergebnisdialog; ob dafür ein eigener Auftrag nötig ist, liegt beim Project Manager (-075). Keine neuen Texte, keine Logik- oder DB-Änderung (ausser der übersetzten Ersatzmeldung). Quelle: Angaben aus -071/-075/-076, von Documentation nicht im Code nachgeprüft.
+- **Betroffene Komponenten:** `ui/Common.kt`, `ui/ProfileScreen.kt`, `ui/FreeSpaceScreen.kt`, `ui/PreviewScreen.kt`
+- **Abhängigkeiten:** —
+
+### DEC-208: Rückfrage beim Hostwechsel eines bestehenden Profils
+- **Status:** Accepted (im Code umgesetzt laut Development SYNC-20261109-079, Version 0.13.14, gebaut; Test `PcIdentityTest` gezielt grün, UI-Verdrahtung nicht getestet; Sicherheits-QA -081 offen)
+- **Datum:** 2026-11-09 (Entscheid Inhaber im PM-Chat, Quellen SYNC-20261109-079, -082)
+- **Kategorie:** Synchronisation
+- **Entscheidung:** Präzisiert die Einrichtungsausnahme aus DEC-205 (Umsetzungsentscheidung c): Beim **Ersteinrichten** eines Profils bleibt die Anmeldung bei unbekanntem PC ohne Rückfrage. Ändert der Benutzer im Editor eines **bestehenden** Profils den Host, erscheint vor dem Senden der Zugangsdaten die Rückfrage „Anderen PC verwenden?“ (Host alt → neu). Regel `PcEditorRules.needsHostConfirm` (`sync/PcIdentity.kt`): nur bei bestehendem Profil, Modus `GUID`/`BOTH`, Hostwechsel gegenüber dem gespeicherten Stand und in dieser Sitzung noch nicht bestätigtem Host. Sie greift vor Speichern, „Verbindung testen“ und „Freigaben/Ordner wählen“; ohne Bestätigung weder Anmeldung noch Speicherung. `WIFI` und gleicher Host fragen nicht. Zusätzlich (-078): Bei fremdem oder unbekanntem PC (`PcIdentityException`) zeigen Papierkorb und „Speicher freigeben“ eine rote „anderer PC“-Meldung (vorhandene Texte `smb_err_pc_*`, `free_other_pc_hosts`); das Datenverhalten bleibt unverändert.
+- **Begründung:** Zugangsdaten nicht an einen falschen oder fremden Rechner senden (verkleinert Restrisiko R1 aus DEC-205 für bestehende Profile).
+- **Alternativen:** Keine Rückfrage (Restrisiko akzeptieren) – verworfen; Rückfrage auch bei Ersteinrichtung – bewusst ausgenommen (-058); neue Texte für den Papierkorb – verworfen (vorhandene wiederverwendet).
+- **Konsequenzen:** R1 ist nur für bestehende Profile mit Hostwechsel geschlossen; bei Ersteinrichtung mit `GUID` unverändert offen. Bekannt: Der Picker kann den Host über `onPick` setzen (der nächste Klick fragt erneut). Quelle: -079/-082, von Documentation nicht im Code nachgeprüft.
+- **Betroffene Komponenten:** `sync/PcIdentity.kt` (`PcEditorRules.needsHostConfirm`), `ui/ProfileScreen.kt` (`confirmHost`, `saveNow`), Texte `profile_host_change_*`
+- **Abhängigkeiten:** DEC-204, DEC-205
 
 ### DEC-152: App nur im Hochformat
 - **Status:** Implemented
@@ -1878,7 +1904,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Entscheidung:** Der Knopf während eines Syncs (App und Benachrichtigung) heisst „Pausieren“; er hält nur den laufenden Lauf an, der nächste automatische Start setzt fort.
 - **Begründung:** Hinweis des Inhabers, „Abbrechen“ sei irreführend.
 - **Alternativen:** —
-- **Konsequenzen:** Status `CANCELLED` wird als „Pausiert“ angezeigt.
+Pausiert angezeigt.
+- **Betroffene Komponenten:** `HomeScreen.StatusCard`„Pausiert“ angezeigt.
 - **Betroffene Komponenten:** `HomeScreen.StatusCard`, `Notifications.progress`, `LogScreen`
 - **Abhängigkeiten:** DEC-086, DEC-095
 

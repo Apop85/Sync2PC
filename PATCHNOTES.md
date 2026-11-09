@@ -2,6 +2,68 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.13.14 (2026-11-09, gebaut, Sicherheits-QA offen)
+
+### Geändert
+- **Rückfrage beim Hostwechsel (DEC-208):** Ändert man im Editor eines bestehenden Profils (Modus `GUID`/`BOTH`) den Host auf einen noch nicht bestätigten PC, fragt die App vor dem Senden der Zugangsdaten «Anderen PC verwenden?» (vor Speichern, «Verbindung testen» und «Freigaben/Ordner wählen»). Ersteinrichtung und `WIFI` fragen nicht. Ohne Bestätigung keine Anmeldung und keine Speicherung.
+- **Meldung «anderer PC»:** Papierkorb und «Speicher freigeben» zeigen bei fremdem oder unbekanntem PC eine rote Meldung; Datenverhalten unverändert.
+- **Fehlermeldungen in Rot (DEC-207, Nachtrag):** nicht erreichbarer PC wird rot dargestellt; die Offline-Vorschau zeigt eine übersetzte Meldung statt des englischen Ausnahmetexts.
+
+### Intern
+- Neuer Test in `PcIdentityTest` (`PcEditorRules.needsHostConfirm`). UI-Verdrahtung nicht getestet.
+
+## 0.13.13 (2026-11-09, ungebaut)
+
+### Behoben
+- **Kommentare in `PcLogin.kt`:** zehn Kommentarzeilen mit doppelt kodierten Umlauten korrigiert, UTF-8-BOM entfernt (auch bei `tools/refine-anim-outline.py` und `version.properties`). Code und Logik unverändert.
+
+## 0.13.12 (2026-11-09)
+
+### Geändert
+- **Fehlermeldungen im UI in Rotton:** zentraler `ErrorText` (`ui/Common.kt`, Theme-Farbe `colorScheme.error`) für «Verbindung testen», «Speicher freigeben» und die Vorschau (Simulation); Verlauf und Statuskachel bleiben unverändert. Umsetzung teilweise geprüft (Sichtprüfung am Emulator: «Verbindung testen» rot/normal; weitere Punkte offen, Auftrag -071).
+
+## 0.13.11 (2026-11-09, gebaut)
+
+### Geändert
+- **Laufanimation von Leo:** Tempo wieder 100 % (42 ms je Bild, feste Konstante `FRAME_MS` in `ui/DogStatus.kt`; `LOOP_MS` steuert nur noch den Statusbogen), Benachrichtigung `notif_dog_flipper.xml` mit 42 ms.
+
+## 0.13.10 (2026-11-09, ungebaut)
+
+### Geändert
+- **Laufanimation von Leo:** nur noch die Bilder 1–16 (`anim_dog_01…16`, vorher 37), nachbearbeitet mit `tools/refine-anim-outline.py` (schwarze Reste transparent, Aussenlinie konstant 2.6 px, Einrisse geschlossen). Entscheid des Inhabers.
+
+## 0.13.9 (2026-11-09, ungebaut)
+
+### Geändert
+- **Laufanimation von Leo:** Änderungen aus 0.13.7 und 0.13.8 verworfen, Stand von 0.13.6 (37 Bilder, 42 ms) wiederhergestellt. `tools/refine-anim-outline.py` bleibt als ungenutztes Archivwerkzeug.
+
+## 0.13.8 (2026-11-09, ungebaut, verworfen mit 0.13.9)
+
+### Geändert
+- **Laufanimation von Leo:** Versuch mit dem sauberen Schrittzyklus (Bilder 17–24, 4× wiederholt = 32 Bilder, 48 ms); durch 0.13.9 verworfen.
+
+## 0.13.7 (2026-11-09, ungebaut)
+
+### Geändert
+- **Laufanimation von Leo:** geschlossene Aussenlinie (konstant 2.6 px) und entfernte graue Hintergrundreste, neues Werkzeug `tools/refine-anim-outline.py`.
+
+## 0.13.6 (2026-11-09, ungebaut)
+
+### Behoben
+- **Restzeit-Anzeige:** Hochrechnung nur noch bei mindestens 60 s Messdauer, 2 MiB übertragen und höchstens 72 h; sonst «Restzeit wird berechnet …» (`home_eta_calculating`, beide Sprachen). Vorher absurde Werte bei winzigen Mengen (`etaSeconds()` in `HomeParts.kt`).
+- **Lintfehler:** `NewApi` in `SyncWorker.kt` (`stopReasonCompat()`), `profile_guard_percent` mit `formatted="false"`, `app_name` mit `translatable="false"`, Einrückung in `ProfileCards.kt`. `lintDebug`: 0 Fehler. Verhalten bei Abbruch unter API 29 nicht am Gerät geprüft.
+
+### Intern
+- Neuer Test `EtaTest` (6 Tests).
+
+## 0.13.5 (2026-11-09, ungebaut)
+
+### Geändert
+- **Laufanimation von Leo:** neu freigestellt (Fell über Farbsättigung statt Helligkeit erkannt, weicher Alpha-Rand), 37 Bilder (`anim_dog_01…37`, 42 ms), Bilder fest eingefroren: der Bau erzeugt sie nicht mehr (DEC-206), ffmpeg ist keine Bau-Voraussetzung mehr.
+
+### Intern
+- Neue Werkzeuge `tools/export-anim-frames.py` (Einmal-Export) und `tools/check-anim-alpha.py` (Alpha-Messung); `make-anim-video.ps1` und `make-anim.ps1` entfernt.
+
 ## 0.13.4 (2026-11-09, ungebaut)
 
 ### Behoben
