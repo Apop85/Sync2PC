@@ -54,7 +54,7 @@ Es gibt zwei Profiltypen:
 
 ## Download
 
-Status: **Beta (0.12.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/releases/latest). Danach aktualisiert sich die App selbst.
+Status: **Beta (0.14.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter [Releases](https://github.com/Apop85/Sync2PC/releases/latest). Danach aktualisiert sich die App selbst.
 
 ## Voraussetzungen
 
@@ -71,19 +71,6 @@ Status: **Beta (0.12.x)** auf dem Weg zu 1.0.0. Die neueste APK findest du unter
 3. Profil anlegen: Freigabe (`\\server\freigabe`), Benutzer und Passwort, WLAN und Quellordner. Die Quellordner wählst du über die Android-Dateiauswahl, z. B. `DCIM › Camera`.
 4. Nach dem Speichern fragt die App, wie es weitergeht: **Simulieren** (zeigt ohne Übertragung, was passieren würde), **Synchronisieren** oder **Später**. Ein neues Profil startet erst automatisch, nachdem es einmal von Hand synchronisiert wurde. Die erste Synchronisierung am besten am Ladegerät ausführen.
 
-## Bestehende Fotos vom PC einsortieren
-
-`tools\LeoSync-Import.bat` per Doppelklick starten. Das Werkzeug sortiert einen Ordner auf dem PC nach denselben Regeln wie die App in den Share ein:
-
-1. Quellordner wählen und Ziel-Share angeben (z. B. `\\192.168.1.20\Fotos`; wird gemerkt).
-2. Bei umbenannten Monatsordnern fragt es einmal pro Monat bzw. Land nach.
-3. Eine Vorschau zeigt, was in welchen Ordner kommt und was schon vorhanden ist.
-4. Kopiert wird erst nach Bestätigung mit „j“. Der Quellordner bleibt unverändert.
-
-Voraussetzungen: Windows mit PowerShell 5.1 (vorinstalliert), für Videodaten `ffprobe` (Teil von ffmpeg). Ohne ffprobe gelten Dateiname bzw. Änderungsdatum. Die Ländererkennung nutzt `app\src\main\assets\geo\countries.geojson`; das Werkzeug muss deshalb im Projektordner liegen.
-
-Einschränkung: Bei HEIC-Fotos kann Windows ohne Zusatz das EXIF-Datum und GPS nicht lesen. Dann gelten Dateiname bzw. Änderungsdatum, und es gibt keinen Länderordner.
-
 ## Projektstruktur
 
 ```
@@ -98,7 +85,7 @@ app/src/main/java/com/sync2pc/app/
   diag/    Diagnosedaten (maskiert), Verlauf-Export, Absturzberichte, Hersteller-Hinweise
   backup/  Sicherung (Export/Import, Verschlüsselung mit Export-Passwort)
   ui/      Jetpack Compose Oberfläche
-tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten), Übersetzungstabelle und LeoSync-Import (PC → Share)
+tools/     Build-Skripte (One-Click-Builder, Icons, Animation, Länderdaten), Übersetzungstabelle
 ```
 
 ## Bauen

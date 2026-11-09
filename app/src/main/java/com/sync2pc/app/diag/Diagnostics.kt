@@ -31,6 +31,8 @@ import com.sync2pc.app.data.text
 import com.sync2pc.app.data.triggerText
 import com.sync2pc.app.mirror.LocalTree
 import com.sync2pc.app.smb.SmbTarget
+import com.sync2pc.app.sync.PcCheckMode
+import com.sync2pc.app.sync.PcIdentity
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.sync.WifiHelper
 import kotlinx.coroutines.Dispatchers
@@ -146,6 +148,11 @@ object Diagnostics {
             kv("onlyWhileCharging", s.onlyWhileCharging)
             kv("syncOffWifi", s.syncOffWifi)
             kv("minFileAgeMinutes", s.minFileAgeMinutes)
+            kv("Datenbankversion", safe { AppDatabase.get(ctx).openHelper.readableDatabase.version })
+            kv("notifySummary", s.notifySummary)
+            kv("notifyUpdate", s.notifyUpdate)
+            kv("notifyHints", s.notifyHints)
+            kv("previewLimit", s.previewLimit)
             kv("homeCountryIso", s.homeCountryIso)
             kv("parallelUploads", s.parallelUploads)
             kv("remotePollMinutes", s.remotePollMinutes)
@@ -185,12 +192,14 @@ object Diagnostics {
                 kv("  PC-Erkennung", p.pcMode().name)
                 kv("  PC-Kennung", if (p.pcGuid.isBlank()) "-" else
                     "${r.pseudo("PC-Kennung", p.pcGuid)} (Host ${if (p.pcGuidHost.isBlank()) "-" else r.pseudo("Host", p.pcGuidHost)})")
+                // Wie die Startseite: «PC erkannt / noch nicht erkannt» (gespeicherte Kennung gehört zum jetzigen Host)
+                kv("  PC-Status", pcStatus(p.pcMode(), p.pcGuid, p.pcGuidHost, SmbTarget.hostOf(p.smbPath).orEmpty()))
                 kv("  WLANs", p.ssids().joinToString(", ") { r.pseudo("WLAN", it) }.ifEmpty { "-" })
                 if (p.type() == ProfileType.PHOTOS) {
                     kv("  Quellordner", p.folders().joinToString(", ") { r.folderPath(it) }.ifEmpty { "-" })
                     kv("  Fotos/Videos/Unterordner", "${p.includeImages}/${p.includeVideos}/${p.includeSubfolders}")
                     kv("  Löschen", "${p.delete().name}, Prüfen ${p.verify().name}")
-                    kv("  Ordnerstruktur", p.layout().name)
+                    kv("  Ordnerstruktur", p.layout().name + if (safe { dao.layoutLocked(p.id) } == true) " (gesperrt)" else "")
                     kv("  Gesicherte Dateien", safe { dao.syncedCountNow(p.id) })
                 } else {
                     val uri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
@@ -374,6 +383,16 @@ object Diagnostics {
 
     private fun logLine(e: LogEntry, r: Redactor? = null): String =
         "${fmt.format(Date(e.time)).substringAfter(' ')} ${e.level} ${r?.scrub(e.message) ?: e.message}"
+
+    /**
+     * PC-Erkennungsstatus eines Profils wie auf der Startseite (gleiche Logik, [PcIdentity.storedFor]); nur ein Zustandswort.
+     * «anderer PC» / «Kennung weicht ab» entsteht erst beim Anmelden und steht im Lauftext/Log.
+     */
+    internal fun pcStatus(mode: PcCheckMode, pcGuid: String, pcGuidHost: String, host: String): String = when {
+        !mode.checksGuid -> "nicht relevant (nur WLAN)"
+        PcIdentity.storedFor(pcGuid, pcGuidHost, host) != null -> "erkannt"
+        else -> "noch nicht erkannt"
+    }
 
     /** Form eines Filtermusters ohne Inhalt: Buchstaben/Ziffern -> "x", Platzhalter (*, ?) und Punkte bleiben */
     internal fun patternShape(patterns: String): String {

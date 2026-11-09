@@ -961,7 +961,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Wunsch des Inhabers; Antworten: kopieren, im Skript fragen, Doppelklick mit Abfrage; Ablage in `tools`.
 - **Alternativen:** reiner Kommandozeilenaufruf (bleibt als Option möglich).
 - **Konsequenzen:** Muss im Projektordner liegen (GeoJSON). HEIC-EXIF und GPS sind ohne Zusatz nicht lesbar. Videodaten brauchen `ffprobe`.
-- **Aktualisierung (2026-11-09):** Das Skript wird nicht mehr gepflegt (Entscheid des Inhabers, Quelle SYNC-20261109-086 abgebrochen). Es kennt nur die Ordnerstruktur V1 (DEC-209); nicht gegen Ziele mit V2/V3 verwenden.
+- **Aktualisierung (2026-11-09):** Das Skript wird nicht mehr gepflegt und nicht an Benutzer verteilt; die drei Dateien stehen in `.gitignore` und gelangen nicht ins Git (Entscheid des Inhabers, Quelle SYNC-20261109-086 abgebrochen; README-Abschnitt entfernt). Es kennt nur die Ordnerstruktur V1 (DEC-209); nicht gegen Ziele mit V2/V3 verwenden.
 - **Betroffene Komponenten:** `tools/LeoSync-Import.ps1`, `tools/LeoSyncImport.cs`, `tools/LeoSync-Import.bat`
 - **Abhängigkeiten:** DEC-018, DEC-021, DEC-022, DEC-019, DEC-209
 
@@ -1769,13 +1769,13 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** —
 
 ### DEC-208: Rückfrage beim Hostwechsel eines bestehenden Profils
-- **Status:** Accepted (im Code umgesetzt laut Development SYNC-20261109-079, Version 0.13.14, gebaut; Test `PcIdentityTest` gezielt grün, UI-Verdrahtung nicht getestet; Sicherheits-QA -081 offen)
+- **Status:** Accepted (im Code umgesetzt laut Development SYNC-20261109-079, Version 0.13.14, gebaut; Test `PcIdentityTest` gezielt grün, UI-Verdrahtung nicht durch Unit-Tests abgedeckt; Sicherheits-QA -081 bestanden nach Code und Emulator-Gerätetest am 2026-11-09, Restrisiken: Meldung „Speicher freigeben“ bei fremdem PC, EN, Dunkelmodus, Fremd-WLAN)
 - **Datum:** 2026-11-09 (Entscheid Inhaber im PM-Chat, Quellen SYNC-20261109-079, -082)
 - **Kategorie:** Synchronisation
 - **Entscheidung:** Präzisiert die Einrichtungsausnahme aus DEC-205 (Umsetzungsentscheidung c): Beim **Ersteinrichten** eines Profils bleibt die Anmeldung bei unbekanntem PC ohne Rückfrage. Ändert der Benutzer im Editor eines **bestehenden** Profils den Host, erscheint vor dem Senden der Zugangsdaten die Rückfrage „Anderen PC verwenden?“ (Host alt → neu). Regel `PcEditorRules.needsHostConfirm` (`sync/PcIdentity.kt`): nur bei bestehendem Profil, Modus `GUID`/`BOTH`, Hostwechsel gegenüber dem gespeicherten Stand und in dieser Sitzung noch nicht bestätigtem Host. Sie greift vor Speichern, „Verbindung testen“ und „Freigaben/Ordner wählen“; ohne Bestätigung weder Anmeldung noch Speicherung. `WIFI` und gleicher Host fragen nicht. Zusätzlich (-078): Bei fremdem oder unbekanntem PC (`PcIdentityException`) zeigen Papierkorb und „Speicher freigeben“ eine rote „anderer PC“-Meldung (vorhandene Texte `smb_err_pc_*`, `free_other_pc_hosts`); das Datenverhalten bleibt unverändert.
 - **Begründung:** Zugangsdaten nicht an einen falschen oder fremden Rechner senden (verkleinert Restrisiko R1 aus DEC-205 für bestehende Profile).
 - **Alternativen:** Keine Rückfrage (Restrisiko akzeptieren) – verworfen; Rückfrage auch bei Ersteinrichtung – bewusst ausgenommen (-058); neue Texte für den Papierkorb – verworfen (vorhandene wiederverwendet).
-- **Konsequenzen:** R1 ist nur für bestehende Profile mit Hostwechsel geschlossen; bei Ersteinrichtung mit `GUID` unverändert offen. Bekannt: Der Picker kann den Host über `onPick` setzen (der nächste Klick fragt erneut). Quelle: -079/-082, von Documentation nicht im Code nachgeprüft.
+- **Konsequenzen:** R1 ist nur für bestehende Profile mit Hostwechsel geschlossen; bei Ersteinrichtung mit `GUID` unverändert offen. Die frühere Annahme, der Picker könne den Host über `onPick` setzen, widerlegte QA (-081): `RemoteFolderPicker` bleibt auf dem Host des Profils, `onPick` übernimmt nur den Pfad. Quelle: -079/-082, von Documentation nicht im Code nachgeprüft.
 - **Betroffene Komponenten:** `sync/PcIdentity.kt` (`PcEditorRules.needsHostConfirm`), `ui/ProfileScreen.kt` (`confirmHost`, `saveNow`), Texte `profile_host_change_*`
 - **Abhängigkeiten:** DEC-204, DEC-205
 

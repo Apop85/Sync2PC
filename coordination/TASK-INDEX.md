@@ -2,7 +2,7 @@
 
 Zentrales Register **aktiver** Aufträge (OPEN, IN_PROGRESS, BLOCKED). Nur Metadaten, keine Beschreibungen. Abgeschlossene Aufträge stehen nicht hier, sondern als Datei in `tasks/COMPLETED/`. Bedienung: `README.md`.
 
-**Letzte vergebene Nummer: 092** (Stand 2026-11-09). Nächste ID: `SYNC-YYYYMMDD-093`.
+**Letzte vergebene Nummer: 096** (Stand 2026-11-10). Nächste ID: `SYNC-YYYYMMDD-097`.
 
 | ID | Kurzbeschreibung | Von | An | Prio | Status | Datei |
 |---|---|---|---|---|---|---|

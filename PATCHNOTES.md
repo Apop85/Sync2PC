@@ -2,6 +2,22 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.14.6 (2026-11-10)
+
+### Geändert
+- **Diagnose** enthält zusätzlich: Datenbankversion, je Profil den «PC-Status» (erkannt / noch nicht erkannt / nicht relevant bei nur WLAN; gleiche Logik wie die Startseite), bei Fotoprofilen den Zusatz «(gesperrt)» bei der Ordnerstruktur, sobald sie nach der ersten Synchronisierung gesperrt ist, sowie die Einstellungen `notifySummary`, `notifyUpdate`, `notifyHints` und `previewLimit`. «Kennung weicht ab» / «anderer PC» entsteht erst beim Anmelden und steht weiterhin im Lauftext und Log.
+
+### Intern
+- Keine Änderung an Schema, Dateiformaten oder Sync-Verhalten. `DiagnosticsTest` um `pcStatusShowsOnlyStateWord` erweitert.
+
+## 0.14.5 (2026-11-09, gebaut)
+
+### Behoben
+- **Rückfrage-Dialog (Ordnerauswahl):** Bei «Eigenen Name…» wurde die vorbelegte Vorgabe (z. B. `Frankreich\08 - `) nicht übernommen, «Übernehmen» blieb gesperrt. Anzeige, Fehlertext und Übernahme nutzen jetzt denselben Wert; die Vorgabe gilt als gültiger Wert (QA -092: bestanden).
+
+### Geändert
+- **Typ-Text im Profil** (Bearbeiten und Assistent): neutral «sortiert nach Jahr und Monat» (EN «sorted by year and month»), da er sonst der gewählten Ordnerstruktur (V2/V3) widersprach.
+
 ## 0.14.4 (2026-11-09)
 
 ### Behoben
@@ -19,7 +35,7 @@ Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0
 - Datenbank Version 9 (`profiles.folderLayout`, Migration 8→9; bestehende Profile = V1). Neue Tests: `TargetResolverTest`, `RemoteFinderTest`, `FolderLayoutGuardTest` sowie Erweiterungen von `ProfileOverlapTest`, `BackupCodecTest`, `ProfileWizardTest`, `MigrationTest`; 272 Unit-Tests grün (QA -088), `MigrationTest` 8→9 nicht ausgeführt, Migration am Emulator mit echten Daten erfolgreich.
 - Das PC-Import-Skript (`tools/LeoSync-Import.*`) wird nicht mehr gepflegt und kennt nur V1.
 
-## 0.13.14 (2026-11-09, gebaut, Sicherheits-QA offen)
+## 0.13.14 (2026-11-09, gebaut, Sicherheits-QA bestanden, Restrisiken siehe -081)
 
 ### Geändert
 - **Rückfrage beim Hostwechsel (DEC-208):** Ändert man im Editor eines bestehenden Profils (Modus `GUID`/`BOTH`) den Host auf einen noch nicht bestätigten PC, fragt die App vor dem Senden der Zugangsdaten «Anderen PC verwenden?» (vor Speichern, «Verbindung testen» und «Freigaben/Ordner wählen»). Ersteinrichtung und `WIFI` fragen nicht. Ohne Bestätigung keine Anmeldung und keine Speicherung.

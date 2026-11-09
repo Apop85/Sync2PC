@@ -38,5 +38,10 @@ keystore.properties
 # Vom Inhaber abgelegte Verlauf-Exporte / Diagnosen (persoenliche Daten, IPs, Dateinamen)
 LeoSync-Verlauf_*.txt
 
+# PC-Import-Werkzeug: nicht weiterentwickelt, nicht an Benutzer verteilen (DEC-068)
+tools/LeoSync-Import.bat
+tools/LeoSync-Import.ps1
+tools/LeoSyncImport.cs
+
 # Hinweis: gradle/wrapper/gradle-wrapper.jar und app/src/main/assets/geo/countries.geojson
 # duerfen committet werden (reproduzierbarer Build).

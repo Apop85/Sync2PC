@@ -7,7 +7,17 @@ LeoSync sichert Fotos, Videos und beliebige Ordner vom Handy auf deinen Windows-
 1. Im Explorer mit der rechten Maustaste auf den Zielordner (z. B. `D:\Fotos`) → **Eigenschaften** → **Freigabe** → **Erweiterte Freigabe**.
 2. **Diesen Ordner freigeben** anhaken und einen Freigabenamen vergeben (z. B. `Fotos`).
 3. Unter **Berechtigungen** deinem Windows-Benutzer **Ändern** und **Lesen** erlauben.
-4. Die IP-Adresse des PCs findest du mit `ipconfig` in der Eingabeaufforderung (z. B. `192.168.1.20`). Am besten im Router eine feste Adresse für den PC einrichten.
+4. Die IP-Adresse des PCs findest du mit `ipconfig` in der Eingabeaufforderung (z. B. `192.168.1.20`). Am besten richtest du im Router eine feste Adresse für den PC ein.
+
+### Eigenen lokalen Benutzer für LeoSync anlegen
+
+Statt deines normalen Windows-Kontos kannst du einen eigenen lokalen Benutzer nur für LeoSync verwenden. So steht dein persönliches Passwort (oder das deines Microsoft-Kontos) nicht in der App, und der Benutzer erhält nur Rechte auf den einen freigegebenen Ordner.
+
+- **Benutzer anlegen:** Einstellungen → Konten → Andere Benutzer (Windows 10: Familie & andere Benutzer) → Konto hinzufügen → **Ich kenne die Anmeldeinformationen dieser Person nicht** → **Benutzer ohne Microsoft-Konto hinzufügen**. Vergib einen Benutzernamen (z. B. `leosync`) und ein Passwort. Das Passwort darf nicht leer sein, denn Windows verweigert den Netzwerkzugriff mit leerem Passwort.
+- Alternativ in der Eingabeaufforderung, als Administrator geöffnet: `net user leosync * /add`. Windows fragt dann nach dem Passwort.
+- **Freigabe-Berechtigung:** Im Explorer rechte Maustaste auf den Zielordner → Eigenschaften → Freigabe → Erweiterte Freigabe → Berechtigungen → **Hinzufügen**. Benutzernamen eingeben, **Namen überprüfen**, mit **OK** bestätigen. Dann **Ändern** und **Lesen** erlauben.
+- **Ordner-Berechtigung:** Im selben Eigenschaften-Fenster auf **Sicherheit** → **Bearbeiten** → **Hinzufügen**, den Benutzer eintragen und **Ändern** erlauben. Windows prüft Freigabe- und Ordnerrechte, es gilt jeweils die strengere Einstellung.
+- **In LeoSync eintragen:** Gib im Profil den neuen Benutzernamen und sein Passwort ein. Das Feld für die Domäne lässt du bei einem lokalen Konto meist leer. Klappt die Anmeldung nicht, versuche `PC-NAME\leosync` als Benutzer. Den PC-Namen findest du unter Einstellungen → System → Info. Mit **Verbindung testen** prüfst du das Ergebnis.
 
 ## 2. In LeoSync: Profil anlegen
 
@@ -18,36 +28,48 @@ Tippe auf **Profil hinzufügen** und wähle den Typ:
 
 Der Assistent führt Schritt für Schritt durch Name, Quelle, Ziel und Optionen. Beim Ziel genügt der PC (`\\192.168.1.20`) mit Benutzer und Passwort; **Ordner auf dem PC wählen…** zeigt dann die Freigaben und Ordner zur Auswahl. Mit **Verbindung testen** siehst du sofort, ob alles stimmt.
 
-Neue Profile starten erst, wenn du einmal **Synchronisieren** tippst – du kannst vorher **simulieren**, was passieren würde.
+Bei Fotos-Profilen wählst du die **Ordnerstruktur**: `Jahr\Monat - Land` (Standard), `Jahr\Land\Monat` oder `Jahr\Monat\Land`. Sie lässt sich bis zur ersten Synchronisierung des Profils ändern. Mehrere Fotos-Profile mit demselben Ziel müssen dieselbe Struktur verwenden.
+
+Unter **PC-Kennung** legst du pro Profil fest, woran LeoSync deinen PC erkennt: **Nur WLAN-Name** (Standard für bestehende Profile), **Nur PC-Kennung** oder **Beides**. Die Kennung wird geprüft, bevor Benutzername und Passwort gesendet werden. Nach einer Änderung bestätigst du sie mit **Verbindung testen**. Nach einer Neuinstallation von Windows ändert sich die Kennung; dann das Profil öffnen und erneut **Verbindung testen** tippen. Bei manchen NAS-Geräten (Samba) ist die Kennung möglicherweise nicht stabil; dort **Nur WLAN-Name** verwenden.
+
+Neue Profile starten erst, wenn du einmal **Synchronisieren** tippst. Du kannst vorher **simulieren**, was passieren würde.
 
 ## 3. Im Alltag
 
 - **Automatisch:** Sobald das Handy mit einem eingetragenen WLAN verbunden ist, synchronisiert LeoSync im Hintergrund. Ohne WLAN-Namen nur, wenn du es auslöst.
+- **Mobile Daten/VPN:** Unter **Einstellungen → Übertragung** kannst du die Automatik auch ausserhalb des WLAN zulassen (standardmässig aus). Das kann Datenverbrauch und bei manchen Mobilfunkabos Kosten verursachen, etwa im Ausland. Ist der PC nicht erreichbar, prüft LeoSync ausserhalb des WLAN nur alle 2 Stunden erneut.
+- **Nur beim Laden:** Auf Wunsch synchronisiert LeoSync nur, solange das Handy am Ladegerät hängt (Einstellungen).
 - **Von Hand:** **Synchronisieren** tippen oder auf der Startseite ganz oben nach unten ziehen.
-- **Pausieren:** ⏸ oben rechts – für eine Zeit oder „für immer“ (nur noch von Hand). ▶ setzt fort.
-- **Der Hund** zeigt den Zustand: schläft = alles gesichert, läuft = Synchronisierung läuft, steht = wartet auf deine Entscheidung, sitzt = wartet (z. B. auf das WLAN).
+- **Pausieren:** ⏸ oben rechts – für eine Zeit oder «für immer» (nur noch von Hand). ▶ setzt fort.
+- **Der Hund** zeigt den Zustand: schläft = alles gesichert, läuft = Synchronisierung läuft, steht = wartet auf deine Entscheidung, sitzt = wartet (z. B. auf das WLAN oder die erste Synchronisierung).
+
+- **Speicher freigeben:** Auf der Startseite unter den Werkzeugen entfernt LeoSync alte Dateien vom Handy, die nachweislich auf dem PC liegen. Jede Datei wird vorher auf dem PC geprüft; du wählst nach Alter, Ordner, Dateityp und Grösse und siehst eine Vorschau. Fotos und Videos kommen in den Papierkorb der Galerie.
+- **Sicherung der Einstellungen:** Profile, Einstellungen und Synchronisierungsstand lassen sich als Datei exportieren und wieder importieren. Passwörter sind dabei nur mit einem Export-Passwort verschlüsselt enthalten.
+- **Sprache:** LeoSync folgt der Handy-Sprache (Deutsch, sonst Englisch). Unter Einstellungen → Sprache lässt sie sich fest wählen.
 
 ## 4. Sicherheit deiner Dateien
 
-- **Prüfung nach dem Hochladen:** LeoSync liest die Datei auf dem PC zurück und vergleicht sie mit dem Original. Stufen von *Aus* bis *Komplett*; Standard ist *Mittel*. Wer Fotos vom Handy entfernen lässt, prüft immer.
-- **Papierkorb:** Bei Ordner-Profilen landen gelöschte und überschriebene Dateien im Ordner `.LeoSync-Bin` (auf Handy und PC) und lassen sich über **Tools → Papierkorb** zurückholen. Nach 30 Tagen (einstellbar) wird er geleert.
-- **Schutzbremse:** Würden auf einmal viele Dateien gelöscht (Standard: mehr als 20 %) oder fehlt ein ganzer Ordner, hält LeoSync an und fragt dich zuerst.
+- **Prüfung nach dem Hochladen:** LeoSync liest die Datei auf dem PC zurück und vergleicht sie mit dem Original. Die Stufen reichen von *Aus* bis *Komplett*, Standard ist *Mittel*. Wer Fotos vom Handy entfernen lässt, prüft immer.
+- **Papierkorb:** Bei Ordner-Profilen landen gelöschte und überschriebene Dateien im Ordner `.LeoSync-Bin` (auf Handy und PC) und lassen sich über **Tools → Papierkorb** zurückholen: Profil wählen, Einträge markieren und **Wiederherstellen** tippen (oder **Endgültig löschen**). Nach 30 Tagen (einstellbar) wird er geleert. Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie.
+- **Schutzbremse:** Würden auf einmal viele Dateien gelöscht (Standard: mehr als 20 %) oder fehlt ein ganzer Ordner, hält LeoSync an und fragt dich zuerst. Du entscheidest dann zwischen **Nicht löschen** und **Trotzdem in den Papierkorb**; bis dahin ruht das Profil.
 - **Konflikte:** Wurde dieselbe Datei auf Handy und PC geändert, entscheidest du, welche Version gilt. Die andere kommt in den Papierkorb.
+- **PC-Kennung:** Ist sie aktiviert, sendet LeoSync Benutzername und Passwort nur an einen erkannten PC. Bei einem unbekannten PC meldet sich die App nicht an und überspringt das Profil. Die Kennung ist nicht geheim: Sie schützt vor einem fremden Server in einem fremden Netz, nicht vor einem gezielten Angriff.
 
 ## 5. Häufige Meldungen
 
 | Meldung | Was tun? |
 |---|---|
-| Benutzer oder Passwort stimmt nicht | Windows-Benutzer und Passwort prüfen. Bei einem Microsoft-Konto die E-Mail-Adresse als Benutzer verwenden. |
+| Benutzer oder Passwort stimmt nicht | Windows-Benutzer und Passwort prüfen. Bei einem Microsoft-Konto die E-Mail-Adresse als Benutzer verwenden. Oder lege einen eigenen lokalen Benutzer an. |
 | Diese Freigabe gibt es auf dem PC nicht | Freigabenamen prüfen oder mit **Ordner auf dem PC wählen…** auswählen. |
 | Kein Zugriff auf diesen Ordner | In den Freigabe-Berechtigungen dem Benutzer **Ändern** erlauben. |
-| Der PC ist nicht erreichbar | PC eingeschaltet (nicht im Ruhezustand)? Handy im selben WLAN? Firewall erlaubt „Datei- und Druckerfreigabe“? |
+| Der PC ist nicht erreichbar | PC eingeschaltet (nicht im Ruhezustand)? Handy im selben WLAN? Firewall erlaubt «Datei- und Druckerfreigabe»? |
+| Der PC ist noch nicht erkannt / PC unbekannt | Es wurden keine Anmeldedaten gesendet. Im eigenen WLAN das Profil öffnen und **Verbindung testen** tippen. Liefert der PC keine Kennung (z. B. manche NAS), die PC-Kennung auf **Nur WLAN-Name** stellen. |
 | Der PC-Name wurde nicht gefunden | Statt des Namens die IP-Adresse eintragen, z. B. `\\192.168.1.20`. |
-| PC-Ordner nicht gefunden (Schutzbremse) | Wurde der Ordner umbenannt oder verschoben? Zurückbenennen und **Erneut prüfen** – oder einen neuen Ordner wählen. |
+| PC-Ordner nicht gefunden (Schutzbremse) | Wurde der Ordner umbenannt oder verschoben? Zurückbenennen und **Erneut prüfen** tippen – oder einen neuen Ordner wählen. |
 
 ## 6. Synchronisierung bricht im Hintergrund ab
 
-Viele Hersteller beenden Apps im Hintergrund sehr streng. In LeoSync unter **Einstellungen → App-Berechtigungen** stehen die nötigen Schritte für dein Gerät (Akku-Optimierung aus, Hintergrundaktivität erlauben). Mehr dazu: [dontkillmyapp.com](https://dontkillmyapp.com).
+Viele Hersteller beenden Apps im Hintergrund sehr streng. In LeoSync unter **Einstellungen → App-Berechtigungen** siehst du, welche Berechtigungen LeoSync für die automatische Synchronisierung im Hintergrund braucht und welche schon erledigt sind: Zugriff auf Fotos und Videos, Benachrichtigungen, Standort (Android braucht ihn, um den WLAN-Namen zu lesen) und Akku-Optimierung deaktivieren. Mehr dazu: [dontkillmyapp.com](https://dontkillmyapp.com).
 
 ## 7. Datenschutz
 
@@ -55,4 +77,4 @@ LeoSync hat keinen Server und sammelt keine Daten. Passwörter werden verschlüs
 
 ## Kontakt
 
-Fragen oder Probleme: [leotools@protonmail.com](mailto:leotools@protonmail.com)
+Fragen oder Probleme: [leotools@protonmail.com](mailto:leotools@protonmail.com). Fehlerberichte und Vorschläge kannst du auch über GitHub Issues einreichen.

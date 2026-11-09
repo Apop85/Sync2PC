@@ -46,6 +46,17 @@ CLAUDE.md
 
 Übergeordnete Regeln für Claude Code.
 
+docs/hilfe/hilfe-de.md und docs/hilfe/help-en.md
+
+Benutzerhilfe (Quelle der Wahrheit). Die Website-Hilfe (leosync/hilfe.html, leosync/en/help.html im Repo apop85.github.io) richtet sich nach diesen Dateien, nicht umgekehrt.
+
+Pflege der Hilfe
+Die Hilfe muss aktuell bleiben: Ändert sich sichtbares Verhalten (Einstellungen, Meldungen, Assistent, Sicherheitsfunktionen, Abläufe), prüfst du docs/hilfe/* und passt sie in DE und EN an (Schweizer Schreibweise, Begriffe nach CLAUDE.md §1: Handy/Freigabe/Synchronisierung bzw. Mobile/Share).
+Bei Release-Arbeiten und Doku-Aufträgen zu Funktionen prüfst du immer auch, ob die Hilfe betroffen ist.
+Änderungen an docs/hilfe/* meldest du dem Inhaber (kurz, mit Stichpunkten), damit die Website-Rolle leosync/ nachzieht; die Website-Dateien änderst du nicht selbst.
+Weichen Website und docs/hilfe/* voneinander ab, gilt docs/hilfe/*; eine Website-Änderung, die nicht in docs/hilfe/* steht, wird dem Inhaber gemeldet und bei Bestätigung in docs/hilfe/* übernommen.
+Hilfetexte stützen sich auf geprüfte Quellen (README, DECISIONS, Implementierung), nichts erfinden.
+
 Arbeitsweise
 Dokumentationsauftrag verstehen.
 Betroffene technische Komponenten identifizieren.

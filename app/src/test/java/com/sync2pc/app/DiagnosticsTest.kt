@@ -5,6 +5,7 @@ import com.sync2pc.app.diag.CrashReporter
 import com.sync2pc.app.diag.Diagnostics
 import com.sync2pc.app.diag.Redactor
 import com.sync2pc.app.diag.VendorHints
+import com.sync2pc.app.sync.PcCheckMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -122,6 +123,19 @@ class DiagnosticsTest {
 
     @Test fun patternShapeHidesContent() {
         assertEquals("2 Regel(n): x*.x x?", Diagnostics.patternShape("Urlaub*.tmp\nab?"))
+    }
+
+    /** SYNC-20261110-095: PC-Status ist nur ein Zustandswort, nie Kennung oder Host; gleiche Logik wie die Startseite */
+    @Test fun pcStatusShowsOnlyStateWord() {
+        val guid = "11111111-2222-3333-4444-555555555555"
+        val ok = Diagnostics.pcStatus(PcCheckMode.GUID, guid, "NAS-Wohnzimmer", "nas-wohnzimmer")
+        assertEquals("erkannt", ok)
+        assertEquals("erkannt", Diagnostics.pcStatus(PcCheckMode.BOTH, guid, "nas-wohnzimmer", "nas-wohnzimmer"))
+        assertEquals("noch nicht erkannt", Diagnostics.pcStatus(PcCheckMode.GUID, guid, "nas-wohnzimmer", "anderer-pc"))
+        assertEquals("noch nicht erkannt", Diagnostics.pcStatus(PcCheckMode.GUID, "", "", "nas-wohnzimmer"))
+        assertTrue(Diagnostics.pcStatus(PcCheckMode.WIFI, guid, "nas-wohnzimmer", "nas-wohnzimmer").startsWith("nicht relevant"))
+        for (s in listOf(ok, Diagnostics.pcStatus(PcCheckMode.GUID, guid, "x", "nas-wohnzimmer")))
+            assertTrue(s, !s.contains("1111") && !s.contains("nas-") && !s.contains("192."))
     }
 
     @Test fun vendorDetection() {
