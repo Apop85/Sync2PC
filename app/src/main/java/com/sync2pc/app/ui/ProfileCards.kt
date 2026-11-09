@@ -215,3 +215,60 @@ internal fun PhotoOptionsCard(pState: MutableState<Profile>, onRequestFull: () -
         if (deleting) HintMore(str(R.string.profile_verify_required))
     }
 }
+
+/** Beispielpfad je Ordnerstruktur (Text in den Sprachdateien) */
+private fun layoutExample(l: com.sync2pc.app.data.FolderLayout): String = str(when (l) {
+    com.sync2pc.app.data.FolderLayout.MONTH_SUFFIX -> R.string.profile_layout_ex_month_suffix
+    com.sync2pc.app.data.FolderLayout.COUNTRY_FOLDER -> R.string.profile_layout_ex_country_folder
+    com.sync2pc.app.data.FolderLayout.COUNTRY_SUBFOLDER -> R.string.profile_layout_ex_country_subfolder
+})
+
+/**
+ * Fotos-Profil: Ordnerstruktur auf dem PC (SYNC-20261109-085, DEC-148/151: Wertfeld mit Auswahlliste).
+ * [lockedText] != null = nur Anzeige mit diesem Hinweis (nach dem ersten Sync oder während eines Laufs);
+ * [adoptedFrom] = Name des Profils, dessen Struktur wegen gleichem Ziel übernommen wurde.
+ */
+@Composable
+internal fun FolderLayoutCard(
+    layout: com.sync2pc.app.data.FolderLayout, lockedText: String?, adoptedFrom: String?,
+    onPick: (com.sync2pc.app.data.FolderLayout) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    SectionCard(str(R.string.profile_layout_title)) {
+        val value = layout.label
+        if (lockedText == null) ValueField(str(R.string.profile_layout_title), value) { open = true }
+        else Column {
+            Text(str(R.string.profile_layout_title), style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge)
+        }
+        Hint(layoutExample(layout))
+        Hint(str(R.string.profile_layout_example_none))
+        if (adoptedFrom != null) Hint(str(R.string.profile_layout_adopted, adoptedFrom))
+        Hint(lockedText ?: str(R.string.profile_layout_hint))
+    }
+    if (open) AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text(str(R.string.profile_layout_pick_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                com.sync2pc.app.data.FolderLayout.entries.forEach { l ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { onPick(l); open = false },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = l == layout, onClick = { onPick(l); open = false })
+                        Column(Modifier.padding(vertical = 4.dp)) {
+                            Text(l.label)
+                            Hint(layoutExample(l))
+                        }
+                    }
+                }
+                Hint(str(R.string.profile_layout_example_none))
+                Hint(str(R.string.profile_layout_hint))
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = { open = false }) { Text(str(R.string.common_cancel)) } },
+    )
+}

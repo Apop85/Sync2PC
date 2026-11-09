@@ -1,5 +1,6 @@
 package com.sync2pc.app
 
+import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.ProfileWizard
@@ -32,6 +33,26 @@ class ProfileWizardTest {
         assertNull(ProfileWizard.missing(photos.copy(wifiSsids = ""), Step.OPTIONS))
         assertNull(ProfileWizard.firstIncomplete(photos))
         assertEquals(Step.SOURCE, ProfileWizard.firstIncomplete(photos.copy(sourceFolders = "")))
+    }
+
+    @Test fun layoutEditableOnlyForUnlockedIdlePhotos() {
+        assertTrue(ProfileWizard.layoutEditable(photos, locked = false, syncRunning = false))
+        assertFalse(ProfileWizard.layoutEditable(photos, locked = true, syncRunning = false))
+        assertFalse(ProfileWizard.layoutEditable(photos, locked = false, syncRunning = true))
+        assertFalse(ProfileWizard.layoutEditable(mirror, locked = false, syncRunning = false))
+    }
+
+    @Test fun layoutOwnerIsOtherPhotoProfileWithSameTarget() {
+        val v2 = FolderLayout.COUNTRY_FOLDER.code
+        val other = photos.copy(id = 7, name = "Andere", smbPath = "\\\\PC\\fotos\\", folderLayout = v2)
+        // Gleiches Ziel (Gross-/Kleinschreibung und Trenner egal) -> Vorlage des anderen Profils
+        assertEquals(7L, ProfileWizard.layoutOwner(photos.copy(id = 0), listOf(other))?.id)
+        // eigenes Profil, anderes Ziel, Ordner-Profil -> kein Eigentümer
+        assertNull(ProfileWizard.layoutOwner(other, listOf(other)))
+        assertNull(ProfileWizard.layoutOwner(photos.copy(smbPath = "\\\\pc\\Anderes"), listOf(other)))
+        assertNull(ProfileWizard.layoutOwner(photos, listOf(mirror.copy(id = 8, smbPath = photos.smbPath))))
+        assertNull(ProfileWizard.layoutOwner(mirror, listOf(other)))
+        assertNull(ProfileWizard.layoutOwner(photos.copy(smbPath = ""), listOf(other.copy(smbPath = ""))))
     }
 
     @Test fun saveFromFirstOptionalStep() {

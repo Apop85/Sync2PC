@@ -71,6 +71,30 @@ enum class VerifyLevel(val code: Int, @StringRes private val labelRes: Int, @Str
     }
 }
 
+/**
+ * Ordnerstruktur auf dem PC (nur Fotos-Profile, SYNC-20261109-083). [code] steht in der DB (`profiles.folderLayout`)
+ * und in der Sicherung; die Codes dürfen sich nie ändern.
+ * `<…>` = Platzhalter, `[…]` = nur wenn zutreffend; in der letzten Ebene liegen direkt die Dateien.
+ */
+enum class FolderLayout(val code: String, @StringRes private val labelRes: Int) {
+    /** V1: Jahr\MM[ - Land] (bisheriger Stand, Standard) */
+    MONTH_SUFFIX("MONTH_SUFFIX", R.string.folder_layout_month_suffix),
+    /** V2: Jahr\[Land\]MM */
+    COUNTRY_FOLDER("COUNTRY_FOLDER", R.string.folder_layout_country_folder),
+    /** V3: Jahr\MM\[Land] */
+    COUNTRY_SUBFOLDER("COUNTRY_SUBFOLDER", R.string.folder_layout_country_subfolder);
+
+    val label: String get() = str(labelRes)
+
+    companion object {
+        /** Für DB-Werte: unbekannt/leer = V1 (nur beim Lesen aus der DB; Sicherungen siehe [parse]) */
+        fun of(code: String?): FolderLayout = parse(code) ?: MONTH_SUFFIX
+
+        /** Streng: null = unbekannter Code (kein stilles Zurückfallen auf V1) */
+        fun parse(code: String?): FolderLayout? = entries.firstOrNull { it.code == code }
+    }
+}
+
 /** Verhalten bei Konflikt (Datei auf beiden Seiten geändert, nur beidseitig). */
 enum class ConflictMode(@StringRes private val labelRes: Int) {
     ASK(R.string.conflict_mode_ask),
@@ -140,7 +164,11 @@ data class Profile(
     val pcGuid: String = "",
     /** Host (kleingeschrieben), zu dem [pcGuid] gelernt wurde */
     val pcGuidHost: String = "",
+    // ---- seit DB v9 (SYNC-20261109-083) ----
+    /** Ordnerstruktur auf dem PC ([FolderLayout.code], nur Fotos); nach dem ersten Sync nicht mehr änderbar (SyncDao.updateProfile) */
+    val folderLayout: String = FolderLayout.MONTH_SUFFIX.code,
 ) {
+    fun layout(): FolderLayout = FolderLayout.of(folderLayout)
     fun folders(): List<String> = splitLines(sourceFolders)
     fun ssids(): List<String> = splitLines(wifiSsids)
     /** Erkennungsart (unbekannt/leer = WIFI, heutiges Verhalten) */

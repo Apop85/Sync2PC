@@ -129,12 +129,16 @@ class SyncEngine(
         val samples = ArrayList<String>()
     }
 
-    /** Ein Übertragungsauftrag: Datei → Jahr\Monatsordner */
+    /** Ein Übertragungsauftrag: Datei → Jahr\<relativer Zielpfad> (je nach Vorlage "06", "Ägypten\06", "06\Ägypten" …) */
     private class Job(
         val item: MediaItem, val year: Int, val folderName: String,
-        /** Andere Ordner desselben Monats (z. B. "10" neben "10 - Ägypten") – für die Duplikatsuche */
+        /** Andere Ordner desselben Monats (relative Pfade, z. B. "10" neben "10 - Ägypten") – für die Duplikatsuche */
         val siblingFolders: List<String> = emptyList(),
     )
+
+    /** Pfad auf dem Share: Basis\Jahr\Segmente des relativen Pfads */
+    private fun targetPath(smb: SmbSession, year: Int, rel: String): String =
+        smb.path(year.toString(), *rel.split('\\').toTypedArray())
 
     /** Zwischen den parallelen Workern geteilter Zustand */
     private class Shared(val totalFiles: Int, val totalBytes: Long) {
@@ -251,8 +255,9 @@ class SyncEngine(
                     }
                 }
             }
-            val resolver = TargetResolver(producerSmb, dao, profile.id, countries.allCountryNames, dryRun, offline,
-                namesOfCountry = { countries.namesOf(it) })
+            val layout = profile.layout()
+            val resolver = TargetResolver(producerSmb, MappingStore.of(dao), profile.id, countries.allCountryNames, dryRun, offline,
+                namesOfCountry = { countries.namesOf(it) }, layout = layout)
             val analyzer = MediaAnalyzer(context, canReadLocation)
             if (!canReadLocation) log("W", Msg.of(R.string.eng_no_media_location))
             val home = settings.homeCountryIso
@@ -269,8 +274,11 @@ class SyncEngine(
                 val cKey = if (isHome || cName == null) null else (info.countryIso?.ifBlank { null } ?: cName)
                 return when (val res = resolver.resolve(info.year, info.month, cKey, cName)) {
                     is TargetResolver.Resolution.Ask -> {
+                        // V3: Gruppe je Monat ohne Land (Gruppenschlüssel JJJJ/MM/-)
+                        val byCountry = layout != com.sync2pc.app.data.FolderLayout.COUNTRY_SUBFOLDER
                         val acc = decisions.getOrPut(res.groupKey) {
-                            DecisionAcc(info.year, info.month, cKey, cName, res.defaultName, res.candidates)
+                            DecisionAcc(info.year, info.month, if (byCountry) cKey else null, if (byCountry) cName else null,
+                                res.defaultName, res.candidates)
                         }
                         acc.count++; acc.bytes += item.size
                         if (acc.samples.size < 8) acc.samples += item.uri.toString()
@@ -545,7 +553,7 @@ class SyncEngine(
      */
     private suspend fun transfer(smb: SmbSession, job: Job, sh: Shared): Boolean {
         val item = job.item
-        val folderPath = smb.path(job.year.toString(), job.folderName)
+        val folderPath = targetPath(smb, job.year, job.folderName)
         val folderKey = folderPath.lowercase()
         val name = FolderNames.sanitize(item.displayName)
         var lHash: String? = null
@@ -577,7 +585,7 @@ class SyncEngine(
             // Duplikatsuche in den anderen Ordnern desselben Monats (z. B. von Hand von "10" nach
             // "10 - Ägypten" verschoben): gleicher Name (auch bild_2 …), gleiche Grösse, gleiche Prüfsumme
             for (sibling in job.siblingFolders) {
-                val sPath = smb.path(job.year.toString(), sibling)
+                val sPath = targetPath(smb, job.year, sibling)
                 val sListing = sh.listings.getOrPut(sPath.lowercase()) {
                     HashMap<String, RemoteEntry>().apply {
                         smb.listDir(sPath).filter { !it.isDirectory }.forEach { put(it.name.lowercase(), it) }

@@ -3,6 +3,7 @@ package com.sync2pc.app
 import com.sync2pc.app.backup.BackupCodec
 import com.sync2pc.app.backup.BackupContent
 import com.sync2pc.app.backup.BackupException
+import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.FolderMapping
 import com.sync2pc.app.data.MirrorState
 import com.sync2pc.app.data.Profile
@@ -120,6 +121,34 @@ class BackupCodecTest {
         val b = BackupCodec.parse(bad, null).content.profiles.single()
         assertEquals("WIFI", b.pcCheck)
         assertEquals("", b.pcGuid)
+    }
+
+    @Test fun folderLayoutRoundTrips() {
+        for (l in FolderLayout.entries) {
+            val c = content().copy(profiles = listOf(content().profiles.single().copy(folderLayout = l.code)))
+            val json = BackupCodec.encode(c, exportPassword = null, iterations = fast)
+            assertTrue(json.contains("\"folderLayout\":\"${l.code}\""))
+            val parsed = BackupCodec.parse(json, null).content
+            assertEquals(l.code, parsed.profiles.single().folderLayout)
+            assertTrue(parsed.rejectedProfiles.isEmpty())
+        }
+    }
+
+    @Test fun olderBackupWithoutFolderLayoutIsMonthSuffix() {
+        val json = """{"format":"leosync-backup","version":1,"profiles":[{"id":1,"name":"Alt","smbPath":"\\\\pc\\x"}]}"""
+        val c = BackupCodec.parse(json, null).content
+        assertEquals("MONTH_SUFFIX", c.profiles.single().folderLayout)
+        assertTrue(c.rejectedProfiles.isEmpty())
+    }
+
+    @Test fun unknownFolderLayoutProfileIsRejectedNotSilentlyV1() {
+        val json = """{"format":"leosync-backup","version":1,"profiles":[
+            {"id":1,"name":"Neu","folderLayout":"YEAR_ONLY"},{"id":2,"name":"Ok","folderLayout":"COUNTRY_SUBFOLDER"},
+            {"id":3,"name":"Leer","folderLayout":""}]}"""
+        val c = BackupCodec.parse(json, null).content
+        assertEquals(listOf("Ok"), c.profiles.map { it.name })
+        assertEquals("COUNTRY_SUBFOLDER", c.profiles.single().folderLayout)
+        assertEquals(listOf("Neu (YEAR_ONLY)", "Leer ()"), c.rejectedProfiles)
     }
 
     @Test fun rejectsForeignAndFutureFiles() {

@@ -32,6 +32,10 @@
     <string name="overlap_identical">Profile “%1$s” already has the same target and the same sources.</string>
     <string name="overlap_nested">A folder of this profile lies inside a folder of profile “%1$s” (or the other way round). The same files would be synced by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
     <string name="overlap_shared_folders">Same target as profile “%1$s” and shared source folders: %2$s. These files would be checked and transferred by both profiles.</string>
+    <string name="overlap_blocked_layout">Profile “%1$s” already uses this target with a different folder structure (%2$s). All photo profiles of the same target must use the same structure, so this profile cannot be saved. Choose the same structure or another target.</string>
+    <string name="folder_layout_month_suffix">Year\\MM[ - Country]</string>
+    <string name="folder_layout_country_folder">Year\\[Country\\]MM</string>
+    <string name="folder_layout_country_subfolder">Year\\MM\\[Country]</string>
     <string name="overlap_same_target">Same target as profile “%1$s”. These files would be checked and transferred by both profiles.</string>
 
     <!-- Typwahl und Ordnerauswahl auf dem Share (ProfileParts) -->

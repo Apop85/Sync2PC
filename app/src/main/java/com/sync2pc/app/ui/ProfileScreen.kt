@@ -169,6 +169,25 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
     val credentialSources = allProfiles.filter { it.id != profileId && it.smbUser.isNotBlank() }
 
+    // Ordnerstruktur der Fotos (SYNC-20261109-085): gesperrt nach dem ersten Sync (aus der DB) oder während eines Laufs
+    val wm = remember { androidx.work.WorkManager.getInstance(ctx) }
+    val syncRunning by remember {
+        kotlinx.coroutines.flow.combine(SyncScheduler.ALL_SYNC_WORK.map { wm.getWorkInfosForUniqueWorkFlow(it) }) { arr ->
+            arr.any { list -> list.any { it.state == androidx.work.WorkInfo.State.RUNNING } }
+        }
+    }.collectAsState(initial = false)
+    var layoutLocked by remember { mutableStateOf(false) }
+    LaunchedEffect(profileId, syncRunning) {
+        if (profileId != 0L) layoutLocked = withContext(Dispatchers.IO) { dao.layoutLocked(profileId) }
+    }
+    val layoutEditable = ProfileWizard.layoutEditable(p, layoutLocked, syncRunning)
+    // Gleiches Ziel wie ein anderes Fotoprofil: dessen Struktur übernehmen (Hinweis; Abweichung wird beim Speichern blockiert)
+    val layoutOwner = ProfileWizard.layoutOwner(p, allProfiles)
+    LaunchedEffect(layoutOwner?.id, layoutOwner?.folderLayout, layoutEditable) {
+        if (layoutEditable && layoutOwner != null && layoutOwner.folderLayout != p.folderLayout)
+            p = p.copy(folderLayout = layoutOwner.layout().code)
+    }
+
     LaunchedEffect(profileId) {
         if (profileId != 0L) {
             withContext(Dispatchers.IO) {
@@ -263,7 +282,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             val toSave = withPassword().let { it.copy(name = it.name.trim(), verifyUpload = it.mustVerify()) }
             // Doppelte Profile verhindern bzw. bei Überschneidung warnen
             val hit = withContext(Dispatchers.IO) { ProfileOverlap.check(toSave, dao.profiles()) }
-            if (hit != null && (hit.kind == ProfileOverlap.Kind.IDENTICAL || !force)) {
+            if (hit != null && (hit.kind != ProfileOverlap.Kind.PARTIAL || !force)) {
                 overlap = hit
                 return@launch
             }
@@ -517,6 +536,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             }
 
+            if (!isMirror && show(Step.TARGET)) item {
+                FolderLayoutCard(
+                    layout = p.layout(),
+                    lockedText = when {
+                        layoutLocked -> str(R.string.profile_layout_locked)
+                        syncRunning -> str(R.string.profile_layout_running)
+                        else -> null
+                    },
+                    adoptedFrom = layoutOwner?.takeIf { layoutEditable && it.layout() == p.layout() }?.name,
+                    onPick = { p = p.copy(folderLayout = it.code) },
+                )
+            }
+
             if (show(Step.OPTIONS)) item {
                 SectionCard(str(R.string.profile_pc_check)) {
                     val mode = pcModeNow()
@@ -759,11 +791,23 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     )
 
     overlap?.let { hit ->
-        val identical = hit.kind == ProfileOverlap.Kind.IDENTICAL
+        // IDENTICAL und BLOCKED (andere Ordnerstruktur bei gleichem Ziel, SYNC-20261109-083): nicht speicherbar
+        val identical = hit.kind != ProfileOverlap.Kind.PARTIAL
+        val blocked = hit.kind == ProfileOverlap.Kind.BLOCKED
         AlertDialog(
             onDismissRequest = { overlap = null },
-            title = { Text(str(if (identical) R.string.profile_exists_title else R.string.profile_overlap_title)) },
-            text = { Text(hit.message() + if (identical) "\n\n" + str(R.string.profile_not_saved) else "") },
+            title = { Text(str(when {
+                blocked -> R.string.profile_layout_blocked_title
+                identical -> R.string.profile_exists_title
+                else -> R.string.profile_overlap_title
+            })) },
+            text = {
+                // BLOCKED: roter Fehler (DEC-207) mit Namen des anderen Profils und seiner Struktur (DEC-189), kein «Trotzdem speichern»
+                if (blocked) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ErrorText(hit.message())
+                    Text(str(R.string.profile_not_saved))
+                } else Text(hit.message() + if (identical) "\n\n" + str(R.string.profile_not_saved) else "")
+            },
             confirmButton = {
                 if (identical) TextButton(onClick = { overlap = null }) { Text(str(R.string.common_ok)) }
                 else TextButton(onClick = { overlap = null; save(force = true) }) { Text(str(R.string.profile_save_anyway)) }

@@ -114,6 +114,19 @@
     <string name="profile_exists_title">Profil existiert bereits</string>
     <string name="profile_overlap_title">Profile überschneiden sich</string>
     <string name="profile_not_saved">Das Profil wurde nicht gespeichert.</string>
+    <string name="profile_layout_blocked_title">Ordnerstruktur passt nicht</string>
+
+    <!-- Ordnerstruktur von Fotoprofilen (SYNC-20261109-085) -->
+    <string name="profile_layout_title">Ordnerstruktur</string>
+    <string name="profile_layout_pick_title">Ordnerstruktur wählen</string>
+    <string name="profile_layout_hint">Kann nach der ersten Synchronisierung nicht mehr geändert werden.</string>
+    <string name="profile_layout_example_none">Ohne Land: 2026\\06\\IMG_1.jpg</string>
+    <string name="profile_layout_ex_month_suffix">Beispiel: 2026\\06 - Ägypten\\IMG_1.jpg</string>
+    <string name="profile_layout_ex_country_folder">Beispiel: 2026\\Ägypten\\06\\IMG_1.jpg</string>
+    <string name="profile_layout_ex_country_subfolder">Beispiel: 2026\\06\\Ägypten\\IMG_1.jpg</string>
+    <string name="profile_layout_adopted">Von Profil „%1$s“ übernommen, das dasselbe Ziel verwendet. Alle Fotoprofile mit demselben Ziel müssen dieselbe Struktur verwenden.</string>
+    <string name="profile_layout_locked">Die Struktur ist fest, weil von diesem Profil bereits Dateien synchronisiert wurden. Sie kann nicht mehr geändert werden.</string>
+    <string name="profile_layout_running">Die Struktur kann nicht geändert werden, solange eine Synchronisierung läuft. Versuche es nach deren Ende erneut.</string>
     <string name="profile_save_anyway">Trotzdem speichern</string>
     <string name="profile_checking_folder">Prüfe Ordner…</string>
     <string name="profile_checking_folder_text">Passt der neue Ordner zum bisherigen Synchronisierungsstand?</string>

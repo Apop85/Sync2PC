@@ -7,9 +7,11 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.smb.RemoteEntry
+import com.sync2pc.app.smb.RemoteFiles
 import com.sync2pc.app.smb.SmbSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -118,9 +120,15 @@ object SpaceFreer {
             }
             session.use { s ->
                 val finder = RemoteFinder(s)
+                val layout = profile?.layout() ?: FolderLayout.MONTH_SUFFIX
                 for (c in list) {
                     currentCoroutineContext().ensureActive()
-                    if (finder.exists(c.remotePath, c.size) { c.hash ?: localHash(context, c) }) ok += c.sourceKey
+                    // Zuerst am gespeicherten Pfad; nur wenn dort nichts liegt: Monat aus media_info als Zusatz zum Pfad
+                    if (finder.existsAtPath(c.remotePath, c.size) ||
+                        finder.existsElsewhere(c.remotePath, c.size, layout, dao.mediaInfo(c.sourceKey)?.month) {
+                            c.hash ?: localHash(context, c)
+                        }
+                    ) ok += c.sourceKey
                     done++
                     if (done % 10 == 0 || done == candidates.size) onProgress(done, candidates.size)
                 }
@@ -165,37 +173,6 @@ object SpaceFreer {
         }
     } catch (e: Exception) { null }
 
-    /** Sucht eine Datei auf dem PC: zuerst am gespeicherten Pfad, dann in allen Ordnern desselben Monats */
-    private class RemoteFinder(private val s: SmbSession) {
-        private val yearListings = HashMap<String, List<RemoteEntry>>()
-        private val folderListings = HashMap<String, Map<String, RemoteEntry>>()
-
-        /**
-         * [hash] liefert den Teil-Hash der Handy-Datei. Er wird nur für die Suche in anderen Monatsordnern
-         * gebraucht: Dort reichen Name und Grösse nicht als Beweis (0.4.1).
-         */
-        fun exists(remotePath: String, size: Long, hash: () -> String?): Boolean {
-            if (remotePath.isBlank()) return false
-            s.stat(remotePath)?.let { if (it.size == size) return true }
-            // Vom Benutzer umsortiert (z. B. "10" -> "10 - Ägypten")?
-            val name = remotePath.substringAfterLast('\\')
-            val folder = remotePath.substringBeforeLast('\\', "")
-            val yearPath = folder.substringBeforeLast('\\', "")
-            val month = FolderNames.monthOf(folder.substringAfterLast('\\')) ?: return false
-            val siblings = yearListings.getOrPut(yearPath) { s.listDir(yearPath).filter { it.isDirectory } }
-            for (d in siblings) {
-                if (FolderNames.monthOf(d.name) != month) continue
-                val path = if (yearPath.isEmpty()) d.name else "$yearPath\\${d.name}"
-                if (path.equals(folder, ignoreCase = true)) continue
-                val files = folderListings.getOrPut(path) { s.listDir(path).associateBy { it.name.lowercase() } }
-                val e = files[name.lowercase()] ?: continue
-                if (e.size != size) continue
-                val h = hash() ?: return false // Handy-Datei nicht lesbar -> sicherheitshalber behalten
-                if (s.partialHash("$path\\${e.name}", size) == h) return true
-            }
-            return false
-        }
-    }
 
     // ---- MediaStore --------------------------------------------------------------------
     private fun query(context: Context, profiles: List<Profile>): List<Media> {
@@ -259,5 +236,55 @@ object SpaceFreer {
             }
         }
         return out.values.toList()
+    }
+}
+
+/**
+ * Sucht eine Datei auf dem PC: zuerst am gespeicherten Pfad ([existsAtPath]), dann in allen Ordnern desselben
+ * Monats ([existsElsewhere], vorlagenunabhängig über [MonthFolderSearch.related], SYNC-20261109-084).
+ */
+internal class RemoteFinder(private val s: RemoteFiles) {
+    private val dirListings = HashMap<String, List<String>>()
+    private val fileListings = HashMap<String, Map<String, RemoteEntry>>()
+
+    fun existsAtPath(remotePath: String, size: Long): Boolean {
+        if (remotePath.isBlank()) return false
+        return s.stat(remotePath)?.let { it.size == size } == true
+    }
+
+    /**
+     * [hash] liefert den Teil-Hash der Handy-Datei (null = nicht lesbar -> Datei bleibt auf dem Handy). Er ist hier
+     * Pflicht: Name und Grösse allein reichen in anderen Ordnern nicht als Beweis (DEC-136).
+     * Monat: aus dem gespeicherten Pfad gemäss Vorlage und aus [monthHint] (media_info); beide werden durchsucht.
+     * Kann der Pfad nicht zerlegt werden (kein Jahresordner), wird nicht gesucht (= nicht gefunden).
+     */
+    fun existsElsewhere(remotePath: String, size: Long, layout: FolderLayout, monthHint: Int?, hash: () -> String?): Boolean {
+        if (remotePath.isBlank()) return false
+        val loc = MonthFolderSearch.locate(remotePath) ?: return false
+        val name = remotePath.substringAfterLast('\\')
+        val months = listOfNotNull(MonthFolderSearch.monthOfLocation(loc, layout), monthHint).distinct()
+        var h: String? = null
+        var hashed = false
+        for (month in months) {
+            val folders = MonthFolderSearch.related(month) { rel ->
+                dirListings.getOrPut("${loc.yearPath}\\$rel".lowercase()) {
+                    val p = if (rel.isEmpty()) loc.yearPath else "${loc.yearPath}\\$rel"
+                    s.listDir(p).filter { it.isDirectory }.map { it.name }
+                }
+            }
+            for (rel in folders) {
+                if (rel.equals(loc.relDir, ignoreCase = true)) continue
+                val path = "${loc.yearPath}\\$rel"
+                val files = fileListings.getOrPut(path.lowercase()) {
+                    s.listDir(path).filter { !it.isDirectory }.associateBy { it.name.lowercase() }
+                }
+                val e = files[name.lowercase()] ?: continue
+                if (e.size != size) continue
+                if (!hashed) { h = hash(); hashed = true }
+                val local = h ?: return false // Handy-Datei nicht lesbar -> sicherheitshalber behalten
+                if (s.partialHash("$path\\${e.name}", size) == local) return true
+            }
+        }
+        return false
     }
 }

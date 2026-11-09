@@ -1,5 +1,6 @@
 package com.sync2pc.app.backup
 
+import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.FolderMapping
 import com.sync2pc.app.data.MirrorState
 import com.sync2pc.app.data.Profile
@@ -28,6 +29,8 @@ data class BackupContent(
     val mappings: List<FolderMapping>,
     val synced: List<SyncedFile>,
     val mirrorStates: List<MirrorState>,
+    /** Profile der Sicherung mit unbekannter Ordnerstruktur (Name): werden nicht importiert, nie still auf V1 gesetzt */
+    val rejectedProfiles: List<String> = emptyList(),
 )
 
 /** Ergebnis des Einlesens. [passwordOk]: null = Datei ohne Passwörter, false = Export-Passwort fehlt/falsch. */
@@ -134,10 +137,16 @@ object BackupCodec {
         root.optJSONObject("settings")?.let { s -> s.keys().forEach { k -> settings[k] = s.get(k) } }
 
         val profiles = ArrayList<Profile>()
+        val rejected = ArrayList<String>()
         val passwords = HashMap<Long, String>()
         root.optJSONArray("profiles")?.let { arr ->
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
+                // Ordnerstruktur: fehlt das Feld (alte Sicherung) = V1; unbekannter Code = Profil nicht importieren
+                if (o.has("folderLayout") && FolderLayout.parse(o.optString("folderLayout")) == null) {
+                    rejected += o.optString("name", "?").trim() + " (" + o.optString("folderLayout") + ")"
+                    continue
+                }
                 val p = profileFromJson(o)
                 profiles += p
                 if (key != null && o.has("password")) decryptOrNull(key, o.getString("password"))?.let { passwords[p.id] = it }
@@ -145,6 +154,10 @@ object BackupCodec {
         }
         val mappings = objects(root.optJSONArray("folderMappings")).map {
             FolderMapping(it.getLong("profileId"), it.getString("groupKey"), it.getString("folderName"), it.optBoolean("seen", false))
+        }.mapNotNull { m ->
+            // Pfad bereinigen (kein ".." usw.); ungültige Zuordnungen verwerfen
+            val safe = com.sync2pc.app.sync.FolderNames.sanitizePath(m.folderName)
+            if (safe.isEmpty() || safe.split('\\').size > 2) null else m.copy(folderName = safe)
         }
         val synced = objects(root.optJSONArray("syncedFiles")).map {
             SyncedFile(
@@ -165,7 +178,7 @@ object BackupCodec {
         val content = BackupContent(
             appVersion = root.optString("app", "?"), createdAt = root.optLong("created", 0),
             settings = settings, profiles = profiles, passwords = passwords,
-            mappings = mappings, synced = synced, mirrorStates = mirror,
+            mappings = mappings, synced = synced, mirrorStates = mirror, rejectedProfiles = rejected,
         )
         return ParsedBackup(content, encrypted = crypto != null, passwordOk = passwordOk)
     }
@@ -196,6 +209,7 @@ object BackupCodec {
         put("keepVersions", p.keepVersions)
         put("verifyLevel", p.verifyLevel)
         put("pcCheck", p.pcCheck); put("pcGuid", p.pcGuid); put("pcGuidHost", p.pcGuidHost)
+        put("folderLayout", p.layout().code)
     }
 
     /** Prüfstufe (0.9.0); ältere Sicherungen kennen nur verifyUpload: an = "Wenig" (wie bisher), aus = "Aus" */
@@ -230,6 +244,8 @@ object BackupCodec {
             pcCheck = PcCheckMode.parse(o.optString("pcCheck", "")).name,
             pcGuid = PcIdentity.normalize(o.optString("pcGuid", "")).orEmpty(),
             pcGuidHost = PcIdentity.normalizeHost(o.optString("pcGuidHost", "")),
+            // Ordnerstruktur (SYNC-20261109-083): fehlend = V1; unbekannte Codes wurden in parse() schon aussortiert
+            folderLayout = FolderLayout.parse(if (o.has("folderLayout")) o.optString("folderLayout") else null)?.code ?: FolderLayout.MONTH_SUFFIX.code,
         )
     }
 

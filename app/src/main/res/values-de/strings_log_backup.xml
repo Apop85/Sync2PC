@@ -46,6 +46,8 @@
     </plurals>
     <string name="backup_skipped_identical">Übersprungen, weil schon vorhanden (gleiches Ziel und gleiche Quellen): %1$s</string>
     <string name="backup_overlapping">Hinweis: Überschneidet sich mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner): %1$s</string>
+    <string name="backup_skipped_layout_blocked">Übersprungen, weil das Ziel schon von einem anderen Fotoprofil mit anderer Ordnerstruktur verwendet wird: %1$s</string>
+    <string name="backup_skipped_layout_unknown">Nicht importiert, weil die Ordnerstruktur unbekannt ist (Sicherung aus einer neueren Version?): %1$s</string>
     <string name="backup_without_password">Passwort neu eingeben bei: %1$s</string>
     <string name="backup_need_folder">Handy-Ordner neu wählen bei: %1$s (Android überträgt die Ordner-Freigabe nicht).</string>
     <string name="backup_import_failed">Import fehlgeschlagen: %1$s</string>
@@ -77,4 +79,5 @@
     <string name="backup_replace_hint">„Ersetzen“ löscht alle bisherigen Profile samt Synchronisierungsstatus und übernimmt auch die Einstellungen. „Hinzufügen“ legt die Profile zusätzlich an.</string>
     <string name="backup_replace">Ersetzen</string>
     <string name="backup_import_done">Import abgeschlossen</string>
+    <string name="backup_err_replace_rejected">Ersetzen abgebrochen, nichts wurde gelöscht: Die Sicherung enthält Profile, die nicht importiert werden können (unbekannte Ordnerstruktur, Sicherung aus einer neueren Version?): %1$s</string>
 </resources>

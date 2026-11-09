@@ -190,6 +190,7 @@ object Diagnostics {
                     kv("  Quellordner", p.folders().joinToString(", ") { r.folderPath(it) }.ifEmpty { "-" })
                     kv("  Fotos/Videos/Unterordner", "${p.includeImages}/${p.includeVideos}/${p.includeSubfolders}")
                     kv("  Löschen", "${p.delete().name}, Prüfen ${p.verify().name}")
+                    kv("  Ordnerstruktur", p.layout().name)
                     kv("  Gesicherte Dateien", safe { dao.syncedCountNow(p.id) })
                 } else {
                     val uri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }

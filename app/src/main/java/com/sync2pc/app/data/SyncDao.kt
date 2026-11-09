@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -23,8 +24,32 @@ interface SyncDao {
     @Insert
     suspend fun insertProfile(p: Profile): Long
 
+    /** Schreibt die Zeile unverändert; für die Oberfläche gilt [updateProfile] (schützt die Ordnerstruktur) */
     @Update
-    suspend fun updateProfile(p: Profile)
+    suspend fun updateProfileRow(p: Profile)
+
+    @Query("SELECT COUNT(*) FROM synced_files WHERE profileId = :id")
+    suspend fun syncedTotal(id: Long): Int
+
+    @Query("SELECT COUNT(*) FROM folder_mappings WHERE profileId = :id")
+    suspend fun mappingsTotal(id: Long): Int
+
+    /** Ordnerstruktur gesperrt: das Profil hat schon Einträge in synced_files oder folder_mappings (SYNC-20261109-083) */
+    suspend fun layoutLocked(profileId: Long): Boolean = syncedTotal(profileId) > 0 || mappingsTotal(profileId) > 0
+
+    /**
+     * Speichert ein Profil als Transaktion. Hat das Profil schon Sync-Stand ([layoutLocked]), wird die Ordnerstruktur
+     * immer aus der gespeicherten Zeile übernommen (nie überschrieben). Wechselt sie zulässig, werden die offenen
+     * Ordner-Rückfragen des Profils gelöscht (sie gehören zur alten Vorlage). Regel: [FolderLayoutGuard].
+     */
+    @Transaction
+    suspend fun updateProfile(p: Profile) {
+        val stored = profile(p.id)
+        if (stored == null) { updateProfileRow(p); return }
+        val toWrite = FolderLayoutGuard.apply(p, stored, layoutLocked(p.id))
+        if (FolderLayoutGuard.changed(toWrite, stored)) deleteDecisionsOfProfile(p.id)
+        updateProfileRow(toWrite)
+    }
 
     /** Lernt die PC-Kennung nur, wenn noch keine (oder nur die eines anderen Hosts) gespeichert ist; nie still überschreiben. [host] kleingeschrieben. Rückgabe: geänderte Zeilen. */
     @Query("UPDATE profiles SET pcGuid = :guid, pcGuidHost = :host WHERE id = :id AND pcCheck = :mode AND (pcGuid = '' OR pcGuidHost <> :host)")

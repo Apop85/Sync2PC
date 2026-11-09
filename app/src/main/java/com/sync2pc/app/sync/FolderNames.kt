@@ -28,6 +28,23 @@ object FolderNames {
     fun sanitize(name: String): String =
         name.replace(invalidChars, "_").trim().trimEnd('.', ' ').ifEmpty { "_" }
 
+    /** Relativer Ordnerpfad unter dem Jahr: Trenner `\` oder `/`, jedes Segment einzeln bereinigt, leere Segmente entfallen */
+    fun sanitizePath(path: String): String =
+        path.split('\\', '/').map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\\") { sanitize(it) }
+
+    /**
+     * Prüft die Eingabe einer Ordnerentscheidung (SYNC-20261109-084): genau [segments] Segmente, kein "." / "..",
+     * keine leeren Segmente, im letzten Segment (Monatsordner) die Monatszahl [month]. Ergebnis = bereinigter
+     * relativer Pfad oder null.
+     */
+    fun validateDecisionPath(input: String, month: Int, segments: Int): String? {
+        val parts = input.split('\\', '/').map { it.trim() }
+        if (parts.size != segments || parts.any { it.isEmpty() || it == "." || it == ".." }) return null
+        val clean = parts.map { sanitize(it) }
+        if (monthOf(clean.last()) != month) return null
+        return clean.joinToString("\\")
+    }
+
     /** Konfliktname: n=2 -> "bild_2.jpg", n=3 -> "bild_3.jpg" */
     fun conflictName(fileName: String, n: Int): String {
         val dot = fileName.lastIndexOf('.')
@@ -46,6 +63,10 @@ object FolderNames {
         val rx = Regex("^" + Regex.escape(base) + "_\\d+" + Regex.escape(ext) + "$", RegexOption.IGNORE_CASE)
         return rx.matches(existing)
     }
+
+    /** Land-Teil eines Gruppenschlüssels ("2026/06/EG" -> "EG"); null = "-" (ohne Land) */
+    fun countryOfGroupKey(groupKey: String): String? =
+        groupKey.split('/', limit = 3).getOrNull(2)?.takeIf { it != "-" && it.isNotBlank() }
 
     /** Gruppenschlüssel für Ordner-Zuordnungen: "2026/06/EG" oder "2026/06/-" */
     fun groupKey(year: Int, month: Int, countryKey: String?): String =

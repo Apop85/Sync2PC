@@ -42,6 +42,24 @@ object ProfileWizard {
         Step.OPTIONS, Step.FILTER, Step.GUARD -> null
     }
 
+    /**
+     * Ordnerstruktur wählbar? Nur Fotos, solange noch nichts übertragen wurde ([locked] = `SyncDao.layoutLocked`)
+     * und kein Lauf aktiv ist ([syncRunning]; vorsichtig: ein Lauf bearbeitet alle Profile nacheinander).
+     */
+    fun layoutEditable(p: Profile, locked: Boolean, syncRunning: Boolean): Boolean =
+        p.type() == ProfileType.PHOTOS && !locked && !syncRunning
+
+    /**
+     * Anderes Fotoprofil mit gleichem Ziel (Vergleich wie [ProfileOverlap.target]): dessen Vorlage gilt auch hier
+     * (Sperrregel, SYNC-20261109-083). null = kein solches Profil.
+     */
+    fun layoutOwner(p: Profile, others: List<Profile>): Profile? {
+        if (p.type() != ProfileType.PHOTOS) return null
+        val t = ProfileOverlap.target(p)
+        if (t.isEmpty()) return null
+        return others.firstOrNull { it.id != p.id && it.type() == ProfileType.PHOTOS && ProfileOverlap.target(it) == t }
+    }
+
     /** Erster Schritt, in dem noch etwas fehlt (null = alles vollständig) */
     fun firstIncomplete(p: Profile): Step? = steps(p).firstOrNull { missing(p, it) != null }
 }

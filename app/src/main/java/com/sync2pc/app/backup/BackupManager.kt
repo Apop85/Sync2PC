@@ -33,6 +33,10 @@ object BackupManager {
         val skippedIdentical: List<String> = emptyList(),
         /** Importiert, überschneidet sich aber mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner) */
         val overlapping: List<String> = emptyList(),
+        /** Nicht importiert: gleiches Ziel wie ein anderes Fotoprofil, aber andere Ordnerstruktur (SYNC-20261109-083) */
+        val skippedLayoutBlocked: List<String> = emptyList(),
+        /** Nicht importiert: unbekannte Ordnerstruktur in der Sicherung (Name mit Code) */
+        val skippedLayoutUnknown: List<String> = emptyList(),
     )
 
     fun suggestedFileName(): String =
@@ -77,8 +81,13 @@ object BackupManager {
         val needFolder = ArrayList<String>()
         val skipped = ArrayList<String>()
         val overlapping = ArrayList<String>()
+        val blockedLayout = ArrayList<String>()
         var synced = 0
         var imported = 0
+        // «Ersetzen» löscht zuerst alle Profile: nicht, wenn die Sicherung Profile enthält, die nicht importiert werden können
+        if (replace && c.rejectedProfiles.isNotEmpty()) throw BackupException(
+            com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_replace_rejected, c.rejectedProfiles.joinToString(", "))
+        )
         db.withTransaction {
             if (replace) {
                 for (old in dao.profiles()) {
@@ -96,6 +105,7 @@ object BackupManager {
             for (p in c.profiles) {
                 // id = -1: die ID aus der Sicherung darf nicht mit einer bestehenden ID verwechselt werden
                 when (ProfileOverlap.check(p.copy(id = -1), present)?.kind) {
+                    ProfileOverlap.Kind.BLOCKED -> { blockedLayout += p.name; continue }
                     ProfileOverlap.Kind.IDENTICAL -> { skipped += p.name; continue }
                     ProfileOverlap.Kind.PARTIAL -> overlapping += p.name
                     null -> {}
@@ -130,6 +140,6 @@ object BackupManager {
         SyncScheduler.setupAll(context)
         // 0.11.7: wechselt der Schalter "mobile Daten/VPN", gleich wie in den Einstellungen neu planen
         if (gs.syncOffWifi != offWifiBefore) SyncScheduler.onOffWifiChanged(context)
-        ImportResult(imported, synced, withoutPw, needFolder, skipped, overlapping)
+        ImportResult(imported, synced, withoutPw, needFolder, skipped, overlapping, blockedLayout, c.rejectedProfiles)
     }
 }

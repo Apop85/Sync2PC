@@ -1,5 +1,6 @@
 package com.sync2pc.app
 
+import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileOverlap
 import com.sync2pc.app.data.ProfileOverlap.Kind
@@ -71,4 +72,45 @@ class ProfileOverlapTest {
         val similar = m1.copy(id = 0, smbPath = "\\\\pc\\Dokumente", localTreeUri = "content://tree/primary%3ADocumentsAlt")
         assertNull(ProfileOverlap.check(similar, listOf(m1)))
     }
-}
+
+    // ---- Sperrregel gleiches Ziel + andere Ordnerstruktur (SYNC-20261109-083) ----
+    private val v2 = FolderLayout.COUNTRY_FOLDER.code
+
+    @Test fun sameTargetOtherLayoutIsBlocked() {
+        val p = photos(0, "//192.0.2.3/fotos/", "Pictures/WhatsApp/").copy(folderLayout = v2)
+        val hit = ProfileOverlap.check(p, listOf(existing))
+        assertEquals(Kind.BLOCKED, hit?.kind)
+        assertEquals(1L, hit?.other?.id)
+        assertEquals(FolderLayout.MONTH_SUFFIX, hit?.other?.layout())
+    }
+
+    @Test fun sameTargetSameSourcesOtherLayoutIsBlockedNotIdentical() {
+        val p = photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/Camera/").copy(folderLayout = v2)
+        assertEquals(Kind.BLOCKED, ProfileOverlap.check(p, listOf(existing))?.kind)
+        // mit gleicher Vorlage bleibt es IDENTICAL
+        assertEquals(Kind.IDENTICAL, ProfileOverlap.check(p.copy(folderLayout = FolderLayout.MONTH_SUFFIX.code), listOf(existing))?.kind)
+    }
+
+    @Test fun blockedAppliesToDisabledProfilesAndWinsOverIdentical() {
+        val disabledOther = existing.copy(id = 2, enabled = false, folderLayout = v2)
+        val p = photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/Camera/")
+        // Reihenfolge egal: das deaktivierte Profil mit anderer Vorlage blockiert, auch wenn ein identisches vorher kommt
+        assertEquals(Kind.BLOCKED, ProfileOverlap.check(p, listOf(existing, disabledOther))?.kind)
+        assertEquals(Kind.BLOCKED, ProfileOverlap.check(p, listOf(disabledOther, existing))?.kind)
+    }
+
+    @Test fun otherLayoutAtOtherOrNestedTargetIsNotBlocked() {
+        val p = photos(0, "\\\\192.0.2.3\\Fotos", "DCIM/Camera/", remoteSub = "Leo").copy(folderLayout = v2)
+        assertNull(ProfileOverlap.check(p, listOf(existing)))   // verschachtelt: keine Sperre
+        assertNull(ProfileOverlap.check(p.copy(smbPath = "\\\\192.0.2.3\\Archiv", remoteSubfolder = ""), listOf(existing)))
+    }
+
+    @Test fun mirrorProfilesAreNeverBlockedByLayout() {
+        val m1 = Profile(id = 1, profileType = ProfileType.MIRROR.name, smbPath = "\\\\pc\\Doku", localTreeUri = "content://tree/primary%3ADocuments")
+        val ph = photos(0, "\\\\pc\\Doku", "DCIM/").copy(folderLayout = v2)
+        assertNull(ProfileOverlap.check(ph, listOf(m1)))
+    }
+
+    @Test fun editingTheSameProfileIsNotBlockedByItself() {
+        assertNull(ProfileOverlap.check(existing.copy(folderLayout = v2), listOf(existing)))
+    }}

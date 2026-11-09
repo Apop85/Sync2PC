@@ -114,6 +114,19 @@
     <string name="profile_exists_title">Profile already exists</string>
     <string name="profile_overlap_title">Profiles overlap</string>
     <string name="profile_not_saved">The profile was not saved.</string>
+    <string name="profile_layout_blocked_title">Folder structure does not match</string>
+
+    <!-- Folder structure of photo profiles (SYNC-20261109-085) -->
+    <string name="profile_layout_title">Folder structure</string>
+    <string name="profile_layout_pick_title">Choose folder structure</string>
+    <string name="profile_layout_hint">Cannot be changed after the first synchronisation.</string>
+    <string name="profile_layout_example_none">Without a country: 2026\\06\\IMG_1.jpg</string>
+    <string name="profile_layout_ex_month_suffix">Example: 2026\\06 - Egypt\\IMG_1.jpg</string>
+    <string name="profile_layout_ex_country_folder">Example: 2026\\Egypt\\06\\IMG_1.jpg</string>
+    <string name="profile_layout_ex_country_subfolder">Example: 2026\\06\\Egypt\\IMG_1.jpg</string>
+    <string name="profile_layout_adopted">Taken over from profile “%1$s”, which uses the same target. All photo profiles of one target must use the same structure.</string>
+    <string name="profile_layout_locked">The structure is fixed because files of this profile have already been synchronised. It can no longer be changed.</string>
+    <string name="profile_layout_running">The structure cannot be changed while a synchronisation is running. Try again when it has finished.</string>
     <string name="profile_save_anyway">Save anyway</string>
     <string name="profile_checking_folder">Checking folder…</string>
     <string name="profile_checking_folder_text">Does the new folder match the previous sync state?</string>

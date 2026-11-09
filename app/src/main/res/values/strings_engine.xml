@@ -238,4 +238,5 @@
     <string name="tree_err_rename_short">Renaming failed</string>
     <string name="update_err_no_tag">Release without version tag</string>
     <string name="update_err_download">Download failed (HTTP %1$s)</string>
+    <string name="decision_folder_path">Folder path below the year, e.g. %1$s (the last folder must contain %2$s)</string>
 </resources>

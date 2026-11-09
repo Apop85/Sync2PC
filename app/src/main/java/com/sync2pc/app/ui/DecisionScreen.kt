@@ -44,6 +44,7 @@ import com.sync2pc.app.R
 import com.sync2pc.app.l10n.plural
 import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.AppDatabase
+import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.PendingDecision
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.sync.FolderNames
@@ -78,11 +79,17 @@ fun DecisionScreen(onBack: () -> Unit) {
         return d.countryName?.let { n -> c.firstOrNull { it.contains(n, ignoreCase = true) } }
             ?: c.firstOrNull() ?: d.defaultName
     }
+    /** Anzahl Ordnerebenen unter dem Jahr, die die Vorlage des Profils für diese Gruppe verlangt (SYNC-20261109-084) */
+    fun segments(d: PendingDecision): Int =
+        TargetResolver.decisionSegments(
+            profiles.firstOrNull { it.id == d.profileId }?.layout() ?: FolderLayout.MONTH_SUFFIX, d.groupKey)
+    /** Eigene Eingabe als bereinigter relativer Pfad; null = ungültig (Segmentzahl, Monatszahl, leer, "..") */
+    fun customPath(d: PendingDecision, text: String): String? =
+        FolderNames.validateDecisionPath(text, d.month, segments(d))
     fun selectedFolder(d: PendingDecision): String? {
         val sel = choice[key(d)] ?: preselect(d)
         if (sel != CUSTOM) return sel
-        val name = custom[key(d)]?.trim().orEmpty()
-        return if (name.isNotEmpty() && FolderNames.monthOf(name) == d.month) name else null
+        return customPath(d, custom[key(d)].orEmpty())
     }
 
     fun apply(list: List<PendingDecision>) {
@@ -146,11 +153,19 @@ fun DecisionScreen(onBack: () -> Unit) {
                         Text(str(R.string.decision_custom_name))
                     }
                     if (sel == CUSTOM) {
-                        val txt = custom[k] ?: "%02d - ".format(d.month)
+                        val twoLevels = segments(d) == 2
+                        // V2 mit Land: Vorgabe "<Länderordner>\MM - "
+                        val txt = custom[k] ?: (d.defaultName.substringBeforeLast('\\', "").let { if (it.isEmpty()) "" else "$it\\" } +
+                            "%02d - ".format(d.month))
                         OutlinedTextField(
                             txt, { custom[k] = it },
-                            label = { Text(str(R.string.decision_folder_name, "%02d".format(d.month))) },
-                            isError = FolderNames.monthOf(txt) != d.month,
+                            label = {
+                                Text(
+                                    if (twoLevels) str(R.string.decision_folder_path, d.defaultName, "%02d".format(d.month))
+                                    else str(R.string.decision_folder_name, "%02d".format(d.month))
+                                )
+                            },
+                            isError = customPath(d, txt) == null,
                             singleLine = true, modifier = Modifier.fillMaxWidth(),
                         )
                     }

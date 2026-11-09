@@ -238,4 +238,5 @@
     <string name="tree_err_rename_short">Umbenennen fehlgeschlagen</string>
     <string name="update_err_no_tag">Release ohne Versions-Tag</string>
     <string name="update_err_download">Download fehlgeschlagen (HTTP %1$s)</string>
+    <string name="decision_folder_path">Ordnerpfad unter dem Jahr, z. B. %1$s (der letzte Ordner muss %2$s enthalten)</string>
 </resources>

@@ -46,6 +46,19 @@ data class SmbTarget(val host: String, val share: String, val basePath: String) 
 
 data class RemoteEntry(val name: String, val size: Long, val isDirectory: Boolean, val modified: Long = 0L)
 
+/** Nur Ordnerlisten des Share (für [com.sync2pc.app.sync.TargetResolver]; in Tests durch ein Fake ersetzbar). */
+interface RemoteDirs {
+    /** Pfad relativ zur Share-Wurzel, ausgehend vom Basisordner des Profils */
+    fun path(vararg parts: String): String
+    fun listDir(path: String): List<RemoteEntry>
+}
+
+/** Lesezugriff für die Suche nach vorhandenen Dateien (für `SpaceFreer`; in Tests durch ein Fake ersetzbar). */
+interface RemoteFiles : RemoteDirs {
+    fun stat(path: String): RemoteEntry?
+    fun partialHash(path: String, size: Long): String
+}
+
 /** Eine offene Verbindung zu einem Windows-Share (SMB2/SMB3 via smbj). */
 class SmbSession private constructor(
     private val client: SMBClient,
@@ -53,7 +66,7 @@ class SmbSession private constructor(
     private val session: Session,
     private val share: DiskShare,
     val target: SmbTarget,
-) : Closeable {
+) : Closeable, RemoteFiles {
 
     companion object {
         const val TEMP_SUFFIX = ".s2ptmp"
@@ -216,13 +229,13 @@ class SmbSession private constructor(
     fun isAlive(): Boolean = try { share.isConnected && connection.isConnected } catch (e: Exception) { false }
 
     /** Pfad relativ zur Share-Wurzel, ausgehend vom Basisordner des Profils */
-    fun path(vararg parts: String): String =
+    override fun path(vararg parts: String): String =
         (listOf(target.basePath) + parts).filter { it.isNotEmpty() }.joinToString("\\")
 
     /** Existiert der Ordner? Die Wurzel der Freigabe ("") existiert immer */
     fun dirExists(path: String): Boolean = path.isEmpty() || share.folderExists(path)
 
-    fun listDir(path: String): List<RemoteEntry> {
+    override fun listDir(path: String): List<RemoteEntry> {
         if (path.isNotEmpty() && !share.folderExists(path)) return emptyList()
         val dirFlag = FileAttributes.FILE_ATTRIBUTE_DIRECTORY.value
         return share.list(path)
@@ -254,7 +267,7 @@ class SmbSession private constructor(
     }
 
     /** Grösse und Änderungszeit einer Datei, null wenn nicht vorhanden */
-    fun stat(path: String): RemoteEntry? {
+    override fun stat(path: String): RemoteEntry? {
         if (!share.fileExists(path)) return null
         val info = share.getFileInformation(path)
         return RemoteEntry(
@@ -325,7 +338,7 @@ class SmbSession private constructor(
         if (path.isNotEmpty() && share.folderExists(path)) share.rmdir(path, true)
     }
 
-    fun partialHash(path: String, size: Long): String =
+    override fun partialHash(path: String, size: Long): String =
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, null

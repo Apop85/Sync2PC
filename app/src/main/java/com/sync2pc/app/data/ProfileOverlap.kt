@@ -7,11 +7,14 @@ import com.sync2pc.app.l10n.str
  * Erkennt doppelte Profile (0.2.1).
  *  - IDENTICAL: gleiches Ziel und dieselben Quellen -> wird nicht gespeichert bzw. beim Import übersprungen
  *  - PARTIAL:   gleiches Ziel und mindestens ein gemeinsamer Quellordner -> Warnung, Speichern erlaubt
+ *  - BLOCKED:   (nur Fotos, SYNC-20261109-083) gleiches Ziel, aber andere Ordnerstruktur -> Speichern nicht möglich.
+ *               Gilt gegen jedes andere Fotoprofil (auch deaktiviert oder zum Löschen vorgemerkt, solange es noch in der DB steht)
+ *               und hat Vorrang vor IDENTICAL/PARTIAL. Verschachtelte Ziele (eines im anderen) bleiben unberücksichtigt.
  * Gross-/Kleinschreibung, "/" vs. "\" und abschliessende Trenner spielen keine Rolle.
  * PC-Name und IP-Adresse desselben PCs können nicht als gleich erkannt werden.
  */
 object ProfileOverlap {
-    enum class Kind { IDENTICAL, PARTIAL }
+    enum class Kind { IDENTICAL, PARTIAL, BLOCKED }
 
     data class Hit(
         val other: Profile, val kind: Kind, val sharedFolders: List<String>,
@@ -19,6 +22,7 @@ object ProfileOverlap {
         val nested: Boolean = false,
     ) {
         fun message(): String = when {
+            kind == Kind.BLOCKED -> str(R.string.overlap_blocked_layout, other.name, other.layout().label)
             kind == Kind.IDENTICAL -> str(R.string.overlap_identical, other.name)
             nested -> str(R.string.overlap_nested, other.name)
             sharedFolders.isNotEmpty() -> str(R.string.overlap_shared_folders, other.name, sharedFolders.joinToString(", "))
@@ -35,21 +39,28 @@ object ProfileOverlap {
 
     private fun folder(f: String) = f.trim().replace('\\', '/').trim('/').lowercase() + "/"
 
-    /** Schwerster Treffer gegen [others] (IDENTICAL vor PARTIAL), null = keine Überschneidung */
+    /** Schwerster Treffer gegen [others] (BLOCKED vor IDENTICAL vor PARTIAL), null = keine Überschneidung */
     fun check(p: Profile, others: List<Profile>): Hit? {
         val t = target(p)
         if (t.isEmpty()) return null
         var partial: Hit? = null
+        var identical: Hit? = null
         for (o in others) {
             if (o.id == p.id || o.type() != p.type()) continue
             val hit = when (p.type()) {
                 ProfileType.MIRROR -> mirrorHit(p, o, t)
-                ProfileType.PHOTOS -> if (target(o) == t) photosHit(p, o) else null
+                ProfileType.PHOTOS -> if (target(o) == t) {
+                    // Gleiches Ziel, andere Ordnerstruktur: blockiert (die Struktur eines Ziels muss einheitlich sein)
+                    if (o.layout() != p.layout()) Hit(o, Kind.BLOCKED, emptyList()) else photosHit(p, o)
+                } else null
             } ?: continue
-            if (hit.kind == Kind.IDENTICAL) return hit
-            if (partial == null) partial = hit
+            when (hit.kind) {
+                Kind.BLOCKED -> return hit
+                Kind.IDENTICAL -> if (identical == null) identical = hit
+                Kind.PARTIAL -> if (partial == null) partial = hit
+            }
         }
-        return partial
+        return identical ?: partial
     }
 
     /**
