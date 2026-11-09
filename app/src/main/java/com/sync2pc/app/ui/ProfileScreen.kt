@@ -183,9 +183,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     val layoutEditable = ProfileWizard.layoutEditable(p, layoutLocked, syncRunning)
     // Gleiches Ziel wie ein anderes Fotoprofil: dessen Struktur übernehmen (Hinweis; Abweichung wird beim Speichern blockiert)
     val layoutOwner = ProfileWizard.layoutOwner(p, allProfiles)
-    LaunchedEffect(layoutOwner?.id, layoutOwner?.folderLayout, layoutEditable) {
-        if (layoutEditable && layoutOwner != null && layoutOwner.folderLayout != p.folderLayout)
-            p = p.copy(folderLayout = layoutOwner.layout().code)
+    // Eigene Wahl getrennt merken (nur Auswahl in der Zeile "Ordnerstruktur" bzw. gespeicherter Wert); die Vorlage des
+    // Eigentümers überschreibt sie nur in der Anzeige und geht bei Zieländerung wieder verloren (SYNC-20261109-089)
+    var ownLayout by remember { mutableStateOf<com.sync2pc.app.data.FolderLayout?>(null) }
+    val effectiveLayout = ProfileWizard.effectiveLayout(ownLayout, layoutOwner?.layout(), layoutEditable, p.layout())
+    LaunchedEffect(effectiveLayout) {
+        if (effectiveLayout.code != p.folderLayout) p = p.copy(folderLayout = effectiveLayout.code)
     }
 
     LaunchedEffect(profileId) {
@@ -197,8 +200,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         smbPath = loadedProfile.smbPath.trimEnd('\\', '/') + "\\" + loadedProfile.remoteSubfolder.trim('\\', '/'),
                         remoteSubfolder = "",
                     )
+                    ownLayout = it.layout()
                     p = it
-                    password = CredentialCrypto.decrypt(it.smbPasswordEnc)
+                    password =CredentialCrypto.decrypt(it.smbPasswordEnc)
                     baseline = it
                     basePassword = password
                     pollText = it.remotePollMinutes.toString()
@@ -544,8 +548,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         syncRunning -> str(R.string.profile_layout_running)
                         else -> null
                     },
-                    adoptedFrom = layoutOwner?.takeIf { layoutEditable && it.layout() == p.layout() }?.name,
-                    onPick = { p = p.copy(folderLayout = it.code) },
+                    adoptedFrom = layoutOwner?.takeIf { layoutEditable }?.name,
+                    // Bei gleichem Ziel gilt die Vorlage des Eigentümers: Auswahl gesperrt (Anzeige mit Hinweis)
+                    pickable = layoutOwner == null || !layoutEditable,
+                    onPick = { ownLayout = it; p = p.copy(folderLayout = it.code) },
                 )
             }
 

@@ -239,4 +239,8 @@
     <string name="update_err_no_tag">Release without version tag</string>
     <string name="update_err_download">Download failed (HTTP %1$s)</string>
     <string name="decision_folder_path">Folder path below the year, e.g. %1$s (the last folder must contain %2$s)</string>
+    <string name="decision_err_one">Please enter a single folder name that contains %1$s, e.g. “%1$s Holiday”.</string>
+    <string name="decision_err_two">Please enter &lt;country&gt;\&lt;MM&gt;, e.g. “%1$s”. The last folder must contain the month number.</string>
+    <string name="decision_err_empty">Folder names must not be empty, “.” or “..”.</string>
+    <string name="decision_err_month">The last folder must contain the month number %1$s.</string>
 </resources>

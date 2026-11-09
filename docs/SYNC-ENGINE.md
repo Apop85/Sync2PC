@@ -87,7 +87,7 @@ voneinander unabhängige Engines**, die dieselbe Schnittstelle `SyncRunner` impl
 
 | Engine | Profiltyp | Prinzip | Klasse |
 |---|---|---|---|
-| **Foto-Engine** | `PHOTOS` („Bildordner“) | Einweg Handy → PC, sortiert nach `Jahr\Monat[ - Land]`; Wiederholung erkannt über die Tabelle `synced_files`; **kein** 3-Wege-Abgleich | `sync/SyncEngine.kt` |
+| **Foto-Engine** | `PHOTOS` („Bildordner“) | Einweg Handy → PC, sortiert nach der gewählten Ordnerstruktur (V1 `Jahr\Monat[ - Land]`, V2 `Jahr\[Land\]Monat`, V3 `Jahr\Monat\[Land]`, DEC-209); Wiederholung erkannt über die Tabelle `synced_files`; **kein** 3-Wege-Abgleich | `sync/SyncEngine.kt` |
 | **Ordner-Engine** | `MIRROR` („Ordner“) | 1:1-Spiegelung eines SAF-Ordners mit einem PC-Ordner, 3-Wege-Abgleich über `mirror_state` | `mirror/MirrorEngine.kt` |
 
 Der **3-Wege-Abgleich existiert nur in der Ordner-Engine**. Die Foto-Engine erkennt weder Löschungen noch Änderungen auf dem
@@ -107,7 +107,8 @@ PC und kennt keine Konflikte (Abschnitt 3.2).
 | `SmbSession` | `smb/SmbSession.kt` | Alle SMB-Operationen (Auflisten, Hoch-/Herunterladen, Verschieben, Hashes) |
 | `LocalTree` | `mirror/LocalTree.kt` | Alle Operationen im Handy-Ordner über das Storage Access Framework |
 | `MediaScanner` | `media/MediaScanner.kt` | Fotos/Videos aus dem MediaStore (nur Foto-Engine) |
-| `TargetResolver` | `sync/TargetResolver.kt` | Zielordner `Jahr\Monat` der Foto-Engine |
+| `TargetResolver` | `sync/TargetResolver.kt` | Zielordner je Ordnerstruktur (V1–V3, DEC-209) der Foto-Engine |
+| `MonthFolderSearch` | `sync/MonthFolderSearch.kt` | Ordner des Monats für die Duplikatsuche, Pfad zerlegen (`locate`) |
 | `PartialHash`, `TransferPlan`, `FileFilter`, `FolderNames`, `TrashIndex`, `TrashPolicy`, `TrashPurge` | `sync/`, `mirror/` | Reine Regelobjekte (teilweise getestet, Abschnitt 15) |
 | `RestoreManager`, `TrashCleaner`, `FolderFreer`, `SpaceFreer`, `DeletionManager` | `mirror/`, `sync/` | Eingriffe ausserhalb des Syncs (Wiederherstellen, Leeren, Speicher freigeben, Löschen nach Sync) |
 | `MirrorLock` | `mirror/MirrorLock.kt` | Mutex zwischen Ordner-Lauf und Handeingriffen |
@@ -233,13 +234,23 @@ Kein Vergleich mit dem Zustand des PCs; der Lauf entscheidet allein aus dem Hand
 Statusbestimmung: Standard `OK`; `failed > 0` → `PARTIAL`; WLAN weg → `PARTIAL`; Abbruch durch Android → `INTERRUPTED`; durch Benutzer →
 `CANCELLED`; Verbindungsfehler → `INTERRUPTED` (+ `connectionFailed`); sonstiger Fehler → `FAILED`.
 
-**Zielordner (`TargetResolver`, Reihenfolge)** **[IMPL]**: (1) gespeicherte Benutzerentscheidung `folder_mappings` (nur gültig, solange der Ordner existiert oder noch nie gesehen wurde), (2) Standardname `MM` bzw. `MM - Land` existiert bereits (auch in anderer App-Sprache), (3) umbenannte Ordner mit gleicher Monatszahl → Benutzer fragen, (4) Standardname neu anlegen.
+**Zielordner (`TargetResolver`, Reihenfolge)** **[IMPL]**: (1) gespeicherte Benutzerentscheidung `folder_mappings` (nur gültig, solange der Ordner existiert oder noch nie gesehen wurde; Pfad wird beim Lesen bereinigt: kein `..`, höchstens 2 Segmente, sonst ignoriert), (2) Standardname existiert bereits (auch in anderer App-Sprache), (3) umbenannte Ordner mit gleicher Monatszahl → Benutzer fragen, (4) Standardname neu anlegen. Die Schritte laufen je nach Ordnerstruktur des Profils (`Profile.folderLayout`, DEC-209) auf anderen Ebenen unterhalb des Jahresordners:
 
-**Duplikat- und Namenslogik in `transfer()`** **[IMPL]** (`SyncEngine.kt:533`):
+| Vorlage | Ziel (relativ zum Jahr) | Standardname / Länderebene | Rückfrage (Schritt 3) |
+|---|---|---|---|
+| V1 `MONTH_SUFFIX` (Standard, bisher) | `MM` bzw. `MM - Land` | Land im Monatsnamen; Heimatland ohne Zusatz | Gruppe je Jahr, Monat, Land; Ordner „MM“ und „MM - <Land>“ gelten als erzeugt (Ländernamen aller App-Sprachen) |
+| V2 `COUNTRY_FOLDER` | `[Land\]MM` | Länderordner im Jahr (nur am Standardnamen erkannt, auch in anderer App-Sprache), darin `MM`; Heimatland: `MM` direkt im Jahr | Gruppe je Jahr, Monat, Land; im Länderordner gilt jeder Ordner mit Monatszahl ausser „MM“ als umbenannt; gespeichert werden bis zu 2 Segmente |
+| V3 `COUNTRY_SUBFOLDER` | `MM\[Land]` | Monatsordner `MM`, darin der Länderordner (Standardname); Heimatland: Fotos direkt in `MM` | **eine** Gruppe je Jahr und Monat (nicht je Land); jeder Ordner mit Monatszahl ausser „MM“ gilt als umbenannt; gespeichert wird nur der Monatsordner, der Länderunterordner kommt automatisch dazu |
+
+Fotos liegen immer direkt in der letzten Ebene. Bei V2/V3 gibt es keine Länderliste zur Erkennung erzeugter Namen: Länderordner werden nur am Standardnamen wiedererkannt, jeder andere Ordner mit Monatszahl löst die Rückfrage aus (DEC-019, DEC-209). Die Struktur ist bis zur ersten Synchronisierung des Profils änderbar, danach gesperrt (DEC-209, `FolderLayoutGuard` in `SyncDao.updateProfile`; `FolderLayoutGuard.changed` erkennt einen Vorlagenwechsel, weil offene Ordner-Rückfragen dann zur alten Vorlage gehören).
+
+**Duplikatsuche über Monatsordner (`MonthFolderSearch.related`, vorlagenunabhängig, auch V1)** **[IMPL]**: `TargetResolver.monthFolders(jahr, monat)` liefert alle Ordner des Monats, in denen eine Datei schon liegen könnte: (a) Ordner im Jahr mit der Monatszahl, (b) deren Unterordner (V3: Länderordner), (c) Ordner mit der Monatszahl in Unterordnern ohne Monatszahl (V2: Monatsordner im Länderordner). Ob wirklich ein Duplikat vorliegt, entscheiden Name, Grösse und Teil-Hash (Schritt 3 unten). `SpaceFreer.RemoteFinder` zerlegt den gespeicherten Pfad mit `MonthFolderSearch.locate` (Jahr = letztes vierstelliges Segment, darunter 1–2 Ordner); bei unbekannter Form wird nicht gesucht und die Datei gilt als „nicht gefunden“ (bleibt auf dem Handy; DEC-136, DEC-209).
+
+**Duplikat- und Namenslogik in `transfer()`** **[IMPL]** (Zeilenverweis `SyncEngine.kt:533` seit 0.14.3 veraltet, Funktion `transfer` in `SyncEngine.kt`):
 
 1. Name = `FolderNames.sanitize(displayName)` (Windows-ungültige Zeichen → `_`).
 2. Unter `sh.nameLock`: Ordnerliste des Ziels (gecacht je Lauf). Existiert der Name: gleiche Grösse **und** gleicher Teil-Hash (`PartialHash.compute`, Stufe „Wenig“) → „bereits vorhanden“, `record(..., verified = true)`, kein Upload. Sonst nächster Name `bild_2.jpg`, `bild_3.jpg`, … (`FolderNames.conflictName`).
-3. Danach Duplikatsuche in den **anderen Ordnern desselben Monats** (gleicher Grundname, gleiche Grösse, gleicher Teil-Hash).
+3. Danach Duplikatsuche in den **anderen Ordnern desselben Monats** (gleicher Grundname, gleiche Grösse, gleicher Teil-Hash); die Ordnerliste liefert `MonthFolderSearch` (auch Länder- und Unterordner, siehe oben).
 4. Name wird in `sh.reserved` eingetragen (gegen gleichzeitige Worker), Ordner wird angelegt.
 5. Upload (Abschnitt 6.1), danach Grössen- und Inhaltsprüfung (Abschnitt 6.4), dann `record()`.
 
@@ -852,7 +863,7 @@ Es gibt zwei Profiltypen (`ProfileType`) und für Ordner drei Richtungen (`SyncD
 | Engine | `SyncEngine` | `MirrorEngine` | `MirrorEngine` | `MirrorEngine` |
 | Richtung | fest Handy → PC (`Profile.dir()`) | Handy → PC | PC → Handy | beide |
 | Quelle Handy | MediaStore (`MediaScanner`) | SAF-Ordner (`LocalTree`) | SAF-Ordner | SAF-Ordner |
-| Zielstruktur | `Jahr\Monat[ - Land]` | 1:1 mit Unterordnern | 1:1 | 1:1 |
+| Zielstruktur | `Jahr\Monat[ - Land]` (V1) oder V2/V3, pro Profil wählbar (DEC-209) | 1:1 mit Unterordnern | 1:1 | 1:1 |
 | Zustandstabelle | `synced_files` (+`media_info`, `folder_mappings`, `pending_decisions`) | `mirror_state` (+`mirror_conflicts`, `pending_restores`) | gleiche | gleiche |
 | Änderungserkennung | nur Handy: `size` + `dateModified` | beide Seiten gegen `mirror_state` | beide | beide |
 | Neue Datei | hochladen (ggf. `name_N`) | hochladen | herunterladen | beide Richtungen |

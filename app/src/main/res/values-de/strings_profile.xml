@@ -14,7 +14,7 @@
     <string name="profile_name">Profilname</string>
     <string name="profile_active">Profil aktiv</string>
     <string name="profile_type_mirror">Typ: %1$s – 1:1-Spiegelung mit Unterordnern</string>
-    <string name="profile_type_photos">Typ: %1$s – sortiert nach Jahr\\Monat - Land</string>
+    <string name="profile_type_photos">Typ: %1$s – sortiert nach Jahr und Monat</string>
     <string name="profile_local_folder">Ordner auf dem Handy</string>
     <string name="profile_no_folder_yet">Noch kein Ordner gewählt.</string>
     <string name="profile_access_lost">Zugriff verloren – bitte erneut wählen.</string>

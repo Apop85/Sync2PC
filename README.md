@@ -16,7 +16,7 @@ Es gibt zwei Profiltypen:
 
 | | Fotos & Videos sichern | Ordner synchronisieren |
 |---|---|---|
-| Ablage auf dem PC | `Jahr\Monat - Land\` | 1:1 wie auf dem Handy |
+| Ablage auf dem PC | `Jahr\Monat - Land\` (Standard); pro Profil wählbar: `Jahr\[Land\]Monat`, `Jahr\Monat\[Land]` | 1:1 wie auf dem Handy |
 | Richtung | Handy → PC | Handy → PC, PC → Handy oder beidseitig |
 | Dateitypen | Fotos, Videos | alle |
 | Löschen | optional nach geprüftem Upload | optional Löschungen übernehmen (Papierkorb) |

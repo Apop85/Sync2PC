@@ -83,13 +83,30 @@ fun DecisionScreen(onBack: () -> Unit) {
     fun segments(d: PendingDecision): Int =
         TargetResolver.decisionSegments(
             profiles.firstOrNull { it.id == d.profileId }?.layout() ?: FolderLayout.MONTH_SUFFIX, d.groupKey)
+    /** Wert des Felds "Eigener Name": Eingabe, sonst Vorgabe (V2 mit Land: "<Länderordner>\MM - "); Anzeige und Prüfung nutzen denselben Wert (SYNC-20261109-091) */
+    fun customText(d: PendingDecision): String = custom[key(d)]
+        ?: (d.defaultName.substringBeforeLast('\\', "").let { if (it.isEmpty()) "" else "$it\\" } + "%02d - ".format(d.month))
     /** Eigene Eingabe als bereinigter relativer Pfad; null = ungültig (Segmentzahl, Monatszahl, leer, "..") */
     fun customPath(d: PendingDecision, text: String): String? =
         FolderNames.validateDecisionPath(text, d.month, segments(d))
+    /** Fehlertext zur eigenen Eingabe mit erwarteter Form; null = gültig */
+    fun customError(d: PendingDecision, text: String): String? {
+        val two = segments(d) == 2
+        val month = "%02d".format(d.month)
+        return when (FolderNames.decisionPathProblem(text, d.month, segments(d))) {
+            null -> null
+            FolderNames.DecisionPathProblem.SEGMENTS ->
+                if (two) str(R.string.decision_err_two, d.defaultName) else str(R.string.decision_err_one, month)
+            FolderNames.DecisionPathProblem.EMPTY_OR_DOTS -> str(R.string.decision_err_empty)
+            FolderNames.DecisionPathProblem.MONTH -> str(R.string.decision_err_month, month)
+        }
+    }
     fun selectedFolder(d: PendingDecision): String? {
+        // Vorlage des Profils noch nicht geladen -> Segmentzahl unbekannt, nicht bestätigen (SYNC-20261109-089)
+        if (profiles.isEmpty()) return null
         val sel = choice[key(d)] ?: preselect(d)
         if (sel != CUSTOM) return sel
-        return customPath(d, custom[key(d)].orEmpty())
+        return customPath(d, customText(d))
     }
 
     fun apply(list: List<PendingDecision>) {
@@ -154,9 +171,7 @@ fun DecisionScreen(onBack: () -> Unit) {
                     }
                     if (sel == CUSTOM) {
                         val twoLevels = segments(d) == 2
-                        // V2 mit Land: Vorgabe "<Länderordner>\MM - "
-                        val txt = custom[k] ?: (d.defaultName.substringBeforeLast('\\', "").let { if (it.isEmpty()) "" else "$it\\" } +
-                            "%02d - ".format(d.month))
+                        val txt = customText(d)
                         OutlinedTextField(
                             txt, { custom[k] = it },
                             label = {
@@ -165,7 +180,8 @@ fun DecisionScreen(onBack: () -> Unit) {
                                     else str(R.string.decision_folder_name, "%02d".format(d.month))
                                 )
                             },
-                            isError = customPath(d, txt) == null,
+                            isError = customError(d, txt) != null,
+                            supportingText = customError(d, txt)?.let { e -> { Text(e) } },
                             singleLine = true, modifier = Modifier.fillMaxWidth(),
                         )
                     }

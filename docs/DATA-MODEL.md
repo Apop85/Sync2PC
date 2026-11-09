@@ -1,7 +1,7 @@
 # Datenmodell – LeoSync (Sync2PC)
 
 Technische Referenz der **aktuell implementierten** persistenten Datenstrukturen.
-Stand: Quellcode, App-Version 0.13.0 (`version.properties`, ungebaut), **Room-Datenbankversion 8** (neu: `pcCheck`, `pcGuid`, `pcGuidHost`, 3.1; Stand der übrigen Abschnitte: s. u.). Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
+Stand: Quellcode, App-Version 0.14.5 (`version.properties`), **Room-Datenbankversion 9** (neu: `folderLayout`, DEC-209, 3.1, 10, 11.2; v8: `pcCheck`, `pcGuid`, `pcGuidHost`; Stand der übrigen Abschnitte: s. u.). Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
 Der Quellcode ist massgeblich; `docs/DECISIONS.md` liefert Hintergründe (DEC-IDs). Geplantes steht nur in Abschnitt 17 und ist dort als solches gekennzeichnet.
 
 > **Hinweis zu Dateinamen:** Massgeblich sind die Dateien mit Bindestrich: `docs/DATA-MODEL.md` (diese Datei) und `docs/SYNC-ENGINE.md` (Sync-Abläufe).
@@ -13,7 +13,7 @@ Quellen (alle relativ zum Repository):
 | Datenbank, Migrationen | `app/src/main/java/com/sync2pc/app/data/AppDatabase.kt` |
 | Entities, Enums, Konstanten | `app/src/main/java/com/sync2pc/app/data/Entities.kt` |
 | DAO | `app/src/main/java/com/sync2pc/app/data/SyncDao.kt` |
-| Exportierte Schemas | `app/schemas/com.sync2pc.app.data.AppDatabase/1.json … 6.json` |
+| Exportierte Schemas | `app/schemas/com.sync2pc.app.data.AppDatabase/1.json … 9.json` |
 | Einstellungen ausserhalb der DB | `data/GlobalSettings.kt`, `mirror/MirrorGuard.kt` (`GuardStore`), `mirror/TrashPurge.kt` (`PurgeStore`), `mirror/RestoreManager.kt` (`RestoreFailures`), `l10n/AppLanguage.kt` |
 | Sicherung | `backup/BackupCodec.kt`, `backup/BackupManager.kt` |
 | Tests | `app/src/test/…`, `app/src/androidTest/…/MigrationTest.kt` |
@@ -106,6 +106,7 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `pcCheck` | TEXT | nein | `"WIFI"` | | PC-Erkennung (DEC-204): `WIFI` (nur WLAN-Name) / `GUID` (nur PC-Kennung) / `BOTH` (beides). Abgeleitet: `Profile.pcMode()` (`PcCheckMode.parse`, unbekannt oder leer → `WIFI`) (v8, 0.13.0) |
 | `pcGuid` | TEXT | nein | `""` | | Gelernte PC-Kennung (SMB-Server-GUID, kleingeschrieben); leer = unbekannt (v8) |
 | `pcGuidHost` | TEXT | nein | `""` | | Host (kleingeschrieben), zu dem `pcGuid` gelernt wurde; die Kennung gilt nur für diesen Host (`PcIdentity.storedFor`) (v8) |
+| `folderLayout` | TEXT | nein | `"MONTH_SUFFIX"` | | Ordnerstruktur auf dem PC, nur Fotoprofile (DEC-209): `MONTH_SUFFIX` (V1 `Jahr\MM[ - Land]`, Standard) / `COUNTRY_FOLDER` (V2 `Jahr\[Land\]MM`) / `COUNTRY_SUBFOLDER` (V3 `Jahr\MM\[Land]`). Abgeleitet: `Profile.layout()` (`FolderLayout.of`, unbekannt oder leer → V1). Die Codes dürfen sich nie ändern. Ab der ersten Synchronisierung gesperrt: `SyncDao.updateProfile` übernimmt dann immer den gespeicherten Wert (`FolderLayoutGuard`) (v9, 0.14.3) |
 
 **Indizes:** keine.
 **Beziehungen:** `profiles.id` wird von allen anderen Tabellen (ausser `media_info`) als `profileId` referenziert – ohne Fremdschlüssel.
@@ -141,7 +142,7 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 
 ### 3.3 `folder_mappings` – `FolderMapping`
 
-**Zweck:** gespeicherte Benutzerentscheidung „Gruppe (Jahr/Monat/Land) → Monatsordner auf dem Share“.
+**Zweck:** gespeicherte Benutzerentscheidung „Gruppe (Jahr/Monat/Land) → Ordner auf dem Share“ (relativer Pfad unter dem Jahr mit 1–2 Segmenten; bei V3 ist die Gruppe je Monat ohne Land, DEC-209).
 
 | Feld | Typ | Null | Default | Schlüssel | Bedeutung |
 |---|---|---|---|---|---|
@@ -732,7 +733,7 @@ Legende: **DB** = von SQLite/Room erzwungen · **App** = durch Anwendungscode ab
 
 ## 10. Migrationen und Versionshistorie
 
-**Aktuelle Version:** 7 (`@Database(version = 7, exportSchema = true)`). Schemas 1–6 liegen vor (`app/schemas/…/1.json … 6.json`); `7.json` lag beim Nachführen (2026-11-09) noch nicht im Ordner, es entsteht beim nächsten Build (Room-Export). **Migrationen 1→2, 2→3, 3→4, 4→5, 5→6, 6→7** sind registriert (`addMigrations` in `AppDatabase.get`). **Destruktive Migrationen: keine** (`fallbackToDestructiveMigration` wird nicht aufgerufen; Kommentar und DEC-084). Alle Migrationen sind rein additiv (`ALTER TABLE … ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`) bzw. enthalten `UPDATE`-Datenkonvertierung.
+**Aktuelle Version:** 9 (DEC-209). Schemas 1–9 liegen vor (`app/schemas/…/1.json … 9.json`). **Migrationen 1→2, 2→3, 3→4, 4→5, 5→6, 6→7, 7→8, 8→9** sind registriert (`addMigrations` in `AppDatabase.get`). **Destruktive Migrationen: keine** (`fallbackToDestructiveMigration` wird nicht aufgerufen; Kommentar und DEC-084). Alle Migrationen sind rein additiv (`ALTER TABLE … ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`) bzw. enthalten `UPDATE`-Datenkonvertierung.
 
 | Von → Nach | App-Version | Änderungen am Schema | Datenkonvertierung | Hinweise für bestehende Installationen |
 |---|---|---|---|---|
@@ -743,6 +744,8 @@ Legende: **DB** = von SQLite/Room erzwungen · **App** = durch Anwendungscode ab
 | **4 → 5** | 0.5.0 | `profiles.keepVersions INTEGER NOT NULL DEFAULT 1`; neue Tabelle `pending_restores` | keine | Versionsschutz ist für bestehende Ordner-Profile standardmässig **an** |
 | **5 → 6** | 0.9.0 | `profiles.verifyLevel INTEGER NOT NULL DEFAULT 2` | `verifyLevel = CASE WHEN verifyUpload = 0 AND deleteMode = 'KEEP' THEN 0 ELSE 1 END`; `UPDATE profiles SET name = TRIM(name)` | Bestehende Profile behalten ihr bisheriges Prüfverhalten (an → „Wenig“, aus → „Aus“); `verifyUpload` bleibt als Spalte (Tabellenneuaufbau vermieden) |
 | **6 → 7** | 0.12.0 | `sync_runs` + `messageCode TEXT`, `triggerCode TEXT`; `log_entries` + `code TEXT` (alle nullable, ohne DEFAULT) | keine | Bestehende Läufe und Log-Zeilen behalten ihren Text, Kennung `NULL` → Anzeige des gespeicherten Textes (Abschnitt 3.11) |
+| **7 → 8** | 0.13.0 | `profiles` + `pcCheck TEXT NOT NULL DEFAULT 'WIFI'`, `pcGuid TEXT NOT NULL DEFAULT ''`, `pcGuidHost TEXT NOT NULL DEFAULT ''` | keine | Bestehende Profile bleiben bei der WLAN-Prüfung (DEC-204) |
+| **8 → 9** | 0.14.3 | `profiles.folderLayout TEXT NOT NULL DEFAULT 'MONTH_SUFFIX'` | keine | Bestehende Profile behalten Struktur V1, Verhalten unverändert (DEC-209, DEC-084); Migration am Emulator mit echten Daten (0.13.14 → 0.14.3) erfolgreich (QA SYNC-20261109-088) |
 
 Versionsangaben aus den KDoc-Kommentaren der Migrationen und DEC-084/-172; die Zuordnung `1.json`-Inhalt zu „0.0.x“ ist aus dem Quellcode **nicht** belegt (Git-Historie liegt nicht vor; das Projekt ist kein Git-Repository). **Dies ist eine offene Frage.**
 
@@ -750,7 +753,7 @@ Versionsangaben aus den KDoc-Kommentaren der Migrationen und DEC-084/-172; die Z
 - **Durchgehende Regel (DEC-084):** neue Spalten per `ALTER TABLE … DEFAULT …`, Entity bekommt denselben Kotlin-Default, **kein** `@ColumnInfo(defaultValue)`. Folge: Migrierte DBs haben SQL-DEFAULTs, frische nicht (Abschnitt 3.1).
 - **Fehlende Migrationen = Absturz**, nicht stilles Löschen. Eine Schemaänderung ohne Migration bricht Bestandsinstallationen.
 - **Sicherung/Import** ist die einzige Brücke bei Paket-/DB-Wechsel (DEC-110), Format `leosync-backup` Version 1 (Abschnitt 11).
-- `MigrationTest` (instrumentiert, `app/src/androidTest/…`) prüft 1→7, 5→6 und 6→7; die Zwischenstufen 2→3, 3→4, 4→5 laufen nur als Teil der Kette 1→7 (Abschnitt 14).
+- `MigrationTest` (instrumentiert, `app/src/androidTest/…`) enthält die Kette 1→neueste sowie `verifyLevelFromVersion5`, `runCodesFromVersion6`, `pcCheckFromVersion7` und `folderLayoutFromVersion8`; die Zwischenstufen 2→3, 3→4, 4→5 laufen nur als Teil der Kette (Abschnitt 14). Der Testlauf von 8→9 wurde laut QA -088 nicht ausgeführt.
 
 ```mermaid
 timeline
@@ -763,6 +766,7 @@ timeline
     v6 (0.9.0) : verifyLevel : Namen getrimmt
     v7 (0.12.0) : messageCode, triggerCode, log code
     v8 (0.13.0) : pcCheck, pcGuid, pcGuidHost
+    v9 (0.14.3) : folderLayout
 ```
 
 ---
@@ -785,7 +789,7 @@ timeline
 
 ### 11.2 Sicherungsformat (JSON, `BackupCodec`)
 
-Format `leosync-backup`, `VERSION = 1`. Inhalt: `settings`, `profiles` (+ optional verschlüsseltes Passwort), `folderMappings`, `syncedFiles`, `mirrorState`. Optional AES-256-GCM mit PBKDF2-HMAC-SHA256 (210 000 Iterationen) und Prüfwert. Rückwärtskompatibilität: `verifyLevel` fehlt in alten Sicherungen → aus `verifyUpload`. Beim Einlesen werden fehlende Felder mit den `Profile`-Defaults belegt (`optString/optBoolean`).
+Format `leosync-backup`, `VERSION = 1`. Inhalt: `settings`, `profiles` (+ optional verschlüsseltes Passwort), `folderMappings`, `syncedFiles`, `mirrorState`. Optional AES-256-GCM mit PBKDF2-HMAC-SHA256 (210 000 Iterationen) und Prüfwert. Rückwärtskompatibilität: `verifyLevel` fehlt in alten Sicherungen → aus `verifyUpload`; `folderLayout` ist optional (fehlt → V1, DEC-209). Ein vorhandener, aber unbekannter `folderLayout`-Code lässt das Profil **nicht** importieren (`FolderLayout.parse` streng, kein stilles Zurückfallen auf V1); „Ersetzen“ bricht dann ab, bevor etwas gelöscht wird. Zuordnungspfade (`folderMappings`) werden beim Lesen bereinigt (kein `..`, höchstens 2 Segmente). Beim Einlesen werden fehlende Felder mit den `Profile`-Defaults belegt (`optString/optBoolean`).
 
 **In der Sicherung enthalten:** `profiles`, `folder_mappings`, `synced_files` (ohne `deleteState`), `mirror_state` (die beiden Sync-Stände nur mit Option „Sync-Status“), exportierbare `GlobalSettings`.
 **Nicht enthalten:** `pending_decisions`, `media_info`, `mirror_conflicts`, `pending_restores`, `sync_runs`, `log_entries`, `guard`, `purge`, `restore`, `lang`, Gerätezustand (Pause, Update-Zustand, `deviceId`, `awaitingFirstStart`).

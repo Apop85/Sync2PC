@@ -239,4 +239,8 @@
     <string name="update_err_no_tag">Release ohne Versions-Tag</string>
     <string name="update_err_download">Download fehlgeschlagen (HTTP %1$s)</string>
     <string name="decision_folder_path">Ordnerpfad unter dem Jahr, z. B. %1$s (der letzte Ordner muss %2$s enthalten)</string>
+    <string name="decision_err_one">Bitte genau einen Ordnernamen angeben, der %1$s enthält, z. B. „%1$s Urlaub“.</string>
+    <string name="decision_err_two">Bitte &lt;Land&gt;\&lt;MM&gt; angeben, z. B. „%1$s“. Der letzte Ordner muss die Monatszahl enthalten.</string>
+    <string name="decision_err_empty">Ordnernamen dürfen nicht leer sein, „.“ oder „..“ lauten.</string>
+    <string name="decision_err_month">Der letzte Ordner muss die Monatszahl %1$s enthalten.</string>
 </resources>

@@ -14,7 +14,7 @@
     <string name="profile_name">Profile name</string>
     <string name="profile_active">Profile active</string>
     <string name="profile_type_mirror">Type: %1$s – 1:1 mirror with subfolders</string>
-    <string name="profile_type_photos">Type: %1$s – sorted by year\\month - country</string>
+    <string name="profile_type_photos">Type: %1$s – sorted by year and month</string>
     <string name="profile_local_folder">Folder on the mobile</string>
     <string name="profile_no_folder_yet">No folder chosen yet.</string>
     <string name="profile_access_lost">Access lost – please choose again.</string>

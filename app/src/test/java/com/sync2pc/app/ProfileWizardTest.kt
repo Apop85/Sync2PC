@@ -55,6 +55,18 @@ class ProfileWizardTest {
         assertNull(ProfileWizard.layoutOwner(photos.copy(smbPath = ""), listOf(other.copy(smbPath = ""))))
     }
 
+    @Test fun effectiveLayoutKeepsOwnChoiceAcrossOwnerChanges() {
+        val v1 = FolderLayout.MONTH_SUFFIX; val v2 = FolderLayout.COUNTRY_FOLDER; val v3 = FolderLayout.COUNTRY_SUBFOLDER
+        // eigene Wahl V3, Zwischenstand beim Tippen: Eigentümer V2 -> V2 gilt
+        assertEquals(v2, ProfileWizard.effectiveLayout(v3, v2, editable = true, current = v3))
+        // Ziel ändert sich, Eigentümer entfällt -> eigene Wahl kehrt zurück
+        assertEquals(v3, ProfileWizard.effectiveLayout(v3, null, editable = true, current = v2))
+        // ohne eigene Wahl: Standard V1
+        assertEquals(v1, ProfileWizard.effectiveLayout(null, null, editable = true, current = v2))
+        assertEquals(v2, ProfileWizard.effectiveLayout(null, v2, editable = true, current = v1))
+        // gesperrt (nach Sync / Lauf): unverändert
+        assertEquals(v3, ProfileWizard.effectiveLayout(v1, v2, editable = false, current = v3))
+    }
     @Test fun saveFromFirstOptionalStep() {
         assertFalse(ProfileWizard.canSaveAt(photos, Step.OPTIONS))
         assertTrue(ProfileWizard.canSaveAt(photos, Step.FILTER))

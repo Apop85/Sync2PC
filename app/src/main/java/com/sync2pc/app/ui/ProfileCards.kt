@@ -230,13 +230,13 @@ private fun layoutExample(l: com.sync2pc.app.data.FolderLayout): String = str(wh
  */
 @Composable
 internal fun FolderLayoutCard(
-    layout: com.sync2pc.app.data.FolderLayout, lockedText: String?, adoptedFrom: String?,
+    layout: com.sync2pc.app.data.FolderLayout, lockedText: String?, adoptedFrom: String?, pickable: Boolean = true,
     onPick: (com.sync2pc.app.data.FolderLayout) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
     SectionCard(str(R.string.profile_layout_title)) {
         val value = layout.label
-        if (lockedText == null) ValueField(str(R.string.profile_layout_title), value) { open = true }
+        if (lockedText == null && pickable) ValueField(str(R.string.profile_layout_title), value) { open = true }
         else Column {
             Text(str(R.string.profile_layout_title), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

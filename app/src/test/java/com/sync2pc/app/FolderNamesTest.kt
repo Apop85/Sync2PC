@@ -1,6 +1,7 @@
 package com.sync2pc.app
 
 import com.sync2pc.app.sync.FolderNames
+import com.sync2pc.app.sync.FolderNames.DecisionPathProblem
 import com.sync2pc.app.sync.PartialHash
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -69,5 +70,21 @@ class FolderNamesTest {
         val h1 = PartialHash.compute(data.size.toLong(), read)
         val h2 = PartialHash.compute(data.size.toLong(), read)
         assertEquals(h1, h2)
+    }
+
+    @Test fun decisionPathProblemPerTemplate() {
+        // V1 (eine Ebene)
+        assertNull(FolderNames.decisionPathProblem("06 Urlaub", 6, 1))
+        assertEquals(DecisionPathProblem.SEGMENTS, FolderNames.decisionPathProblem("Italien\\06 Urlaub", 6, 1))
+        assertEquals(DecisionPathProblem.MONTH, FolderNames.decisionPathProblem("07 Urlaub", 6, 1))
+        // V2 mit Land (zwei Ebenen)
+        assertNull(FolderNames.decisionPathProblem("Italien\\06 Urlaub", 6, 2))
+        assertEquals(DecisionPathProblem.SEGMENTS, FolderNames.decisionPathProblem("06 Urlaub", 6, 2))
+        assertEquals(DecisionPathProblem.EMPTY_OR_DOTS, FolderNames.decisionPathProblem("Italien\\", 6, 2))
+        assertEquals(DecisionPathProblem.EMPTY_OR_DOTS, FolderNames.decisionPathProblem("..\\06", 6, 2))
+        assertEquals(DecisionPathProblem.MONTH, FolderNames.decisionPathProblem("Italien\\05", 6, 2))
+        // Konsistenz mit validateDecisionPath
+        assertEquals("Italien\\06 Urlaub", FolderNames.validateDecisionPath(" Italien / 06 Urlaub ", 6, 2))
+        assertNull(FolderNames.validateDecisionPath("06 Urlaub", 6, 2))
     }
 }

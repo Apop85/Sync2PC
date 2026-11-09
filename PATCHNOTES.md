@@ -2,6 +2,23 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.14.4 (2026-11-09)
+
+### Behoben
+- **Ordnerstruktur im Assistenten (DEC-209):** Beim Tippen des Zielpfads ging die gewählte Vorlage verloren, wenn ein anderes Fotoprofil dasselbe Ziel hat. Jetzt gilt die Vorlage des bestehenden Profils nur als Anzeige (Auswahl gesperrt); die eigene Wahl wird getrennt gemerkt und kehrt zurück, wenn das Ziel wechselt (ohne eigene Wahl V1).
+- **Rückfrage zu umbenannten Ordnern:** Der Dialog zeigt den Fehlertext passend zur Vorlage; Bestätigen ist erst möglich, wenn die Vorlage geladen ist.
+
+## 0.14.3 (2026-11-09)
+
+### Neu
+- **Ordnerstruktur pro Fotoprofil wählbar (DEC-209):** V1 `Jahr\MM[ - Land]` (Standard, bisheriges Verhalten), V2 `Jahr\[Land\]MM`, V3 `Jahr\MM\[Land]`. Änderbar bis zur ersten Synchronisierung des Profils, danach gesperrt. Ein zweites Fotoprofil mit gleichem Ziel und anderer Struktur wird blockiert, bei verschachteltem Ziel gibt es eine Warnung.
+- **Duplikatsuche** für alle Strukturen auch in Länder- und Unterordnern desselben Monats; «Speicher freigeben» sucht entsprechend.
+- **Sicherung:** enthält die Ordnerstruktur; eine Sicherung mit unbekannter Struktur importiert das Profil nicht, «Ersetzen» bricht dann ab, bevor etwas gelöscht wird.
+
+### Intern
+- Datenbank Version 9 (`profiles.folderLayout`, Migration 8→9; bestehende Profile = V1). Neue Tests: `TargetResolverTest`, `RemoteFinderTest`, `FolderLayoutGuardTest` sowie Erweiterungen von `ProfileOverlapTest`, `BackupCodecTest`, `ProfileWizardTest`, `MigrationTest`; 272 Unit-Tests grün (QA -088), `MigrationTest` 8→9 nicht ausgeführt, Migration am Emulator mit echten Daten erfolgreich.
+- Das PC-Import-Skript (`tools/LeoSync-Import.*`) wird nicht mehr gepflegt und kennt nur V1.
+
 ## 0.13.14 (2026-11-09, gebaut, Sicherheits-QA offen)
 
 ### Geändert

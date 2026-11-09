@@ -44,7 +44,7 @@ Die Entscheidungen sind nach Themen gruppiert (innerhalb eines Themas nach DEC-I
 2. [Synchronisationsengine und 3-Wege-Abgleich](#2-synchronisationsengine-und-3-wege-abgleich) (7) – Richtung, Abgleichsregeln, Filter, Start neuer Profile, Sperre und Eingriffe beim laufenden Sync.
 3. [Konflikterkennung und Konfliktbehandlung](#3-konflikterkennung-und-konfliktbehandlung) (3) – Rückfragen bei Konflikten, Änderungen während des Laufs, Konflikt-Zusatz.
 4. [Dateiübertragung und SMB](#4-dateiübertragung-und-smb) (8) – SMB-Zugriff, Upload/Download, Fortsetzen, Zeitstempel, Verbindungsabbrüche, Zielauswahl auf dem PC.
-5. [Foto-Sortierung (Bildordner)](#5-foto-sortierung-bildordner) (8) – Zielstruktur Jahr/Monat/Land, Datums- und Ländererkennung, Live-Fotos, Mindestalter, PC-Import-Skript.
+5. [Foto-Sortierung (Bildordner)](#5-foto-sortierung-bildordner) (9) – Zielstruktur Jahr/Monat/Land, Datums- und Ländererkennung, Live-Fotos, Mindestalter, PC-Import-Skript.
 6. [Datenbank und Datenmodell](#6-datenbank-und-datenmodell) (7) – Room, Migrationen, DB-Versionen, gespeicherte Namen und Texte.
 7. [Datenintegrität und Duplikaterkennung](#7-datenintegrität-und-duplikaterkennung) (11) – Prüfsummen, Prüfstufen, Duplikatsuche, Namenskonflikte, sichere Vergleiche, doppelte Profile.
 8. [Lösch- und Wiederherstellungslogik](#8-lösch--und-wiederherstellungslogik) (16) – Löschen nach dem Sync, Papierkorb, Versionsschutz, Wiederherstellen, Schutzbremse, Speicher freigeben.
@@ -108,6 +108,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-027: Mindestalter für Dateien mit Nachhol-Sync
 - DEC-068: PC-Import-Skript mit den Regeln der App
 - DEC-161: Länderordner in der App-Sprache, bestehende Ordner aller App-Sprachen weiterverwenden
+- DEC-209: Ordnerstruktur pro Fotoprofil wählbar (V1 bis V3)
 
 **6. Datenbank und Datenmodell**
 
@@ -529,6 +530,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-206 | Accepted | 10. Benutzeroberfläche und UX |
 | DEC-207 | Accepted | 10. Benutzeroberfläche und UX |
 | DEC-208 | Accepted | 9. Android und Hintergrundprozesse |
+| DEC-209 | Implemented | 5. Foto-Sortierung (Bildordner) |
 
 ---
 
@@ -875,8 +877,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Vorgabe des Inhabers; Rückfrage 6: „Jedes Land ein eigener Ordner“.
 - **Alternativen:** —
 - **Konsequenzen:** Ein Monat kann mehrere Ordner haben; Fotos ohne GPS landen im reinen Monatsordner.
+- **Aktualisierung (2026-11-09):** Diese Struktur ist seit 0.14.3 Vorlage V1 (Standard) von drei wählbaren Ordnerstrukturen pro Fotoprofil (DEC-209).
 - **Betroffene Komponenten:** `sync/FolderNames.kt`, `sync/TargetResolver.kt`, `GlobalSettings.homeCountryIso`
-- **Abhängigkeiten:** DEC-017, DEC-018, DEC-019
+- **Abhängigkeiten:** DEC-017, DEC-018, DEC-019, DEC-209
 
 ### DEC-017: Reihenfolge der Datumsermittlung
 - **Status:** Implemented
@@ -920,8 +923,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Alternativen:** automatische Zuordnung (verworfen).
 - **Konsequenzen:** Dateien wartender Gruppen werden übersprungen, bis entschieden ist.
 - **Aktualisierung (Session 4):** „Von der App erzeugt“ umfasst seit 0.8.0 Ländernamen in allen App-Sprachen; ein bestehender Standardordner in der anderen Sprache wird ohne Rückfrage weiterverwendet (DEC-161).
+- **Aktualisierung (2026-11-09):** Rückfrage nur für Ordner mit Monatszahl; bei V2/V3 gilt jeder Ordner ausser „MM“ als umbenannt, bei V3 eine Rückfrage je Monat (DEC-209).
 - **Betroffene Komponenten:** `TargetResolver.kt`, `FolderNames.isGeneratedName`, `PendingDecision`, `FolderMapping`, `ui/DecisionScreen.kt`
-- **Abhängigkeiten:** DEC-016
+- **Abhängigkeiten:** DEC-016, DEC-209
 
 ### DEC-026: Live-Foto-Paare im selben Ordner halten
 - **Status:** Implemented
@@ -957,8 +961,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Wunsch des Inhabers; Antworten: kopieren, im Skript fragen, Doppelklick mit Abfrage; Ablage in `tools`.
 - **Alternativen:** reiner Kommandozeilenaufruf (bleibt als Option möglich).
 - **Konsequenzen:** Muss im Projektordner liegen (GeoJSON). HEIC-EXIF und GPS sind ohne Zusatz nicht lesbar. Videodaten brauchen `ffprobe`.
+- **Aktualisierung (2026-11-09):** Das Skript wird nicht mehr gepflegt (Entscheid des Inhabers, Quelle SYNC-20261109-086 abgebrochen). Es kennt nur die Ordnerstruktur V1 (DEC-209); nicht gegen Ziele mit V2/V3 verwenden.
 - **Betroffene Komponenten:** `tools/LeoSync-Import.ps1`, `tools/LeoSyncImport.cs`, `tools/LeoSync-Import.bat`
-- **Abhängigkeiten:** DEC-018, DEC-021, DEC-022, DEC-019
+- **Abhängigkeiten:** DEC-018, DEC-021, DEC-022, DEC-019, DEC-209
 
 ### DEC-161: Länderordner in der App-Sprache, bestehende Ordner aller App-Sprachen weiterverwenden
 - **Status:** Implemented
@@ -974,6 +979,26 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Ein Sprachwechsel erzeugt keine doppelten Monatsordner. Ein selbst gewählter Name, der zufällig dem Ländernamen der anderen App-Sprache entspricht, gilt als Standardordner.
 - **Betroffene Komponenten:** `geo/CountryLookup.kt` (`Country.names`, `nameFor`, `namesOf`, `allCountryNames`), `sync/TargetResolver.kt` (`namesOfCountry`), `sync/SyncEngine.kt`
 - **Abhängigkeiten:** DEC-018, DEC-019, DEC-162
+
+### DEC-209: Ordnerstruktur pro Fotoprofil wählbar (V1 bis V3)
+- **Status:** Implemented (App seit 0.14.3, Assistent-Anpassung 0.14.4; Ausnahme: PC-Import-Skript, siehe DEC-068)
+- **Datum:** 2026-11-09 (2026-11-09)
+- **Kategorie:** Synchronisation
+- **Entscheidung:**
+  - Pro Fotoprofil wählbar aus fester Liste (`FolderLayout`): **V1** `Jahr\MM[ - Land]` (`MONTH_SUFFIX`, bisher DEC-016, Standard und Wert aller bestehenden Profile), **V2** `Jahr\[Land\]MM` (`COUNTRY_FOLDER`), **V3** `Jahr\MM\[Land]` (`COUNTRY_SUBFOLDER`).
+  - Heimatland ohne Länderebene bzw. -zusatz; jedes Land ein eigener Ordner (DEC-016 bleibt). Monat zweistellig. Fotos liegen direkt in der letzten Ebene.
+  - Änderbar bis zur ersten Synchronisierung des Profils, danach gesperrt; die Sperre sichert die Datenbankschicht ab (`FolderLayoutGuard` in `SyncDao.updateProfile`), zusätzlich sperrt die Oberfläche die Auswahl.
+  - Ein zweites Fotoprofil mit gleichem Ziel und anderer Struktur wird blockiert, bei verschachteltem Ziel gibt es eine Warnung (DEC-092). Im Assistenten gilt bei gleichem Ziel die Vorlage des Eigentümers nur als Anzeige; die eigene Wahl wird getrennt gemerkt und kehrt zurück, wenn das Ziel wechselt (ohne eigene Wahl V1; 0.14.4).
+  - Duplikatsuche für alle Vorlagen vorlagenunabhängig auch in Länder- und Unterordnern desselben Monats (`MonthFolderSearch`, DEC-022).
+  - Rückfrage bei umbenannten Ordnern nur für Ordner mit Monatszahl (DEC-019); Länderordner werden nur am Standardnamen erkannt. Bei V2/V3 gilt jeder Ordner ausser „MM“ als umbenannt und löst die Rückfrage aus. V3: eine Rückfrage je Monat, gespeichert wird nur der Monatsordner. Der Rückfrage-Dialog zeigt den Fehlertext je Vorlage (`FolderNames.decisionPathProblem`); Bestätigen ist erst bei geladener Vorlage möglich.
+  - Sicherung (DEC-089): optionales Feld `folderLayout` im Format VERSION 1; unbekannter Code → Profil wird nicht importiert, „Ersetzen“ bricht ab, wenn die Sicherung nicht importierbare Profile enthält. Zuordnungspfade werden beim Lesen bereinigt (kein `..`, höchstens 2 Segmente).
+  - Speicher freigeben (DEC-136): `SpaceFreer.RemoteFinder` sucht nur bei zerlegbarem Pfad.
+- **Begründung:** Wunsch des Inhabers (pro Profil wählbar, nachträglich nicht änderbar, keine Dateimigration). Sperre bis zum ersten Sync und Blockieren gleicher Ziele: Entscheid des Inhabers (abweichend von der Empfehlung „ab erstem Speichern“ bzw. „nur warnen“). Die vereinigte Duplikatsuche schützt vor Doppelten bei Neuanlage mit anderer Struktur und bei Handverschiebungen. Wahl im Assistenten getrennt gemerkt, weil stilles Überschreiben beim Tippen des Zielpfads die Benutzerwahl verlor.
+- **Alternativen:** `Land\Jahr\Monat` (Wurzel mischt Jahre und Länder), Tagesebene (Tageszahl nicht von Monatszahl unterscheidbar, viele Ordner), Monatsnamen (sprachabhängig → doppelte Ordner bei Sprachwechsel, Kollision mit „MM - Land“), frei editierbares Muster (Testaufwand) – verworfen; einstufig `JJJJ-MM[ - Land]` und nur `Jahr[ - Land]` – zurückgestellt; nachträglicher Strukturwechsel bzw. Verschieben vorhandener Dateien – nur nach separatem Entscheid; Länderliste zur Erkennung generierter Namen bei V2/V3 und Löschen vor Melden beim Import – verworfen; dauerhafte Übernahme der Eigentümer-Vorlage in `p.folderLayout` – verworfen (0.14.4).
+- **Konsequenzen:** Die Struktur ist nach dem ersten Sync fest; ein Wechsel erfordert ein neues Profil. Das PC-Import-Skript kennt nur V1 und darf nicht gegen Ziele mit V2/V3 verwendet werden.
+- **Betroffene Komponenten:** `Profile.folderLayout` (DB v9), `FolderLayout`, `FolderLayoutGuard`, `ProfileOverlap`, `TargetResolver`, `MonthFolderSearch`, `SyncEngine`, `SpaceFreer.RemoteFinder`, `DecisionScreen`, `ProfileScreen`/`ProfileWizard`, `FolderNames`, `BackupCodec`
+- **Quelle:** SYNC-20261109-070 (Konzept), -083/-084/-085 (Umsetzung), -089 (0.14.4), -086 (abgebrochen: Skript nicht mehr gepflegt), -087.
+- **Abhängigkeiten:** DEC-016, DEC-019, DEC-022, DEC-068, DEC-089, DEC-092, DEC-136
 
 ---
 
@@ -1127,8 +1152,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Der Inhaber verschiebt auf dem PC von Hand (z. B. von `10` nach `10 - Ägypten`). Nach dem Zurücksetzen des Sync-Status oder einer Neuinstallation sollen keine Duplikate entstehen.
 - **Alternativen:** Suche nur im Zielordner (bisheriges Verhalten).
 - **Konsequenzen:** Zusätzliche Ordnerlisten pro Lauf (zwischengespeichert); gehasht wird nur bei Treffern auf Name und Grösse.
+- **Aktualisierung (2026-11-09):** Seit 0.14.3 gilt die Suche vorlagenunabhängig auch in Länder- und Unterordnern desselben Monats, für alle drei Vorlagen inkl. V1 (`MonthFolderSearch`, DEC-209).
 - **Betroffene Komponenten:** `SyncEngine.Job.siblingFolders`, `TargetResolver.monthFolders`, `FolderNames.sameBaseName`
-- **Abhängigkeiten:** DEC-021, DEC-020
+- **Abhängigkeiten:** DEC-021, DEC-020, DEC-209
 
 ### DEC-092: Doppelte Profile blockieren, Überschneidungen warnen
 - **Status:** Implemented
@@ -1143,8 +1169,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Alternativen:** Überschneidungen ebenfalls blockieren (Empfehlung, nicht gewählt).
 - **Konsequenzen:** PC-Name und IP desselben PCs werden nicht als gleich erkannt.
 - **Aktualisierung (Session 3):** Für Ordner-Profile warnt die App seit 0.4.1 auch bei gleichem oder verschachteltem PC- bzw. Handy-Ordner (`Hit.nested`, DEC-134).
+- **Aktualisierung (2026-11-09):** Ein zweites Fotoprofil mit gleichem Ziel und anderer Ordnerstruktur wird blockiert, bei verschachteltem Ziel gibt es eine Warnung (DEC-209).
 - **Betroffene Komponenten:** `data/ProfileOverlap.kt`, `ui/ProfileScreen.kt`, `BackupManager.import`
-- **Abhängigkeiten:** DEC-005, DEC-089
+- **Abhängigkeiten:** DEC-005, DEC-089, DEC-209
 
 ### DEC-129: Stichprobe nach einem Ordnerwechsel
 - **Status:** Implemented
@@ -1198,8 +1225,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Massnahme aus der Datenverlust-Prüfung.
 - **Alternativen:** —
 - **Konsequenzen:** —
+- **Aktualisierung (2026-11-09):** `RemoteFinder` sucht nur bei zerlegbarem Pfad (Ordnerstruktur V1 bis V3, DEC-209).
 - **Betroffene Komponenten:** `SpaceFreer.RemoteFinder.exists`, `SpaceFreer.Candidate.hash`
-- **Abhängigkeiten:** DEC-091
+- **Abhängigkeiten:** DEC-091, DEC-209
 
 ### DEC-137: SAF-Werte aus `stat()` und `children()` nie mischen; inhaltsgleich heisst nur Stand merken
 - **Status:** Implemented

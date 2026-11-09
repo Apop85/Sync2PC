@@ -37,13 +37,23 @@ object FolderNames {
      * keine leeren Segmente, im letzten Segment (Monatsordner) die Monatszahl [month]. Ergebnis = bereinigter
      * relativer Pfad oder null.
      */
-    fun validateDecisionPath(input: String, month: Int, segments: Int): String? {
+    fun validateDecisionPath(input: String, month: Int, segments: Int): String? =
+        if (decisionPathProblem(input, month, segments) == null) cleanDecisionPath(input) else null
+
+    /** Grund, warum [validateDecisionPath] eine Eingabe ablehnt (SYNC-20261109-089); Reihenfolge der Prüfung = Reihenfolge hier */
+    enum class DecisionPathProblem { SEGMENTS, EMPTY_OR_DOTS, MONTH }
+
+    /** null = Eingabe gültig */
+    fun decisionPathProblem(input: String, month: Int, segments: Int): DecisionPathProblem? {
         val parts = input.split('\\', '/').map { it.trim() }
-        if (parts.size != segments || parts.any { it.isEmpty() || it == "." || it == ".." }) return null
-        val clean = parts.map { sanitize(it) }
-        if (monthOf(clean.last()) != month) return null
-        return clean.joinToString("\\")
+        if (parts.size != segments) return DecisionPathProblem.SEGMENTS
+        if (parts.any { it.isEmpty() || it == "." || it == ".." }) return DecisionPathProblem.EMPTY_OR_DOTS
+        if (monthOf(sanitize(parts.last())) != month) return DecisionPathProblem.MONTH
+        return null
     }
+
+    private fun cleanDecisionPath(input: String): String =
+        input.split('\\', '/').map { sanitize(it.trim()) }.joinToString("\\")
 
     /** Konfliktname: n=2 -> "bild_2.jpg", n=3 -> "bild_3.jpg" */
     fun conflictName(fileName: String, n: Int): String {

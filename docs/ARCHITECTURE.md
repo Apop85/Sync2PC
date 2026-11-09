@@ -14,7 +14,7 @@ LeoSync ist eine Android-App (minSdk 29, targetSdk/compileSdk 36), die Dateien v
 
 | Typ | Engine | Handy-Zugriff | Ablage auf dem PC |
 |---|---|---|---|
-| `PHOTOS` (Bildordner) | `SyncEngine` | MediaStore | `Jahr\Monat[ - Land]\`, Richtung nur Handy → PC |
+| `PHOTOS` (Bildordner) | `SyncEngine` | MediaStore | `Jahr\Monat[ - Land]\` (V1, Standard) oder V2/V3, pro Profil wählbar (DEC-209); Richtung nur Handy → PC |
 | `MIRROR` (normaler Ordner) | `MirrorEngine` | Storage Access Framework (`LocalTree`) | 1:1, Richtung Handy → PC, PC → Handy oder beidseitig |
 
 **Technik:** Kotlin, Jetpack Compose (Material 3), Room (KSP), WorkManager, smbj, AndroidX ExifInterface, Coroutines. Kein DI-Framework, keine ViewModels, kein Navigation-Component (siehe Abschnitt 9). Der Code ist ein einzelnes Gradle-Modul `app`.
@@ -158,7 +158,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `data/GlobalSettings.kt` | Profilübergreifende Einstellungen und Zustandsmerker (Pause `pausedUntil`/`manualOnly`, `resumeOnWifi`, `shareRetryAt`, `awaitingFirstStart`, Benachrichtigungs-Schalter …) | Scheduler, Worker, UI | ● |
 | `data/CredentialCrypto.kt` | Ver-/Entschlüsselung der SMB-Passwörter mit nicht exportierbarem Android-Keystore-Schlüssel | `SmbSession`, `BackupManager` | ● |
 | `data/CredentialGroups.kt` | Gruppiert Profile mit gleichen Zugangsdaten (Übernehmen im Profilformular) | `ProfileScreen` | ○ rein |
-| `data/ProfileOverlap.kt` | Erkennt identische/überlappende Profile (IDENTICAL, PARTIAL) | `ProfileScreen`, `BackupManager` | ○ rein |
+| `data/ProfileOverlap.kt` | Erkennt identische/überlappende Profile (IDENTICAL, PARTIAL); bei Fotoprofilen mit gleichem Ziel und anderer Ordnerstruktur blockiert (DEC-209) | `ProfileScreen`, `BackupManager` | ○ rein |
 | `data/ProfileWizard.kt` | Schrittfolge des Profil-Assistenten | `ProfileScreen` | ○ rein |
 | `data/RunGrouping.kt` | Fasst aufeinanderfolgende „Nichts zu tun“-Läufe im Verlauf zusammen (`LogItem`) | `LogScreen`, `RunSummary` | ○ rein |
 
@@ -170,7 +170,9 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `sync/SyncWorker.kt` | `CoroutineWorker`; ein Lauf für alle passenden Profile: Pause/Wartebedingungen prüfen, WLAN-SSID abgleichen, PC-Erreichbarkeit testen, PC-Kennung vorab prüfen (`GUID`/`BOTH`), je Profil `SyncRunner` wählen und ausführen, Abschluss-Benachrichtigungen, Folgeaufträge; globaler `Mutex` gegen parallele Läufe | `SyncEngine`, `MirrorEngine`, `Notifications`, `PauseService`, `TransferLocks`, `GuardStore` | ● |
 | `sync/SyncRunner.kt` | Interface beider Engines | Worker, Engines | ● |
 | `sync/SyncEngine.kt` | Bildordner-Lauf pro Profil: Scan → bekannte Dateien per DB aussortieren → Analyse + Zielordner (sequenziell) → parallele Uploads (je eigene SMB-Verbindung), Verifikation, Log. Enthält `SyncProgress`, `PreviewEntry` | `MediaScanner`, `MediaAnalyzer`, `TargetResolver`, `SmbSession`, `PartialHash`, `DeletionManager`, DAO | ● |
-| `sync/TargetResolver.kt` | Bestimmt den Monatsordner (gespeicherte Entscheidung, Standardname, umbenannte Ordner → Rückfrage) | `SyncEngine`, `FolderNames`, `CountryLookup` | ● |
+| `sync/TargetResolver.kt` | Bestimmt den Zielordner je Ordnerstruktur des Profils (V1/V2/V3, `FolderLayout`, DEC-209): gespeicherte Entscheidung, Standardname, umbenannte Ordner → Rückfrage. Enthält die Schnittstelle `MappingStore` (Tests: Fake, Produktion: `SyncDao`) | `SyncEngine`, `FolderNames`, `CountryLookup`, `MonthFolderSearch` | ● |
+| `sync/MonthFolderSearch.kt` | Vorlagenunabhängige Suche aller Ordner eines Monats für die Duplikatsuche; `locate` zerlegt gespeicherte PC-Pfade (Jahr + 1–2 Ordner) | `TargetResolver`, `SpaceFreer.RemoteFinder` | ○ rein |
+| `data/FolderLayoutGuard.kt` | Sperrregel der Ordnerstruktur: ab dem ersten Sync gilt immer der gespeicherte Wert; unbekannte Codes werden normalisiert | `SyncDao.updateProfile` | ○ rein |
 | `sync/FolderNames.kt` | Namensregeln für Zielordner/-dateien | `TargetResolver`, `SyncEngine` | ○ rein |
 | `sync/PartialHash.kt` | Teil-Prüfsumme und Prüfstufen (`levelRegions`) für Duplikat- und Upload-Prüfung | `SyncEngine`, `MirrorEngine`, `SmbSession` | ● |
 | `sync/PendingCheck.kt` | Netzwerkfreie Prüfung, ob Fotos übertragungsbereit warten (spart Akku, vermeidet PC-Kontakt) | `SyncWorker`, `StaleCheck` | ○ |
@@ -308,7 +310,7 @@ Die fachliche Entscheidungstabelle steht in `docs/SYNC-ENGINE.md`; hier nur der 
 - **Ablauf in `run()`:**
   1. *Scan:* `MediaScanner.scan` (Ordner, Unterordner, Bilder/Videos), `FileFilter`; bekannte Dateien (`SyncedFile` mit gleicher `sourceKey`, Grösse, Änderungszeit) fallen ohne I/O heraus; zu junge Dateien (`minFileAgeMinutes`) werden übersprungen und über `nextYoungFileAt` für einen Folgeauftrag gemeldet. Ist nichts zu tun, endet der Lauf vor dem Verbinden.
   2. *Verbinden:* `SmbSession.open`; die „Produzenten“-Verbindung wird vor jeder Nutzung auf `isAlive()` geprüft und neu aufgebaut (Windows trennt Leerlauf nach ca. 15 Min.).
-  3. *Produzent (sequenziell):* lokale Funktion `plan(item)` – `mediaInfo` (Cache `MediaInfo`, sonst `MediaAnalyzer` + `CountryLookup`), Live-Foto-Paarung (Video übernimmt Ordner des gleichnamigen Bildes), `TargetResolver.resolve` → entweder `Job` (Jahr/Monatsordner, plus Geschwisterordner desselben Monats für die Duplikatsuche) oder Rückfrage (gesammelt als `DecisionAcc`, am Ende als `PendingDecision` gespeichert).
+  3. *Produzent (sequenziell):* lokale Funktion `plan(item)` – `mediaInfo` (Cache `MediaInfo`, sonst `MediaAnalyzer` + `CountryLookup`), Live-Foto-Paarung (Video übernimmt Ordner des gleichnamigen Bildes), `TargetResolver.resolve` → entweder `Job` (Jahr/Zielordner je Ordnerstruktur, plus alle Ordner desselben Monats für die Duplikatsuche über `MonthFolderSearch`) oder Rückfrage (gesammelt als `DecisionAcc`, am Ende als `PendingDecision` gespeichert).
   4. *Konsumenten:* `Channel<Job>` (Kapazität 32) → `parallel` Worker (`settings.parallelUploads`), jeder mit eigener `SmbSession`, Wiederholung nach Netzfehler wie bei `MirrorEngine`.
   5. *Abschluss:* offene Entscheidungen speichern, `DeletionManager.sweep`, `finish()`.
 - **`transfer()` (Kern):** Namensvergabe (`bild.jpg`, `bild_2.jpg` …) und Duplikatprüfung gegen Zielordner und Geschwisterordner unter `Shared.nameLock` (Ordnerlisten werden je Lauf zwischengespeichert, Namen vorab in `reserved` eingetragen); Upload über `SmbSession.upload` mit `expectedHash` (Fortsetzen nur bei passender Handy-Datei); Verifikation nach `VerifyLevel` (Grösse immer, Prüfsumme ab „Wenig“; bei Fehlschlag wird die Zieldatei gelöscht); `record()` schreibt `SyncedFile`, `DeleteState.WANTED` nur bei verifizierter Datei und Löschmodus ≠ `KEEP`. Die Freigabe der Namensreservierung läuft im `finally` unter `NonCancellable`.
@@ -440,7 +442,7 @@ Build: Android Gradle Plugin 9 mit eingebautem Kotlin, Compose-Compiler-Plugin u
 | Neue Einstellung (global) | Property in `data/GlobalSettings.kt`, UI in der passenden `SettingsSection` (`ui/SettingsScreen.kt`), Texte DE+EN in `res/values*/strings_settings.xml`; Sicherung: `backup/BackupCodec.kt`/`BackupManager.kt` prüfen |
 | Neue Profiloption | Feld in `Profile` (`data/Entities.kt`) **mit Default**, DB-Version erhöhen + `Migration` in `AppDatabase`, Schema-Export, `MigrationTest`, UI in `ProfileCards.kt`/`ProfileScreen.kt`, Backup (`BackupCodec`) |
 | Abgleichsverhalten Ordner-Sync | `MirrorEngine` (Planung/`Kind`), ggf. `MirrorGuard`, `TrashPolicy`, `TransferPlan`; reine Regeln als eigene Klasse auslagern und testen |
-| Verhalten Bildordner | `SyncEngine`, `TargetResolver`, `FolderNames`, `MediaAnalyzer`; Import-Skript in `tools/` synchron halten |
+| Verhalten Bildordner | `SyncEngine`, `TargetResolver`, `FolderNames`, `MediaAnalyzer`; das PC-Import-Skript in `tools/` wird nicht mehr gepflegt (kennt nur Struktur V1, DEC-068/DEC-209) |
 | Neue DB-Abfrage | `SyncDao` (Flow für UI, suspend für Engines) |
 | Neue SMB-Funktion | `SmbSession` – ausschliesslich dort; Verbindungsabbrüche über `sync/Errors.kt` klassifizieren |
 | Neue Hintergrundaufgabe | Worker im passenden Paket, Auftrag und Konstante in `SyncScheduler` (bzw. eigene `schedule()` wie `StaleCheck`), Registrierung in `SyncScheduler.setupAll` |

@@ -60,6 +60,15 @@ object ProfileWizard {
         return others.firstOrNull { it.id != p.id && it.type() == ProfileType.PHOTOS && ProfileOverlap.target(it) == t }
     }
 
+    /**
+     * Wirksame Ordnerstruktur (SYNC-20261109-089). [own] = zuletzt vom Benutzer selbst gewählte Vorlage (oder beim
+     * Bearbeiten der gespeicherte Wert; null = keine). Gleiches Ziel wie ein anderes Fotoprofil ([ownerLayout] != null)
+     * -> dessen Vorlage, ohne die eigene Wahl zu überschreiben; entfällt der Eigentümer, gilt die eigene Wahl wieder
+     * (ohne eigene Wahl V1). Nicht änderbar ([editable] = false) -> unverändert [current].
+     */
+    fun effectiveLayout(own: FolderLayout?, ownerLayout: FolderLayout?, editable: Boolean, current: FolderLayout): FolderLayout =
+        if (!editable) current else ownerLayout ?: own ?: FolderLayout.MONTH_SUFFIX
+
     /** Erster Schritt, in dem noch etwas fehlt (null = alles vollständig) */
     fun firstIncomplete(p: Profile): Step? = steps(p).firstOrNull { missing(p, it) != null }
 }
