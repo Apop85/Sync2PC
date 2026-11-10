@@ -2,7 +2,7 @@
 
 Zentrales Register **aktiver** Aufträge (OPEN, IN_PROGRESS, BLOCKED). Nur Metadaten, keine Beschreibungen. Abgeschlossene Aufträge stehen nicht hier, sondern als Datei in `tasks/COMPLETED/`. Bedienung: `README.md`.
 
-**Letzte vergebene Nummer: 123** (Stand 2026-11-10). Nächste ID: `SYNC-YYYYMMDD-124`.
+**Letzte vergebene Nummer: 132** (Stand 2026-11-10). Nächste ID: `SYNC-YYYYMMDD-133`.
 
 | ID | Kurzbeschreibung | Von | An | Prio | Status | Datei |
 |---|---|---|---|---|---|---|
@@ -24,3 +24,9 @@ Zentrales Register **aktiver** Aufträge (OPEN, IN_PROGRESS, BLOCKED). Nur Metad
 | SYNC-20261110-115 | Profilformular: Bestätigung Richtung/Löschen (V1), Fehlermeldungen, Eingabeprüfung (UX-Befunde -099) | UX-Specialist | Development | MEDIUM | IN_PROGRESS | tasks/IN_PROGRESS/SYNC-20261110-115.md |
 | SYNC-20261110-120 | Assistent: «Weiter» muss bei ungültigem Zahlenfeld blockieren | QA & Testing | Development | MEDIUM | OPEN | tasks/OPEN/SYNC-20261110-120.md |
 | SYNC-20261110-122 | Profilformular 0.14.7: Dialogtext V1 bei Schrift 2,0 abgeschnitten und weitere UX-Befunde | UX-Specialist | Development | HIGH | OPEN | tasks/OPEN/SYNC-20261110-122.md |
+| SYNC-20261110-124 | Review 1: Android-Hintergrundausführung (Android 15/16, Mutex, Wiederaufnahme) | Project Manager | Architecture | HIGH | OPEN | tasks/OPEN/SYNC-20261110-124.md |
+| SYNC-20261110-125 | Review 2: Datenintegrität und Hash-Prüfung (R-F1, R-T1, R-T2, R-D1, R-D3, R-N1) | Project Manager | Architecture | HIGH | OPEN | tasks/OPEN/SYNC-20261110-125.md |
+| SYNC-20261110-126 | Review 3: SMB-Sicherheit (Signing, SMB3-Verschlüsselung, Serveridentität, Zugangsdaten) | Project Manager | Architecture | MEDIUM | OPEN | tasks/OPEN/SYNC-20261110-126.md |
+| SYNC-20261110-127 | Testabdeckung Android-Hintergrund (WorkManager, SyncWorker, Receiver, PauseService, Mutex) | Project Manager | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261110-127.md |
+| SYNC-20261110-128 | Testabdeckung Datenintegrität (Dateioperationen, 3-Wege, Lösch-/Wiederherstellungsabläufe, Race Conditions) | Project Manager | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261110-128.md |
+| SYNC-20261110-129 | Testabdeckung SMB-Sicherheit und SMB-Schicht (Verbindung, Authentifizierung, Signing, Fehlerfälle) | Project Manager | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261110-129.md |

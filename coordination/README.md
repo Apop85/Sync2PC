@@ -117,7 +117,7 @@ Freigeben kann nur der Benutzer; keine Rolle ersetzt oder unterstellt eine Freig
 - wesentliche Designänderungen (Designvorschläge sind bis zur Freigabe nur Vorschläge);
 - Änderungen an sicherheits- oder datenverlustkritischen Abläufen (Löschen, Ersetzen, Papierkorb, Wiederherstellen, Schutzbremse, Konflikte);
 - potenziell datenverändernde oder destruktive Aktionen ausserhalb der Testdaten;
-- Builds (`CLAUDE.md` §1) und Änderungen am Regelwerk (`CLAUDE.md`, diese Richtlinie, Rollenprompts, Skills, Agents);
+- Builds (`CLAUDE.md` §1; Ausnahme: Debug-/Test-Builds, Tests und Emulator-Installationen durch QA & Testing sind ohne Einzelfreigabe erlaubt, Release-Builds nicht) und Änderungen am Regelwerk (`CLAUDE.md`, diese Richtlinie, Rollenprompts, Skills, Agents);
 - alles, wofür `CLAUDE.md` oder `docs/DECISIONS.md` eine Freigabe verlangt.
 
 Die zuständige Fachrolle legt die Entscheidung dem Benutzer **direkt** in ihrem Chat vor (kompakt: Ziel, Lösung bzw. Varianten, Auswirkungen, Risiken, Empfehlung); der PM ist keine Zwischenstation. Vermerk im Feld „Benutzerfreigabe“: `erteilt <Datum>, <was>, <wo erteilt: Chat der Rolle>`. Wartet eine Aufgabe länger auf die Freigabe, BLOCKED mit der Frage. Ergebnisse dürfen vor der Freigabe weitergegeben werden (z. B. Analyse an UX); die freigabepflichtige **Umsetzung** beginnt erst danach.

@@ -16,7 +16,7 @@
 > **Session 4** („Lokalisierung“, 0.8.0, Entscheidungen vom 2026-11-03): DEC-155 bis DEC-166; dazu Aktualisierungen an DEC-001, DEC-018, DEC-019, DEC-036, DEC-037, DEC-099 und DEC-125.
 > - Session 4: 0.8.0 umgesetzt. Der erste Build scheiterte nur an der Kompilierung der Unit-Tests (Kommentar-Falle in `TestTexts.kt`), behoben ohne neue Version (DEC-120). Ein erfolgreicher Build und ein Gerätetest sind im Verlauf **nicht** belegt.
 >
-> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-205 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted; DEC-203 Implemented; DEC-204 und DEC-205 am 2026-11-09, Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
+> **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-205 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted; DEC-203 Implemented; DEC-204 und DEC-205 am 2026-11-09, seit 0.13.0/0.13.1 Implemented); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
@@ -27,12 +27,12 @@
 
 | Status | Anzahl |
 |---|---|
-| Accepted | 25 |
-| Implemented | 158 |
+| Accepted | 24 |
+| Implemented | 160 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
-| **Total** | **219** |
+| **Total** | **220** |
 
 ---
 
@@ -293,6 +293,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-213: Dokumentation nur durch Documentation, UX-Entscheidungen in §10
 - DEC-214: QA führt keine Builds aus
 - DEC-215: UX prüft selbstständig und führt eine Navigationsdatei
+- DEC-220: QA baut Debug-/Test-Builds selbstständig (ergänzt DEC-214)
 
 **16. Verworfene und überholte Lösungsansätze**
 
@@ -537,8 +538,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-201 | Accepted | 2. Synchronisationsengine und 3-Wege-Abgleich |
 | DEC-202 | Implemented | 6. Datenbank und Datenmodell |
 | DEC-203 | Implemented | 13. Sicherheit, Datenschutz und Diagnose |
-| DEC-204 | Accepted | 9. Android und Hintergrundprozesse |
-| DEC-205 | Accepted | 9. Android und Hintergrundprozesse |
+| DEC-204 | Implemented | 9. Android und Hintergrundprozesse |
+| DEC-205 | Implemented | 9. Android und Hintergrundprozesse |
 | DEC-206 | Accepted | 10. Benutzeroberfläche und UX |
 | DEC-207 | Accepted | 10. Benutzeroberfläche und UX |
 | DEC-208 | Accepted | 9. Android und Hintergrundprozesse |
@@ -548,6 +549,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-212 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-213 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-214 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-220 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-215 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-216 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-217 | Implemented | 10. Benutzeroberfläche und UX |
@@ -1085,7 +1087,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Nebenbefund: `Diagnostics.compress` (Regex `ALREADY_COUNT`/`ALREADY_FOLDER`) erkennt „bereits vorhanden“ nur deutsch, in Englisch ist die Zählung in der Diagnose falsch; lösbar in Stufe 2 über den Schlüssel `eng_already_in`. Restrisiken: Ein vergessener Leser zeigt nur den Rückfalltext (harmlos); Platzhalter DE/EN müssen gleich bleiben (`StringsParityTest`).
 - **Betroffene Komponenten:** `sync/RunSummary.kt`, `data/RunGrouping.kt`, `data/Entities.kt` (`SyncRun`, `LogEntry`), `AppDatabase`, `SyncScheduler`, `ui/LogScreen.kt`, `diag/Diagnostics.kt`, `l10n/Msg.kt`, `l10n/Texts.kt`
 - **Abhängigkeiten:** DEC-084, DEC-159, DEC-160
-- **Nachtrag Umsetzung (0.12.0/0.12.1, im Code gelesen 2026-11-09):** `l10n/Msg.kt` (JSON-Kennung, Formen `t`, `k`+`a`, `k`+`n`+`a`, `j`+`p`, Tiefe höchstens 12, Rückfalltext bei jedem Fehler); `Texts.Resolver` löst Ressourcen-Namen auf (`entryName`, `stringByName`, `pluralByName`), `TestTexts` liefert ihn für Unit-Tests (D33); `MIGRATION_6_7` (DB-Version 7, drei `ADD COLUMN`); `MirrorEngine` und `SyncEngine` schreiben Text und Code aus derselben `Msg` (wörtliche Texte über `Msg.lit`); der Auslöser liegt zusätzlich als `KEY_TRIGGER_CODE` in den Auftragsdaten (`SyncScheduler`, Rückfall auf den Text); `RunGrouping.isIdle` prüft bei vorhandenem Code `RunSummary.NOT_IDLE_KEYS`, sonst die Merkmal-Wörter; `Diagnostics.logExport` rendert in der aktiven Sprache, die Diagnose bleibt beim gespeicherten Text. Abweichung/offen: Der Regex `ALREADY_COUNT` in `Diagnostics.compress` ist weiterhin nur deutsch (Nebenbefund oben nicht behoben). Das Schema `7.json` wird erst beim nächsten Build exportiert; `MigrationTest` 6→7 ist instrumentiert und nicht ausgeführt. Vollständigkeit der Umstellung aller Log-Aufrufe nicht einzeln geprüft.
+- **Nachtrag Umsetzung (0.12.0/0.12.1, im Code gelesen 2026-11-09):** `l10n/Msg.kt` (JSON-Kennung, Formen `t`, `k`+`a`, `k`+`n`+`a`, `j`+`p`, Tiefe höchstens 12, Rückfalltext bei jedem Fehler); `Texts.Resolver` löst Ressourcen-Namen auf (`entryName`, `stringByName`, `pluralByName`), `TestTexts` liefert ihn für Unit-Tests (D33); `MIGRATION_6_7` (DB-Version 7, drei `ADD COLUMN`); `MirrorEngine` und `SyncEngine` schreiben Text und Code aus derselben `Msg` (wörtliche Texte über `Msg.lit`); der Auslöser liegt zusätzlich als `KEY_TRIGGER_CODE` in den Auftragsdaten (`SyncScheduler`, Rückfall auf den Text); `RunGrouping.isIdle` prüft bei vorhandenem Code `RunSummary.NOT_IDLE_KEYS`, sonst die Merkmal-Wörter; `Diagnostics.logExport` rendert in der aktiven Sprache, die Diagnose bleibt beim gespeicherten Text. Abweichung/offen: Der Regex `ALREADY_COUNT` in `Diagnostics.compress` ist weiterhin nur deutsch (Nebenbefund oben nicht behoben). Das Schema `7.json` wird erst beim nächsten Build exportiert; `MigrationTest` 6→7 (`runCodesFromVersion6`) ist instrumentiert; später am 2026-11-09 auf dem Emulator ausgeführt und bestanden (QA, `docs/TESTING.md` §4.3). Vollständigkeit der Umstellung aller Log-Aufrufe nicht einzeln geprüft.
 
 ### DEC-203: Diagnose pseudonymisiert und maskiert
 - **Status:** Implemented *(0.12.4, Auftrag Development an Documentation SYNC-20261109-045; Freigabe durch den Inhaber im Auftrag nicht genannt)*
@@ -1741,7 +1743,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** DEC-044, DEC-109, DEC-204
 
 ### DEC-204: PC-Erkennung per PC-Kennung (SMB-Server-GUID), Modus je Profil
-- **Status:** Accepted (im Code umgesetzt in 0.13.0, Development SYNC-20261109-047, Stand 2026-11-09 **ungebaut und ungetestet**, daher noch nicht „Implemented“; Punkt 1 „Lernen“ und Punkt 5 „manueller Sync“ werden durch DEC-205 geändert, deren Umsetzung noch offen ist)
+- **Status:** Implemented (im Code umgesetzt in 0.13.0, Development SYNC-20261109-047; APK 0.13.0 vorhanden, Unit-Tests grün (Gesamtlauf 2026-11-10 287/287), `MigrationTest.pcCheckFromVersion7` und Emulator-/Gerätetests G1–G15 durch QA bzw. Inhaber belegt (SYNC-20261109-053); Punkt 1 „Lernen“ und Punkt 5 „manueller Sync“ wurden durch DEC-205 geändert und in 0.13.1 umgesetzt. „Implemented“ heisst nur „im Code umgesetzt“. Offen als Prüfung: G7 (Akku bei `GUID` in fremden WLANs, Inhaber, SYNC-20261109-072), Stabilität der PC-Kennung bei Samba/NAS (ungeprüft))
 - **Datum:** 2026-11-09 (2026-11-09, Freigabe Inhaber; Vorgabe Architecture SYNC-20261109-048)
 - **Kategorie:** Synchronisation
 - **Entscheidung:** Zusätzlich zur WLAN-Erkennung gibt es die Erkennung des PCs über seine SMB-Server-GUID („PC-Kennung“), geprüft **vor** dem Senden der Zugangsdaten. Der Benutzer wählt je Profil den Modus `pcCheck` = `WIFI` (nur WLAN-Name) | `GUID` (nur PC-Kennung) | `BOTH` (beides muss erfüllt sein, nicht „eines von beiden“).
@@ -1759,7 +1761,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Abhängigkeiten:** DEC-044, DEC-045, DEC-048, DEC-084, DEC-109, DEC-126, DEC-190; geändert durch DEC-205
 
 ### DEC-205: PC-Kennung nur beim Speichern und in „Verbindung testen“ lernen
-- **Status:** Accepted (im Code umgesetzt in 0.13.1, Development SYNC-20261109-055 Punkt 6, Stand 2026-11-09 **ungebaut und ungetestet**, daher noch nicht „Implemented“)
+- **Status:** Implemented (im Code umgesetzt in 0.13.1, Development SYNC-20261109-055 Punkt 6; APK 0.13.1 vorhanden, `PcLoginTest`/`PcGuidDaoTest` grün, Gerätetests G11/G12 durch QA belegt (SYNC-20261109-053). „Implemented“ heisst nur „im Code umgesetzt“; offen als Prüfung: G7, Stabilität der Kennung bei Samba/NAS)
 - **Datum:** 2026-11-09 (2026-11-09, Freigabe Inhaber, Empfehlung B; Konzept Architecture SYNC-20261109-058, Anlass QA-Fund F1 aus SYNC-20261109-053 / -056)
 - **Kategorie:** Synchronisation
 - **Entscheidung:** Ersetzt DEC-204 Punkt 1 „Lernen“ und Punkt 5 „manueller Sync“. Bei `GUID`/`BOTH` lernt die App die PC-Kennung nur nach dem Speichern des Profils und in „Verbindung testen“, jeweils nach erfolgreicher Anmeldung und `connectShare`. Ein manueller Sync und alle Ansichten lernen nie.
@@ -2941,6 +2943,18 @@ Pausiert angezeigt.
 - **Konsequenzen:** QA prüft mit vorhandenen Builds bzw. Tests und im Emulator (DEC-212).
 - **Betroffene Komponenten:** `.claude/roles/QA-Specialist.md`
 - **Abhängigkeiten:** DEC-184, DEC-212
+- **Hinweis (2026-11-10):** Für Debug-/Test-Builds durch DEC-220 teilweise überholt; Release-Builds und `build.bat` bleiben ausgeschlossen.
+
+### DEC-220: QA baut Debug-/Test-Builds selbstständig
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** Sonstiges
+- **Entscheidung:** Die Rolle QA & Testing darf ohne Einzelerlaubnis Debug-/Test-Builds (`gradlew.bat assembleDebug`), Unit-, instrumentierte und Lint-Tests ausführen, Debug-APKs auf dem Emulator und auf vom Inhaber ausdrücklich benannten Testgeräten installieren und Builds nach Fehlerbehebungen wiederholen. Weiterhin ausgeschlossen: `build.bat`, Release-Builds, Signierung, Veröffentlichung, Änderungen an Code, Gradle-/Build-Dateien und `version.properties`. Andere Rollen erhalten keine Build-Rechte. Manuelle Benutzertests (persönliches Handy, produktive Profile/Daten) bleiben beim Inhaber; QA markiert sie nie selbst als bestanden.
+- **Begründung:** Auftrag des Inhabers am 2026-11-10 (Chat Documentation): QA soll möglichst unabhängig von Development und Inhaber prüfen können. `build.bat` ist ausgenommen, weil es die Version erhöht und Release-Artefakte erzeugt.
+- **Alternativen:** Builds weiter nur durch den Inhaber (DEC-214, für Debug-Builds verworfen); `build.bat -Debug` für QA (verworfen, ändert `version.properties`).
+- **Konsequenzen:** `CLAUDE.md` §1, `coordination/README.md` §8, QA-Prompt, Agent `testing-qa-specialist`, Skills `qa-check`/`run-targeted-tests` und `docs/TESTING.md` §14 angepasst.
+- **Betroffene Komponenten:** `CLAUDE.md`, `coordination/README.md`, `.claude/roles/QA-Specialist.md`, `.claude/agents/testing-qa-specialist.md`, `.claude/skills/`, `docs/TESTING.md`
+- **Abhängigkeiten:** DEC-184, DEC-212, DEC-214
 
 ### DEC-215: UX prüft selbstständig und führt eine Navigationsdatei
 - **Status:** Accepted

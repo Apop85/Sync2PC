@@ -14,6 +14,6 @@ description: Wählt und führt gezielt die zur Änderung passenden Tests von Leo
    - einzelne Klasse: `gradlew.bat testDebugUnitTest --tests "com.sync2pc.app.<Klasse>"`
    - alle JVM-Tests (`gradlew.bat testDebugUnitTest`) nur bei Sync-Engine, Textänderungen in `strings_*.xml`, Datenmodell oder wenn TESTING.md es verlangt
    - `gradlew.bat connectedDebugAndroidTest` (Migration) nur mit Gerät/Emulator und wenn Entity/Schema geändert wurde; ohne Gerät ausdrücklich als **nicht ausgeführt** melden
-   - **Nie** `assembleRelease`, `assembleDebug` oder `build.bat`: Der Inhaber baut selbst.
+   - **Nie** `assembleRelease` oder `build.bat`: Der Inhaber baut selbst. `assembleDebug` (und `lintDebug`) nur in der Rolle QA & Testing (`CLAUDE.md` §1); alle anderen Rollen bauen nicht.
 5. **Ausführen** nur das Nötige; bei Fehlschlag Ausgabe lesen und Ursache nennen, nicht raten, nichts reparieren (ausser der Auftrag verlangt es).
 6. **Bericht**: ausgeführt (Befehl, Anzahl, Ergebnis), nicht ausgeführt (mit Grund), manuelle Prüfungen laut TESTING.md Abschnitt 8, Testlücken. Keine Ergebnisse erfinden.

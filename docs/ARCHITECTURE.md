@@ -94,7 +94,7 @@ Zentrale Schnittstellen:
 
 - **`SyncRunner`** (`sync/SyncRunner.kt`): gemeinsames Interface der beiden Engines (`run()`, `preview`, `connectionFailed`, `wifiLost`, `blocked`, `newConflicts`, `spaceShortage`, `nextYoungFileAt`). `SyncWorker` kennt nur dieses Interface.
 - **`SyncDao`** (`data/SyncDao.kt`): einziger DB-Zugang; liefert für die UI `Flow`s (`profilesFlow()`, `decisionsFlow()` …).
-- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. Seit 0.13.0 (ungebaut) führt ein einziger Anmeldeweg (`connectChecked`: connect → PC-Kennung prüfen → `authenticate`) die Prüfung der PC-Kennung aus (DEC-204, `docs/SYNC-ENGINE.md` 6.0); die Datenbank erreicht `SmbSession` nur über die Schnittstelle `PcStore` (`RoomPcStore`, gesetzt in `App.kt`).
+- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. Seit 0.13.0 führt ein einziger Anmeldeweg (`connectChecked`: connect → PC-Kennung prüfen → `authenticate`) die Prüfung der PC-Kennung aus (DEC-204, `docs/SYNC-ENGINE.md` 6.0); die Datenbank erreicht `SmbSession` nur über die Schnittstelle `PcStore` (`RoomPcStore`, gesetzt in `App.kt`).
 - **`GlobalSettings`** (`data/GlobalSettings.kt`): profilübergreifende Einstellungen und Zustandsmerker (SharedPreferences „global“).
 - **`Notifications`** (`sync/Notifications.kt`): einziger Ort, der Benachrichtigungen erzeugt; öffnet die UI über Intent-Extra `EXTRA_OPEN`.
 
@@ -497,6 +497,6 @@ Massgeblich sind die Dateien mit Bindestrich (alle vorhanden); die Unterstrich-V
 
 ## 14. Geplant oder noch nicht umgesetzt (Quelle: DECISIONS, **nicht** implementiert)
 
-- Paketwechsel zu `ch.leo.sync` und Play-Store-Integration: nur als offene Punkte geführt, ohne Versionsnummer (DEC-109, DEC-110). ~~PC-Erkennung~~ – im Code umgesetzt (0.13.0, DEC-204, ungebaut und ungetestet; Abschnitte 4.2, 4.4, `docs/SYNC-ENGINE.md` 6.0). Beschlossen, Umsetzung offen: Lernen der PC-Kennung nur beim Speichern und in „Verbindung testen“ (DEC-205, Development SYNC-20261109-055 Punkt 6).
+- Paketwechsel zu `ch.leo.sync` und Play-Store-Integration: nur als offene Punkte geführt, ohne Versionsnummer (DEC-109, DEC-110). ~~PC-Erkennung~~ – im Code umgesetzt (0.13.0, DEC-204; APK 0.13.0/0.13.1 in `releases\` vorhanden, Gerätetest laut `docs/TESTING.md` §7 ausstehend; Abschnitte 4.2, 4.4, `docs/SYNC-ENGINE.md` 6.0). Beschlossen, Umsetzung offen: Lernen der PC-Kennung nur beim Speichern und in „Verbindung testen“ (DEC-205, Development SYNC-20261109-055 Punkt 6).
 - Heimnetz-Berechtigung ab targetSdk 37 voraussichtlich nötig (DEC-183).
 - ~~„Verlauf mit Kennungen statt fertiger Texte“ (DEC-159)~~ – umgesetzt in 0.12.0/0.12.1 (DEC-202).

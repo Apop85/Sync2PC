@@ -1,6 +1,6 @@
 # Synchronisationsengine – LeoSync (Sync2PC)
 
-> **Stand:** Version 0.11.0 (`version.properties`, DB-Version 6). **Massgebliche Quelle ist der Quellcode** unter
+> **Stand:** Grundstand Version 0.11.0 (DB-Version 6), einzelne Abschnitte bis 0.14.x nachgeführt (aktuell `version.properties` 0.14.7, DB-Version 9). **Massgebliche Quelle ist der Quellcode** unter
 > `app/src/main/java/com/sync2pc/app/`. Dieses Dokument beschreibt ausschliesslich den **implementierten** Zustand.
 > Geplantes steht nur in Abschnitt 18 und ist dort als „nicht umgesetzt“ gekennzeichnet.
 >
@@ -569,7 +569,7 @@ stateDiagram-v2
 
 ## 6. Dateioperationen und Übertragung
 
-### 6.0 PC-Erkennung vor dem Anmelden (DEC-204, DEC-205; im Code seit 0.13.0, Lernen überarbeitet in 0.13.1, **ungebaut und ungetestet**, Stand 2026-11-09)
+### 6.0 PC-Erkennung vor dem Anmelden (DEC-204, DEC-205; im Code seit 0.13.0, Lernen überarbeitet in 0.13.1; APK 0.13.0 und 0.13.1 in `releases\` vorhanden, Gerätetest ausstehend, Stand 2026-11-09)
 
 Je Profil wählt `Profile.pcCheck` (`PcCheckMode`) die Erkennung: `WIFI` (nur WLAN-Name, Standard und heutiges Verhalten), `GUID` (nur PC-Kennung = SMB-Server-GUID) oder `BOTH` (beides muss erfüllt sein). Die Kennung wird nach dem Aushandeln gelesen, **vor** `authenticate`; Zugangsdaten gehen nur bei einer zulässigen Entscheidung an den Server.
 
@@ -606,7 +606,7 @@ Eine gespeicherte Kennung gilt nur, wenn `pcGuidHost` dem aktuellen Host entspri
 
 **Sicherheitsaussage:** Die Kennung ist nicht geheim (unverschlüsselt in der Aushandlung). `GUID`/`BOTH` schützen vor einem fremden Server in einem fremden Netz mit gleicher IP, nicht vor einem gezielten Angreifer, der die Kennung zuvor im eigenen Netz las. `WIFI` behält die bekannte Schwäche (fremdes Netz mit gleichem Namen). Restrisiken: Akku bei `GUID` in fremden WLANs (Prüfung alle 30 min), Stabilität der Kennung bei Samba/NAS (ungeprüft).
 
-> **Umgesetzt in 0.13.1 (DEC-205, ungebaut, ungetestet, nichts im Gerät geprüft):** Beschreibung oben = Stand des Codes laut Development SYNC-20261109-055. Offen: Bau, Tests, Gerätetest (QA). Bekannte Restpunkte: Ein sofortiger manueller Start direkt nach dem Speichern kann das Lernen knapp verpassen (R5, einmalig «PC unbekannt»); manueller Sync und wiederhergestellte Sicherungen lernen nicht mehr (R3); das Zeitlimit von 30 s gilt je SMB-Vorgang, nicht gesamt; die Einrichtungsausnahme gilt bei Ersteinrichtung weiterhin ohne Rückfrage; bei Hostwechsel eines bestehenden Profils fragt die App seit 0.13.14 (DEC-208, gebaut; Sicherheits-QA -081 bestanden nach Code und Emulator-Gerätetest, Restrisiken: „Speicher freigeben“ bei fremdem PC, EN, Dunkelmodus, Fremd-WLAN; UI-Verdrahtung ohne Unit-Test; der Picker bleibt auf dem Host des Profils, `onPick` übernimmt nur den Pfad).
+> **Umgesetzt in 0.13.1 (DEC-205; APK 0.13.1 in `releases\` vorhanden, Gerätetest nicht dokumentiert):** Beschreibung oben = Stand des Codes laut Development SYNC-20261109-055. Offen: Gerätetest (QA). Bekannte Restpunkte: Ein sofortiger manueller Start direkt nach dem Speichern kann das Lernen knapp verpassen (R5, einmalig «PC unbekannt»); manueller Sync und wiederhergestellte Sicherungen lernen nicht mehr (R3); das Zeitlimit von 30 s gilt je SMB-Vorgang, nicht gesamt; die Einrichtungsausnahme gilt bei Ersteinrichtung weiterhin ohne Rückfrage; bei Hostwechsel eines bestehenden Profils fragt die App seit 0.13.14 (DEC-208, gebaut; Sicherheits-QA -081 bestanden nach Code und Emulator-Gerätetest, Restrisiken: „Speicher freigeben“ bei fremdem PC, EN, Dunkelmodus, Fremd-WLAN; UI-Verdrahtung ohne Unit-Test; der Picker bleibt auf dem Host des Profils, `onPick` übernimmt nur den Pfad).
 
 ### 6.1 Hochladen (`SmbSession.upload`, `SmbSession.kt:301`) **[IMPL]**
 
@@ -1247,7 +1247,7 @@ WLAN verschwindet bei 60 %. Worker: Netzwerkfehler ⇒ Sitzung schliessen, 2 s w
 - Ob `SyncWorker`-Abbrüche in allen Android-Versionen gleich `STOP_REASON_*` melden.
 
 ### 18.2 Geplant bzw. nicht umgesetzt (nur zur Abgrenzung, nicht Teil des Ist-Stands)
-Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Integration (nur offene Punkte, ohne Versionsnummer) sowie die Umsetzung von DEC-205 (Lernen der PC-Kennung nur beim Speichern/Test, Abschnitt 6.0). Die PC-Erkennung nach DEC-204 ist im Code vorhanden (Abschnitt 6.0), aber ungebaut. Der Rest betrifft die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
+Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Integration (nur offene Punkte, ohne Versionsnummer) sowie die Umsetzung von DEC-205 (Lernen der PC-Kennung nur beim Speichern/Test, Abschnitt 6.0). Die PC-Erkennung nach DEC-204 ist im Code vorhanden (Abschnitt 6.0); APK ab 0.13.0 in `releases\` vorhanden. Der Rest betrifft die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
 
 ### 18.3 Offene Dokumentationspunkte
 - Ergänzung nach Prüfung von `MediaAnalyzer`, `Notifications`, `WifiHelper`, `PauseService` (Abschnitte 2.3 und 11).
