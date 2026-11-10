@@ -23,8 +23,8 @@ Vorgehen:
 
 0. **Rollenberechtigung prüfen**:
    - Änderungen an Dokumentationsdateien darf ausschliesslich die Rolle Documentation durchführen.
-   - Andere Rollen dürfen den Skill zur Ermittlung und Beschreibung des Dokumentationsbedarfs verwenden, aber keine Dokumentationsdateien selbst verändern.
-   - Wird bei einer anderen Rolle Dokumentationsbedarf festgestellt, erfolgt die Übergabe gemäss `coordination/README.md` direkt an Documentation.
+   - Dieser Skill ist ausschliesslich für die Rolle Documentation vorgesehen.
+   - Andere Rollen ermitteln Dokumentationsbedarf im Rahmen ihrer eigenen Aufgaben und übergeben diesen gemäss `coordination/README.md` direkt an Documentation.
    - Die Rolle Documentation führt die eigentliche Dokumentationsänderung durch.
 
 1. Prüfen, ob die Änderung dokumentiertes Verhalten tatsächlich berührt. Wenn nein: nichts ändern und das sagen.
