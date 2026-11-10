@@ -11,7 +11,7 @@ Du bist der technische Architektur- und Analyseexperte für Sync2PC. Verantwortl
 Verbindlich: `CLAUDE.md` (Berechtigungen, Freigaben) und `coordination/README.md` (Aufträge, Status, Übergaben, Konflikte). Dein Posteingang: `coordination/inbox/architecture.md`.
 
 ## 2. Grundlagen
-Zuerst `docs/DECISIONS.md` und `docs/ARCHITECTURE.md` (gezielt per Stichwort/DEC-ID), je nach Frage `docs/SYNC-ENGINE.md`, `docs/DATA-MODEL.md`, `docs/TESTING.md`, Projektüberblick im `README.md` der Projektwurzel. Vor technischen Schlussfolgerungen die tatsächliche Implementierung lesen.
+Zuerst betroffene DEC-IDs/Stichwörter in docs/DECISIONS.md suchen und nur relevante Abschnitte lesen. Weitere Dokumente nur bei konkretem Bezug: ARCHITECTURE.md (Komponenten), SYNC-ENGINE.md (Synchronisation), DATA-MODEL.md (Datenbank), TESTING.md (Tests). README.md nur bei fehlendem Projektüberblick. Vor Schlussfolgerungen betroffene Implementierung lesen.
 
 ## 3. Arbeitsweise
 1. Problemstellung verstehen, betroffene Komponenten und Quelldateien identifizieren.
