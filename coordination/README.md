@@ -152,55 +152,22 @@ Fachliche Konflikte klären die betroffenen Rollen zuerst **direkt** (Folgeauftr
 | Zwei Sitzungen an derselben Datei | §9: stoppen, neu lesen, nichts überschreiben; sonst Benutzer |
 
 ## 12. Vorlage Task-Datei
-```
-# SYNC-YYYYMMDD-NNN – Kurztitel
-- Erstellt am: YYYY-MM-DD
-- Absender: <Rolle oder Benutzer>
-- Empfänger: <Rolle>
-- Priorität: LOW | MEDIUM | HIGH | CRITICAL
-- Status: OPEN
-- Übergabegrund:
-- Aufgabenbeschreibung:
-- Technischer Kontext: (bisheriger Stand, erledigte Arbeiten, Erkenntnisse)
-- Betroffene Dateien:
-- Dokumentationsverweise:
-- Erwartetes Ergebnis:
-- UX-Beteiligung: nötig | nicht nötig – Kurzgrund
-- Benutzerfreigabe: nicht nötig | ausstehend: <was> | erteilt <Datum>, <was>, <wo>
-- Abhängigkeiten: (andere Task-IDs oder –)
-- Folgeschritt: (Rolle und Zweck des nächsten Auftrags oder –)
-- Bearbeitungsverlauf: (je Zeile: Datum, Rolle, Status, Notiz)
-- Übernahmebestätigung: (Empfänger: Datum, Rolle)
-- Durchgeführte Arbeiten:
-- Tests und Ergebnisse: (nur tatsächlich ausgeführte; nicht ausgeführte mit Grund)
-- Offene Fragen:
-- Verbleibende Risiken:
-- Abgeschlossen am:
-```
+Nicht zutreffende optionale Felder dürfen entfallen. Pflichtfelder sind: ID/Titel, Erstellt am, Absender, Empfänger, Priorität, Status, Aufgabenbeschreibung, Erwartetes Ergebnis, Bearbeitungsverlauf und Übernahmebestätigung.
 
-## 13. Beispiele (nur Illustration, keine echten Aufträge)
-**A) Project Manager → UX** (`tasks/OPEN/SYNC-20261201-050.md`)
-```
-# SYNC-20261201-050 – Beispiel: Konfliktkarte zeigt Dateigrösse
-- Erstellt am: 2026-12-01
-- Absender: Project Manager
-- Empfänger: UX-Specialist
-- Priorität: LOW
-- Status: OPEN
-- Übergabegrund: Inhaber wünscht die Grösse in der Konfliktkarte.
-- Aufgabenbeschreibung: Darstellung der Dateigrösse beider Versionen in der Konfliktkarte vorschlagen.
-- Technischer Kontext: Anzeige nur; keine Änderung an Sync-Logik oder DB.
-- Betroffene Dateien: (Development ermittelt; nicht erfunden)
-- Dokumentationsverweise: docs/DECISIONS.md §10
-- Erwartetes Ergebnis: Vorschlag, Freigabe des Inhabers, Designvorgabe direkt an Development.
-- UX-Beteiligung: nötig – Benutzerführung bei Konflikten
-- Benutzerfreigabe: ausstehend: Darstellungsvariante
-- Abhängigkeiten: –
-- Folgeschritt: Development (Umsetzung), danach QA und UX-Review
-- Bearbeitungsverlauf: 2026-12-01 PM OPEN
-- (übrige Felder: –)
-```
-Dazu: Zeile in `TASK-INDEX.md` (Zähler 050) und in `inbox/ux-designer.md`:
-`| SYNC-20261201-050 | Project Manager | Konfliktkarte zeigt Dateigrösse | LOW | OPEN | ../tasks/OPEN/SYNC-20261201-050.md |`
+Weitere Felder bei Bedarf ergänzen:
+- Übergabegrund
+- Technischer Kontext
+- Betroffene Dateien
+- Dokumentationsverweise
+- UX-Beteiligung
+- Benutzerfreigabe
+- Abhängigkeiten
+- Folgeschritt
+- Durchgeführte Arbeiten
+- Tests und Ergebnisse
+- Offene Fragen
+- Verbleibende Risiken
+- Abgeschlossen am
 
-**B) Rückfrage QA → Development** (QA ist in -051 blockiert, weil das Sollverhalten unklar ist): QA erstellt -052 an Development („Wird eine abgebrochene Teildatei neu übertragen oder fortgesetzt? Antwort mit Code-Stelle“, Abhängigkeiten: blockiert -051), setzt -051 auf BLOCKED (Datei nach `tasks/BLOCKED/`, Index, Posteingang). Nach der Antwort: Development COMPLETED -052, QA setzt -051 auf IN_PROGRESS. Der PM ist nicht beteiligt.
+## 13. Beispiele
+Die verbindliche Auftragsstruktur steht in §12; Erstellungs- und Übergabeabläufe in §5–7. Beispiele sind nicht erforderlich.
