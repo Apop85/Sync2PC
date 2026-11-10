@@ -1,3 +1,4 @@
+
 ---
 name: update-docs
 description: Aktualisiert die technische Dokumentation von LeoSync (docs/DECISIONS, ARCHITECTURE, SYNC-ENGINE, DATA-MODEL, TESTING, PATCHNOTES) minimal und strukturerhaltend nach einer Änderung. Verwenden, wenn dokumentiertes Verhalten, Schema, Tests oder Entscheidungen sich geändert haben.
@@ -19,6 +20,13 @@ Zuordnung (Dateien mit Unterstrich in `docs/` sind Auftragstexte, nicht anfassen
 | Releases | `PATCHNOTES.md` (Projektwurzel) |
 
 Vorgehen:
+
+0. **Rollenberechtigung prüfen**:
+   - Änderungen an Dokumentationsdateien darf ausschliesslich die Rolle Documentation durchführen.
+   - Andere Rollen dürfen den Skill zur Ermittlung und Beschreibung des Dokumentationsbedarfs verwenden, aber keine Dokumentationsdateien selbst verändern.
+   - Wird bei einer anderen Rolle Dokumentationsbedarf festgestellt, erfolgt die Übergabe gemäss `coordination/README.md` direkt an Documentation.
+   - Die Rolle Documentation führt die eigentliche Dokumentationsänderung durch.
+
 1. Prüfen, ob die Änderung dokumentiertes Verhalten tatsächlich berührt. Wenn nein: nichts ändern und das sagen.
 2. Zieldatei per Grep nach dem betroffenen Abschnitt durchsuchen; nur diesen Abschnitt lesen und ändern (Dateien sind sehr gross).
 3. Nur Notwendiges ändern; Struktur, Kennzeichnungen (z. B. [IMPL], [RISIKO]) und vorhandene DEC-IDs erhalten. Neue Entscheidung = nächste freie DEC-ID (vorher höchste per Grep ermitteln), bestehende IDs nie umnummerieren oder wiederverwenden.

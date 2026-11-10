@@ -1,3 +1,4 @@
+
 ---
 name: implement-feature
 description: Standardablauf zum Implementieren einer Funktion oder Änderung in LeoSync (Analyse, Doku gezielt laden, Plan, Umsetzung, gezielte Tests, optional Review, Doku). Verwenden bei Aufträgen, die Code ändern oder ergänzen.
@@ -6,6 +7,8 @@ description: Standardablauf zum Implementieren einer Funktion oder Änderung in 
 # Funktion implementieren
 
 Ablauf für Aufgabe: $ARGUMENTS
+
+**Rollenberechtigung:** Dieser Skill ist für die Rolle Development vorgesehen. Andere Rollen verwenden ihn nicht zur eigenständigen Implementierung. Für Architecture gelten weiterhin die ausdrücklichen Umsetzungsberechtigungen gemäss `CLAUDE.md` und Architecture-Rollenprompt.
 
 1. **Analysieren**: Ziel, Akzeptanzkriterien, Datenverlustrisiko klären. Unklares als nummerierte Rückfragen stellen.
 2. **Komponenten bestimmen**: betroffene Dateien/Schichten unter `app/src/main/java/com/sync2pc/app/` per Grep/Glob finden.
@@ -17,10 +20,13 @@ Ablauf für Aufgabe: $ARGUMENTS
    - Room/Entities/DAOs/Migrationen: Agent `database-specialist`.
    - Sonst selbst umsetzen. Kleine Aufgaben (UI-Text, isolierte Änderung): direkt selbst, ohne Agent, Schritte 5 und 9 verkürzen.
    - Bei Aufträgen, die beide Bereiche betreffen: nacheinander, nie parallel auf dieselben Dateien.
-7. **Gezielte Tests**: Skill `run-targeted-tests`. Nicht bauen (`assemble*`, `build.bat`): Der Inhaber baut selbst.
+7. **Gezielte Tests**: Skill `run-targeted-tests`. Development erstellt keine Builds (`assemble*`, `build.bat`); der Inhaber baut selbst. Die eigenständige QA-Rolle darf Debug- und Test-Builds gemäss ihren Berechtigungen in `CLAUDE.md` erstellen.
 8. **Review** bei mittlerem/hohem Risiko (Sync-Engine, Löschlogik, Migration, Nebenläufigkeit): Skill `review-changes` (Agent `code-reviewer`). Bei hohem Risiko zusätzlich `qa-check`.
-9. **Version**: PATCH in `version.properties` erhöht der Hauptagent (`CLAUDE.md` §1); die Spezialagenten tun das nicht.
-10. **Folgeaufträge** (`coordination/README.md` §7): Doku und `PATCHNOTES.md`-Eintrag (Version, Änderungen, Dateien) an Documentation – Development ändert keine Doku-Dateien; bei Bedarf QA und UX-Review.
-11. **Abschlussbericht** (kurz): Änderungen (Dateien), Tests (gelaufen/nicht gelaufen), Review-Ergebnis, Folgeaufträge, Risiken, offene nummerierte Fragen.
+9. **Version und Folgeaufträge**:
+   - PATCH in `version.properties` erhöht der Hauptagent gemäss `CLAUDE.md` §1; Spezialagenten tun das nicht.
+   - Dokumentationsbedarf und `PATCHNOTES.md`-Eintrag (Version, Änderungen, Dateien) gemäss `coordination/README.md` §7 direkt an Documentation übergeben.
+   - Development ändert keine Dokumentationsdateien.
+   - Bei Bedarf QA- und UX-Review als direkte Folgeaufträge einplanen.
+10. **Abschlussbericht** (kurz): Änderungen (Dateien), Tests (gelaufen/nicht gelaufen), Review-Ergebnis, Folgeaufträge, Risiken, offene nummerierte Fragen.
 
-Keine Commits oder Pushes.
+Keine Commits oder Pushes; du arbeitest in einer eigenen Offline-Kopie des Git-Repositories.
