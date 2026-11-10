@@ -105,7 +105,7 @@
     <string name="profile_maintenance_closed">Synchronisierungsstatus zurücksetzen, Profil löschen – antippen zum Öffnen</string>
     <string name="profile_delete_section_hint">Löscht Einstellungen und Synchronisierungsstatus dieses Profils. Dateien auf Handy und PC bleiben erhalten.</string>
     <string name="profile_delete_title">Profil löschen?</string>
-    <string name="profile_delete_text">Einstellungen und Synchronisierungsstatus dieses Profils werden gelöscht. Dateien auf dem PC bleiben erhalten.</string>
+    <string name="profile_delete_text">Einstellungen und Synchronisierungsstatus dieses Profils werden gelöscht. Dateien auf Handy und PC bleiben erhalten.</string>
     <string name="profile_created_title">Profil gespeichert</string>
     <string name="profile_created_text">Wie weiter? Bis du dieses Profil einmal synchronisierst, startet es nicht automatisch. So kannst du zuerst in Ruhe simulieren.</string>
     <string name="profile_later">Später</string>
@@ -170,4 +170,25 @@
     <string name="profile_host_change_body">Du hast den Server von %1$s auf %2$s geändert. Dort ist noch kein PC erkannt. Deine Anmeldedaten werden an diesen PC gesendet, sobald du fortfährst. Nur fortfahren, wenn %2$s dein eigener PC ist.</string>
     <string name="profile_host_change_yes">Anmeldedaten senden</string>
     <string name="home_profile_pc_known">PC erkannt</string>
-    <string name="home_profile_pc_unknown">PC noch nicht erkannt</string></resources>
+    <string name="home_profile_pc_unknown">PC noch nicht erkannt</string>
+    <!-- SYNC-20261110-114/-115: Eingabeprüfung, Bestätigung, Fehlermeldungen -->
+    <string name="profile_number_range">Bitte eine Zahl von %1$d bis %2$d eingeben</string>
+    <string name="profile_number_blocked">Nicht gespeichert: Bitte zuerst die Zahlenfelder mit Fehler korrigieren.</string>
+    <string name="profile_test_need_path">Bitte zuerst den Freigabe-Pfad eingeben, z. B. %1$s.</string>
+    <string name="profile_test_bad_input">Die Eingabe ist ungültig. Bitte Freigabe-Pfad und Benutzer prüfen.</string>
+    <string name="profile_confirm_title">Änderung bestätigen</string>
+    <string name="profile_confirm_dir_up">Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung gilt das Handy als Quelle: abweichende Dateien auf dem PC werden durch die Handy-Version ersetzt. Die ersetzte Version kann in den Papierkorb „%3$s“ kommen.</string>
+    <string name="profile_confirm_dir_down">Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung gilt der PC als Quelle: abweichende Dateien auf dem Handy werden durch die PC-Version ersetzt. Die ersetzte Version kann in den Papierkorb „%3$s“ kommen.</string>
+    <string name="profile_confirm_dir_both">Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung werden Änderungen in beide Richtungen übertragen.</string>
+    <string name="profile_confirm_propagate">Gelöschte Dateien werden ab jetzt auf der anderen Seite ebenfalls entfernt (in den Papierkorb „%1$s“).</string>
+    <string name="profile_folder_unusable_root">Der gewählte Ordner ist der oberste Ordner des Speichers und kann nicht verwendet werden. Bitte einen Unterordner wählen.</string>
+    <string name="profile_folder_unusable_provider">Dieser Ordner wird von Android über einen Umweg (z. B. „Downloads“) geliefert und kann für Fotos nicht verwendet werden. Bitte den Ordner direkt im internen Speicher wählen.</string>
+    <string name="profile_filter_include_hint">Alles andere wird nicht synchronisiert.</string>
+    <string name="profile_filter_bad">Ungültiges Muster „%1$s“: Eine Klammer wurde nicht geschlossen.</string>
+    <string name="profile_filter_summary_include">Nur: %1$s</string>
+    <string name="profile_filter_summary_exclude">Ausgeschlossen: %1$d Muster</string>
+    <string name="profile_folder_warning_options">Trotzdem übernehmen: der bisherige Synchronisierungsstand bleibt.\nAls neuen Ordner behandeln: der Stand wird zurückgesetzt, alle Dateien werden neu abgeglichen.</string>
+    <string name="overlap_nested_remote">Der Zielordner auf dem PC liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen.</string>
+    <string name="overlap_nested_local">Der Ordner auf dem Handy liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen.</string>
+    <string name="home_profile_filter_active">Filter aktiv</string>
+</resources>

@@ -2,6 +2,22 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.14.7 (2026-11-10)
+
+### Geändert
+- **Zahlenfelder im Profilformular** (Papierkorb-Tage 0–3650, Prüfintervall 15–1440 Minuten, Schutzbremse 1–100 %): Zwischenwerte werden nicht gespeichert und nichts wird mehr still korrigiert. Ein ungültiger Wert zeigt einen Fehlertext unter dem Feld und blockiert das Speichern (DEC-217).
+- **Bestätigungsdialog «Änderung bestätigen»** beim Ändern der Richtung oder beim Einschalten von «Löschungen übernehmen» an bestehenden Ordner-Profilen (DEC-216).
+- **Filter:** Filtermuster mit nicht geschlossener Klammer werden abgelehnt. Die Filterkarte zeigt eine Kurzfassung, die Profilkarte «Filter aktiv».
+- **Verbindung testen** ohne Pfad zeigt eine verständliche Meldung.
+- **Ordneranzeige** über «Downloads» gewählter Ordner zeigt den Ordner statt des Anzeigenamens (z. B. «Download/12»). Der Ablehnungsgrund bei Fotos-Ordnern erscheint als Text; angenommen werden nur Ordner im internen Speicher (DEC-218).
+- **Ordnerwechsel-Dialog:** Erläuterung der Optionen ergänzt.
+- **Überschneidungsmeldung** nennt, ob der PC- oder der Handy-Ordner betroffen ist.
+- **Profil löschen:** einheitlicher Text («Handy und PC»).
+
+### Intern
+- Neue Dateien `data/NumberInput.kt` und `data/ChangeConfirm.kt`; keine Änderung an Schema, Dateiformaten oder Sync-Logik.
+- Neue Tests `NumberInputTest` (6), `ChangeConfirmTest` (5), `FileFilterTest.unbalancedBracketsAreReported`. Gesamtlauf `testDebugUnitTest` am 2026-11-10: 34 Klassen, 287 Tests, 0 Fehler (Angabe Development). Die UI-Verdrahtung ist nicht abgedeckt.
+
 ## 0.14.6 (2026-11-10)
 
 ### Geändert

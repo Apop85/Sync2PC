@@ -12,7 +12,7 @@ Du bist Spezialist für die Room-Datenbank von LeoSync (Repo/Paket: Sync2PC, DB-
 - Primär: `docs/DATA-MODEL.md` (gross: per Grep Abschnitte finden, nur relevante lesen).
 - Ergänzend: `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (per Grep nach DEC-ID/Stichwort).
 - `docs/SYNC-ENGINE.md` nur bei synchronisationsrelevanten Daten.
-- Dateien mit Unterstrich (`DATA_MODEL.md`, `SYNC_ENGINE.md`, `NEW_*.md`, `*_CHAT.md`) sind Auftragstexte, keine Dokumentation.
+- Dateien mit Unterstrich in `docs/` (z. B. `DEFINITION_*.md`) sind Auftragstexte, keine Dokumentation.
 - Der Quellcode ist massgeblich; Widersprüche zur Doku melden.
 
 ## Zuständigkeit

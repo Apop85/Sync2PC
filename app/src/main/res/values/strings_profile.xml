@@ -105,7 +105,7 @@
     <string name="profile_maintenance_closed">Reset sync status, delete profile – tap to open</string>
     <string name="profile_delete_section_hint">Deletes the settings and sync status of this profile. Files on the mobile and PC are kept.</string>
     <string name="profile_delete_title">Delete profile?</string>
-    <string name="profile_delete_text">Settings and sync status of this profile are deleted. Files on the PC are kept.</string>
+    <string name="profile_delete_text">Settings and sync status of this profile are deleted. Files on the mobile and PC are kept.</string>
     <string name="profile_created_title">Profile saved</string>
     <string name="profile_created_text">What next? Until you sync this profile once, it does not start automatically. That way you can simulate first.</string>
     <string name="profile_later">Later</string>
@@ -170,4 +170,25 @@
     <string name="profile_host_change_body">You changed the server from %1$s to %2$s. No PC is recognised there yet. Your sign-in data will be sent to that PC as soon as you continue. Only continue if %2$s is your own PC.</string>
     <string name="profile_host_change_yes">Send sign-in data</string>
     <string name="home_profile_pc_known">PC recognised</string>
-    <string name="home_profile_pc_unknown">PC not recognised yet</string></resources>
+    <string name="home_profile_pc_unknown">PC not recognised yet</string>
+    <!-- SYNC-20261110-114/-115: input validation, confirmation, error messages -->
+    <string name="profile_number_range">Please enter a number from %1$d to %2$d</string>
+    <string name="profile_number_blocked">Not saved: please correct the number fields with errors first.</string>
+    <string name="profile_test_need_path">Please enter the share path first, e.g. %1$s.</string>
+    <string name="profile_test_bad_input">The input is invalid. Please check the share path and user.</string>
+    <string name="profile_confirm_title">Confirm change</string>
+    <string name="profile_confirm_dir_up">The direction changes from “%1$s” to “%2$s”. From the next sync, the mobile is the source: differing files on the PC are replaced by the mobile version. The replaced version may go to the trash “%3$s”.</string>
+    <string name="profile_confirm_dir_down">The direction changes from “%1$s” to “%2$s”. From the next sync, the PC is the source: differing files on the mobile are replaced by the PC version. The replaced version may go to the trash “%3$s”.</string>
+    <string name="profile_confirm_dir_both">The direction changes from “%1$s” to “%2$s”. From the next sync, changes are transferred in both directions.</string>
+    <string name="profile_confirm_propagate">Files deleted on one side will now also be removed on the other side (to the trash “%1$s”).</string>
+    <string name="profile_folder_unusable_root">The selected folder is the top level of the storage and cannot be used. Please choose a subfolder.</string>
+    <string name="profile_folder_unusable_provider">Android provides this folder via a detour (e.g. “Downloads”), so it cannot be used for photos. Please choose the folder directly in internal storage.</string>
+    <string name="profile_filter_include_hint">Everything else is not synchronized.</string>
+    <string name="profile_filter_bad">Invalid pattern “%1$s”: a bracket is not closed.</string>
+    <string name="profile_filter_summary_include">Only: %1$s</string>
+    <string name="profile_filter_summary_exclude">Excluded: %1$d patterns</string>
+    <string name="profile_folder_warning_options">Accept anyway: the previous sync state is kept.\nTreat as new folder: the state is reset and all files are compared again.</string>
+    <string name="overlap_nested_remote">The target folder on the PC lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
+    <string name="overlap_nested_local">The folder on the mobile lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
+    <string name="home_profile_filter_active">Filter active</string>
+</resources>

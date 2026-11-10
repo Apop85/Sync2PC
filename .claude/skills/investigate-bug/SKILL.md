@@ -15,4 +15,4 @@ Fehler: $ARGUMENTS
 6. **Lösung**: vorschlagen oder (bei klarem Auftrag) minimal umsetzen. Keine vorschnellen Änderungen, keine Nebenbei-Refactorings.
 7. **Regressionstests**: Skill `run-targeted-tests`. Nicht bauen: Der Inhaber baut selbst.
 8. **Auswirkungen prüfen**: weitere Aufrufer, Datenverlust-/Migrationsrisiko; bei Sync/DB-Änderung Skill `review-changes`.
-9. **Dokumentieren** (kurz im Bericht): Symptom, Ursache (nachgewiesen/Hypothese), Lösung, Tests, Restrisiko. Doku und `PATCHNOTES.md` nur nach `.claude/README.md` bzw. Skill `update-docs`.
+9. **Dokumentieren** (kurz im Bericht): Symptom, Ursache (nachgewiesen/Hypothese), Lösung, Tests, Restrisiko. Doku und `PATCHNOTES.md` per Auftrag an Documentation (`CLAUDE.md` §11).

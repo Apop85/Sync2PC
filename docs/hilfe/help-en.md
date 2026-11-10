@@ -32,6 +32,8 @@ For photo profiles you choose the **folder structure**: `Year\Month - Country` (
 
 Under **PC ID** you decide per profile how LeoSync recognises your PC: **Wi-Fi name only** (default for existing profiles), **PC ID only** or **Both**. The ID is checked before the user name and password are sent. After a change, confirm it with **Test connection**. The ID changes after a fresh Windows installation; then open the profile and tap **Test connection** again. On some NAS devices (Samba) the ID may not be stable; use **Wi-Fi name only** there.
 
+Number fields in a profile only accept values in the allowed range: **Empty trash after … days** 0 to 3650 (0 = never), **Check for changes every … minutes** 15 to 1440, **Safety brake** 1 to 100 %. An invalid value is reported below the field and **Save** is blocked. For **filters**, a pattern with an unclosed bracket is rejected. The filter card shows a short summary, and the profile card says **Filter active**.
+
 New profiles only start after you tap **Sync** once. You can **simulate** first what would happen.
 
 ## 3. Day to day
@@ -52,6 +54,7 @@ New profiles only start after you tap **Sync** once. You can **simulate** first 
 - **Check after upload:** LeoSync reads the file back from the PC and compares it with the original. The levels range from *Off* to *Complete*; the default is *Medium*. If photos are removed from the mobile, a check is always done.
 - **Trash:** For folder profiles, deleted and overwritten files go to the `.LeoSync-Bin` folder (on mobile and PC) and can be restored via **Tools → Trash**: choose the profile, select entries and tap **Restore** (or **Delete permanently**). It is emptied after 30 days (adjustable). Photo profiles have no trash of their own: removed photos are in the gallery trash.
 - **Safety brake:** If many files would be deleted at once (default: more than 20 %) or a whole folder is missing, LeoSync stops and asks you first. You then choose between **Don't delete** and **Move to trash anyway**; until then the profile rests.
+- **Confirm change:** If you change the direction of an existing folder profile or switch on **Apply deletions**, LeoSync shows what changes before saving, and you confirm with **Save** or cancel with **Cancel**. With a one-way direction, differing files on the target side are replaced; the replaced version may go to the trash.
 - **Conflicts:** If the same file was changed on mobile and PC, you decide which version wins. The other one goes to the trash.
 - **PC ID:** When enabled, LeoSync sends the user name and password only to a recognised PC. With an unknown PC, the app does not sign in and skips the profile. The ID is not secret: it protects against an unknown server on a foreign network, not against a targeted attack.
 

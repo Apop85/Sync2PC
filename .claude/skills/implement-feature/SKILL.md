@@ -19,8 +19,8 @@ Ablauf für Aufgabe: $ARGUMENTS
    - Bei Aufträgen, die beide Bereiche betreffen: nacheinander, nie parallel auf dieselben Dateien.
 7. **Gezielte Tests**: Skill `run-targeted-tests`. Nicht bauen (`assemble*`, `build.bat`): Der Inhaber baut selbst.
 8. **Review** bei mittlerem/hohem Risiko (Sync-Engine, Löschlogik, Migration, Nebenläufigkeit): Skill `review-changes` (Agent `code-reviewer`). Bei hohem Risiko zusätzlich `qa-check`.
-9. **Doku**: Skill `update-docs` nur, wenn die Änderung dokumentiertes Verhalten betrifft.
-10. **Version/Patchnotes**: gemäss `.claude/README.md` (Regel 5/6) pflegt der Hauptagent bei Codeänderungen `version.properties` und `PATCHNOTES.md`; die Spezialagenten tun das nicht.
-11. **Abschlussbericht** (kurz): Änderungen (Dateien), Tests (gelaufen/nicht gelaufen), Review-Ergebnis, Risiken, offene nummerierte Fragen.
+9. **Version**: PATCH in `version.properties` erhöht der Hauptagent (`CLAUDE.md` §1); die Spezialagenten tun das nicht.
+10. **Folgeaufträge** (`coordination/README.md` §7): Doku und `PATCHNOTES.md`-Eintrag (Version, Änderungen, Dateien) an Documentation – Development ändert keine Doku-Dateien; bei Bedarf QA und UX-Review.
+11. **Abschlussbericht** (kurz): Änderungen (Dateien), Tests (gelaufen/nicht gelaufen), Review-Ergebnis, Folgeaufträge, Risiken, offene nummerierte Fragen.
 
-Keine Commits oder Pushes ohne ausdrücklichen Auftrag.
+Keine Commits oder Pushes.

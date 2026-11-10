@@ -68,7 +68,10 @@ import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.DeleteMode
 import com.sync2pc.app.data.ConflictMode
+import com.sync2pc.app.data.ChangeConfirm
+import com.sync2pc.app.data.NumberInput
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.mirror.FileFilter
 import com.sync2pc.app.data.ProfileOverlap
 import com.sync2pc.app.data.ProfileWizard
 import com.sync2pc.app.data.ProfileWizard.Step
@@ -117,14 +120,21 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var trustAsk by remember { mutableStateOf<TrustAsk?>(null) }
     var hostAsk by remember { mutableStateOf<HostAsk?>(null) }
     var confirmedHost by remember { mutableStateOf<String?>(null) }
+    var folderError by remember { mutableStateOf<String?>(null) }
+    // V1: Bestätigung bei Änderung von Richtung / «Löschungen übernehmen» (bestehendes Ordner-Profil)
+    var changeAsk by remember { mutableStateOf<ChangeAsk?>(null) }
+    var confirmedChange by remember { mutableStateOf<String?>(null) }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         val rel = treeUriToRelativePath(uri)
         if (rel == null) {
-            Toast.makeText(ctx, str(R.string.profile_folder_unusable), Toast.LENGTH_LONG).show()
+            // P3: Grund dauerhaft unter der Karte statt nur als flüchtiger Hinweis
+            folderError = str(treeUriProblem(uri))
+            Toast.makeText(ctx, folderError, Toast.LENGTH_LONG).show()
         } else {
+            folderError = null
             p = p.copy(sourceFolders = Profile.joinLines(p.folders() + rel))
         }
     }
@@ -240,6 +250,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     }
 
     fun runTestNow() {
+        // P2: Eingabe zuerst prüfen, keine rohe Ausnahme zeigen
+        if (SmbTarget.hostOf(p.smbPath) == null) {
+            testResult = "✗ " + str(R.string.profile_test_need_path, "\\\\192.168.1.20"); testFailed = true; testDetail = null
+            return
+        }
         testing = true; testResult = null; testFailed = false; testDetail = null; pcChanged = false
         scope.launch {
             val prof = withPassword()
@@ -256,7 +271,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 } catch (e: Exception) {
                     if (e is PcIdentityException && e.decision == PcDecision.CHANGED) pcChanged = true
                     // 0.11.0: verständlich, technischer Text aufklappbar
-                    testResult = "✗ " + com.sync2pc.app.sync.userError(e); testFailed = true
+                    testResult = "✗ " + (if (e is IllegalArgumentException) str(R.string.profile_test_bad_input)
+                        else com.sync2pc.app.sync.userError(e)); testFailed = true
                     testDetail = com.sync2pc.app.sync.shortError(e)
                 }
             }
@@ -344,7 +360,24 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
      * Speichern. [force] = Überschneidung bestätigt. [folderChoice] = Antwort auf "Ist das wirklich der richtige
      * Ordner?" (null = Stichprobe noch nicht gemacht).
      */
-    fun save(force: Boolean = false, folderChoice: FolderChoice? = null) = confirmHost { saveNow(force, folderChoice) }
+    fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
+        // P7/P8: nie mit leerem oder ungültigem Zahlenfeld speichern (sonst stiller Zwischenwert)
+        if (p.type() == ProfileType.MIRROR && !(NumberInput.isValid(trashText, NumberInput.TRASH_DAYS) &&
+                NumberInput.isValid(pollText, NumberInput.POLL_MINUTES) && NumberInput.isValid(guardText, NumberInput.GUARD_PERCENT))) {
+            Toast.makeText(ctx, str(R.string.profile_number_blocked), Toast.LENGTH_LONG).show()
+            return
+        }
+        // P9: ungültiges Filtermuster nicht speichern
+        (FileFilter.unbalancedPattern(p.includePatterns) ?: FileFilter.unbalancedPattern(p.excludePatterns))?.let { bad ->
+            Toast.makeText(ctx, str(R.string.profile_filter_bad, bad), Toast.LENGTH_LONG).show()
+            return
+        }
+        // V1: Bestätigung vor dem Speichern, einmal je Änderung (auch bei späterem Wiederaufruf nach anderen Dialogen)
+        val sig = "${p.direction}|${p.propagateDeletes}"
+        val text = ChangeConfirm.text(baseline, p, MirrorEngine.TRASH_DIR)
+        if (text != null && confirmedChange != sig) { changeAsk = ChangeAsk(text, sig, force, folderChoice); return }
+        confirmHost { saveNow(force, folderChoice) }
+    }
 
     // Ungespeicherte Änderungen? Dann beim Verlassen nachfragen (Zurück-Pfeil, Zurück-Geste, "Abbrechen")
     val dirty = typeChosen && baseline != null && (p != baseline || password != basePassword)
@@ -467,7 +500,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     val treeUri = p.localTreeUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
                     if (treeUri == null) HintMore(str(R.string.profile_no_folder_yet))
                     else {
-                        Text(LocalTree.label(treeUri))
+                        Text(LocalTree.label(ctx, treeUri))
                         if (!LocalTree.hasPermission(ctx, treeUri))
                             Text(str(R.string.profile_access_lost), color = MaterialTheme.colorScheme.error)
                     }
@@ -492,6 +525,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         }
                     }
                     OutlinedButton(onClick = { folderPicker.launch(null) }) { Text(str(R.string.profile_add_folder)) }
+                    folderError?.let { ErrorText(it) }
                     HintMore(str(R.string.profile_sources_hint))
                     SwitchRow(str(R.string.profile_subfolders), p.includeSubfolders,
                         subtitle = str(R.string.profile_subfolders_sub)) { p = p.copy(includeSubfolders = it) }
@@ -626,21 +660,39 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
             // Optionale Bereiche: beim Bearbeiten zugeklappt, solange nichts eingestellt ist (0.9.0)
             if (show(Step.FILTER)) item {
+                // P9: Kurzfassung der eingeklappten Karte; ungültiges Muster (nicht geschlossene Klammer) zeigt einen Fehlertext
+                val badInclude = FileFilter.unbalancedPattern(p.includePatterns)
+                val badExclude = FileFilter.unbalancedPattern(p.excludePatterns)
+                val filterSummary = listOfNotNull(
+                    p.includePatterns.takeIf { it.isNotBlank() }
+                        ?.let { str(R.string.profile_filter_summary_include, FileFilter.split(it).joinToString(", ")) },
+                    FileFilter.split(p.excludePatterns).size.takeIf { it > 0 }
+                        ?.let { str(R.string.profile_filter_summary_exclude, it) },
+                ).joinToString(" · ").ifEmpty { str(R.string.profile_section_unset) }
                 OptionalCard(
                     str(R.string.profile_filter),
                     startOpen = wizard || p.includePatterns.isNotBlank() || p.excludePatterns.isNotBlank(),
                     collapsible = !wizard,
+                    closedHint = filterSummary,
                 ) {
                     OutlinedTextField(
                         p.includePatterns, { p = p.copy(includePatterns = it) },
                         label = { Text(str(R.string.profile_filter_include)) },
                         placeholder = { Text("*.pdf, *.docx") },
+                        isError = badInclude != null,
+                        supportingText = when {
+                            badInclude != null -> {{ Text(str(R.string.profile_filter_bad, badInclude)) }}
+                            p.includePatterns.isNotBlank() -> {{ Text(str(R.string.profile_filter_include_hint)) }}
+                            else -> null
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         p.excludePatterns, { p = p.copy(excludePatterns = it) },
                         label = { Text(str(R.string.profile_filter_exclude)) },
                         placeholder = { Text("Thumbs.db, *.tmp, Temp/**") },
+                        isError = badExclude != null,
+                        supportingText = if (badExclude != null) {{ Text(str(R.string.profile_filter_bad, badExclude)) }} else null,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     HintMore(str(R.string.profile_filter_hint))
@@ -657,11 +709,14 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     OutlinedTextField(
                         guardText,
                         { v ->
-                            guardText = v.filter { it.isDigit() }.take(3)
-                            guardText.toIntOrNull()?.let { p = p.copy(massDeletePercent = it.coerceIn(1, 100)) }
+                            guardText = NumberInput.filter(v, 3)
+                            NumberInput.parse(guardText, NumberInput.GUARD_PERCENT.first, NumberInput.GUARD_PERCENT.last)
+                                ?.let { p = p.copy(massDeletePercent = it) }
                         },
                         label = { Text(str(R.string.profile_guard_percent)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = !NumberInput.isValid(guardText, NumberInput.GUARD_PERCENT),
+                        supportingText = rangeError(guardText, NumberInput.GUARD_PERCENT),
                         singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                     HintMore(str(R.string.profile_guard_hint))
@@ -727,6 +782,21 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         // Ergebnis ist der ganze Pfad \\Server\Freigabe\Ordner (0.11.0, ohne separaten Unterordner)
         onPick = { p = p.copy(smbPath = it, remoteSubfolder = ""); testResult = null; testDetail = null; showRemotePicker = false },
     )
+
+    // V1: Änderung von Richtung / Löschungen bestätigen (nur «Abbrechen» und «Speichern»)
+    changeAsk?.let { ask ->
+        AlertDialog(
+            onDismissRequest = { changeAsk = null },
+            title = { Text(str(R.string.profile_confirm_title)) },
+            text = { Text(ask.text) },
+            confirmButton = {
+                TextButton(onClick = { changeAsk = null; confirmedChange = ask.signature; save(ask.force, ask.folderChoice) }) {
+                    Text(str(R.string.common_save))
+                }
+            },
+            dismissButton = { TextButton(onClick = { changeAsk = null }) { Text(str(R.string.common_cancel)) } },
+        )
+    }
 
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
@@ -839,7 +909,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         AlertDialog(
             onDismissRequest = { folderWarning = null },
             title = { Text(str(R.string.profile_folder_warning_title)) },
-            text = { Text(str(R.string.profile_folder_warning_text)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(str(R.string.profile_folder_warning_text))
+                    // P10: Wirkung der Optionen erklären
+                    HintMore(str(R.string.profile_folder_warning_options))
+                }
+            },
             confirmButton = {
                 Column(horizontalAlignment = Alignment.End) {
                     TextButton(onClick = {
@@ -961,11 +1037,34 @@ data class FolderWarning(val sides: Set<Side>, val force: Boolean)
  * Funktioniert auch für SD-Karten ("1234-ABCD:DCIM"). null = Speicher-Wurzel oder unbekannter Anbieter.
  */
 fun treeUriToRelativePath(uri: Uri): String? {
-    if (uri.authority != "com.android.externalstorage.documents") return null
     val docId = try { DocumentsContract.getTreeDocumentId(uri) } catch (e: Exception) { return null }
+    if (uri.authority == "com.android.providers.downloads.documents") {
+        // Über "Downloads" gewählt: "raw:/storage/emulated/0/Download/Test" -> "Download/Test/" (interner Speicher)
+        val raw = docId.removePrefix("raw:").takeIf { docId.startsWith("raw:") } ?: return null
+        val rest = Regex("""^/storage/emulated/\d+/?""").replace(raw, "").trim('/')
+        return if (rest.isEmpty() || rest == raw.trim('/')) null else "$rest/"
+    }
+    if (uri.authority != "com.android.externalstorage.documents") return null
     val path = docId.substringAfter(':', "").trim('/')
     return if (path.isEmpty()) null else "$path/"
 }
+
+/** Warum [treeUriToRelativePath] null liefert (Text-Ressource): oberster Ordner des Speichers oder nicht unterstützter Anbieter */
+fun treeUriProblem(uri: Uri): Int {
+    val docId = try { DocumentsContract.getTreeDocumentId(uri) } catch (e: Exception) { return R.string.profile_folder_unusable }
+    return when {
+        uri.authority == "com.android.externalstorage.documents" && docId.substringAfter(':', "").trim('/').isEmpty() ->
+            R.string.profile_folder_unusable_root
+        uri.authority == "com.android.providers.downloads.documents" && docId.startsWith("raw:") &&
+            Regex("""^/storage/emulated/\d+/?$""").matches(docId.removePrefix("raw:")) -> R.string.profile_folder_unusable_root
+        uri.authority == "com.android.providers.downloads.documents" && docId.startsWith("raw:") -> R.string.profile_folder_unusable
+        uri.authority == "com.android.providers.downloads.documents" -> R.string.profile_folder_unusable_provider
+        else -> R.string.profile_folder_unusable
+    }
+}
+
+/** Offene Bestätigung V1: Text, Kennung der bestätigten Änderung und die Parameter des unterbrochenen Speicherns */
+private class ChangeAsk(val text: String, val signature: String, val force: Boolean, val folderChoice: FolderChoice?)
 
 /** Offene Rückfrage zum Neuvertrauen eines anderen PCs (Antwort kommt vom Dialog, wartet der IO-Thread) */
 private class HostAsk(val oldHost: String, val newHost: String, val action: () -> Unit)

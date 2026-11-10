@@ -1,6 +1,8 @@
 package com.sync2pc.app
 
 import com.sync2pc.app.mirror.FileFilter
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -28,6 +30,15 @@ class FileFilterTest {
         assertTrue(f.accepts("Arbeit/bericht.pdf"))
         assertFalse(f.accepts("Temp/bericht.pdf"))
         assertFalse(f.accepts("Arbeit/Entwurf-1.pdf"))
+    }
+
+    @Test fun unbalancedBracketsAreReported() {
+        assertEquals("[abc", FileFilter.unbalancedPattern("*.pdf, [abc"))
+        assertEquals("x]", FileFilter.unbalancedPattern("x]"))
+        assertEquals("{a", FileFilter.unbalancedPattern("{a"))
+        assertNull(FileFilter.unbalancedPattern("foto[1].jpg, *.{a}"))
+        assertNull(FileFilter.unbalancedPattern(""))
+        assertNull(FileFilter.unbalancedPattern("*.pdf\nThumbs.db"))
     }
 
     @Test fun nameOnlyPatternMatchesInSubfolders() {

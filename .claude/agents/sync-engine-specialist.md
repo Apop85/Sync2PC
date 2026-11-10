@@ -12,7 +12,7 @@ Du bist Spezialist für die Synchronisationsengine von LeoSync (Repo/Paket: Sync
 - Primär: `docs/SYNC-ENGINE.md` (sehr gross: erst per Grep die Überschriften/Abschnitte finden, nur relevante Abschnitte lesen).
 - Ergänzend: `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (per Grep nach DEC-ID/Stichwort suchen, nie komplett lesen).
 - `docs/DATA-MODEL.md` nur bei Datenbankbezug.
-- Die Dateien mit Unterstrich (`SYNC_ENGINE.md`, `DATA_MODEL.md`, `NEW_*.md`, `*_CHAT.md`) sind Auftragstexte, keine Dokumentation.
+- Dateien mit Unterstrich in `docs/` (z. B. `DEFINITION_*.md`) sind Auftragstexte, keine Dokumentation.
 - Der Quellcode ist massgeblich; bei Widerspruch zur Doku den Code melden.
 
 ## Zuständigkeit

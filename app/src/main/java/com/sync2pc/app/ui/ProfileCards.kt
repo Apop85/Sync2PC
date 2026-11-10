@@ -64,6 +64,7 @@ import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.DeleteMode
 import com.sync2pc.app.data.ConflictMode
+import com.sync2pc.app.data.NumberInput
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileOverlap
 import com.sync2pc.app.data.ProfileWizard
@@ -92,6 +93,11 @@ import androidx.compose.runtime.MutableState
 // Karten von "Profil bearbeiten" (0.9.5 aus ProfileScreen.kt ausgelagert). Sie bekommen den Profil-Zustand
 // als MutableState, damit der Code der Karten unverändert bleibt.
 
+/** Fehlertext unter einem Zahlenfeld ([text] leer oder ausserhalb von [range]), sonst null */
+internal fun rangeError(text: String, range: IntRange): (@Composable () -> Unit)? =
+    if (NumberInput.isValid(text, range)) null
+    else { { Text(str(R.string.profile_number_range, range.first, range.last)) } }
+
 /** Ordner-Profil: Richtung, Löschungen, Versionen, Papierkorb-Frist, Konflikte, Prüfintervall */
 @Composable
 internal fun MirrorOptionsCard(
@@ -119,14 +125,18 @@ internal fun MirrorOptionsCard(
             str(R.string.profile_keep_versions), p.keepVersions,
             subtitle = str(R.string.profile_keep_versions_sub, trashName),
         ) { p = p.copy(keepVersions = it) }
+        // P7/P8: leer oder ausserhalb des Bereichs wird nie still gespeichert (Fehlertext, Speichern gesperrt)
         OutlinedTextField(
             trashText,
             { v ->
-                trashText = v.filter { it.isDigit() }.take(4)
-                trashText.toIntOrNull()?.let { p = p.copy(trashRetentionDays = it.coerceIn(0, 3650)) }
+                trashText = NumberInput.filter(v, 4)
+                NumberInput.parse(trashText, NumberInput.TRASH_DAYS.first, NumberInput.TRASH_DAYS.last)
+                    ?.let { p = p.copy(trashRetentionDays = it) }
             },
             label = { Text(str(R.string.profile_trash_days)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = !NumberInput.isValid(trashText, NumberInput.TRASH_DAYS),
+            supportingText = rangeError(trashText, NumberInput.TRASH_DAYS),
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         HintMore(str(R.string.profile_trash_days_hint, trashName))
@@ -146,11 +156,14 @@ internal fun MirrorOptionsCard(
         OutlinedTextField(
             pollText,
             { v ->
-                pollText = v.filter { it.isDigit() }.take(4)
-                pollText.toIntOrNull()?.let { p = p.copy(remotePollMinutes = it.coerceIn(15, 24 * 60)) }
+                pollText = NumberInput.filter(v, 4)
+                NumberInput.parse(pollText, NumberInput.POLL_MINUTES.first, NumberInput.POLL_MINUTES.last)
+                    ?.let { p = p.copy(remotePollMinutes = it) }
             },
             label = { Text(str(R.string.profile_poll)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = !NumberInput.isValid(pollText, NumberInput.POLL_MINUTES),
+            supportingText = rangeError(pollText, NumberInput.POLL_MINUTES),
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         HintMore(str(R.string.profile_poll_hint))

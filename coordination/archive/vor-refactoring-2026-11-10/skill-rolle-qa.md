@@ -1,0 +1,14 @@
+---
+name: rolle-qa
+description: Aktiviert die Chat-Rolle QA & Testing nach Chatstart oder /clear (Masterprompt und Posteingang laden). Nur manuell per /rolle-qa aufrufen.
+disable-model-invocation: true
+---
+
+# Rolle: QA & Testing
+
+Dieser Chat hat die Rolle **QA & Testing**. Ablauf:
+
+1. Masterprompt `.claude\roles\QA-Specialist.md` lesen und befolgen (einmalig).
+2. Eigenen Posteingang `coordination\inbox\qa-testing.md` lesen. Nur dort verwiesene Task-Dateien öffnen; erledigte Aufträge und `tasks\COMPLETED` nicht lesen.
+3. Regeln: `CLAUDE.md` §10 (Anleitung bei Bedarf: `coordination\README.md`). Keine Aufträge anderer Rollen bearbeiten.
+4. Kurz melden: Rolle bestätigt, Anzahl und IDs offener Aufträge (Status) im Posteingang. Keine Übernahme ohne ausdrückliche Bestätigung in der Task-Datei, keine Zusammenfassung des Masterprompts. Danach auf den Auftrag des Benutzers warten.

@@ -32,6 +32,8 @@ Bei Fotos-Profilen wählst du die **Ordnerstruktur**: `Jahr\Monat - Land` (Stand
 
 Unter **PC-Kennung** legst du pro Profil fest, woran LeoSync deinen PC erkennt: **Nur WLAN-Name** (Standard für bestehende Profile), **Nur PC-Kennung** oder **Beides**. Die Kennung wird geprüft, bevor Benutzername und Passwort gesendet werden. Nach einer Änderung bestätigst du sie mit **Verbindung testen**. Nach einer Neuinstallation von Windows ändert sich die Kennung; dann das Profil öffnen und erneut **Verbindung testen** tippen. Bei manchen NAS-Geräten (Samba) ist die Kennung möglicherweise nicht stabil; dort **Nur WLAN-Name** verwenden.
 
+Zahlenfelder im Profil akzeptieren nur Werte im erlaubten Bereich: **Papierkorb leeren nach … Tagen** 0 bis 3650 (0 = nie), **Auf Änderungen prüfen alle … Minuten** 15 bis 1440, **Schutzbremse** 1 bis 100 %. Ein ungültiger Wert wird unter dem Feld gemeldet; **Speichern** ist dann gesperrt. Bei **Filtern** wird ein Muster mit nicht geschlossener Klammer abgelehnt. Die Filterkarte zeigt eine Kurzfassung, auf der Profilkarte steht **Filter aktiv**.
+
 Neue Profile starten erst, wenn du einmal **Synchronisieren** tippst. Du kannst vorher **simulieren**, was passieren würde.
 
 ## 3. Im Alltag
@@ -52,6 +54,7 @@ Neue Profile starten erst, wenn du einmal **Synchronisieren** tippst. Du kannst 
 - **Prüfung nach dem Hochladen:** LeoSync liest die Datei auf dem PC zurück und vergleicht sie mit dem Original. Die Stufen reichen von *Aus* bis *Komplett*, Standard ist *Mittel*. Wer Fotos vom Handy entfernen lässt, prüft immer.
 - **Papierkorb:** Bei Ordner-Profilen landen gelöschte und überschriebene Dateien im Ordner `.LeoSync-Bin` (auf Handy und PC) und lassen sich über **Tools → Papierkorb** zurückholen: Profil wählen, Einträge markieren und **Wiederherstellen** tippen (oder **Endgültig löschen**). Nach 30 Tagen (einstellbar) wird er geleert. Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie.
 - **Schutzbremse:** Würden auf einmal viele Dateien gelöscht (Standard: mehr als 20 %) oder fehlt ein ganzer Ordner, hält LeoSync an und fragt dich zuerst. Du entscheidest dann zwischen **Nicht löschen** und **Trotzdem in den Papierkorb**; bis dahin ruht das Profil.
+- **Änderung bestätigen:** Änderst du bei einem bestehenden Ordner-Profil die Richtung oder schaltest **Löschungen übernehmen** ein, zeigt LeoSync vor dem Speichern, was sich ändert, und du bestätigst mit **Speichern** oder brichst mit **Abbrechen** ab. Bei einer Richtung nur in eine Richtung werden abweichende Dateien auf der Zielseite ersetzt; die ersetzte Version kann in den Papierkorb kommen.
 - **Konflikte:** Wurde dieselbe Datei auf Handy und PC geändert, entscheidest du, welche Version gilt. Die andere kommt in den Papierkorb.
 - **PC-Kennung:** Ist sie aktiviert, sendet LeoSync Benutzername und Passwort nur an einen erkannten PC. Bei einem unbekannten PC meldet sich die App nicht an und überspringt das Profil. Die Kennung ist nicht geheim: Sie schützt vor einem fremden Server in einem fremden Netz, nicht vor einem gezielten Angriff.
 

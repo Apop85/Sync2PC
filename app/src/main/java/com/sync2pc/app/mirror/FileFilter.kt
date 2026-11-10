@@ -31,6 +31,22 @@ class FileFilter(include: String, exclude: String) {
         fun split(s: String): List<String> =
             s.split('\n', ',', ';').map { it.trim() }.filter { it.isNotEmpty() }
 
+        /**
+         * Erstes Muster mit nicht geschlossener Klammer ("[abc", "x]", "{a"), sonst null (SYNC-20261110-115 P9). Klammern selbst
+         * werden wörtlich verglichen (Muster kennen nur * und ?); gepaarte wie "foto[1].jpg" bleiben gültig.
+         */
+        fun unbalancedPattern(s: String): String? = split(s).firstOrNull { pat ->
+            listOf('[' to ']', '{' to '}').any { (open, close) ->
+                var depth = 0
+                var bad = false
+                for (c in pat) {
+                    if (c == open) depth++
+                    else if (c == close) { depth--; if (depth < 0) bad = true }
+                }
+                bad || depth != 0
+            }
+        }
+
         private fun parse(s: String): List<Pair<Boolean, Regex>> =
             split(s).map { pat ->
                 val p = pat.lowercase().replace('\\', '/').trimStart('/')

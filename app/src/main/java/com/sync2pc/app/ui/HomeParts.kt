@@ -450,7 +450,7 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 (if (p.remoteSubfolder.isNotBlank()) "\\" + p.remoteSubfolder.trim('\\', '/') else "")
             if (p.type() == ProfileType.MIRROR) {
                 val localLabel = p.localTreeUri.takeIf { it.isNotBlank() }
-                    ?.let { com.sync2pc.app.mirror.LocalTree.label(android.net.Uri.parse(it)) } ?: str(R.string.home_profile_no_local)
+                    ?.let { com.sync2pc.app.mirror.LocalTree.label(ctx, android.net.Uri.parse(it)) } ?: str(R.string.home_profile_no_local)
                 // Handy- und PC-Ordner je auf einer eigenen Zeile (0.9.0), sonst bricht der Pfad mitten im "\\" um
                 Text("📁 $localLabel")
                 // Pfeil für den Screenreader als Wort (0.11.0): "Beidseitig: \\PC\Freigabe"
@@ -474,6 +474,8 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 plural(R.plurals.home_profile_mirror_synced, sc) +
                     if (openConflicts > 0) " · " + plural(R.plurals.home_profile_open_conflicts, openConflicts) else ""
             )
+            // P9: aktiver Filter ist sonst nicht erkennbar (0 Dateien synchronisiert ohne Erklärung)
+            if (p.includePatterns.isNotBlank() || p.excludePatterns.isNotBlank()) Hint(str(R.string.home_profile_filter_active))
             if (awaitingFirstStart && p.enabled) Text(
                 str(R.string.home_profile_awaiting),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,

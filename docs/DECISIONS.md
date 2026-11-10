@@ -18,6 +18,8 @@
 >
 > **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-205 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted; DEC-203 Implemented; DEC-204 und DEC-205 am 2026-11-09, Accepted); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
+> - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
+> - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
 >
 > **Hinweis:** Die frühere Notiz „Änderungen aus späteren Sessions sind nicht erfasst“ (Statistik-Symbol 0.9.0, Begriffe „Mobile/Share“, Roadmap ab 0.10.0) ist mit Session 5 erledigt.
 
@@ -25,12 +27,12 @@
 
 | Status | Anzahl |
 |---|---|
-| Accepted | 16 |
-| Implemented | 153 |
+| Accepted | 25 |
+| Implemented | 158 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
-| **Total** | **205** |
+| **Total** | **219** |
 
 ---
 
@@ -127,6 +129,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-021: Zweistufige Duplikaterkennung mit Teil-Prüfsumme
 - DEC-022: Duplikatsuche in allen Ordnern desselben Monats
 - DEC-092: Doppelte Profile blockieren, Überschneidungen warnen
+- DEC-219: Derselbe Handy-Ordner mit mehreren PC-Zielen ist zulässig
 - DEC-129: Stichprobe nach einem Ordnerwechsel
 - DEC-130: Handy-Dateien sicher ersetzen (`.s2pold`)
 - DEC-132: Gründlicher Inhaltsvergleich – bis 32 MB vollständig, darüber 32 Stichproben
@@ -225,6 +228,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-194: Lange Hinweise mit „Mehr dazu“
 - DEC-195: Geschätzte Restzeit ab einer Minute
 - DEC-196: Profil löschen mit „Rückgängig“
+- DEC-216: Bestätigung beim Ändern von Richtung oder «Löschungen übernehmen»
+- DEC-217: Zahlenfelder im Profilformular prüfen statt still korrigieren
+- DEC-218: Fotos-Ordner über «Downloads»: nur interner Speicher
 
 **11. Lokalisierung und Sprache**
 
@@ -281,6 +287,12 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-184: Builds und Emulator-Tests durch den Agent nur mit Erlaubnis pro Lauf
 - DEC-185: Testumgebung mit Emulator und Testfreigabe
 - DEC-188: Versionsplan 0.10.0 bis 0.13.0
+- DEC-210: Sechs Chat-Rollen und zentrale Koordinationsrichtlinie
+- DEC-211: Direkte Übergaben zwischen Fachrollen, Project Manager als Koordinator
+- DEC-212: Emulator für UX und QA ohne Einzelerlaubnis (ergänzt DEC-184)
+- DEC-213: Dokumentation nur durch Documentation, UX-Entscheidungen in §10
+- DEC-214: QA führt keine Builds aus
+- DEC-215: UX prüft selbstständig und führt eine Navigationsdatei
 
 **16. Verworfene und überholte Lösungsansätze**
 
@@ -531,6 +543,16 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-207 | Accepted | 10. Benutzeroberfläche und UX |
 | DEC-208 | Accepted | 9. Android und Hintergrundprozesse |
 | DEC-209 | Implemented | 5. Foto-Sortierung (Bildordner) |
+| DEC-210 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-211 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-212 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-213 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-214 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-215 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-216 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-217 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-218 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-219 | Implemented | 7. Datenintegrität und Duplikaterkennung |
 
 ---
 
@@ -1256,6 +1278,17 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Neue DB-Spalte (DEC-172). Höhere Stufen lesen zusätzlich die lokale Datei; „Komplett“ verdoppelt bei Videos etwa die Übertragungszeit. Fotos mit „Aus“ erscheinen nicht in „Speicher freigeben“ (Hinweis seit 0.9.5).
 - **Betroffene Komponenten:** `VerifyLevel` (data/Entities.kt), `Profile.verify()/mustVerify()`, `PartialHash.levelRegions/forLevel`, `SmbSession.levelHash`, `SyncEngine.transfer/localLevelHash`, `BackupCodec`, `ui/ProfileCards.kt`
 - **Abhängigkeiten:** DEC-024 (ersetzt), DEC-132, DEC-172
+
+### DEC-219: Derselbe Handy-Ordner mit mehreren PC-Zielen ist zulässig
+- **Status:** Implemented (Verhalten laut UX im Emulator 0.14.7 beobachtet; `ProfileOverlap.mirrorHit` von Documentation im Code gelesen)
+- **Datum:** 2026-11-10 (Entscheid Inhaber im UX-Chat, Quelle SYNC-20261110-121, -122, -123)
+- **Kategorie:** Datenintegrität
+- **Entscheidung:** Zwei Ordner-Profile dürfen denselben Handy-Ordner mit verschiedenen PC-Zielen verwenden. Die Überschneidungsprüfung (`ProfileOverlap`) meldet das bewusst nicht. Eine Meldung entsteht nur bei gleichem PC-Ziel (identisch bzw. gemeinsamer Ordner) oder wenn PC-Ordner oder Handy-Ordner ineinander verschachtelt sind.
+- **Begründung:** Entscheid des Inhabers; im Emulator wurden zwei Profile mit gleichem Handy-Ordner und den PC-Zielen `…\qaanders` und `…\qaanders2` ohne Meldung gespeichert (gewollt).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Dieselbe Quelle wird zu mehreren PC-Zielen gesichert; verschachtelte oder gleiche PC-Ziele warnen weiterhin (DEC-092). Keine Code- und keine Hilfeänderung nötig.
+- **Betroffene Komponenten:** `data/ProfileOverlap.kt` (`mirrorHit`)
+- **Abhängigkeiten:** DEC-092
 
 ---
 
@@ -2281,6 +2314,39 @@ Pausiert angezeigt.
 - **Betroffene Komponenten:** `ui/PendingProfileDelete.kt`, `ui/HomeScreen.kt`, `ui/ProfileScreen.kt`, `sync/SyncWorker.kt`, `ScreenScaffold(snackbarHost)`
 - **Abhängigkeiten:** DEC-174
 
+### DEC-216: Bestätigung beim Ändern von Richtung oder «Löschungen übernehmen»
+- **Status:** Implemented (Umsetzung in 0.14.7 laut Development, SYNC-20261110-115/-119; `data/ChangeConfirm.kt` und `ChangeConfirmTest` von Documentation geprüft, die UI-Verdrahtung nicht)
+- **Datum:** 2026-11-10 (Freigabe Inhaber im UX-Chat, Quelle SYNC-20261110-099, -116)
+- **Kategorie:** UI
+- **Entscheidung:** Beim Speichern eines bestehenden Ordner-Profils mit geänderter Richtung oder neu eingeschaltetem «Löschungen übernehmen» erscheint der Dialog «Änderung bestätigen» mit alter und neuer Einstellung und der Folge; Schaltflächen nur «Abbrechen» und «Speichern». Ausschalten von «Löschungen übernehmen», neue Profile und Fotos-Profile lösen ihn nicht aus. Bei Einweg-Richtungen beschreibt der Text, dass abweichende Dateien der Zielseite ersetzt werden und die ersetzte Version in den Papierkorb kommen kann (nach der Planung der `MirrorEngine`). Die Bestätigung erscheint je Änderung nur einmal, auch wenn das Speichern wegen anderer Dialoge neu angestossen wird.
+- **Begründung:** Diese Einstellungen verändern Löschverhalten und Synchronisierungsrichtung und wurden bisher ohne Rückfrage wirksam (am Bildschirm bestätigt); Schutz vor versehentlicher Änderung, Datenverlust hat höchste Priorität.
+- **Alternativen:** (1) dauerhafte Warnkarte im Formular (verlängert das Formular, bleibt unbeachtet) – verworfen; (2) Schaltfläche «Zuerst simulieren» im Dialog (die Simulation prüft nur den gespeicherten Stand, daher irreführend) – verworfen.
+- **Konsequenzen:** Neue Texte `profile_confirm_*` in beiden Sprachdateien. UI-Verdrahtung (Dialogfolge) ist nicht unit-getestet.
+- **Betroffene Komponenten:** `data/ChangeConfirm.kt`, `ui/ProfileScreen.kt`, `strings_profile.xml`
+- **Abhängigkeiten:** DEC-207 (Dialogmuster), SYNC-20261110-099, -115
+
+### DEC-217: Zahlenfelder im Profilformular prüfen statt still korrigieren
+- **Status:** Implemented (0.14.7 laut Development, SYNC-20261110-114/-115/-119; `data/NumberInput.kt` und `NumberInputTest` geprüft, die UI-Verdrahtung nicht)
+- **Datum:** 2026-11-10 (Quelle SYNC-20261110-114, -115, -119)
+- **Kategorie:** UI
+- **Entscheidung:** Die Zahlenfelder des Profilformulars speichern keine Zwischenwerte und korrigieren nicht mehr still. Ein leerer oder ausserhalb des Bereichs liegender Wert zeigt einen Fehlertext unter dem Feld und blockiert das Speichern. Bereiche: Papierkorb-Tage 0–3650, Prüfintervall 15–1440 Minuten, Schutzbremse 1–100 % (nicht 0). Alle Felder nutzen eine einheitliche Bereichsmeldung («Bitte eine Zahl von X bis Y eingeben») statt eigener Texte je Feld.
+- **Begründung:** Stilles Korrigieren verschleierte, welcher Wert tatsächlich gespeichert wird; bei der Schutzbremse wäre 0 gleichbedeutend mit «aus».
+- **Alternativen:** — (in den Quellen nicht genannt).
+- **Konsequenzen:** Neue Hilfsklasse `NumberInput`; Text `profile_number_range` in beiden Sprachdateien.
+- **Betroffene Komponenten:** `data/NumberInput.kt`, `ui/ProfileCards.kt`, `ui/ProfileScreen.kt`, `strings_profile.xml`
+- **Abhängigkeiten:** SYNC-20261110-114, -115
+
+### DEC-218: Fotos-Ordner über «Downloads»: nur interner Speicher
+- **Status:** Implemented (0.14.7 laut Development, SYNC-20261110-119; nicht im Code nachgeprüft)
+- **Datum:** 2026-11-10 (Quelle SYNC-20261110-119)
+- **Kategorie:** UI
+- **Entscheidung:** Bei der Ordnerauswahl über «Downloads» akzeptiert ein Fotos-Profil nur `raw:`-Kennungen (interner Speicher). `msf:`-Kennungen bleiben abgelehnt; der Ablehnungsgrund erscheint als Text. Angezeigt wird der gewählte Ordner statt des Anzeigenamens (z. B. «Download/12»).
+- **Begründung:** Von Development bei der Umsetzung festgelegt; eine Begründung nennt die Quelle nicht.
+- **Alternativen:** `msf:`-Kennungen ebenfalls zulassen (bleibt abgelehnt).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** `mirror/LocalTree.kt`, `ui/ProfileScreen.kt`
+- **Abhängigkeiten:** —
+
 ---
 
 ## 11. Lokalisierung und Sprache
@@ -2795,8 +2861,9 @@ Pausiert angezeigt.
 - **Begründung:** Der Inhaber erteilte die Erlaubnis jeweils ausdrücklich; beim automatischen Aufruf hing der Prozess (der Gradle-Daemon hält eine Pipe offen).
 - **Alternativen:** —
 - **Konsequenzen:** Existiert die APK der aktuellen Version schon, zählt der Builder hoch; für einen erneuten Build derselben Version muss die APK vorher gelöscht werden.
-- **Betroffene Komponenten:** `build.bat`, `tools/build.ps1`, `build.md`, `.claude/README.md`
-- **Abhängigkeiten:** DEC-011, DEC-013
+- **Betroffene Komponenten:** `build.bat`, `tools/build.ps1`, `build.md`, `CLAUDE.md` §1 *(früher `.claude/README.md`, entfällt)*
+- **Aktualisierung (2026-11-10):** Die Emulator-Regel ist teilweise ersetzt durch DEC-212: UX und QA bedienen den Emulator für ihre Prüfaufträge ohne Einzelerlaubnis; andere Rollen weiterhin nur mit Erlaubnis pro Lauf. Builds bleiben unverändert nur mit Erlaubnis pro Lauf.
+- **Abhängigkeiten:** DEC-011, DEC-013, DEC-212 (ergänzt)
 
 ### DEC-185: Testumgebung mit Emulator und Testfreigabe
 - **Status:** Accepted
@@ -2806,8 +2873,8 @@ Pausiert angezeigt.
 - **Begründung:** Erlaubnis des Inhabers; Zugangsdaten gibt nur er ein.
 - **Alternativen:** nur Screenshots des Inhabers.
 - **Konsequenzen:** Ohne Profile des Inhabers lassen sich Synchronisierung und Prüfstufen nicht testen. Neuinstallations-Fälle brauchen eine Deinstallation (Profile weg).
-- **Betroffene Komponenten:** `.claude/README.md` (Emulator, Testumgebung)
-- **Abhängigkeiten:** DEC-184
+- **Betroffene Komponenten:** `CLAUDE.md` §1 (Emulator, Testumgebung) *(früher `.claude/README.md`, entfällt)*
+- **Abhängigkeiten:** DEC-184, DEC-212
 
 ### DEC-188: Versionsplan 0.10.0 bis 0.13.0
 - **Status:** Accepted
@@ -2817,8 +2884,74 @@ Pausiert angezeigt.
 - **Begründung:** Neue Funktionen eröffnen jeweils eine neue Reihe (DEC-077); vom Inhaber jeweils bestätigt.
 - **Alternativen:** Play Store als 0.10.0 bzw. 0.11.0 (verschoben).
 - **Konsequenzen:** —
-- **Betroffene Komponenten:** `.claude/README.md` (Roadmap), Memory
+- **Betroffene Komponenten:** Roadmap (früher `.claude/README.md`, entfällt), Memory
 - **Abhängigkeiten:** DEC-165 (ersetzt), DEC-109, DEC-126, DEC-204
+
+### DEC-210: Sechs Chat-Rollen und zentrale Koordinationsrichtlinie
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** Sonstiges
+- **Entscheidung:** Es gibt sechs Chat-Rollen: Project Manager, Architecture, Development, QA & Testing, Documentation und UX-Specialist (neu). Die UX-Rolle hat den Masterprompt `.claude/roles/UX-Specialist.md`, den Posteingang `coordination/inbox/ux-designer.md` und den Skill `/rolle-ux`. Die Zusammenarbeit regelt die zentrale Koordinationsrichtlinie `coordination/README.md`. Bei Widerspruch gilt die Regelhierarchie `CLAUDE.md` → Richtlinie → Rollenprompt → Task-Datei.
+- **Begründung:** Beschluss des Inhabers im Refactoring des Rollen- und Koordinationssystems; eine einzige Rangfolge verhindert widersprüchliche Regeln in Rollenprompts und Task-Dateien.
+- **Alternativen:** —
+- **Konsequenzen:** Rollenprompts schaffen keine Ausnahmen von den Berechtigungen in `CLAUDE.md` §1; Task-Dateien heben keine Rollengrenzen auf. Der Vorzustand ist unter `coordination/archive/vor-refactoring-2026-11-10/` gesichert. Reines Regelwerk, keine neue App-Version.
+- **Betroffene Komponenten:** `CLAUDE.md`, `coordination/README.md`, `coordination/TASK-HANDOVER.md`, `.claude/roles/`, `.claude/skills/rolle-*`, `coordination/inbox/ux-designer.md`
+- **Abhängigkeiten:** DEC-211, DEC-212, DEC-213
+
+### DEC-211: Direkte Übergaben zwischen Fachrollen, Project Manager als Koordinator
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** Sonstiges
+- **Entscheidung:** Fachrollen geben sich gegenseitig direkt Aufträge. An den Project Manager geht etwas nur bei Koordinationsbedarf. Der Project Manager ist Ansprechpartner und Koordinator des Inhabers, aber keine Rückgabe-, Freigabe- oder Abschlussinstanz. Verantwortlich für einen Auftrag ist allein der Empfänger.
+- **Begründung:** Freigabe des Inhabers am 2026-11-10; die Umwege über den Project Manager kosteten Zeit und verteilten die Verantwortung unklar.
+- **Alternativen:** Die bisherige eingeschränkte Übergabematrix mit dem Project Manager als Rückmeldestelle (verworfen).
+- **Konsequenzen:** Rückfragen gehen direkt an die Rolle, die sie beantworten kann; Benutzerentscheidungen legen die Fachrollen dem Inhaber direkt vor. Details in `coordination/README.md` §2, §3 und §8.
+- **Betroffene Komponenten:** `coordination/README.md`, `CLAUDE.md` §10, Rollenprompts
+- **Abhängigkeiten:** DEC-210
+
+### DEC-212: Emulator für UX und QA ohne Einzelerlaubnis (ergänzt DEC-184)
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** Sonstiges
+- **Entscheidung:** UX und QA starten den Emulator selbstständig und bedienen ihn für ihre Prüfaufträge ohne Einzelerlaubnis. Sie dürfen in der App alle nötigen Einstellungen vornehmen und entfernen. Werden Profile bearbeitet oder entfernt, legen sie zuerst einen Export an und stellen den ursprünglichen Zustand nach den Tests per Import wieder her. Die Shares der Testprofile liegen unter `D:\testsync` und `X:\testsync`; dort dürfen beide Rollen alle nötigen Dateioperationen ausführen (erstellen, ändern, verschieben, löschen usw.). Andere Rollen brauchen weiterhin die Erlaubnis pro Lauf; Builds bleiben unverändert nur mit Erlaubnis pro Lauf. Profile mit Zugangsdaten richtet weiterhin der Inhaber ein.
+- **Begründung:** Freigabe des Inhabers am 2026-11-10 (erste Fassung) und Erweiterung am selben Tag; UX- und QA-Prüfaufträge sind ohne selbstständigen Emulator und ohne Einstellungs- und Dateizugriff nicht ausführbar. Export vor jeder Profiländerung und Import danach schützen die vorhandenen Profile des Inhabers.
+- **Alternativen:** Erlaubnis pro Lauf auch für UX und QA (verworfen).
+- **Konsequenzen:** DEC-184 gilt für den Emulator nur noch für die übrigen Rollen (teilweise ersetzt); die Regel zu Builds bleibt. Die Testordner in DEC-185 (Download/Testsync ⇄ `\\192.168.3.3\Fotos\testsync`) sind für UX und QA durch `D:\testsync` und `X:\testsync` ersetzt.
+- **Betroffene Komponenten:** `CLAUDE.md` §1 (Emulator, Schreibrechte), `.claude/roles/UX-Specialist.md`, `.claude/roles/QA-Specialist.md`
+- **Abhängigkeiten:** DEC-184 (ergänzt), DEC-185 (ergänzt), DEC-210
+
+### DEC-213: Dokumentation nur durch Documentation, UX-Entscheidungen in §10
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** Sonstiges
+- **Entscheidung:** Doku-Dateien ändert nur die Rolle Documentation. Development liefert die technischen Angaben und den PATCHNOTES-Auftrag, ändert aber keine Doku-Dateien. Freigegebene UX-Entscheidungen stehen in `docs/DECISIONS.md` §10; es gibt keine eigene Designsystem-Datei.
+- **Begründung:** Freigabe des Inhabers am 2026-11-10; eine Stelle für die Doku hält sie konsistent und redundanzfrei.
+- **Alternativen:** `docs/DESIGN-SYSTEM.md`, von UX gepflegt (verworfen); kleine Doku-Änderungen durch Development (verworfen).
+- **Konsequenzen:** Doku-Änderungen laufen als Auftrag an Documentation mit technischem Kontext (`CLAUDE.md` §11).
+- **Betroffene Komponenten:** `CLAUDE.md` §1 und §11, `.claude/skills/update-docs`, `.claude/roles/DOCUMENTATION-Specialist.md`
+- **Abhängigkeiten:** DEC-210
+
+### DEC-214: QA führt keine Builds aus
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** Sonstiges
+- **Entscheidung:** Die Rolle QA & Testing führt keine Builds aus. Der Widerspruch im bisherigen QA-Prompt ist behoben. Gezielte Tests bleiben erlaubt und gelten nicht als Bauen.
+- **Begründung:** Builds machen nur der Inhaber oder die Rollen mit seiner ausdrücklichen Erlaubnis pro Lauf (DEC-184).
+- **Alternativen:** —
+- **Konsequenzen:** QA prüft mit vorhandenen Builds bzw. Tests und im Emulator (DEC-212).
+- **Betroffene Komponenten:** `.claude/roles/QA-Specialist.md`
+- **Abhängigkeiten:** DEC-184, DEC-212
+
+### DEC-215: UX prüft selbstständig und führt eine Navigationsdatei
+- **Status:** Accepted
+- **Datum:** 2026-11-10
+- **Kategorie:** UI
+- **Entscheidung:** Der UX-Specialist prüft alles, was er selbst im Emulator prüfen kann, selbstständig und ohne Rückfrage. Er pflegt `.claude/ux/navigation.md`: ein Abschnitt je Zielfenster mit der Wegbeschreibung ab der Startseite. Die Datei wird nie vollständig eingelesen; bei Orientierungsbedarf sucht er gezielt nach dem Zielfenster und liest nur dessen Abschnitt.
+- **Begründung:** Anweisung des Inhabers am 2026-11-10; spart Rückfragen und vermeidet, dass jede Prüfung den Weg durch die App neu suchen muss.
+- **Alternativen:** Vollständiges Einlesen der Datei bei jeder Prüfung (verworfen, Tokenaufwand).
+- **Konsequenzen:** UX darf im Verzeichnis `.claude/ux/` schreiben (`CLAUDE.md` §1). Fehlt ein Weg, ergänzt UX die Datei eigenständig, sobald feststeht, wie man zum Zielfenster navigiert. Ändert sich ein Weg, passt UX nur den betroffenen Abschnitt an.
+- **Betroffene Komponenten:** `.claude/ux/navigation.md`, `CLAUDE.md` §1, `.claude/roles/UX-Specialist.md`
+- **Abhängigkeiten:** DEC-212
 
 ---
 

@@ -54,6 +54,27 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             }
         } catch (e: Exception) { uri.toString() }
 
+        /**
+         * Wie [label], löst aber Ordner des Download-Anbieters mit Nummern-Kennung ("msf:12") über den Anzeigenamen auf
+         * (SYNC-20261110-114 P3: sonst "Download/12" statt "Download/Testsync"). Fällt bei Fehlern auf [label] zurück.
+         */
+        fun label(context: Context, uri: Uri): String {
+            try {
+                if (uri.authority == "com.android.providers.downloads.documents") {
+                    val id = DocumentsContract.getTreeDocumentId(uri)
+                    if (!id.startsWith("raw:") && !id.startsWith("/storage/")) {
+                        val doc = DocumentsContract.buildDocumentUriUsingTree(uri, id)
+                        context.contentResolver.query(
+                            doc, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null,
+                        )?.use { c ->
+                            if (c.moveToFirst()) c.getString(0)?.takeIf { it.isNotBlank() }?.let { return "Download/$it" }
+                        }
+                    }
+                }
+            } catch (e: Exception) { /* Anzeige-Fallback unten */ }
+            return label(uri)
+        }
+
         /** "/storage/emulated/0/Download/Test" -> "Download/Test", "/storage/1234-ABCD/DCIM" -> "SD-Karte: DCIM" */
         fun rawPathLabel(path: String): String {
             val internal = Regex("""^/storage/emulated/\d+/?""")

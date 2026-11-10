@@ -1,26 +1,36 @@
 # CLAUDE.md – LeoSync (Projektordner: Sync2PC)
 
-Android-App (Kotlin, Room, SMB) zur Synchronisierung Handy ⇄ PC. Gilt für alle fünf Chat-Rollen (siehe 9). Sprache: Doku/Kommentare Deutsch, Schweizer Schreibweise (kein ß).
+Android-App (Kotlin, Room, SMB) zur Synchronisierung Handy ⇄ PC. Gilt für alle sechs Chat-Rollen (siehe 9). Sprache: Doku/Kommentare Deutsch, Schweizer Schreibweise (kein ß).
 
-## 0. Rollen
-Du hast eine der fünf möglichen Rollen (Projektmanager ist seit 2026-11-09 Teil des Systems). Dein master Prompt für deine Rolle findest du hier:
-Architecture & Complex Issues: .claude\roles\ARCHITECTURE-Specialist.md
-Documentation: .claude\roles\DOCUMENTATION-Specialist.md
-QA & Testing: .claude\roles\QA-Specialist.md
-Development: .claude\roles\DEVELOPMENT-Specialist.md
-Projektmanager: .claude\roles\Project-manager.md
-Lese den für dich bestimmten Masterprompt einmalig ein. **Nach Chatstart oder `/clear`** nennt der Benutzer die Rolle oder ruft den Rollen-Skill auf (`/rolle-pm`, `/rolle-development`, `/rolle-architecture`, `/rolle-qa`, `/rolle-documentation`): dann Masterprompt und eigenen Posteingang (siehe 10) lesen. Ohne Rollenangabe zuerst nach der Rolle fragen.
+## 0. Rollen und Regelhierarchie
+Jeder Chat hat genau eine der sechs Rollen (siehe 9). **Nach Chatstart oder `/clear`** ruft der Benutzer den Rollen-Skill auf (`/rolle-pm`, `/rolle-architecture`, `/rolle-development`, `/rolle-qa`, `/rolle-documentation`, `/rolle-ux`) oder nennt die Rolle: dann einmalig den Masterprompt (Tabelle in 9) und den eigenen Posteingang lesen (`coordination/README.md` §4). Ohne Rollenangabe zuerst nach der Rolle fragen.
+
+**Regelhierarchie:** (1) diese `CLAUDE.md` → (2) `coordination/README.md` (Koordinationsrichtlinie) → (3) Rollenprompt → (4) Task-Datei/Übergabe. Bei Widerspruch gilt die höhere Stufe; Rollenprompts schaffen keine Ausnahmen von den Berechtigungen in 1, Task-Dateien heben keine Rollengrenzen auf. Nicht lösbare Widersprüche dem Benutzer vorlegen.
 
 ## 1. Verbindliche Inhaberregeln
-Diese Regeln sind hier abschliessend festgehalten (`.claude/README.md` entfällt). Sie gelten verbindlich:
-- **Nichts bauen** (`build.bat`, APK): macht der Inhaber, ausser er erlaubt es ausdrücklich.
-- Jede Code-Änderung: PATCH in `version.properties` erhöhen. Neue Funktion = nächste Minor-Reihe.
+Diese Regeln sind hier abschliessend festgehalten (`.claude/README.md` gibt es nicht mehr). Sie gelten verbindlich für alle Rollen:
+- **Nichts bauen** (`build.bat`, `assemble*`, APK/Bundle): macht der Inhaber, ausser er erlaubt es ausdrücklich pro Lauf (DEC-184). Gezielte Tests (`gradlew.bat testDebugUnitTest …`, Skill `run-targeted-tests`) sind kein Bauen.
+- Jede Code-Änderung: PATCH in `version.properties` erhöhen (durch die Rolle, die den Code ändert). Neue Funktion = nächste Minor-Reihe.
 - Sichtbare Texte nur in beide Sprachdateien (`res/values/strings_*.xml` EN, `res/values-de/` DE), nie fest im Code; danach `tools/make-translations.ps1`. DE: „Handy“, „Freigabe“, „Synchronisierung“; EN: „Mobile“, „Share“. Nie Whitelist/Blacklist.
 - Jede Antwort, die eine Änderung abschliesst, endet mit der Versionsnummer in eigener Zeile (z. B. `Version 0.11.0`).
 - **Kodierung:** Alle Textdateien sind UTF-8 ohne BOM. In PowerShell 5.1 nie `Set-Content`, `Out-File` oder `Add-Content` ohne `-Encoding` verwenden, und auch `-Encoding utf8` schreibt dort ein BOM. Stattdessen `[IO.File]::WriteAllText(pfad, text, [Text.UTF8Encoding]::new($false))` nutzen. Beim Lesen immer `Get-Content -Encoding UTF8` angeben, sonst entstehen kaputte Umlaute.
 - Geheimnisse (Keystore) nie ins Repo; `.gitignore` aktuell halten; vor dem Anlegen einer Datei prüfen, ob sie existiert.
-- Jeder Chat führt nur Aufgaben aus, die zu seiner Rolle passen; andere Aufgaben werden an den jeweiligen Spezialisten delegiert (siehe 10).
-- Dokumentationen (inkl. `PATCHNOTES.md`) übernimmt der Dokumentationsspezialist; alle Dokumentationsaufgaben werden an ihn übergeben (siehe 11).
+- **Nie selbst committen oder pushen** (alle Rollen).
+- Jeder Chat führt nur Aufgaben seiner Rolle aus und übernimmt keine Berechtigungen anderer Rollen; Fremdes wird direkt an die zuständige Rolle übergeben (siehe 10).
+- **Benutzerfreigabe** (nur der Benutzer, keine Rolle ersetzt sie) vor: grösseren Architektur- und wesentlichen Designänderungen, Änderungen an sicherheits- oder datenverlustkritischen Abläufen, destruktiven Aktionen ausserhalb der Testdaten, Builds und Änderungen am Regelwerk (diese Datei, `coordination/README.md`, `.claude/roles|skills|agents/`). Ein Vorschlag ist keine Freigabe. Details: `coordination/README.md` §8.
+- **Emulator:** UX und QA starten ihn selbstständig und bedienen ihn für ihre Prüfaufträge ohne Einzelerlaubnis; sie dürfen in der App alle dafür nötigen Einstellungen vornehmen und entfernen (DEC-212). Werden Profile bearbeitet oder entfernt, legen sie **zuerst einen Export** an und stellen den ursprünglichen Zustand nach den Tests per Import wieder her. Dateioperationen (erstellen, ändern, verschieben, löschen usw.) sind nur in den Testordnern `D:\testsync` und `X:\testsync` erlaubt, wo die Shares der Testprofile liegen. Andere Rollen: Emulator nur mit Erlaubnis pro Lauf (DEC-184). Profile mit Zugangsdaten richtet der Inhaber ein; Builds nur mit Erlaubnis pro Lauf.
+
+**Schreibrechte je Rolle** (Lesen ist allen erlaubt; `coordination/` bearbeiten alle Rollen nach `coordination/README.md`):
+| Rolle | Darf bearbeiten | Darf nicht bearbeiten |
+|---|---|---|
+| Project Manager | nur `coordination/` | alle Projektdateien |
+| Architecture | Code nur auf ausdrücklichen Umsetzungsauftrag des Benutzers; sonst nichts ausser `coordination/` | Dokumentation |
+| Development | Code, Tests, Ressourcen (`app/`), `version.properties`, `tools/`, Gradle-Dateien, `.claude/translations.md` (nur per Skript) | Dokumentation |
+| QA & Testing | Screenshots unter `.claude/AppScreenshots/`; Dateien in den Testordnern `D:\testsync`, `X:\testsync` | Produktions-, Test- und Doku-Dateien |
+| Documentation | `docs/` (ohne Dateien mit Unterstrich), `docs/hilfe/`, `README.md`, `PATCHNOTES.md`, `build.md`, `PRIVACY_*.md` | Code, Tests, Ressourcen |
+| UX-Specialist | Screenshots und Designvorschauen unter `.claude/AppScreenshots/`; alle Dateien unter `.claude/ux/` (u. a. `navigation.md`); Dateien in den Testordnern `D:\testsync`, `X:\testsync` | Code, Layouts/Compose, Ressourcen inkl. Texte, Gradle, Dokumentation |
+
+Regelwerk-Dateien (`CLAUDE.md`, `coordination/README.md`, `.claude/roles|skills|agents/`) ändert nur die Rolle, der der Benutzer dies ausdrücklich aufträgt.
 
 ## 2. Architektur
 - Bestehende Entscheidungen (`docs/DECISIONS.md`) einhalten; vorhandene Komponenten wiederverwenden.
@@ -36,14 +46,14 @@ Diese Regeln sind hier abschliessend festgehalten (`.claude/README.md` entfällt
 ## 4. Dokumentation (zentrale Wissensbasis, gezielt laden)
 | Datei | Inhalt |
 |---|---|
-| `docs/DECISIONS.md` | Entscheidungen und Begründungen |
+| `docs/DECISIONS.md` | Entscheidungen und Begründungen (§10: Benutzeroberfläche und UX) |
 | `docs/ARCHITECTURE.md` | Gesamtarchitektur, Komponenten |
 | `docs/SYNC-ENGINE.md` | Synchronisationslogik |
 | `docs/DATA-MODEL.md` | Datenmodell, Persistierung |
 | `docs/TESTING.md` | Teststrategie, Qualitätssicherung |
 | `PATCHNOTES.md` (Wurzel) | Änderungsprotokoll – **nicht standardmässig laden**, nur ergänzen |
 
-Massgeblich sind die Namen mit **Bindestrich**; die Dateien mit Unterstrich (`SYNC_ENGINE.md`, `DATA_MODEL.md`) und `docs/NEW_*.md`, `docs/*_CHAT.md` sind Entwürfe/Einrichtungsvorlagen und werden nicht geladen. Redundanz vermeiden, nur betroffene Doku aktualisieren. Weitere Dateien: `build.md` (Build), `.claude/translations.md` (generiert).
+Massgeblich sind die Namen mit **Bindestrich**; Dateien mit Unterstrich in `docs/` (z. B. `DEFINITION_*.md`) sind Einrichtungsvorlagen und werden weder geladen noch geändert. Redundanz vermeiden, nur betroffene Doku aktualisieren. Weitere Dateien: `build.md` (Build), `docs/hilfe/` (Benutzerhilfe), `.claude/translations.md` (generiert), `.claude/AppScreenshots/` (App-Screenshots).
 
 ## 5. Agents (`.claude/agents/`, alle Sonnet)
 | Agent | Zuständigkeit | Schreibt? |
@@ -53,7 +63,7 @@ Massgeblich sind die Namen mit **Bindestrich**; die Dateien mit Unterstrich (`SY
 | `code-reviewer` | Unabhängiges Review: Architektur, Fehler, Regressionen, Seiteneffekte | nein |
 | `testing-qa-specialist` | Unabhängige QA: Tests ausführen, Abdeckung, Grenzfälle, Datenintegrität | nein |
 
-Regeln: Hauptagent bleibt für die Gesamtaufgabe verantwortlich und prüft Agent-Ergebnisse kritisch. Keine Agents für triviale Änderungen, keine redundanten Analysen, keine parallelen Schreibzugriffe auf dieselben Dateien. Kritische Sync-Änderung → Sync-Spezialist; DB-Änderung → Database-Spezialist. Review und QA sind verschieden; bei besonders kritischen Änderungen beide, unabhängig voneinander. Kontext knapp mitgeben.
+Regeln: Agents sind Werkzeuge einer Chat-Rolle, keine Rollen, und haben höchstens deren Schreibrechte (schreibende Agents nur dort, wo die Rolle Code ändern darf; sonst nur Analyseaufträge). Hauptagent bleibt für die Gesamtaufgabe verantwortlich und prüft Agent-Ergebnisse kritisch. Keine Agents für triviale Änderungen, keine redundanten Analysen, keine parallelen Schreibzugriffe auf dieselben Dateien. Kritische Sync-Änderung → Sync-Spezialist; DB-Änderung → Database-Spezialist. Review und QA sind verschieden; bei besonders kritischen Änderungen beide, unabhängig voneinander. Kontext knapp mitgeben.
 
 ## 6. Skills (`.claude/skills/`, Ablauf steht im jeweiligen `SKILL.md`)
 | Zweck | Skill |
@@ -63,47 +73,43 @@ Regeln: Hauptagent bleibt für die Gesamtaufgabe verantwortlich und prüft Agent
 | Codeprüfung | `review-changes` (nutzt `code-reviewer`) |
 | Funktionale QA | `qa-check` (nutzt `testing-qa-specialist`) |
 | Gezielte Tests | `run-targeted-tests` (nach `docs/TESTING.md`) |
-| Dokumentation | `update-docs` |
+| Dokumentation (nur Documentation) | `update-docs` |
 
-Keiner dieser Skills ist auf manuellen Aufruf beschränkt (kein `disable-model-invocation`); einsetzen, wenn der Ablauf sinnvoll ist. Skill-Inhalte nicht hier duplizieren.
+Keiner dieser Skills ist auf manuellen Aufruf beschränkt (kein `disable-model-invocation`); einsetzen, wenn der Ablauf sinnvoll ist und die Rolle die nötigen Rechte hat. Skill-Inhalte nicht hier duplizieren.
 
-**Rollen-Skills** (nur manuell durch den Benutzer, `disable-model-invocation`): `rolle-pm`, `rolle-development`, `rolle-architecture`, `rolle-qa`, `rolle-documentation`. Sie laden nach Chatstart/`/clear` Masterprompt und Posteingang der Rolle (siehe 0 und 10).
+**Rollen-Skills** (nur manuell durch den Benutzer, `disable-model-invocation`): `rolle-pm`, `rolle-architecture`, `rolle-development`, `rolle-qa`, `rolle-documentation`, `rolle-ux`. Sie laden nach Chatstart/`/clear` Masterprompt und Posteingang der Rolle.
 
-## 7. Abläufe
+## 7. Abläufe (Development)
 - **Klein**: Dateien lesen → ändern → gezielte Tests → kurzer Bericht. Keine Agents.
-- **Normal**: `implement-feature` → Komponenten prüfen → Doku gezielt laden → bei Bedarf Spezialagent → implementieren → Tests → Doku.
+- **Normal**: `implement-feature` → Komponenten prüfen → Doku gezielt laden → bei Bedarf Spezialagent → implementieren → Tests → Doku-Übergabe.
 - **Fehler**: `investigate-bug` → Ursache nachweisen → beheben → Regressionstests → Ergebnis dokumentieren.
-- **Kritisch** (3-Wege-Abgleich, Konflikte, Löschen/Wiederherstellen, Migrationen, Nebenläufigkeit, möglicher Datenverlust): Risiken analysieren → Doku laden → Spezialagent → implementieren → gezielte Tests → `review-changes` → `qa-check` → Restrisiken dokumentieren → Doku aktualisieren. Nur tatsächlich nötige Schritte.
+- **Kritisch** (3-Wege-Abgleich, Konflikte, Löschen/Wiederherstellen, Migrationen, Nebenläufigkeit, möglicher Datenverlust): Risiken analysieren → Doku laden → Spezialagent → implementieren → gezielte Tests → `review-changes` → `qa-check` → Restrisiken dokumentieren → Doku-Übergabe. Nur tatsächlich nötige Schritte.
 - Ein erfolgreicher Build ersetzt weder Review noch QA.
 
 ## 8. Token, Modelle, Git
-- Nur relevante Quelldateien und Doku laden; gezielte Tests statt Volltests; keine Chatverläufe rekonstruieren.
+- Nur relevante Quelldateien und Doku laden; gezielte Tests statt Volltests; keine Chatverläufe rekonstruieren; vorhandene Analyseergebnisse (Task-Dateien) wiederverwenden; keine vollständigen Projektanalysen bei kleinen Aufgaben.
 - Sonnet als Standard; Opus nur für aussergewöhnlich komplexe Architektur-/Analyseaufgaben. Qualität und Datensicherheit gehen vor.
-- **Git**: Der Ordner ist derzeit **kein Git-Repository** (Stand 2026-11-08, `.git` fehlt) – ohne Repository gilt: vor Änderungen an gemeinsam genutzten Dateien den aktuellen Dateistand lesen, nichts überschreiben, was ein anderer Chat geändert hat. Mit Repository: Status vor grösseren Änderungen prüfen, fremde Änderungen schützen. **Nie selbst committen oder pushen.** Gemeinsame Dateien nicht gleichzeitig bearbeiten.
+- **Git**: Der Ordner ist derzeit **kein Git-Repository** (`.git` fehlt) – dann vor Änderungen an gemeinsam genutzten Dateien den aktuellen Dateistand lesen und nichts überschreiben, was ein anderer Chat geändert hat. Mit Repository: Status vor grösseren Änderungen prüfen, fremde Änderungen schützen. Gemeinsame Dateien nicht gleichzeitig bearbeiten.
 
-## 9. Fünf Chat-Rollen (dieselbe CLAUDE.md, dieselben Agents/Skills)
-| Rolle | Modell / Effort | Auftrag |
-|---|---|---|
-| Project Manager | Sonnet | Anforderungen mit dem Benutzer klären, Aufträge formulieren und verteilen, Duplikate prüfen, offene/blockierte Aufgaben überwachen; **ändert keine Projektdateien** (`coordination/` ausgenommen) |
-| Development | Sonnet / Medium | Entwicklung, Fehlerbehebung, Integration, gezielte Tests, Doku-Übergaben |
-| Architecture & Complex Issues | Opus / High | Analysen, Architekturentscheidungen, Alternativen, technische Vorgaben; grössere Implementierung erst nach Freigabe des Benutzers |
-| QA & Testing | Sonnet / Medium | Unabhängige Prüfung, Abdeckung, Regressionen, Risikobewertung; **ändert keine Produktions- oder Testdateien** |
-| Documentation | Sonnet / Low | Pflege der Doku und Konsistenz; Aussagen müssen zur Implementierung passen, nichts erfinden |
+## 9. Sechs Chat-Rollen (dieselbe CLAUDE.md, dieselben Agents/Skills)
+| Rolle | Masterprompt (`.claude/roles/`) | Modell / Effort | Auftrag |
+|---|---|---|---|
+| Project Manager | `Project-manager.md` | Sonnet | Ansprechpartner und Koordinator des Benutzers: Anforderungen klären, zerlegen, priorisieren, an die nötigen Rollen verteilen, Freigaben einholen; keine Zwischenstation für Fachübergaben |
+| Architecture & Complex Issues | `ARCHITECTURE-Specialist.md` | Opus / High | Analysen, Architekturentscheidungen, Alternativen, technische Vorgaben und Risiken |
+| Development | `DEVELOPMENT-Specialist.md` | Sonnet / Medium | Implementierung, Fehlerbehebung, Integration, gezielte Tests, Doku-Übergaben |
+| QA & Testing | `QA-Specialist.md` | Sonnet / Medium | Unabhängige funktionale Prüfung, Abdeckung, Regressionen, Datenintegrität, Risikobewertung |
+| Documentation | `DOCUMENTATION-Specialist.md` | Sonnet / Low | Zentrale Dokumentation und ihre Konsistenz; nichts erfinden |
+| UX-Specialist | `UX-Specialist.md` | Sonnet / Medium | Benutzerfreundlichkeit, UI-Design, Navigation, Designsystem, Designvorschläge, UX-Review im Emulator |
 
-Modell und Effort stellt der Benutzer pro Chat ein; die Rolle nennt der Benutzer zu Beginn des Chats.
+Modell und Effort stellt der Benutzer pro Chat ein.
 
-## 10. Koordination: `coordination/` (Anleitung: `coordination/README.md`)
-Verbindliches, dezentrales Übergabesystem (keine automatische Kommunikation, keine technische Sperre; `TASK-HANDOVER.md` ist nur noch eine Verweisdatei). Bedienung, Statuswechsel, Vorlage, Beispiele und Wiederherstellung stehen **in der README**, nicht hier.
-- **Struktur:** `TASK-INDEX.md` (aktive Aufträge, nur Metadaten) · `inbox/<rolle>.md` (Posteingang je Rolle: `project-manager`, `development`, `architecture`, `qa-testing`, `documentation`; nur Verweiszeilen) · `tasks/{OPEN,IN_PROGRESS,BLOCKED,COMPLETED}/<ID>.md` (ein Auftrag je Datei, einzige Quelle für Inhalt und Status) · `archive/` (Altbestand, nicht lesen).
-- **Lesen:** Jeder Chat liest bei Start/`/clear` und vor Übernahmen **nur seinen Posteingang** und nur die dort verwiesenen Task-Dateien. Index nur bei Übergabe/Statusprüfung. `tasks/COMPLETED` und `archive/` nie standardmässig.
-- **Matrix (nur diese Richtungen):** Project Manager → Development, Architecture, QA, Documentation · Development → Project Manager, Architecture, QA, Documentation · Architecture → Project Manager, Development, Documentation · QA → Project Manager, Development, Documentation · Documentation → Project Manager, Development, Architecture. Nur Aufträge bearbeiten, die an die eigene Rolle adressiert sind.
-- **Neuer Auftrag:** Index und `tasks/OPEN|IN_PROGRESS|BLOCKED` auf Dubletten prüfen → Matrix prüfen → ID `SYNC-YYYYMMDD-NNN` (NNN global fortlaufend, Datei zuerst ohne Überschreiben anlegen) → Task-Datei → Index → Posteingang des Empfängers → Status `OPEN` → im Chat mitteilen. Keine unnötigen Übergaben; kleine Aufgaben der eigenen Rolle ohne Übergabe erledigen; interne Agents ersetzen keine Übergabe.
-- **Status:** `OPEN` → `IN_PROGRESS` erst nach ausdrücklicher Übernahmebestätigung des Empfängers (in der Task-Datei) · fehlende Information → `BLOCKED` mit Frage · `COMPLETED` erst nach dokumentierter Arbeit, Tests und Restrisiken (Datei nach `tasks/COMPLETED/`, Eintrag aus Index und Posteingang entfernen) · `CANCELLED` mit Begründung. Reihenfolge bei jeder Änderung: Task-Datei (Status-Zeile, dann Ordner) → Index → Posteingang. Bei Abweichung gilt die Status-Zeile der Task-Datei.
-- **Parallel/Git:** Vor Übernahme Git-/Dateistand prüfen; vor jeder Änderung Task-Datei bzw. gemeinsame Datei erneut lesen und nur gezielt ändern; keine fremden Änderungen überschreiben; bei Konflikt stoppen und beim Benutzer abstimmen; nie committen/pushen. Task-Dateien: keine Chatverläufe, keine Quellcodekopien.
-- Der Project Manager darf Dateien unter `coordination/` bearbeiten (sie sind keine Projektdateien); alle übrigen Rollen pflegen sie gemäss den obigen Regeln. Der übergebende Chat bleibt für Integration und Bewertung verantwortlich.
+## 10. Koordination: `coordination/` (Richtlinie: `coordination/README.md`)
+Verbindliches, dezentrales Übergabesystem: `TASK-INDEX.md` (aktive Aufträge) · `inbox/<rolle>.md` (`project-manager`, `architecture`, `development`, `qa-testing`, `documentation`, `ux-designer`) · `tasks/{OPEN,IN_PROGRESS,BLOCKED,COMPLETED}/<ID>.md` (einzige Quelle für Inhalt und Status). Matrix, Status, Übergaben, Freigaben, parallele Sitzungen und Konflikte regelt **nur** die Richtlinie. Grundsätze:
+- Bei Start/`/clear` und vor Übernahmen nur den eigenen Posteingang und die dort verwiesenen Task-Dateien lesen; `tasks/COMPLETED/` und `archive/` nie standardmässig.
+- Fachrollen übergeben Ergebnisse **direkt** an die Rolle des nächsten Schritts und legen Benutzerentscheidungen dem Benutzer direkt vor. Der Project Manager ist keine Rückgabe-, Freigabe- oder Abschlussinstanz.
 
 ## 11. Doku-Übergaben
-Entscheidung → `DECISIONS.md` · Architektur → `ARCHITECTURE.md` · Sync → `SYNC-ENGINE.md` · Datenmodell → `DATA-MODEL.md` · Tests → `TESTING.md` · Release → `PATCHNOTES.md`. Selbst ändern oder an Documentation übergeben (mit technischem Kontext und betroffenen Dateien).
+Entscheidung → `DECISIONS.md` · Architektur → `ARCHITECTURE.md` · Sync → `SYNC-ENGINE.md` · Datenmodell → `DATA-MODEL.md` · Tests → `TESTING.md` · Release → `PATCHNOTES.md` · sichtbares Verhalten → `docs/hilfe/`. Die Änderung übernimmt Documentation: die auslösende Rolle übergibt per Auftrag mit technischem Kontext, betroffenen Dateien und ggf. Version.
 
 ## 12. Abschlussbericht (kompakt)
-Änderungen · betroffene Dateien · Tests und Ergebnisse · Doku-Änderungen · Übergaben · offene Punkte/Risiken · Versionsnummer.
+Änderungen · betroffene Dateien · Tests und Ergebnisse (nicht ausgeführte kennzeichnen) · Übergaben · offene Punkte/Risiken · Versionsnummer.

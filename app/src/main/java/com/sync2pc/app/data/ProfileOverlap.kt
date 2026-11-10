@@ -20,10 +20,14 @@ object ProfileOverlap {
         val other: Profile, val kind: Kind, val sharedFolders: List<String>,
         /** Ordner-Profile (0.4.1): ein Ordner liegt innerhalb des Ordners des anderen Profils */
         val nested: Boolean = false,
+        /** Welche Seite überschneidet sich (nur [nested]): PC-Ordner, Handy-Ordner oder beide (P11) */
+        val remoteSide: Boolean = true, val localSide: Boolean = true,
     ) {
         fun message(): String = when {
             kind == Kind.BLOCKED -> str(R.string.overlap_blocked_layout, other.name, other.layout().label)
             kind == Kind.IDENTICAL -> str(R.string.overlap_identical, other.name)
+            nested && remoteSide && !localSide -> str(R.string.overlap_nested_remote, other.name)
+            nested && localSide && !remoteSide -> str(R.string.overlap_nested_local, other.name)
             nested -> str(R.string.overlap_nested, other.name)
             sharedFolders.isNotEmpty() -> str(R.string.overlap_shared_folders, other.name, sharedFolders.joinToString(", "))
             else -> str(R.string.overlap_same_target, other.name)
@@ -75,7 +79,7 @@ object ProfileOverlap {
         // Gleicher PC-Ordner mit anderem Handy-Ordner zählt auch: beide Profile sähen die Dateien des anderen
         val remoteNested = ot.isNotEmpty() && (ot == t || inside(t, ot, '\\') || inside(ot, t, '\\'))
         val localNested = lp != null && lo != null && lp != lo && (inside(lp, lo, '/') || inside(lo, lp, '/'))
-        return if (remoteNested || localNested) Hit(o, Kind.PARTIAL, emptyList(), nested = true) else null
+        return if (remoteNested || localNested) Hit(o, Kind.PARTIAL, emptyList(), nested = true, remoteSide = remoteNested, localSide = localNested) else null
     }
 
     /** Liegt [child] innerhalb von [parent]? (Pfade in Kleinbuchstaben, ohne abschliessenden Trenner) */
