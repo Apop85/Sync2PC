@@ -9,7 +9,11 @@ object SkipFollowUp {
     const val DELAY_MINUTES = 5L
     const val MIN_INTERVAL_MS = 3_600_000L
 
-    /** Darf jetzt ein Folgelauf geplant werden? [lastAt] = Zeitpunkt der letzten Planung (0 = nie) */
-    fun mayPlan(deferred: Int, now: Long, lastAt: Long): Boolean =
-        deferred > 0 && (lastAt <= 0 || now < lastAt || now - lastAt >= MIN_INTERVAL_MS)
+    /**
+     * Darf jetzt ein Folgelauf geplant werden? [lastAt] = Zeitpunkt der letzten Planung (0 = nie).
+     * [changedDuringRun] (SYNC-20261111-213): der Ordner hat sich während des Laufs verändert (neue Datei, die nicht in der Liste
+     * stand) – gleicher Folgelauf, gleiche Begrenzung auf einen pro Stunde.
+     */
+    fun mayPlan(deferred: Int, now: Long, lastAt: Long, changedDuringRun: Boolean = false): Boolean =
+        (deferred > 0 || changedDuringRun) && (lastAt <= 0 || now < lastAt || now - lastAt >= MIN_INTERVAL_MS)
 }

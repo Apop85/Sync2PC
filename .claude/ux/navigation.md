@@ -80,3 +80,22 @@ Stand: 0.14.7
 Stand: 0.14.7
 1. Start: Startseite
 2. Per Intent: `am start -n com.sync2pc.app/.ui.MainActivity --es open update` -> Updates (prüft beim Öffnen automatisch)
+## Sicherung importieren (Dialog)
+Stand: 0.16.3
+1. Start: Startseite -> Zahnrad oben rechts (x=1003 y=171) -> «Sprache & Sicherung» (y~721)
+2. «Importieren…» (x~643 y~1910) -> Systemdialog: Burger links oben (x=99 y=171, «Show roots») -> «Downloads» -> Datei «LeoSync-Sicherung_…json» wählen -> Dialog «Sicherung importieren» (nur ansehen: «Abbrechen»; «Ersetzen» löscht alle Profile)
+
+## Konflikte (Konfliktkarten, Dialog «Alle: neuere»)
+Stand: 0.16.3
+1. Konflikt herstellen: Datei in Download/Testsync (Handy) und X:\testsync (PC) nach dem ersten Abgleich auf beiden Seiten mit unterschiedlichem Inhalt ändern; Handy-Datei danach `am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Download/Testsync/<Datei>`; gleicher Zeitstempel = «(gleich alt)»
+2. Startseite: «Synchronisieren» antippen (Karte «Folder») -> Karte «Konflikte bei der Ordner-Synchronisierung» -> «Entscheiden» -> Liste «Konflikte»; «Alle: neuere» oben rechts (x~840 y=171) -> Dialog
+
+## Pause (Startseite)
+Stand: 0.16.3
+1. Start: Startseite -> Pausensymbol oben (x=606 y=171) -> Dialog «Wie lange pausieren?» (1 h x=236 y=873, «Für immer» x=420 y=1225, «Pausieren» x=795 y=1643)
+2. Achtung: Bei aktiver Pause öffnet dasselbe Symbol («▶») nicht den Dialog, sondern hebt die Pause auf
+
+## Profil testweise anlegen und löschen
+Stand: 0.16.3
+1. Start: Startseite -> «Profil hinzufügen» -> «Ordner synchronisieren» (x=540 y=1030) -> Schritt 1 Name; Schritt 2 «Ordner wählen…» (Systemdialog: Ordner antippen, «Diesen Ordner verwenden» x=540 y=2082, «ALLOW» x=870 y=1309); Schritt 3 Pfad/Benutzer/Passwort von Hand (unerreichbarer Host z. B. \\192.168.3.250\Fotos für «PC nicht erreichbar»); Schritt 4 Richtung wählen, «Weiter»; Schritt 5 «Speichern» -> Dialog «Profil gespeichert»
+2. Löschen: Profilkarte -> ganz nach oben scrollen und Namen prüfen -> ganz nach unten, «Wartung» -> «Profil löschen» -> «Löschen» (Dialog nennt den Profilnamen nicht)

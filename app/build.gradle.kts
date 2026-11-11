@@ -136,4 +136,6 @@ dependencies {
     androidTestImplementation("androidx.room:room-testing:2.8.5")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    // WorkManager-Testtreiber nur für instrumentierte Tests (SYNC-20261111-163 B1/B5, Entscheid Architecture -183): kein Robolectric, gleiche Version wie work-runtime-ktx
+    androidTestImplementation("androidx.work:work-testing:2.10.0")
 }

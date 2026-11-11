@@ -41,6 +41,52 @@ object SyncDecisions {
     fun wifiTriggerThrottled(resumeOnWifi: Boolean, now: Long, lastTriggerAt: Long): Boolean =
         !resumeOnWifi && now - lastTriggerAt < WIFI_THROTTLE_MS
 
+    /**
+     * SYNC-20261111-207 (B1): Scheitert work() UND der Abschluss, bleibt die Ursache aus work() erhalten; die zweite Ausnahme
+     * wird nur angehängt. Scheitert nur der Abschluss, ist sie selbst die Ursache. Ergebnis: die zu werfende Ausnahme.
+     */
+    fun mergeFailures(workFailure: Throwable?, finishFailure: Throwable): Throwable {
+        if (workFailure == null) return finishFailure
+        workFailure.addSuppressed(finishFailure)
+        return workFailure
+    }
+
+    /** Abschluss-Meldung eines Laufs (B4): Hartfehler vor Unterbruch mitten im Lauf (still) vor Übertragungsmeldung */
+    enum class SummaryKind { NONE, FAILED, TRANSFERRED }
+
+    fun summaryKind(hardFailure: Boolean, interruptedMidRun: Boolean, uploaded: Int, failed: Int): SummaryKind = when {
+        hardFailure -> SummaryKind.FAILED
+        interruptedMidRun -> SummaryKind.NONE
+        uploaded > 0 || failed > 0 -> SummaryKind.TRANSFERRED
+        else -> SummaryKind.NONE
+    }
+
+    /** «Lange nicht gesichert»-Erinnerung erledigt? Nur nach einem sauberen Lauf ohne nicht erreichbare/abgewiesene Profile */
+    fun staleResolved(hardFailure: Boolean, interruptedMidRun: Boolean, unreachableEmpty: Boolean, rejectedEmpty: Boolean): Boolean =
+        !hardFailure && !interruptedMidRun && unreachableEmpty && rejectedEmpty
+
+    /** Was nach nicht erreichbaren Profilen geschieht (B4, [SyncWorker.handleUnreachable]) */
+    enum class UnreachableAction {
+        /** nichts wartet mehr: Wartezeit aufheben */
+        CLEAR_WAIT,
+        /** manueller Start: nur Hinweis, kein Timer */
+        NOTIFY_ONLY,
+        /** noch im Ziel-WLAN: Timer für die erneute Prüfung */
+        RETRY_TIMER,
+        /** WLAN verloren: kein Timer, beim nächsten Verbinden fortsetzen */
+        RESUME_ON_WIFI,
+    }
+
+    /** [stillOnTargetWifi] wird nur ausgewertet, wenn die Entscheidung davon abhängt (Netzabfrage vermeiden) */
+    fun unreachableAction(
+        anyWaiting: Boolean, manual: Boolean, midRun: Boolean, stillOnTargetWifi: () -> Boolean,
+    ): UnreachableAction = when {
+        !anyWaiting -> UnreachableAction.CLEAR_WAIT
+        manual && !midRun -> UnreachableAction.NOTIFY_ONLY
+        stillOnTargetWifi() -> UnreachableAction.RETRY_TIMER
+        else -> UnreachableAction.RESUME_ON_WIFI
+    }
+
     /** Auftragsbeschreibung des automatischen Starts: Netztyp, Laden, Expedited (nur ohne Lade-Bedingung erlaubt) */
     data class AutoSpec(val network: NetworkType, val requiresCharging: Boolean, val expedited: Boolean)
 

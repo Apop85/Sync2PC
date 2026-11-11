@@ -2,19 +2,26 @@
 
 Zentrales Register **aktiver** Aufträge (OPEN, IN_PROGRESS, BLOCKED). Nur Metadaten, keine Beschreibungen. Abgeschlossene Aufträge stehen nicht hier, sondern als Datei in `tasks/COMPLETED/`. Bedienung: `README.md`.
 
-**Letzte vergebene Nummer: 186** (Stand 2026-11-11). Nächste ID: `SYNC-YYYYMMDD-187`.
+**Letzte vergebene Nummer: 215** (Stand 2026-11-11). Nächste ID: `SYNC-YYYYMMDD-216`.
 
 | ID | Kurzbeschreibung | Von | An | Prio | Status | Datei |
 |---|---|---|---|---|---|---|
 | SYNC-20261109-072 | Restpunkte aus QA -053: Akku-Prüfung (G7) und Meldung «anderer PC» | QA & Testing | Project Manager | LOW | IN_PROGRESS | tasks/IN_PROGRESS/SYNC-20261109-072.md |
-| SYNC-20261110-138 | Neuinstallation: Ordner in Download liefert Duplikate «(1)», Teilfehler und Phantomdateien | UX-Specialist | QA & Testing | HIGH | OPEN | tasks/OPEN/SYNC-20261110-138.md |
 | SYNC-20261111-148 | QA: Assistent «Weiter» bei ungültigem Zahlenfeld, Dialoge bei Schrift 2,0 (0.14.8) | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-148.md |
-| SYNC-20261111-153 | QA: Datenintegrität, Sync-Steuerung, SMB-Verschlüsselung, Überschneidung, Home/Konflikte (0.15.0) | Development | QA & Testing | HIGH | OPEN | tasks/OPEN/SYNC-20261111-153.md |
 | SYNC-20261111-160 | QA: Verlauf löschen/Rückgängig, Papierkorb, Speicher freigeben, Update-Seite, Eingabeprüfung, Berechtigungen (0.15.1) | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-160.md |
-| SYNC-20261111-163 | Testbarkeit und Tests Hintergrund, Datenintegrität, SMB-Schicht (Umsetzung QA-Testkonzept, Stufe 1 und 2) | QA & Testing | Development | MEDIUM | BLOCKED | tasks/BLOCKED/SYNC-20261111-163.md |
-| SYNC-20261111-176 | UX-Review-Befunde 0.15.5: Dialoge bei Schrift 2,0, Ordneranzeige, Berechtigungshinweis, Statuskarte, Kleinigkeiten (aus -149, -154, -161) | UX-Specialist | Development | MEDIUM | IN_PROGRESS | tasks/IN_PROGRESS/SYNC-20261111-176.md |
-| SYNC-20261111-178 | QA: Beide behalten, Konflikt-Rückgängig, Sonderaufträge, Folgelauf, Verschlüsselungsmeldung (0.16.0) | Development | QA & Testing | HIGH | OPEN | tasks/OPEN/SYNC-20261111-178.md |
 | SYNC-20261111-180 | QA: Testserver-Anpassung (-165) prüfen, Emulatorfälle B9, B10, E1–E3, N6 | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-180.md |
 | SYNC-20261111-181 | UX-Review Startseite 0.16.2 (-177, -176 R4–R7) | Development | UX-Specialist | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-181.md |
 | SYNC-20261111-184 | UX-Review 0.16.3: Befunde R1–R3, R8–R12 aus -176 | Development | UX-Specialist | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-184.md |
 | SYNC-20261111-185 | QA: Dialoge, Löschablauf bei nicht erreichbarem PC, Konfliktanzeige (0.16.3) | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-185.md |
+| SYNC-20261111-187 | QA: Emulator-Prüfung aus UX-Review -181/-184 (R10, R12, R5, R4, R7-Folgefall, Noch nicht alles gesichert, R8) | UX-Specialist | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-187.md |
+| SYNC-20261111-189 | QA: Ausführung Stufe 1 und 2 von -163 (RestoreExecutor, Papierkorb, instrumentierte Tests), 0.16.5 | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-189.md |
+| SYNC-20261111-197 | QA: Testserver-Erweiterung (-196) prüfen, offene Fälle aus -153/-178 ausführen | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-197.md |
+| SYNC-20261111-200 | UX-Review 0.16.8: wartende Dateien auf Statuskarte und Profilkarte (aus -199) | Development | UX-Specialist | LOW | OPEN | tasks/OPEN/SYNC-20261111-200.md |
+| SYNC-20261111-203 | Ordner-Sync: nicht indizierte Handy-Datei erzeugt «(n)»-Duplikate; 0-Byte-.s2ptmp nach Upload-Fehler (Bezug -138) | QA & Testing | Development | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-203.md |
+| SYNC-20261111-205 | Speicher freigeben (Fotos): nach dem Öffnen bearbeitetes Foto wird ohne erneute Prüfung gelöscht (Datenverlust) | QA & Testing | Development | HIGH | OPEN | tasks/OPEN/SYNC-20261111-205.md |
+| SYNC-20261111-206 | QA: Restfälle aus -153 (Testlücken) | QA & Testing | QA & Testing | LOW | OPEN | tasks/OPEN/SYNC-20261111-206.md |
+| SYNC-20261111-208 | QA: androidTests (ContentTrigger, Keystore, Gate) und Auslagerungen aus -207 prüfen (0.16.11) | Development | QA & Testing | LOW | OPEN | tasks/OPEN/SYNC-20261111-208.md |
+| SYNC-20261111-210 | UX-Review 0.16.12: Icons statt Emojis (aus -195) | Development | UX-Specialist | LOW | OPEN | tasks/OPEN/SYNC-20261111-210.md |
+| SYNC-20261111-211 | QA: wachsende/geänderte Handy-Datei beim Upload (0.16.13, aus -202) | Development | QA & Testing | LOW | OPEN | tasks/OPEN/SYNC-20261111-211.md |
+| SYNC-20261111-214 | QA: Folgelauf für Dateien, die nach dem Einlesen neu entstehen (0.16.14, aus -213) | Development | QA & Testing | LOW | OPEN | tasks/OPEN/SYNC-20261111-214.md |
+| SYNC-20261111-215 | EN-Texte der App: «Mobile» durch «Phone» ersetzen (Begriff laut Benutzer) | Documentation | Development | LOW | OPEN | tasks/OPEN/SYNC-20261111-215.md |

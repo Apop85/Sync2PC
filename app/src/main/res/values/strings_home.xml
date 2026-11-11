@@ -131,6 +131,7 @@
     <string name="home_no_sync_yet">No sync yet.</string>
     <string name="home_next_check">Next check at %1$s</string>
     <string name="home_skipped">⚠ Automatic start skipped – %1$s</string>
+    <string name="home_skipped_manual">⚠ Start not possible – %1$s</string>
     <string name="home_resume">Resume</string>
     <string name="home_sync">Sync</string>
     <string name="home_sync_needs_profile">Create a profile first.</string>
@@ -171,6 +172,11 @@
     <plurals name="home_profile_mirror_synced">
         <item quantity="one">%1$s file synced</item>
         <item quantity="other">%1$s files synced</item>
+    </plurals>
+    <string name="home_profile_open_files">%1$s open</string>
+    <plurals name="home_waiting_files">
+        <item quantity="one">%1$s file is waiting for synchronization.</item>
+        <item quantity="other">%1$s files are waiting for synchronization.</item>
     </plurals>
     <plurals name="home_profile_open_conflicts">
         <item quantity="one">%1$s conflict open</item>

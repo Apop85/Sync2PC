@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.smb.RemoteStore
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,7 @@ object TrashCleaner {
      * PC-Papierkorb nach Regel leeren. [keep]: Papierkorb-Pfade (Kleinbuchstaben, "/"), die bleiben müssen.
      * Liefert die Anzahl gelöschter Ordner bzw. einzelner Dateien.
      */
-    fun purgeRemote(s: SmbSession, rule: PurgeRule, keep: Set<String> = emptySet()): Int {
+    fun purgeRemote(s: RemoteStore, rule: PurgeRule, keep: Set<String> = emptySet()): Int {
         var n = 0
         for (t in MirrorEngine.TRASH_DIRS) {
             val base = s.path(t)
@@ -46,7 +47,7 @@ object TrashCleaner {
         return n
     }
 
-    fun deleteRemoteFile(s: SmbSession, trashPath: String): Boolean {
+    fun deleteRemoteFile(s: RemoteStore, trashPath: String): Boolean {
         val p = s.path(trashPath.replace('/', '\\'))
         if (s.stat(p) == null) return false
         s.delete(p)

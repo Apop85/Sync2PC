@@ -5,6 +5,7 @@ import android.net.Uri
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.PendingRestore
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.smb.RemoteStore
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import com.sync2pc.app.sync.SyncScheduler
@@ -55,7 +56,7 @@ object RestoreManager {
     }
 
     /** Papierkorb auf dem PC (neuer und alter Name) */
-    fun remoteTrash(s: SmbSession): List<TrashEntry> {
+    fun remoteTrash(s: RemoteStore): List<TrashEntry> {
         val out = ArrayList<TrashEntry>()
         for (t in MirrorEngine.TRASH_DIRS) {
             val base = s.path(t)

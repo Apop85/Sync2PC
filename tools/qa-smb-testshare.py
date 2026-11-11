@@ -4,6 +4,7 @@
 Startet mit impacket einen SMB2-Server, der einen Ordner als Freigabe anbietet. Wird von
 tools/qa-smb-testshare.ps1 gestartet (venv, adb reverse); Aufruf von Hand:
     python qa-smb-testshare.py --dir <Ordner> [--share QA] [--user qa] [--password qa-test-1] [--port 4445]
+        [--throttle-kbps n] [--drop-after-bytes n [--drop-count k]]
 
 Hinweis: impacket meldet immer dieselbe Server-GUID ("AAAAAAAAAAAAAAAA"); fuer Tests mit einer
 anderen PC-Kennung kann --guid (16 Zeichen) gesetzt werden.
@@ -12,6 +13,8 @@ import argparse
 import logging
 import os
 import sys
+import threading
+import time
 
 from impacket import ntlm, smbserver
 from impacket import smb3structs as smb2
@@ -143,6 +146,68 @@ def patch_windows_behaviour() -> None:
     smbserver.SMBSERVER.removeConnection = remove_connection
 
 
+def patch_throttle_and_drop(throttle_kbps: int, drop_after_bytes: int, drop_count: int) -> None:
+    """Testhilfen fuer reproduzierbare Abbrueche (SYNC-20261111-196), nur Testserver.
+
+    --throttle-kbps n:      Lesen und Schreiben der Dateidaten auf etwa n KB/s bremsen (Pause nach jedem Datenblock),
+                            damit eine Dateiaenderung waehrend des Laufs oder ein manueller Abbruch gezielt moeglich ist.
+    --drop-after-bytes n:   Verbindung hart trennen (ohne Antwort, wie ein Netzabbruch), sobald auf dieser Verbindung
+                            n Bytes Dateidaten uebertragen wurden (Lesen + Schreiben).
+    --drop-count k:         nur die ersten k Verbindungen trennen (Standard 1), damit der Wiederholungsversuch der App durchlaeuft.
+    """
+    cmds = smbserver.SMB2Commands
+    lock = threading.Lock()
+    transferred = {}   # connId -> Bytes
+    doomed = set()     # connIds, die nach der laufenden Anfrage getrennt werden
+    state = {"dropped": 0}
+
+    def account(conn_id, nbytes):
+        if nbytes > 0 and throttle_kbps > 0:
+            time.sleep(nbytes / (throttle_kbps * 1024.0))
+        if drop_after_bytes > 0 and nbytes > 0:
+            with lock:
+                transferred[conn_id] = transferred.get(conn_id, 0) + nbytes
+                if transferred[conn_id] >= drop_after_bytes and state["dropped"] < drop_count and conn_id not in doomed:
+                    doomed.add(conn_id)
+                    state["dropped"] += 1
+                    print(f"[test] Verbindung {conn_id} wird nach {transferred[conn_id]} Bytes getrennt "
+                          f"({state['dropped']}/{drop_count})", flush=True)
+
+    orig_write = cmds.smb2Write
+    orig_read = cmds.smb2Read
+
+    def write(connId, smbServer, recvPacket):
+        try:
+            n = int(smb2.SMB2Write(recvPacket["Data"])["Length"])
+        except Exception:
+            n = 0
+        account(connId, n)
+        return orig_write(connId, smbServer, recvPacket)
+
+    def read(connId, smbServer, recvPacket):
+        resp, extra, code = orig_read(connId, smbServer, recvPacket)
+        try:
+            n = int(resp[0]["DataLength"]) if code == STATUS_SUCCESS else 0
+        except Exception:
+            n = 0
+        account(connId, n)
+        return resp, extra, code
+
+    cmds.smb2Write = staticmethod(write)
+    cmds.smb2Read = staticmethod(read)
+
+    # Trennen: Ausnahme nach der Anfrage, dann beendet impacket die Verbindung ohne Antwort (Handler bricht ab)
+    orig_process = smbserver.SMBSERVER.processRequest
+
+    def process(self, connId, data):
+        resp = orig_process(self, connId, data)
+        if connId in doomed:
+            doomed.discard(connId)
+            raise ConnectionAbortedError("Testabbruch (--drop-after-bytes)")
+        return resp
+
+    smbserver.SMBSERVER.processRequest = process
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="SMB-Testfreigabe fuer LeoSync")
     ap.add_argument("--dir", required=True, help="Ordner, der als Freigabe bereitgestellt wird")
@@ -152,6 +217,9 @@ def main() -> int:
     ap.add_argument("--port", type=int, default=4445, help="lokaler Port (Standard 4445; Windows belegt 445)")
     ap.add_argument("--address", default="127.0.0.1", help="Bindeadresse (Standard nur localhost)")
     ap.add_argument("--guid", default="", help="optional: 16 Zeichen Server-GUID statt AAAA...")
+    ap.add_argument("--throttle-kbps", type=int, default=0, help="Datenrate in KB/s begrenzen (0 = unbegrenzt)")
+    ap.add_argument("--drop-after-bytes", type=int, default=0, help="Verbindung nach n uebertragenen Bytes trennen (0 = aus)")
+    ap.add_argument("--drop-count", type=int, default=1, help="nur die ersten k Verbindungen trennen (Standard 1)")
     args = ap.parse_args()
 
     os.makedirs(args.dir, exist_ok=True)
@@ -177,6 +245,8 @@ def main() -> int:
         smbserver.SMB2Commands.smb2Negotiate = staticmethod(negotiate)
 
     patch_windows_behaviour()
+    if args.throttle_kbps > 0 or args.drop_after_bytes > 0:
+        patch_throttle_and_drop(args.throttle_kbps, args.drop_after_bytes, args.drop_count)
     server = smbserver.SimpleSMBServer(listenAddress=args.address, listenPort=args.port)
     server.addShare(args.share.upper(), os.path.abspath(args.dir), "LeoSync-Test")
     server.setSMB2Support(True)

@@ -131,6 +131,7 @@
     <string name="home_no_sync_yet">Noch keine Synchronisierung durchgeführt.</string>
     <string name="home_next_check">Nächste Prüfung um %1$s</string>
     <string name="home_skipped">⚠ Automatischer Start übersprungen – %1$s</string>
+    <string name="home_skipped_manual">⚠ Start nicht möglich – %1$s</string>
     <string name="home_resume">Fortsetzen</string>
     <string name="home_sync">Synchronisieren</string>
     <string name="home_sync_needs_profile">Lege zuerst ein Profil an.</string>
@@ -171,6 +172,11 @@
     <plurals name="home_profile_mirror_synced">
         <item quantity="one">%1$s Datei synchronisiert</item>
         <item quantity="other">%1$s Dateien synchronisiert</item>
+    </plurals>
+    <string name="home_profile_open_files">%1$s offen</string>
+    <plurals name="home_waiting_files">
+        <item quantity="one">%1$s Datei wartet auf die Synchronisierung.</item>
+        <item quantity="other">%1$s Dateien warten auf die Synchronisierung.</item>
     </plurals>
     <plurals name="home_profile_open_conflicts">
         <item quantity="one">%1$s Konflikt offen</item>

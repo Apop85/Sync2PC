@@ -48,7 +48,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -214,6 +213,8 @@ internal fun StatusCard(
     lastRun: SyncRun?,
     shareWait: String?,
     skipInfo: String?,
+    /** Der Grund stammt von einem manuellen Start (SYNC-20261111-188 B1) */
+    skipManual: Boolean = false,
     paused: Boolean,
     userPausedUntil: Long,
     /** Überschrift nach dem Gesamtzustand (siehe [HomeStatus.headline]); Konflikt/Verbindung/Profil fliessen dort ein */
@@ -226,6 +227,8 @@ internal fun StatusCard(
     lastRunErrors: Int,
     /** Dateien, die beim nächsten Sync folgen (SYNC-20261111-177), nur bei [HomeHeadline.PENDING] von Bedeutung */
     pendingFiles: Int,
+    /** Dateien, die lokal auf die Übertragung warten (SYNC-20261111-199); nur bei [HomeHeadline.NO_CONNECTION] angezeigt */
+    waitingFiles: Int = 0,
     /** Standort-Berechtigung fehlt, obwohl der WLAN-Name gebraucht wird (SYNC-20261111-176 R4) */
     locationMissing: Boolean,
     onOpenPermissions: () -> Unit,
@@ -254,7 +257,8 @@ internal fun StatusCard(
             headline, attentionCount, lastRunErrors,
             onClick = if (headline == HomeHeadline.ERRORS) onOpenLog else null,
         )
-        Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Zeile bleibt immer stehen (gleiche Höhe, nichts verschiebt sich); ohne lesbaren WLAN-Namen bleibt sie leer
+        Text(if (ssid != null) str(R.string.home_wifi, ssid) else " ", maxLines = 1, overflow = TextOverflow.Ellipsis)
         Column(Modifier.fillMaxWidth().heightIn(min = statusMin), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when {
             isRunning -> {
@@ -310,7 +314,8 @@ internal fun StatusCard(
                 Hint(str(R.string.home_pc_unreachable_hint))
             }
             // Soll-WLAN nicht verbunden: Ursache und Handlung statt grünem Gut-Zustand (A2)
-            headline == HomeHeadline.NO_CONNECTION -> {
+            // B1: Gibt es einen konkreten Grund (skipInfo, rote Zeile unten), erklärt er den Zustand besser als der allgemeine Hinweis
+            headline == HomeHeadline.NO_CONNECTION && skipInfo == null -> {
                 Text(str(R.string.home_no_connection_wifi))
                 Hint(str(R.string.home_no_connection_hint))
             }
@@ -330,11 +335,14 @@ internal fun StatusCard(
             }
             else -> Text(str(R.string.home_no_sync_yet))
         }
+        // -199: Keine Verbindung, aber Dateien warten: die Zahl nennen (der Hund sitzt, die Synchronisierung steht noch aus)
+        if (headline == HomeHeadline.NO_CONNECTION && !isRunning && waitingFiles > 0)
+            Text(plural(R.plurals.home_waiting_files, waitingFiles, waitingFiles))
         // Zeitversetzt geplante Prüfung (z. B. Nachhol-Sync für gerade erst aufgenommene Fotos); ohne Profil nie (A9)
         if (hasProfiles && !isRunning && !userPaused && !isQueued && nextPlanned != null)
             Hint(str(R.string.home_next_check, pauseEndText(nextPlanned)))
         if (hasProfiles && !isRunning && !userPaused && shareWait == null && skipInfo != null) {
-            Text(str(R.string.home_skipped, skipInfo), color = MaterialTheme.colorScheme.error,
+            Text(str(if (skipManual) R.string.home_skipped_manual else R.string.home_skipped, skipInfo), color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
         // R4: Fehlende Standort-Berechtigung nie still lassen: Zeile mit Symbol und Weg zur Lösung
@@ -502,12 +510,13 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
     }.collectAsState<Int, Int?>(initial = null)
     val openConflicts by remember(p.id) { AppDatabase.get(ctx).dao().openConflictCountFlow(p.id) }.collectAsState(initial = 0)
     var open by remember(p.id) { mutableStateOf<Int?>(null) }
+    // SYNC-20261111-199: auch bei Ordner-Profilen die lokal wartenden Dateien (neu/geändert seit dem letzten Abgleich)
     LaunchedEffect(p, synced) {
-        if (!isPhotos) return@LaunchedEffect
         delay(800) // während eines Laufs ändert sich der Zähler laufend: nicht bei jeder Datei neu scannen
         open = try {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                com.sync2pc.app.sync.PendingCheck.readyFiles(ctx, p, 0)
+                if (isPhotos) com.sync2pc.app.sync.PendingCheck.readyFiles(ctx, p, 0)
+                else com.sync2pc.app.sync.PendingCheck.mirrorLocalOpen(ctx, p)
             }
         } catch (e: kotlin.coroutines.cancellation.CancellationException) { throw e }
         catch (e: Exception) { null } // z. B. Medienzugriff fehlt -> Zeile ausblenden
@@ -553,6 +562,7 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
             if (isPhotos && sc != null && oc != null) Hint(str(R.string.home_profile_counts, sc, oc))
             if (!isPhotos && sc != null) Hint(
                 plural(R.plurals.home_profile_mirror_synced, sc) +
+                    (if (oc != null && oc > 0) " · " + str(R.string.home_profile_open_files, oc) else "") +
                     if (openConflicts > 0) " · " + plural(R.plurals.home_profile_open_conflicts, openConflicts) else ""
             )
             // P9: aktiver Filter ist sonst nicht erkennbar (0 Dateien synchronisiert ohne Erklärung)

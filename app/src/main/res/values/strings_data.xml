@@ -53,4 +53,21 @@
     <string name="remote_picker_name_invalid">Invalid name. No \\ / : * ? \" &lt; &gt; |, no dot or space at the end.</string>
     <string name="remote_picker_name_exists">A folder named \"%1$s\" already exists.</string>
     <string name="remote_picker_create_failed">The folder could not be created.</string>
+    <!-- SYNC-20261111-195: Bedienhilfe-Beschreibungen der Icons (Symbole im Text, ui/SymbolText.kt) -->
+    <string name="icon_folder">Folder</string>
+    <string name="icon_camera">Camera</string>
+    <string name="icon_phone">Mobile</string>
+    <string name="icon_pc">PC</string>
+    <string name="icon_server">Server</string>
+    <string name="icon_add">Add</string>
+    <string name="icon_up">Up</string>
+    <string name="icon_down">Down</string>
+    <string name="icon_pause">Pause</string>
+    <string name="icon_play">Play</string>
+    <string name="icon_ok">Done</string>
+    <string name="icon_error">Error</string>
+    <string name="icon_warn">Warning</string>
+    <string name="icon_sync">Sync</string>
+    <string name="icon_bin">Trash</string>
+    <string name="icon_both">Both directions</string>
 </resources>

@@ -24,7 +24,7 @@ data class LocalEntry(
  * Nötig für beliebige Dateitypen (PDF, Dokumente …), die der MediaStore ab Android 11 nicht liefert.
  * Pfade sind relativ zum freigegebenen Ordner, Trenner "/".
  */
-class LocalTree(private val context: Context, val treeUri: Uri) {
+class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     private val resolver = context.contentResolver
     val rootDocId: String = DocumentsContract.getTreeDocumentId(treeUri)
 
@@ -190,6 +190,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
      */
     fun listRecursive(skipDir: (String) -> Boolean = { false }, recover: Boolean = false): Map<String, LocalEntry> {
         val out = LinkedHashMap<String, LocalEntry>()
+        val stamps = LinkedHashMap<String, Long>()
         fun walk(rel: String, docId: String) {
             val all = children(docId)
             val names = all.filter { !it.isDir }.map { it.name.lowercase() }.toSet()
@@ -197,25 +198,40 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
                 val childRel = if (rel.isEmpty()) e.name else "$rel/${e.name}"
                 if (e.isDir) {
                     dirIds[childRel.lowercase()] = e.docId
-                    if (!skipDir(childRel)) walk(childRel, e.docId)
+                    if (!skipDir(childRel)) { stamps[e.docId] = e.modified; walk(childRel, e.docId) }
                 } else if (e.name.endsWith(OLD, ignoreCase = true)) {
                     val base = e.name.dropLast(OLD.length)
                     val baseRel = if (rel.isEmpty()) base else "$rel/$base"
-                    if (base.lowercase() in names) {
-                        if (recover) try { delete(e.docId) } catch (ignored: Exception) {}
-                    } else if (recover) {
-                        val id = rename(e.docId, base)
-                        out[baseRel] = stat(id) ?: e.copy(docId = id, name = base)
-                    } else out[baseRel] = e.copy(name = base)
+                    when (OldFileRecovery.decide(base.lowercase() in names, recover)) {
+                        OldFileRecovery.Action.DELETE_OLD -> try { delete(e.docId) } catch (ignored: Exception) {}
+                        OldFileRecovery.Action.IGNORE -> {}
+                        OldFileRecovery.Action.RENAME_BACK -> {
+                            val id = rename(e.docId, base)
+                            out[baseRel] = stat(id) ?: e.copy(docId = id, name = base)
+                        }
+                        OldFileRecovery.Action.LIST_AS_BASE -> out[baseRel] = e.copy(name = base)
+                    }
                 } else out[childRel] = e
             }
         }
+        // Stempel der Wurzel VOR dem Einlesen, damit eine Änderung dazwischen nicht übersehen wird
+        stamps[rootDocId] = try { stat(rootDocId)?.modified ?: 0L } catch (e: Exception) { 0L }
         walk("", rootDocId)
+        listingStamps = stamps
         return out
     }
 
+    /** Ordner-Stempel (ID -> letzte Änderung) beim letzten [listRecursive]; Grundlage von [FolderChange] (SYNC-20261111-213) */
+    @Volatile var listingStamps: Map<String, Long> = emptyMap()
+        private set
+
+    /** Hat sich ein Ordner seit dem letzten Einlesen verändert? [ownWrites] siehe [FolderChange.changed]; Fehler = keine Aussage */
+    fun changedSinceListing(ownWrites: Boolean): Boolean = try {
+        FolderChange.changed(listingStamps, ownWrites) { id -> stat(id)?.takeIf { it.isDir }?.modified }
+    } catch (e: Exception) { false }
+
     /** Datei unter einem relativen Pfad suchen (Gross-/Kleinschreibung egal), null = nicht vorhanden */
-    fun find(relPath: String): LocalEntry? {
+    override fun find(relPath: String): LocalEntry? {
         val parentRel = relPath.substringBeforeLast('/', "")
         val name = relPath.substringAfterLast('/')
         val parentId = findDir(parentRel) ?: return null
@@ -252,7 +268,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             }, check, onBytes)
         }
 
-    fun stat(docId: String): LocalEntry? =
+    override fun stat(docId: String): LocalEntry? =
         resolver.query(docUri(docId), projection, null, null, null)?.use { c ->
             if (!c.moveToFirst()) null
             else LocalEntry(
@@ -416,7 +432,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
      * Verschiebt eine Datei in "<Ordner>/.LeoSync-Papierkorb/<Datum>/<relPath>". Gibt es den Namen dort schon,
      * bekommt sie die Uhrzeit angehängt ("a (14-32-05).txt", 0.7.0). Liefert den Pfad im Papierkorb.
      */
-    fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String {
+    override fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String {
         val parentRel = relPath.substringBeforeLast('/', "")
         val sourceParent = ensureDir(parentRel)
         val trashDir = listOf(MirrorEngine.TRASH_DIR, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
@@ -460,7 +476,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
      * Verschiebt eine Datei von [fromRel] nach [toRel] (Wiederherstellen aus dem Papierkorb, 0.5.0) und benennt sie
      * dabei um. Kann der Anbieter nicht verschieben: kopieren + löschen. Liefert die Dokument-ID am neuen Ort.
      */
-    fun moveFile(fromRel: String, entry: LocalEntry, toRel: String): String {
+    override fun moveFile(fromRel: String, entry: LocalEntry, toRel: String): String {
         val sourceParent = ensureDir(fromRel.substringBeforeLast('/', ""))
         val targetParent = ensureDir(toRel.substringBeforeLast('/', ""))
         val name = toRel.substringAfterLast('/')
@@ -566,6 +582,20 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
 
 /** Alte Version während des Ersetzens auf dem Handy (0.4.1), wird nie synchronisiert */
 const val OLD_SUFFIX = ".s2pold"
+
+/**
+ * Wiederanlauf nach Abbruch beim Ersetzen (P5, SYNC-20261111-207): Was geschieht mit einer liegengebliebenen "<name>.s2pold"?
+ * Existiert "<name>", ist die alte Version überholt (löschen); fehlt "<name>", ist sie die gültige Datei (zurückbenennen).
+ * Ohne [recover] (Simulation) wird nichts verändert; eine verwaiste alte Version zählt dann unter ihrem Namen.
+ */
+object OldFileRecovery {
+    enum class Action { DELETE_OLD, IGNORE, RENAME_BACK, LIST_AS_BASE }
+
+    fun decide(baseExists: Boolean, recover: Boolean): Action = when {
+        baseExists -> if (recover) Action.DELETE_OLD else Action.IGNORE
+        else -> if (recover) Action.RENAME_BACK else Action.LIST_AS_BASE
+    }
+}
 
 /** Zieldatei wurde seit dem Einlesen geändert bzw. ist neu entstanden -> nicht überschreiben (0.4.1) */
 class ChangedDuringRunException : IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_changed))

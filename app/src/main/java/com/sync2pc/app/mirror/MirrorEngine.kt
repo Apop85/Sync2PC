@@ -27,6 +27,7 @@ import com.sync2pc.app.sync.SyncProgress
 import com.sync2pc.app.sync.SyncRunner
 import com.sync2pc.app.data.GlobalSettings
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -143,6 +144,10 @@ class MirrorEngine(
     private val bytes = AtomicLong(); private val trashed = AtomicInteger()
     /** Dateien, die während des Laufs geändert wurden und deshalb erst beim nächsten Sync folgen (SYNC-20261111-173) */
     private val deferred = AtomicInteger()
+    /** Der Lauf hat selbst auf dem Handy geschrieben (Download, Papierkorb, Umbenennen, Aufräumen): kein Folgelauf wegen Ordneränderung (SYNC-20261111-213) */
+    @Volatile private var localTouched = false
+    @Volatile override var changedDuringRun = false
+        private set
 
     /** Zwischen den parallelen Übertragungen geteilter Zustand */
     private class Shared(val totalFiles: Int, val totalBytes: Long, budget: Long) {
@@ -452,6 +457,13 @@ class MirrorEngine(
         if (now == null || listed == null) now == null && listed == null
         else now.size == listed.size && now.modified == listed.modified
 
+    /**
+     * Handy-Datei jetzt, per Ordnerliste wie beim Einlesen; null = verschwunden. Lässt sich der Ordner nicht lesen, gilt die Datei
+     * als unverändert ([fallback]): dann entscheidet wie bisher die Bytezahl (SYNC-20261111-202).
+     */
+    private fun findNow(rel: String, fallback: LocalEntry): LocalEntry? =
+        try { tree.find(rel) } catch (e: CancellationException) { throw e } catch (e: Exception) { fallback }
+
     // ---- Ausführung ------------------------------------------------------------------
     private fun remotePath(s: SmbSession, rel: String): String = s.path(rel.replace('/', '\\'))
     private fun remotePath(rel: String): String = remotePath(smb!!, rel)
@@ -470,7 +482,7 @@ class MirrorEngine(
         when (a.kind) {
             Kind.TRASH_LOCAL -> {
                 l ?: return
-                tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet()
+                localTouched = true; tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet()
                 dao.deleteMirrorState(profile.id, a.key)
                 log("I", Msg.of(R.string.eng_trash_local, a.rel))
             }
@@ -582,6 +594,9 @@ class MirrorEngine(
         when (a.kind) {
             Kind.UPLOAD -> {
                 l ?: return
+                // Handy-Datei seit dem Einlesen schon vor dem Start geändert (oder verschwunden)? Dann zurückstellen, und zwar
+                // vor jedem Eingriff am PC (Papierkorb) (SYNC-20261111-202). Per Ordnerliste lesen wie beim Einlesen.
+                if (!unchanged(findNow(a.rel, l), l)) return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
                 // Während des Laufs auf dem PC geändert? Dann nicht überschreiben – der nächste Lauf entscheidet.
                 // Wiederholung nach Verbindungsabbruch: Hat dieser Lauf die PC-Datei schon in den Papierkorb verschoben,
                 // fehlt sie erwartungsgemäss (SYNC-20261111-166, siehe TransferResume)
@@ -598,7 +613,13 @@ class MirrorEngine(
                     }
                     TransferStep.TRANSFER -> {}
                 }
-                upload(s, a.key, a.rel, l, onBytes = onBytes)
+                try {
+                    upload(s, a.key, a.rel, l, onBytes = onBytes)
+                } catch (e: SourceChangedException) {
+                    // Handy-Datei während der Übertragung geändert: Temp-Datei ist gelöscht, kein Sync-Stand für diese Version
+                    // geschrieben -> der nächste Lauf überträgt die neue Version (SYNC-20261111-202)
+                    return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
+                }
             }
             Kind.DOWNLOAD -> {
                 r ?: return
@@ -612,7 +633,7 @@ class MirrorEngine(
                     TransferStep.SKIP_CHANGED -> return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
                     TransferStep.TRASH_THEN_TRANSFER -> {
                         dao.deleteMirrorState(profile.id, a.key)
-                        tree.moveToTrash(a.rel, l!!, today); trashed.incrementAndGet()
+                        localTouched = true; tree.moveToTrash(a.rel, l!!, today); trashed.incrementAndGet()
                         trashedByRun.add(a.key)
                     }
                     TransferStep.TRANSFER -> {}
@@ -640,7 +661,7 @@ class MirrorEngine(
                             s.stat(remotePath(s, rel)) != null
                     } ?: throw IOException(str(R.string.eng_err_conflict_name_exhausted, a.rel))
                     newRel = relOf(newName)
-                    newDoc = tree.rename(l.docId, newName)
+                    localTouched = true; newDoc = tree.rename(l.docId, newName)
                     // Sofort vergessen (Review -171 H1): Scheitert eine der folgenden Prüfungen oder stirbt der Prozess, gilt die
                     // Datei im nächsten Lauf als neu. Mit altem Stand sähe der Planer «auf dem Handy gelöscht» und
                     // würde die PC-Version in den Papierkorb verschieben.
@@ -660,7 +681,14 @@ class MirrorEngine(
                 // Wiederholung nach einem Abbruch im Download: Der Upload ist schon fertig und darf nicht erneut laufen
                 // (die Zieldatei existiert, ohne Überschreiben gäbe es einen Fehler; Review -171 M1)
                 if (a.key !in uploadedByRun) {
-                    upload(s, newRel.lowercase(), newRel, ls, replaceExisting = false, onBytes = onBytes)
+                    try {
+                        // Vergleichsbasis nur, wenn ls aus der Ordnerliste stammt (stat() liefert z. B. andere Zeitstempel)
+                        upload(s, newRel.lowercase(), newRel, ls, replaceExisting = false, watchSource = listed?.docId == newDoc, onBytes = onBytes)
+                    } catch (e: SourceChangedException) {
+                        // Konfliktkopie während der Übertragung geändert: nichts hochgeladen; der Sync-Stand ist schon vergessen,
+                        // der nächste Lauf überträgt sie als neue Datei und holt die PC-Version (SYNC-20261111-202)
+                        return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
+                    }
                     uploadedByRun.add(a.key)
                 }
                 download(s, a.key, a.rel, r) { b -> onBytes(ls.size + b) }
@@ -670,7 +698,8 @@ class MirrorEngine(
     }
 
     private suspend fun upload(
-        s: SmbSession, key: String, rel: String, l: LocalEntry, replaceExisting: Boolean = true, onBytes: (Long) -> Unit,
+        s: SmbSession, key: String, rel: String, l: LocalEntry, replaceExisting: Boolean = true, watchSource: Boolean = true,
+        onBytes: (Long) -> Unit,
     ) {
         val path = remotePath(s, rel)
         s.ensureDir(path.substringBeforeLast('\\', ""))
@@ -682,6 +711,8 @@ class MirrorEngine(
             modifiedMillis = l.modified, replaceExisting = replaceExisting,
             // Fortsetzen einer angefangenen .s2ptmp nur mit Prüfung gegen die Handy-Datei (0.4.1)
             expectedHash = { PartialHash.compute(l.size) { off, len -> tree.readAt(l.docId, off, len) } },
+            // Handy-Datei während der Übertragung geändert/gewachsen? Dann Temp-Datei verwerfen, zurückstellen (-202)
+            sourceChanged = if (watchSource) ({ !unchanged(findNow(rel, l), l) }) else null,
         )
         val rs = s.stat(path) ?: throw IOException(str(R.string.eng_err_after_upload_missing))
         if (rs.size != l.size) throw IOException(str(R.string.eng_err_after_upload_size))
@@ -699,7 +730,7 @@ class MirrorEngine(
         // (Wiederholung nach eigenem Verschieben in den Papierkorb: die Datei fehlt jetzt, es darf nichts Neues dort liegen)
         val expectNew = local[key] == null || expectNewAfterOwnTrash
         val (docId, resumedAt) = try {
-            tree.writeFileResumable(rel, r.size, r.modified, expectNew = expectNew) { out, offset ->
+            localTouched = true; tree.writeFileResumable(rel, r.size, r.modified, expectNew = expectNew) { out, offset ->
                 s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
             }
         } catch (e: ChangedDuringRunException) {
@@ -723,98 +754,27 @@ class MirrorEngine(
      */
     private suspend fun runRestores(s: SmbSession): Boolean {
         val failures = RestoreFailures(context)
-        // Nach 5 Fehlversuchen nicht mehr automatisch wiederholen (0.11.8, DEC-146): Vormerkung bleibt bestehen
-        // (schützt die Papierkorb-Version), der Benutzer wählt auf der Startseite "Erneut versuchen" oder "Verwerfen"
-        val list = dao.pendingRestores(profile.id).filterNot { failures.isExhausted(it.id) }
-        if (list.isEmpty()) return false
-        log("I", Msg.plural(R.plurals.eng_restoring, list.size))
-        val oldStates = dao.mirrorStates(profile.id).associateBy { it.relPath }
-        for (r in list) {
-            currentCoroutineContext().ensureActive()
-            val key = r.origPath.lowercase()
-            val fromPc = r.side == Side.REMOTE.name
-            val trashFull = s.path(r.trashPath.replace('/', '\\'))
-            val dest = remotePath(s, r.origPath)
-            // Für das Zurückrollen (0.7.0): wohin die aktuellen Versionen gingen, ob die alte schon am Ziel liegt
-            var localTrashed: String? = null
-            var remoteTrashed: String? = null
-            var sourceMoved = false
-            try {
-                val localSource = if (fromPc) null else tree.find(r.trashPath)
-                val remoteSource = if (fromPc) s.stat(trashFull) else null
-                if (localSource == null && remoteSource == null) {
-                    log("W", Msg.of(R.string.eng_restore_gone, r.origPath))
-                    dao.deleteRestore(r.id); failures.clear(r.id)
-                    continue
-                }
-                // 1. Aktuelle Versionen (falls vorhanden) in den Papierkorb – so ist auch das Wiederherstellen umkehrbar
-                dao.deleteMirrorState(profile.id, key)
-                tree.find(r.origPath)?.let { localTrashed = tree.moveToTrash(r.origPath, it, today); trashed.incrementAndGet() }
-                if (s.stat(dest) != null) remoteTrashed = trashRemote(s, r.origPath)
-                // 2. Alte Version zurück an ihren Ort, 3. auf die andere Seite kopieren (setzt den Sync-Stand)
-                if (localSource != null) {
-                    val id = tree.moveFile(r.trashPath, localSource, r.origPath)
-                    sourceMoved = true
-                    // Per Ordnerliste lesen wie beim Einlesen (stat() liefert bei manchen Speicherorten andere Werte, 0.7.0)
-                    val l = (try { tree.find(r.origPath) } catch (e: Exception) { null }) ?: tree.stat(id)
-                        ?: throw IOException(str(R.string.eng_err_restored_missing))
-                    upload(s, key, r.origPath, l) {}
-                } else {
-                    s.ensureDir(dest.substringBeforeLast('\\', ""))
-                    s.move(trashFull, dest)
-                    sourceMoved = true
-                    val re = s.stat(dest) ?: throw IOException(str(R.string.eng_err_restored_missing))
-                    download(s, key, r.origPath, re) {}
-                }
-                dao.deleteConflict(profile.id, r.origPath)
-                dao.deleteRestore(r.id); failures.clear(r.id)
-                log("I", Msg.of(R.string.eng_restored, r.origPath, r.trashPath.split('/').getOrNull(1) ?: "?"))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Zurückrollen: alte Version zurück in den Papierkorb, aktuelle Versionen an ihren Platz (0.7.0)
-                val rolledBack = rollbackRestore(s, r.origPath, r.trashPath, trashFull, dest, fromPc, sourceMoved, localTrashed, remoteTrashed)
-                if (rolledBack) oldStates[key]?.let { dao.upsertMirrorState(it) }
-                if (isNetworkError(e)) { connectionFailed = true; throw e } // bleibt vorgemerkt
-                failed.incrementAndGet()
-                // Vormerkung bleiben lassen: nächster Sync versucht es erneut, die Startseite zeigt einen Hinweis
-                val attempts = failures.mark(profile.id, r.id)
-                val err = com.sync2pc.app.sync.shortError(e)
-                log("E", when {
-                    !rolledBack -> Msg.of(R.string.eng_restore_failed_partial, r.origPath, err)
-                    RestoreRetryPolicy.exhausted(attempts) ->
-                        Msg.of(R.string.eng_restore_gave_up, r.origPath, err, RestoreRetryPolicy.MAX_ATTEMPTS)
-                    else -> Msg.of(R.string.eng_restore_failed_rolled_back, r.origPath, err)
-                })
-            }
-        }
-        return true
-    }
-
-    /** Ein fehlgeschlagenes Wiederherstellen rückgängig machen. true = alles wieder wie vorher */
-    private fun rollbackRestore(
-        s: SmbSession, origPath: String, trashPath: String, trashFull: String, dest: String, fromPc: Boolean,
-        sourceMoved: Boolean, localTrashed: String?, remoteTrashed: String?,
-    ): Boolean {
-        var ok = true
-        fun step(what: String, block: () -> Unit) {
-            try { block() } catch (e: Exception) { ok = false; android.util.Log.w("MirrorEngine", "Zurückrollen $what", e) }
-        }
-        if (sourceMoved) {
-            if (fromPc) step("PC-Quelle") { if (s.stat(dest) != null && s.stat(trashFull) == null) s.move(dest, trashFull) }
-            else step("Handy-Quelle") {
-                val back = tree.find(origPath)
-                if (back != null && tree.find(trashPath) == null) tree.moveFile(origPath, back, trashPath)
-            }
-        }
-        remoteTrashed?.let { t -> step("PC-Version") { if (s.stat(dest) == null) s.move(t, dest) else ok = false } }
-        localTrashed?.let { t ->
-            step("Handy-Version") {
-                val e = tree.find(t)
-                if (e != null && tree.find(origPath) == null) tree.moveFile(t, e, origPath) else ok = false
-            }
-        }
-        return ok
+        // Ablauf, Zurückrollen und Fehlerbehandlung: RestoreExecutor (SYNC-20261111-163 Stufe 2)
+        return RestoreExecutor(tree, s, object : RestoreHost {
+            override val today: String get() = this@MirrorEngine.today
+            override suspend fun pendingRestores() = dao.pendingRestores(profile.id)
+            override suspend fun mirrorStates() = dao.mirrorStates(profile.id)
+            override suspend fun deleteMirrorState(key: String) = dao.deleteMirrorState(profile.id, key)
+            override suspend fun upsertMirrorState(state: MirrorState) = dao.upsertMirrorState(state)
+            override suspend fun deleteConflict(relPath: String) = dao.deleteConflict(profile.id, relPath)
+            override suspend fun deleteRestore(id: Long) = dao.deleteRestore(id)
+            override fun isExhausted(restoreId: Long) = failures.isExhausted(restoreId)
+            override fun markFailure(restoreId: Long) = failures.mark(profile.id, restoreId)
+            override fun clearFailure(restoreId: Long) = failures.clear(restoreId)
+            override suspend fun log(level: String, msg: Msg) = this@MirrorEngine.log(level, msg)
+            override fun warn(what: String, e: Exception) { android.util.Log.w("MirrorEngine", what, e) }
+            override fun countTrashed() { trashed.incrementAndGet() }
+            override fun countFailed() { failed.incrementAndGet() }
+            override fun markConnectionFailed() { connectionFailed = true }
+            override fun trashRemote(rel: String) = this@MirrorEngine.trashRemote(s, rel)
+            override suspend fun upload(key: String, rel: String, local: LocalEntry) = this@MirrorEngine.upload(s, key, rel, local, watchSource = false) {}
+            override suspend fun download(key: String, rel: String, remote: RemoteEntry) = this@MirrorEngine.download(s, key, rel, remote) {}
+        }).run()
     }
 
     /** Vorgemerktes Leeren des PC-Papierkorbs (PC war beim Auslösen nicht erreichbar) */
@@ -884,7 +844,7 @@ class MirrorEngine(
         val pending = dao.pendingRestores(profile.id)
         var n = 0
         try {
-            n += tree.purgeTrash(rule, TrashPurge.reservedPaths(pending, Side.LOCAL))
+            localTouched = true; n += tree.purgeTrash(rule, TrashPurge.reservedPaths(pending, Side.LOCAL))
         } catch (e: Exception) {
             log("W", Msg.of(R.string.eng_purge_local_failed, com.sync2pc.app.sync.shortError(e)))
         }
@@ -931,6 +891,10 @@ class MirrorEngine(
             uploaded = up.get() + down.get(), skipped = 0, failed = failed.get(), waiting = newConflicts, bytes = bytes.get(), deferred = deferred.get()
         )
         dao.updateRun(run)
+        // SYNC-20261111-213: Datei während des Laufs neu entstanden/gelöscht -> Folgelauf (billiger Ordner-Stempelvergleich)
+        if (!dryRun && status != RunStatus.FAILED && ::tree.isInitialized) {
+            changedDuringRun = withContext(Dispatchers.IO) { tree.changedSinceListing(localTouched) }
+        }
         if (!dryRun) log("I", Msg.of(R.string.eng_end, message))
         return run
     }

@@ -53,4 +53,21 @@
     <string name="remote_picker_name_invalid">Ungültiger Name. Kein \\ / : * ? \" &lt; &gt; |, kein Punkt oder Leerzeichen am Ende.</string>
     <string name="remote_picker_name_exists">Ein Ordner «%1$s» existiert bereits.</string>
     <string name="remote_picker_create_failed">Der Ordner konnte nicht angelegt werden.</string>
+    <!-- SYNC-20261111-195: Bedienhilfe-Beschreibungen der Icons (Symbole im Text, ui/SymbolText.kt) -->
+    <string name="icon_folder">Ordner</string>
+    <string name="icon_camera">Kamera</string>
+    <string name="icon_phone">Handy</string>
+    <string name="icon_pc">PC</string>
+    <string name="icon_server">Server</string>
+    <string name="icon_add">Hinzufügen</string>
+    <string name="icon_up">Hoch</string>
+    <string name="icon_down">Runter</string>
+    <string name="icon_pause">Pause</string>
+    <string name="icon_play">Fortsetzen</string>
+    <string name="icon_ok">Erledigt</string>
+    <string name="icon_error">Fehler</string>
+    <string name="icon_warn">Warnung</string>
+    <string name="icon_sync">Synchronisieren</string>
+    <string name="icon_bin">Papierkorb</string>
+    <string name="icon_both">Beidseitig</string>
 </resources>

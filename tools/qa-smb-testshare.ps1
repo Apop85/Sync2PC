@@ -2,6 +2,9 @@
 #   tools\qa-smb-testshare.ps1            -> Start (Einrichtung beim ersten Mal)
 #   tools\qa-smb-testshare.ps1 -Stop      -> Server beenden, adb reverse entfernen
 #   tools\qa-smb-testshare.ps1 -Status    -> laeuft der Server, ist adb reverse aktiv
+#   -ThrottleKBps <n>                     -> Datenrate auf n KB/s bremsen (Datei waehrend des Laufs aendern, Abbruch von Hand)
+#   -DropAfterBytes <n> [-DropCount <k>]  -> Verbindung nach n Datenbytes hart trennen (die ersten k Verbindungen, Standard 1)
+#   (Throttle/Drop gelten nur beim Start; laufenden Server vorher mit -Stop beenden)
 # Ablauf: Python-venv mit impacket (einmalig, PyPI) -> Freigabeordner .build\qa-smb-share -> Python-SMB-Server auf
 # 127.0.0.1:4445 -> "adb reverse tcp:445 tcp:4445". Im Emulator erreicht die App den Server dann als \\127.0.0.1\QA
 # (oder \\localhost\QA: anderer Hostname, gleicher Server, geeignet zum Testen des Hostwechsels).
@@ -15,7 +18,10 @@ param(
     [string]$Password = 'qa-test-1',
     [int]$Port = 4445,
     [string]$Guid = '',
-    [string]$Serial = ''
+    [string]$Serial = '',
+    [int]$ThrottleKBps = 0,
+    [int]$DropAfterBytes = 0,
+    [int]$DropCount = 1
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -72,6 +78,8 @@ if (Get-ServerProc) {
     $srvArgs = @((Join-Path $PSScriptRoot 'qa-smb-testshare.py'), '--dir', $shareDir, '--share', $Share, '--user', $User,
         '--password', $Password, '--port', $Port)
     if ($Guid) { $srvArgs += @('--guid', $Guid) }
+    if ($ThrottleKBps -gt 0) { $srvArgs += @('--throttle-kbps', $ThrottleKBps) }
+    if ($DropAfterBytes -gt 0) { $srvArgs += @('--drop-after-bytes', $DropAfterBytes, '--drop-count', $DropCount) }
     $proc = Start-Process -FilePath $py -ArgumentList $srvArgs -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput $log -RedirectStandardError "$log.err"
     [IO.File]::WriteAllText($pidFile, [string]$proc.Id)

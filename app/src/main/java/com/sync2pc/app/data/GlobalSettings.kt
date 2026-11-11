@@ -151,8 +151,12 @@ class GlobalSettings(context: Context) {
     val lastSkipInfo: String get() = prefs.getString("lastSkipInfo", "") ?: ""
     val lastSkipAt: Long get() = prefs.getLong("lastSkipAt", 0)
 
-    fun noteSkip(info: String) {
-        prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis()).apply()
+    /** Der letzte Grund stammt von einem manuellen Start (SYNC-20261111-188 B1: «Automatischer Start übersprungen» wäre falsch) */
+    val lastSkipManual: Boolean get() = prefs.getBoolean("lastSkipManual", false)
+
+    fun noteSkip(info: String, manual: Boolean = false) {
+        prefs.edit().putString("lastSkipInfo", info).putLong("lastSkipAt", System.currentTimeMillis())
+            .putBoolean("lastSkipManual", manual).apply()
     }
 
     // ---- PC nicht erkannt: Benachrichtigung einmal je Profil, bis geklärt (SYNC-20261109-047) ----

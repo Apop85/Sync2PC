@@ -92,16 +92,17 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 )
             } finally {
                 try {
-                    SyncScheduler.armContentTrigger(ctx)
+                    // Nur scharf stellen, wenn keiner wartet (KEEP): ein bereits wartender Auslöser behält seine Frist und wird
+                    // von einem Lauf ohne neue Dateien nicht erneut um Mindestalter + 30 s nach hinten geschoben.
+                    // Neue Medien verlängern die Frist von selbst (Update-Delay des Content-Triggers).
+                    SyncScheduler.armContentTrigger(ctx, replace = false)
                 } finally {
                     // Sicherheitsnetz: 6 Stunden nach diesem Lauf erneut prüfen (schiebt den Zeitpunkt nach hinten)
                     SyncScheduler.scheduleSafetyNet(ctx, restart = true)
                 }
             }
         } catch (t: Throwable) {
-            val first = workFailure
-            if (first == null) throw t
-            first.addSuppressed(t)
+            throw SyncDecisions.mergeFailures(workFailure, t)
         }
         workFailure?.let { throw it }
         workResult!!
@@ -263,7 +264,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         // PC erkannt/nicht mehr abgewiesen -> Benachrichtigungsmerker löschen (neue Meldung bei erneutem Wechsel)
         for (p in runnable) if (p.pcMode().checksGuid) settings.setPcNotified(p.id, false)
-        if (unreachable.isNotEmpty()) settings.noteSkip(str(R.string.skip_pc_unreachable, unreachable.joinToString(", ") { it.name }))
+        if (unreachable.isNotEmpty()) settings.noteSkip(str(R.string.skip_pc_unreachable, unreachable.joinToString(", ") { it.name }), manual)
         if (rejected.isNotEmpty()) {
             // -157: Aushandlungsfehler (z. B. Verschlüsselung erforderlich, aber nicht verfügbar) sind keine «nicht erkannten» PCs
             val failedNeg = rejected.filter { it.decision == null }
@@ -271,7 +272,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             settings.noteSkip(listOfNotNull(
                 notRecognised.takeIf { it.isNotEmpty() }?.let { str(R.string.skip_pc_not_recognised, it.joinToString(", ") { r -> r.profile.name }) },
                 failedNeg.takeIf { it.isNotEmpty() }?.let { str(R.string.skip_pc_failed, it.joinToString(", ") { r -> r.profile.name }) },
-            ).joinToString(" · "))
+            ).joinToString(" · "), manual)
             if (manual) {
                 Notifications.summary(ctx, rejected.joinToString("\n") { "${it.profile.name}: ${it.message()}" }, error = true)
             } else for (r in rejected) if (!settings.pcNotified(r.profile.id)) {
@@ -312,6 +313,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         var spaceShortage = false
         var interruptedMidRun = false
         var deferredFiles = 0
+        var folderChanged = false // SYNC-20261111-213: Handy-Ordner während des Laufs verändert
         // WLAN während der Übertragung wach halten (sonst schaltet Android es im Standby in den Stromsparmodus)
         val locks = TransferLocks.acquire(ctx)
         try {
@@ -348,6 +350,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 // Erster manueller Start eines neuen Profils -> ab jetzt auch automatisch
                 if (manual && p.id in awaiting && r.status != RunStatus.FAILED) settings.setAwaitingFirstStart(p.id, false)
                 uploaded += r.uploaded; failed += r.failed; bytes += r.bytes; deferredFiles += r.deferred
+                if (engine.changedDuringRun) folderChanged = true
                 if (p.type() == ProfileType.PHOTOS) waiting += r.waiting
                 conflicts += engine.newConflicts
                 if (engine.spaceShortage) spaceShortage = true
@@ -371,12 +374,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         // --- Abschluss-Benachrichtigungen ----------------------------------------
         // Verbindungsabbrüche sind erwartbar: keine Meldung, der Rest folgt automatisch
-        if (hardFailure != null) {
-            Notifications.summary(ctx, str(R.string.summary_failed, hardFailure), error = true)
-        } else if (interruptedMidRun) {
-            // still – Anzeige "Pausiert" bzw. erneuter Versuch übernimmt
-        } else if (uploaded > 0 || failed > 0) {
-            Notifications.summary(
+        when (SyncDecisions.summaryKind(hardFailure != null, interruptedMidRun, uploaded, failed)) {
+            SyncDecisions.SummaryKind.FAILED ->
+                Notifications.summary(ctx, str(R.string.summary_failed, hardFailure!!), error = true)
+            // NONE bei Unterbruch mitten im Lauf: still – Anzeige "Pausiert" bzw. erneuter Versuch übernimmt
+            SyncDecisions.SummaryKind.NONE -> {}
+            SyncDecisions.SummaryKind.TRANSFERRED -> Notifications.summary(
                 ctx,
                 plural(R.plurals.summary_transferred, uploaded, uploaded, Notifications.formatBytes(bytes)) +
                     (if (failed > 0) ", " + plural(R.plurals.summary_errors, failed) else ""),
@@ -401,12 +404,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // SYNC-20261111-173: Dateien, die sich während des Laufs änderten, folgen per automatischem Folgelauf (höchstens einer
         // pro Stunde). Pause/«nur manuell» gelten wie bei jedem automatischen Lauf (nicht planen, kein Stundenkontingent verbrauchen).
         val now = System.currentTimeMillis()
-        if (!interruptedMidRun && !settings.isPaused() && SkipFollowUp.mayPlan(deferredFiles, now, settings.lastSkipFollowUpAt)) {
+        if (!interruptedMidRun && !settings.isPaused() && SkipFollowUp.mayPlan(deferredFiles, now, settings.lastSkipFollowUpAt, folderChanged)) {
             SyncScheduler.enqueueSkipFollowUp(ctx)
             settings.lastSkipFollowUpAt = now // erst nach dem Einreihen: scheitert es, bleibt das Stundenkontingent erhalten
         }
         // Erfolgreich gesichert -> eine offene Erinnerung "lange nicht gesichert" ist erledigt
-        if (hardFailure == null && !interruptedMidRun && unreachable.isEmpty() && rejected.isEmpty()) {
+        if (SyncDecisions.staleResolved(hardFailure != null, interruptedMidRun, unreachable.isEmpty(), rejected.isEmpty())) {
             Notifications.cancelStale(ctx)
             GlobalSettings(ctx).lastStaleWarnAt = 0
         }
@@ -464,36 +467,39 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // Abgewiesene Profile (PC nicht sicher erkannt, SYNC-20261109-047/-055) kommen nicht hierher: ohne Timer, sie werden beim
         // nächsten ohnehin stattfindenden Lauf neu bewertet (Port 445 antwortet, die Abweisung ändert nur der Benutzer).
         val waiting = unreachable
-        if (waiting.isEmpty()) {
-            s.shareRetryAt = 0; s.shareUnreachable = ""
-            // Die laufende Wiederholung nicht selbst abbrechen
-            if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
-            return
-        }
         val names = unreachable.joinToString(", ") { it.name }
-        // Abbruch mitten in der Übertragung behandeln wie automatisch (auch bei manuellem Start): still fortsetzen
-        if (manual && !midRun) {
-            if (unreachable.isNotEmpty()) Notifications.summary(ctx, str(R.string.summary_pc_unreachable, names), error = true)
-            return
-        }
         // Noch im Ziel-WLAN? Dann ist der PC weg -> in 30 Minuten erneut prüfen.
         // WLAN selbst verloren -> kein Timer, sondern sofort beim nächsten Verbinden (WifiNetworkReceiver).
-        val ssid = WifiHelper.currentSsid(ctx)
-        val onAllowed = WifiHelper.onAllowedNetwork(ctx)
-        val stillOnTargetWifi = waiting.any { NetworkRules.mayContinue(it.pcMode(), ssid, it.ssids(), onAllowed) }
-        if (stillOnTargetWifi) {
-            // Im WLAN: Abbruch mitten in der Übertragung = meist kurzer Aussetzer -> bald erneut (2 min).
-            // Nur mobile Daten/VPN (0.11.7): immer 2 Stunden. Ein erfolgreicher Lauf (auch von Hand) hebt die
-            // Wartezeit auf (oben: unreachable.isEmpty()); der manuelle Start ignoriert sie ohnehin.
-            val minutes = NetworkRules.retryMinutes(WifiHelper.offWifiSyncActive(ctx), midRun)
-            s.shareRetryAt = System.currentTimeMillis() + minutes * 60_000
-            s.shareUnreachable = names
-            SyncScheduler.enqueueShareRetry(ctx, minutes)
-            if (midRun) Notifications.showPaused(ctx, lastProgress, targetWifi, str(R.string.paused_connection_retry, minutes))
-        } else {
-            s.shareRetryAt = 0; s.shareUnreachable = ""
-            if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
-            markInterrupted()
+        // Die Entscheidung liegt in SyncDecisions.unreachableAction (SYNC-20261111-207, B4, testbar).
+        val action = SyncDecisions.unreachableAction(waiting.isNotEmpty(), manual, midRun) {
+            val ssid = WifiHelper.currentSsid(ctx)
+            val onAllowed = WifiHelper.onAllowedNetwork(ctx)
+            waiting.any { NetworkRules.mayContinue(it.pcMode(), ssid, it.ssids(), onAllowed) }
+        }
+        when (action) {
+            SyncDecisions.UnreachableAction.CLEAR_WAIT -> {
+                s.shareRetryAt = 0; s.shareUnreachable = ""
+                // Die laufende Wiederholung nicht selbst abbrechen
+                if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
+            }
+            // Abbruch mitten in der Übertragung behandeln wie automatisch (auch bei manuellem Start): still fortsetzen
+            SyncDecisions.UnreachableAction.NOTIFY_ONLY ->
+                Notifications.summary(ctx, str(R.string.summary_pc_unreachable, names), error = true)
+            SyncDecisions.UnreachableAction.RETRY_TIMER -> {
+                // Im WLAN: Abbruch mitten in der Übertragung = meist kurzer Aussetzer -> bald erneut (2 min).
+                // Nur mobile Daten/VPN (0.11.7): immer 2 Stunden. Ein erfolgreicher Lauf (auch von Hand) hebt die
+                // Wartezeit auf (CLEAR_WAIT); der manuelle Start ignoriert sie ohnehin.
+                val minutes = NetworkRules.retryMinutes(WifiHelper.offWifiSyncActive(ctx), midRun)
+                s.shareRetryAt = System.currentTimeMillis() + minutes * 60_000
+                s.shareUnreachable = names
+                SyncScheduler.enqueueShareRetry(ctx, minutes)
+                if (midRun) Notifications.showPaused(ctx, lastProgress, targetWifi, str(R.string.paused_connection_retry, minutes))
+            }
+            SyncDecisions.UnreachableAction.RESUME_ON_WIFI -> {
+                s.shareRetryAt = 0; s.shareUnreachable = ""
+                if (!isRetry) WorkManager.getInstance(ctx).cancelUniqueWork(SyncScheduler.WORK_RETRY)
+                markInterrupted()
+            }
         }
     }
 }

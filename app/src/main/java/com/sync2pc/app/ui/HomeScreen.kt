@@ -52,13 +52,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -113,6 +113,26 @@ fun rememberResumeTick(): Int {
     return tick
 }
 
+/**
+ * Erhöht sich, wenn das Standardnetz wechselt oder wegfällt (WLAN an/aus, anderes WLAN, mobile Daten), damit die Zeile
+ * «WLAN: …» nicht veraltet stehen bleibt (SYNC-20261111-188 B5). Nur Verfügbarkeit, nicht jede Änderung der Signalstärke.
+ */
+@Composable
+fun rememberNetworkTick(): Int {
+    val ctx = LocalContext.current
+    var tick by remember { mutableIntStateOf(0) }
+    DisposableEffect(ctx) {
+        val cm = ctx.getSystemService(android.net.ConnectivityManager::class.java)
+        val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) { tick++ }
+            override fun onLost(network: android.net.Network) { tick++ }
+        }
+        try { cm?.registerDefaultNetworkCallback(cb) } catch (e: Exception) { /* Anzeige bleibt wie bisher (nur beim Zurückkehren) */ }
+        onDispose { try { cm?.unregisterNetworkCallback(cb) } catch (e: Exception) { /* nicht registriert */ } }
+    }
+    return tick
+}
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -124,8 +144,10 @@ fun HomeScreen(
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val tick = rememberResumeTick()
+    // B5: WLAN-Name auch bei Netzwechsel neu lesen (nicht nur beim Zurückkehren in die App)
+    val netTick = rememberNetworkTick()
     val perms = remember(tick) { PermStatus.read(ctx) }
-    val ssid = remember(tick) { WifiHelper.currentSsid(ctx) }
+    val ssid = remember(tick, netTick) { WifiHelper.currentSsid(ctx) }
     val update = remember(tick) { UpdateChecker.stored(ctx) }
 
     val allProfiles by remember { dao.profilesFlow() }.collectAsState(initial = emptyList())
@@ -195,6 +217,8 @@ fun HomeScreen(
             "${formatTime(s.lastSkipAt).substringAfter(' ')}: ${s.lastSkipInfo}"
         else null
     }
+    // B1: stammt der Grund von einem manuellen Start, heisst die Zeile nicht «Automatischer Start übersprungen»
+    val skipManual = remember(tick, workKey) { settings.lastSkipManual }
     // Durch WLAN-Unterbruch pausiert?
     val paused = remember(tick, workKey) { settings.resumeOnWifi }
     // Vom Benutzer pausiert (Symbol oben rechts)? pauseVersion erzwingt das Neulesen nach Aktionen
@@ -266,8 +290,8 @@ fun HomeScreen(
 
     // Gesamtzustand für die Statuskarte (SYNC-20261110-113): Verbindung, Profile, offene Entscheidungen
     val activeProfiles = profiles.filter { it.enabled && it.isConfigured() }
-    val onAllowedNet = remember(tick, workKey) { WifiHelper.onAllowedNetwork(ctx) }
-    val offWifiActive = remember(tick, workKey) { WifiHelper.offWifiSyncActive(ctx) }
+    val onAllowedNet = remember(tick, netTick, workKey) { WifiHelper.onAllowedNetwork(ctx) }
+    val offWifiActive = remember(tick, netTick, workKey) { WifiHelper.offWifiSyncActive(ctx) }
     val noConnection = HomeStatus.noConnection(
         activeProfiles.size,
         anyCanRunNow = activeProfiles.any { HomeStatus.profileCanRunNow(it.pcMode(), it.ssids(), ssid, onAllowedNet, offWifiActive) },
@@ -293,7 +317,21 @@ fun HomeScreen(
         pendingFiles = pendingFiles,
         // R4: ohne Standort-Berechtigung ist der WLAN-Name nicht lesbar (automatische Synchronisierung still gestört)
         locationMissing = locationMissing,
+        // B2: ein aktives Profil, das noch nie erfolgreich gestartet wurde, ist nicht «gesichert»
+        awaitingFirstStart = activeProfiles.any { it.id in awaitingStart },
+        // B1: der letzte Start wurde nicht ausgeführt (PC nicht erreichbar/erkannt, WLAN) -> nicht «Bereit»
+        recentSkip = skipInfo != null,
+        queuedWork = queued,
     ))
+    // -199: Wartende Dateien nur im Zustand «Keine Verbindung» ermitteln (lokal, ohne Netzwerk), nach Zustandswechseln neu
+    val waitingFiles by produceState(0, headline == HomeHeadline.NO_CONNECTION, workKey, activeProfiles, pendingFiles) {
+        value = if (headline != HomeHeadline.NO_CONNECTION) 0 else {
+            delay(800)
+            maxOf(pendingFiles, kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                activeProfiles.sumOf { com.sync2pc.app.sync.PendingCheck.openFiles(ctx, it) }
+            })
+        }
+    }
     val attentionText = if (conflicts.isNotEmpty()) plural(R.plurals.home_status_conflict_detail, conflicts.size)
         else str(R.string.home_status_attention_detail)
 
@@ -417,6 +455,7 @@ fun HomeScreen(
                     lastRun = lastRun,
                     shareWait = shareWait,
                     skipInfo = skipInfo,
+                    skipManual = skipManual,
                     paused = paused,
                     userPausedUntil = userPausedUntil,
                     headline = headline,
@@ -424,6 +463,7 @@ fun HomeScreen(
                     attentionText = attentionText,
                     lastRunErrors = lastRunErrors.coerceAtLeast(0),
                     pendingFiles = pendingFiles,
+                    waitingFiles = waitingFiles,
                     locationMissing = locationMissing,
                     onOpenPermissions = { navigate(Screen.Settings(SettingsSection.PERMISSIONS)) },
                     onSync = startSync,

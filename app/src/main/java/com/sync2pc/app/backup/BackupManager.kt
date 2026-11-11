@@ -60,7 +60,8 @@ object BackupManager {
             val json = BackupCodec.encode(content, exportPassword)
             (context.contentResolver.openOutputStream(target, "wt") ?: throw BackupException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.backup_err_write)))
                 .use { it.write(json.toByteArray(Charsets.UTF_8)) }
-            ExportResult(profiles.size, content.synced.size, usePw)
+            // SYNC-20261111-188 B8: Zahl = Fotodateien plus Ordner-Sync-Stand (der Ordner-Stand war enthalten, aber nicht mitgezählt)
+            ExportResult(profiles.size, content.synced.size + content.mirrorStates.size, usePw)
         }
 
     suspend fun read(context: Context, source: Uri): String = withContext(Dispatchers.IO) {
@@ -128,6 +129,7 @@ object BackupManager {
                 synced += files.size
                 val states = c.mirrorStates.filter { it.profileId == p.id }.map { it.copy(profileId = newId) }
                 states.chunked(500).forEach { dao.upsertMirrorStates(it) }
+                synced += states.size
                 // Mit Sync-Stand importiert: Stichprobe beim ersten Lauf, ob die Ordner auf diesem Gerät passen
                 if (states.isNotEmpty()) com.sync2pc.app.mirror.GuardStore(context).setPendingCheck(
                     newId, setOf(com.sync2pc.app.mirror.Side.LOCAL, com.sync2pc.app.mirror.Side.REMOTE)

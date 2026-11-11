@@ -124,6 +124,21 @@ interface RemoteFiles : RemoteDirs {
     fun partialHash(path: String, size: Long): String
 }
 
+/**
+ * Schreibender Zugriff auf die Freigabe mit genau den Operationen, die Papierkorb-Aufräumen, Wiederherstellen und
+ * «Speicher freigeben» brauchen (SYNC-20261111-163 Stufe 2, Entscheid Architecture -183). [RemoteFiles] bleibt bewusst nur
+ * lesend. [SmbSession] implementiert dies mit seinen vorhandenen Methoden; in Tests ersetzt es ein Fake.
+ */
+interface RemoteStore : RemoteFiles, Closeable {
+    fun dirExists(path: String): Boolean
+    fun listRecursive(basePath: String, skipDir: (String) -> Boolean = { false }): Map<String, RemoteEntry>
+    fun ensureDir(path: String)
+    fun move(from: String, to: String)
+    fun delete(path: String)
+    fun deleteDir(path: String)
+    fun contentHash(path: String, size: Long, check: () -> Unit = {}, onBytes: (Long) -> Unit = {}): String
+}
+
 /** Eine offene Verbindung zu einem Windows-Share (SMB2/SMB3 via smbj). */
 class SmbSession private constructor(
     private val client: SMBClient,
@@ -131,7 +146,7 @@ class SmbSession private constructor(
     private val session: Session,
     private val share: DiskShare,
     val target: SmbTarget,
-) : Closeable, RemoteFiles {
+) : RemoteStore {
 
     companion object {
         const val TEMP_SUFFIX = ".s2ptmp"
@@ -343,7 +358,7 @@ class SmbSession private constructor(
         (listOf(target.basePath) + parts).filter { it.isNotEmpty() }.joinToString("\\")
 
     /** Existiert der Ordner? Die Wurzel der Freigabe ("") existiert immer */
-    fun dirExists(path: String): Boolean = path.isEmpty() || share.folderExists(path)
+    override fun dirExists(path: String): Boolean = path.isEmpty() || share.folderExists(path)
 
     override fun listDir(path: String): List<RemoteEntry> {
         if (path.isNotEmpty() && !share.folderExists(path)) return emptyList()
@@ -362,7 +377,7 @@ class SmbSession private constructor(
      * Alle Dateien unterhalb von [basePath] (rekursiv), Schlüssel = relativer Pfad mit "/".
      * [skipDir] erhält den relativen Ordnerpfad und kann ganze Zweige auslassen.
      */
-    fun listRecursive(basePath: String, skipDir: (String) -> Boolean = { false }): Map<String, RemoteEntry> {
+    override fun listRecursive(basePath: String, skipDir: (String) -> Boolean): Map<String, RemoteEntry> {
         val out = LinkedHashMap<String, RemoteEntry>()
         fun walk(rel: String) {
             val full = if (rel.isEmpty()) basePath else (if (basePath.isEmpty()) rel.replace('/', '\\') else basePath + "\\" + rel.replace('/', '\\'))
@@ -413,7 +428,7 @@ class SmbSession private constructor(
     }
 
     /** Verschiebt/benennt eine Datei um (Zielordner muss existieren) */
-    fun move(from: String, to: String) {
+    override fun move(from: String, to: String) {
         share.openFile(
             from, EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, EnumSet.of(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE)
@@ -421,7 +436,7 @@ class SmbSession private constructor(
     }
 
     /** Legt alle Ebenen an, falls nötig (verträgt parallele Aufrufe aus mehreren Verbindungen) */
-    fun ensureDir(path: String) {
+    override fun ensureDir(path: String) {
         if (path.isEmpty() || share.folderExists(path)) return
         val parts = path.split('\\')
         var cur = ""
@@ -439,12 +454,12 @@ class SmbSession private constructor(
         if (!share.fileExists(path)) null
         else share.getFileInformation(path).standardInformation.endOfFile
 
-    fun delete(path: String) {
+    override fun delete(path: String) {
         if (share.fileExists(path)) share.rm(path)
     }
 
     /** Ordner samt Inhalt endgültig löschen */
-    fun deleteDir(path: String) {
+    override fun deleteDir(path: String) {
         if (path.isNotEmpty() && share.folderExists(path)) share.rmdir(path, true)
     }
 
@@ -465,7 +480,7 @@ class SmbSession private constructor(
      * Vollständiger Inhalts-Hash für den Ordner-Vergleich (siehe [PartialHash.comparison]): ganze Datei, auch über
      * 32 MB (SYNC-20261111-142). [check] bricht per Exception ab, [onBytes] meldet den Fortschritt.
      */
-    fun contentHash(path: String, size: Long, check: () -> Unit = {}, onBytes: (Long) -> Unit = {}): String =
+    override fun contentHash(path: String, size: Long, check: () -> Unit, onBytes: (Long) -> Unit): String =
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, null
@@ -492,6 +507,8 @@ class SmbSession private constructor(
      * @param onProgress Bytes dieser Datei bisher
      * @param checkCancel wirft eine Exception, wenn abgebrochen werden soll
      * @param modifiedMillis ursprüngliches Änderungsdatum, wird auf der Zieldatei gesetzt und für das Fortsetzen geprüft
+     * @param sourceChanged Prüfung kurz vor dem Umbenennen: Hat sich die Quelle geändert, wird die Temp-Datei gelöscht und
+     *   [com.sync2pc.app.mirror.SourceChangedException] geworfen (SYNC-20261111-202)
      * @return Stelle, ab der fortgesetzt wurde (0 = neu)
      */
     fun upload(
@@ -505,6 +522,8 @@ class SmbSession private constructor(
         replaceExisting: Boolean = false,
         /** Teil-Hash der Quelldatei (PartialHash.compute) – Pflichtprüfung nach dem Fortsetzen */
         expectedHash: (() -> String)? = null,
+        /** true = Quelldatei hat sich seit dem Einlesen geändert (Ordner-Spiegelung, -202); null = keine Prüfung */
+        sourceChanged: (() -> Boolean)? = null,
     ): Long {
         val tempPath = finalPath + TEMP_SUFFIX
         val tmp = stat(tempPath)
@@ -529,9 +548,12 @@ class SmbSession private constructor(
                 while (true) {
                     checkCancel()
                     // Puffer möglichst voll machen -> weniger SMB-Roundtrips
+                    // Höchstens ein Byte über die erwartete Grösse lesen: wächst die Datei, genügt das zum Erkennen (-202)
                     var filled = 0
                     while (filled < buf.size) {
-                        val n = input.read(buf, filled, buf.size - filled)
+                        val room = com.sync2pc.app.mirror.UploadVerdict.room(size, offset + filled, buf.size - filled)
+                        if (room <= 0) break
+                        val n = input.read(buf, filled, room)
                         if (n < 0) break
                         filled += n
                     }
@@ -542,7 +564,17 @@ class SmbSession private constructor(
                     if (filled < buf.size) break
                 }
             }
-            if (offset != size) throw java.io.IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_incomplete, offset, size))
+            // Quelle noch wie beim Einlesen? (-202) Geändert -> Temp-Datei verwerfen und zurückstellen, nie eine halbe oder
+            // gemischte Version zur fertigen Datei machen. Die Prüfung gilt auch bei passender Bytezahl (Änderung gleicher Länge).
+            when (com.sync2pc.app.mirror.UploadVerdict.of(size, offset, sourceChanged?.invoke() ?: false)) {
+                com.sync2pc.app.mirror.UploadVerdict.DEFER -> {
+                    try { f.deleteOnClose() } catch (ignored: Exception) {}
+                    throw com.sync2pc.app.mirror.SourceChangedException()
+                }
+                com.sync2pc.app.mirror.UploadVerdict.INCOMPLETE ->
+                    throw java.io.IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_incomplete, offset, size))
+                com.sync2pc.app.mirror.UploadVerdict.COMMIT -> {}
+            }
             if (resumedAt > 0 && expectedHash != null) {
                 val h = PartialHash.compute(size) { off, len -> readFully(f, off, len) }
                 if (h != expectedHash()) {

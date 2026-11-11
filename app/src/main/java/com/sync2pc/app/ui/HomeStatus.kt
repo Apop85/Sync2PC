@@ -49,10 +49,16 @@ internal data class HomeStatusInput(
     val pendingFiles: Int = 0,
     /** Standort-Berechtigung fehlt, obwohl ein Profil den WLAN-Namen braucht (SYNC-20261111-176 R4): nie «alles aktuell» */
     val locationMissing: Boolean = false,
+    /** Ein aktives Profil wurde noch nie erfolgreich gestartet (SYNC-20261111-188 B2): nie «alles gesichert» */
+    val awaitingFirstStart: Boolean = false,
+    /** Der letzte Start (auto oder manuell) wurde wegen PC/WLAN nicht ausgeführt und ist nicht älter als 24 h (B1) */
+    val recentSkip: Boolean = false,
+    /** Ein Sync-Auftrag ist fällig, kann aber nicht starten (Queue nicht leer) */
+    val queuedWork: Boolean = false,
 )
 
 internal object HomeStatus {
-    /** Vorrang: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > ausstehende Dateien > gesichert > neutral */
+    /** Vorrang: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > Start nicht ausgeführt (zählt als keine Verbindung) > ausstehende Dateien > gesichert (nur wenn jedes aktive Profil schon einmal lief) > neutral */
     fun headline(i: HomeStatusInput): HomeHeadline = when {
         i.isRunning -> HomeHeadline.RUNNING
         !i.hasProfiles -> HomeHeadline.NOT_CONFIGURED
@@ -60,9 +66,12 @@ internal object HomeStatus {
         !i.hasActiveProfile -> HomeHeadline.NO_ACTIVE_PROFILE
         i.userPaused || i.wifiPaused -> HomeHeadline.PAUSED
         i.noConnection -> HomeHeadline.NO_CONNECTION
+        // Arbeit in der Queue, Start wegen PC/WLAN nicht ausgeführt: wartend (sitzender Hund, blau), nicht Fehler (rot)
+        i.recentSkip && (i.pendingFiles > 0 || i.queuedWork) -> HomeHeadline.NO_CONNECTION
         i.lastRunHadErrors -> HomeHeadline.ERRORS
+        i.recentSkip -> HomeHeadline.NO_CONNECTION
         i.pendingFiles > 0 -> HomeHeadline.PENDING
-        i.allUpToDate && !i.locationMissing -> HomeHeadline.UP_TO_DATE
+        i.allUpToDate && !i.locationMissing && !i.awaitingFirstStart -> HomeHeadline.UP_TO_DATE
         else -> HomeHeadline.IDLE
     }
 

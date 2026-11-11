@@ -23,6 +23,25 @@ class HomeStatusTest {
         assertEquals(HomeHeadline.UP_TO_DATE, HomeStatus.headline(good))
     }
 
+    // SYNC-20261111-188 B2: ein nie gestartetes aktives Profil darf nie «alles gesichert» auslösen
+    @Test
+    fun profilOhneErstenStartIstNieAlleAktuell() {
+        assertEquals(HomeHeadline.IDLE, HomeStatus.headline(good.copy(awaitingFirstStart = true)))
+    }
+
+    // B1: ein nicht ausgeführter Start (PC nicht erreichbar) ist keine neutrale Überschrift «Bereit»
+    @Test
+    fun nichtAusgefuehrterStartZeigtKeineVerbindungStattBereit() {
+        assertEquals(HomeHeadline.NO_CONNECTION, HomeStatus.headline(good.copy(allUpToDate = false, recentSkip = true)))
+    }
+
+    @Test
+    fun fehlerUndPauseHabenVorrangVorNichtAusgefuehrtemStart() {
+        assertEquals(HomeHeadline.ERRORS, HomeStatus.headline(good.copy(lastRunHadErrors = true, recentSkip = true)))
+        assertEquals(HomeHeadline.PAUSED, HomeStatus.headline(good.copy(userPaused = true, recentSkip = true)))
+        assertEquals(HomeHeadline.ATTENTION, HomeStatus.headline(good.copy(attentionCount = 1, recentSkip = true)))
+    }
+
     @Test
     fun offenerKonfliktIstNieAktuell() {
         val h = HomeStatus.headline(good.copy(attentionCount = 1))
@@ -83,6 +102,16 @@ class HomeStatusTest {
         assertEquals(DogState.WAITING, HomeStatus.dogFor(h, false))
         // auch wenn allUpToDate fälschlich gesetzt wäre
         assertEquals(HomeHeadline.PENDING, HomeStatus.headline(good.copy(pendingFiles = 1)))
+    }
+
+    @Test
+    fun uebersprungenerStartMitQueueIstWartendNichtFehler() {
+        val h = HomeStatus.headline(good.copy(recentSkip = true, pendingFiles = 1, lastRunHadErrors = true))
+        assertEquals(HomeHeadline.NO_CONNECTION, h)
+        assertEquals(DogState.WAITING, HomeStatus.dogFor(h, false))
+        assertEquals(HomeHeadline.NO_CONNECTION, HomeStatus.headline(good.copy(recentSkip = true, queuedWork = true, lastRunHadErrors = true)))
+        // ohne Queue bleibt der Fehler sichtbar
+        assertEquals(HomeHeadline.ERRORS, HomeStatus.headline(good.copy(recentSkip = true, lastRunHadErrors = true)))
     }
 
     @Test

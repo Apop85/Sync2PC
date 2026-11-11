@@ -14,7 +14,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -204,7 +203,7 @@ fun BackupSection() {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(str(R.string.backup_created, formatTime(c.createdAt), c.appVersion))
                     Text(str(R.string.backup_profiles, c.profiles.joinToString(", ") { it.name }.ifEmpty { str(R.string.home_profile_none) }))
-                    if (c.synced.isNotEmpty()) Text(plural(R.plurals.backup_sync_status, c.synced.size))
+                    if (c.synced.size + c.mirrorStates.size > 0) Text(plural(R.plurals.backup_sync_status, c.synced.size + c.mirrorStates.size))
                     Text(str(when (b.passwordOk) {
                         true -> R.string.backup_pw_taken
                         false -> R.string.backup_pw_wrong

@@ -6,6 +6,7 @@ import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncDirection
+import com.sync2pc.app.smb.RemoteStore
 import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.sync.FreeItem
 import kotlinx.coroutines.Dispatchers
@@ -91,13 +92,15 @@ object FolderFreer {
         onStart: () -> Unit = {},
         /** Fortschritt beim Lesen einer grossen Datei: (relativer Pfad, gelesene Bytes beider Seiten, Bytes gesamt) */
         onBytes: (String, Long, Long) -> Unit = { _, _, _ -> },
+        /** Öffnet die PC-Sitzung (Standard: echte SMB-Verbindung; in Tests ersetzbar, SYNC-20261111-163) */
+        openSession: (Profile) -> RemoteStore = { SmbSession.open(it) },
     ): Result = withContext(Dispatchers.IO) {
         MirrorLock.mutex.withLock {
             onStart() // Sperre erworben: ab jetzt läuft der Eingriff wirklich (0.11.10)
             val dao = AppDatabase.get(context).dao()
             val tree = tree(context, profile)
             var rejected: String? = null
-            val s = try { SmbSession.open(profile) }
+            val s = try { openSession(profile) }
                 catch (e: com.sync2pc.app.sync.PcIdentityException) { rejected = e.message; null }
                 catch (e: Exception) { null }
                 ?: return@withLock Result(0, 0, list.size, unreachable = rejected == null, rejectedMessage = rejected)

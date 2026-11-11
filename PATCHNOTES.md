@@ -2,6 +2,69 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.14 (2026-11-11)
+
+### Geändert
+- **Folgelauf für neue Dateien:** Am Laufende prüft LeoSync die Ordner auf Änderungen seit dem Einlesen. Sind während des Laufs Dateien neu entstanden, folgt ein automatischer Folgelauf nach 5 Minuten (höchstens einer pro Stunde). Prüfung durch QA offen (SYNC-20261111-214).
+
+## 0.16.13 (2026-11-11)
+
+### Behoben
+- **Handy-Datei ändert sich beim Upload:** Eine Datei, die sich vor oder während des Uploads ändert oder wächst, führt nicht mehr zu «Teilweise» oder einem Fehler, sondern wird zurückgestellt («· N folgen später», Folgelauf nach 5 Minuten). Auf dem PC bleibt nie eine halbe Datei.
+
+## 0.16.12 (2026-11-11)
+
+### Geändert
+- **Icons statt Emojis:** Symbole und Emojis in der Oberfläche (Ordner, Kamera, Handy, PC, Pause, Haken, Fehler, Warnung …) sind durch eigene Icons ersetzt, in Hell und Dunkel. Benachrichtigungen und Diagnose-Export bleiben Text.
+
+## 0.16.11 (2026-11-11)
+
+### Intern
+- Nur Testbarkeit, keine Änderung im sichtbaren Verhalten: `CredentialCrypto.alias` ist nur für Tests sichtbar; neuer Test `CredentialCryptoInstrumentedTest`.
+
+## 0.16.10 (2026-11-11)
+
+### Intern
+- Nur Testbarkeit, keine Änderung im sichtbaren Verhalten: neue reine Entscheidungen in `SyncDecisions` und `OldFileRecovery`; `WorkerOutcomeDecisionsTest` (14 Tests), `ContentTriggerArmTest` (instrumentiert).
+
+## 0.16.9 (2026-11-11)
+
+### Behoben
+- **Automatischer Lauf für neue Fotos:** Ein Lauf ohne neue Dateien verschiebt den automatischen Lauf für neue Fotos nicht mehr. Der Auslöser wird nach einem Lauf nur noch scharf gestellt, wenn keiner wartet; neue Medien verlängern die Frist weiterhin.
+
+## 0.16.8 (2026-11-11)
+
+### Geändert
+- **Wartende Dateien:** Die Statuskarte nennt bei «Keine Verbindung» die Zahl wartender Dateien. Die Profilkarte eines Ordner-Profils zeigt zusätzlich «· N offen» (neue oder seit dem letzten Abgleich geänderte Dateien im Handy-Ordner, rein lokal gezählt; bei «PC → Handy» kein Zähler). Fotos-Profile unverändert.
+
+## 0.16.7 (2026-11-11)
+
+### Geändert
+- **Statuskarte, WLAN-Zeile:** Ist der WLAN-Name nicht lesbar (kein Profil mit WLAN-Erkennung oder Standort-Berechtigung fehlt), bleibt die Zeile «WLAN» leer statt «WLAN: nicht verbunden / nicht lesbar»; die Karte behält ihre Höhe.
+- **Statuskarte, Start nicht ausgeführt:** Wurde ein Start wegen PC/WLAN nicht ausgeführt und warten Dateien (ausstehende Dateien oder fälliger Sync-Auftrag), zeigt die Karte «Keine Verbindung» mit sitzendem Hund auf blauem Kreis statt des roten Fehler-Hundes. Ohne wartende Dateien bleibt der Fehler sichtbar.
+
+### Intern
+- `HomeStatusTest` +1 Test (gezielt grün, nicht von QA bestätigt). Der Text `home_wifi_none` ist unbenutzt und bleibt vorerst in den Sprachdateien. UX-Review offen (SYNC-20261111-194).
+
+## 0.16.6 (2026-11-11)
+
+### Geändert
+- **Statuskarte:** Ein nicht ausgeführter Start zeigt «Keine Verbindung» statt «Bereit»; der manuelle Start heisst «Start nicht möglich» statt «Automatischer Start übersprungen». Ein nie gestartetes Profil verhindert «Alles gesichert». Die Zeile «WLAN» aktualisiert sich bei Netzwechsel.
+- **Sicherung:** Export- und Importmeldungen zählen den Ordner-Sync-Stand mit (vorher nur Fotodateien). Der Ordner-Stand war schon vorher in der Sicherung enthalten und wurde wiederhergestellt; nur die angezeigte Zahl war zu klein.
+
+### Intern
+- `HomeStatusTest` +3 Tests. Stand 49 Klassen, 493 Tests, 0 Fehler (Angabe Development; nicht von QA bestätigt).
+
+## 0.16.5 (2026-11-11)
+
+### Intern
+- Keine Verhaltensänderung, nur Testbarkeit: Das Wiederherstellen ist in `RestoreExecutor` ausgelagert, neue Schnittstellen `RemoteStore` und `LocalFiles`, Testabhängigkeit `work-testing` (nur androidTest), neue Tests (u. a. `TrashRemoteTest`, `RestoreExecutorTest`). Stand 49 Klassen, 490 Tests, 0 Fehler (Angabe Development; nicht von QA bestätigt). androidTest nur kompiliert (QA SYNC-20261111-189).
+
+## 0.16.4 (2026-11-11)
+
+### Behoben
+- Kotlin-Warnung in `DeletionManager.kt` (überflüssiger Elvis-Operator) behoben, keine Verhaltensänderung.
+
 ## 0.16.3 (2026-11-11)
 
 ### Geändert

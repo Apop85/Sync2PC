@@ -20,6 +20,7 @@
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
 > - Versionen 0.16.0 bis 0.16.3 (2026-11-11): DEC-231 bis DEC-248 (Sync-Sperre und Folgelauf, «Beide behalten», Konflikt-Rückgängig, Verschlüsselungswert, Startseite und Dialoge, Teststruktur); Status Implemented laut Development, DEC-240 Accepted; QA- und UX-Prüfung offen.
+> - Versionen 0.16.8 bis 0.16.14 (2026-11-11): DEC-249 bis DEC-251 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien); Status Implemented laut Development; QA-Prüfung offen.
 > - Version 0.15.1 (2026-11-11): DEC-226 bis DEC-230 (Verlauf löschen, Papierkorb, Import «Ersetzen», Update-Hinweis, Sprache ausserhalb der Sicherung), Status Implemented laut Development.
 > - Version 0.15.0 (2026-11-11): DEC-221 bis DEC-225 (Nachlauf, SMB-Verschlüsselung, Gleichheit vor Löschen, UX Nachlauf-Hinweis und Karte «Verschlüsselung»), Status Implemented laut Development; Aktualisierungen an DEC-021, DEC-052, DEC-092, DEC-134, DEC-217, DEC-219.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
@@ -260,6 +261,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-246: Dialoge mit drei oder mehr Knöpfen sind gestapelt
 - DEC-247: Überlaufender Dialogtext zeigt Scrollbalken und Verlauf
 - DEC-248: Konfliktkarte: «(neuer)» erst ab einer Sekunde Unterschied, sonst «(gleich alt)»
+- DEC-249: Wartende Dateien nur lokal gezählt; leere WLAN-Zeile bleibt als Leerzeile
+- DEC-250: Icon-Stil «Variante C Duotone» statt Emojis
+- DEC-251: Geänderte Handy-Datei beim Upload wird zurückgestellt statt als Fehler gezählt
 
 **11. Lokalisierung und Sprache**
 
@@ -287,6 +291,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-081: Lokaler Absturzbericht in der Diagnose
 - DEC-089: Sicherung von Profilen, Einstellungen und Sync-Status (Export/Import)
 - DEC-200: Sicherheitsprüfung mit claude-security *(Proposed)*
+- DEC-222: SMB3-Verschlüsselung pro Profil (Aus / Wenn möglich / Erforderlich)
 
 **14. Verteilung: Updates, Play Store und Support**
 
@@ -613,6 +618,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-246 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-247 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-248 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-249 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-250 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-251 | Implemented | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -2619,7 +2627,7 @@ Pausiert angezeigt.
 - **Entscheidung:** Hat der letzte Lauf (OK) N ≥ 1 ausstehende Dateien (`SyncRun.deferred`), steht die Überschrift «↻ Noch nicht alles gesichert» (EN «↻ Not everything backed up yet»; Symbol als Text, normale Textfarbe, nicht ⚠/✓), der Hund sitzt (`DogState.WAITING`), und der Hinweis nennt die Zahl («N Dateien wurden während des Laufs geändert und folgen beim nächsten Sync.»). Ist kein Folgelauf geplant, entfällt die Zeile «Nächste Prüfung», und der Hinweis lautet «… folgen mit der nächsten Prüfung.». Rangfolge der Überschrift: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > ausstehende Dateien > gesichert > neutral. Der Verlauf zeigt «· N folgen später», der Lauf bleibt OK. Kehrt ein Lauf ohne ausstehende Dateien zurück, erscheint wieder «✓ Alles gesichert und aktuell».
 - **Begründung:** Die Startseite soll ehrlich und ohne Fehleranmutung zeigen, dass nicht alles gesichert ist; es wird nichts von der Person verlangt (daher sitzender Hund).
 - **Alternativen:** — (in der Quelle nicht genannt).
-- **Konsequenzen:** Zahl aus `pendingDeferredFlow` (letzter echter, erfolgreicher Lauf je aktivem Profil). Abweichung zur Vorgabe: «Folgelauf geplant» wird an der bestehenden Zeile «Nächste Prüfung» erkannt, nicht an einem eigenen Merker.
+- **Konsequenzen:** Zahl aus `pendingDeferredFlow` (letzter echter, erfolgreicher Lauf je aktivem Profil). Abweichung zur Vorgabe: «Folgelauf geplant» wird an der bestehenden Zeile «Nächste Prüfung» erkannt, nicht an einem eigenen Merker. **Ergänzung 0.16.6 (SYNC-20261111-188/-192):** Ein nicht ausgeführter Start (z. B. PC/WLAN nicht verfügbar) zählt als «Keine Verbindung» und steht vor «ausstehende Dateien»; der manuelle Start heisst dann «Start nicht möglich» statt «Automatischer Start übersprungen». «Alles gesichert» steht nur, wenn jedes aktive Profil schon einmal erfolgreich von Hand gestartet wurde. Rangfolge: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > Start nicht ausgeführt (als «Keine Verbindung») > ausstehende Dateien > gesichert > neutral. Die Zeile «WLAN» aktualisiert sich bei Netzwechsel. **Ergänzung 0.16.7 (SYNC-20261111-193):** Ein nicht ausgeführter Start (`recentSkip`) mit Queue (`pendingFiles > 0` oder fälliger Sync-Auftrag) zählt als «Keine Verbindung» (sitzender Hund auf blauem Kreis) und steht **vor** «Fehler»; bisher erschien bei fehlgeschlagenem letztem Lauf der rote Fehler-Hund. Ohne Queue bleibt der Fehler sichtbar und die Reihenfolge wie in 0.16.6. Ist der WLAN-Name nicht lesbar (kein Profil mit WLAN-Erkennung oder Standort-Berechtigung fehlt), bleibt die Zeile «WLAN» leer (gleiche Höhe) statt «WLAN: nicht verbunden / nicht lesbar». UX-Review in SYNC-20261111-194.
 - **Betroffene Komponenten:** `ui/HomeStatus.kt`, `ui/HomeParts.kt`, `ui/HomeScreen.kt`
 - **Abhängigkeiten:** DEC-238
 
@@ -2630,7 +2638,7 @@ Pausiert angezeigt.
 - **Entscheidung:** Fehlt die Standort-Berechtigung, zeigt die Statuskarte «⚠ Standort-Berechtigung fehlt – der WLAN-Name ist nicht lesbar.» mit dem Textknopf «Berechtigungen» (öffnet Einstellungen → App-Berechtigungen). Die Überschrift bleibt neutral und nie «Alles gesichert» (Rangfolge nach «Fehler»).
 - **Begründung:** Nach Entzug der Berechtigung stand «✓ Alles gesichert und aktuell» ohne Hinweis und ohne Weg zur Lösung, obwohl die automatische Synchronisierung im Heim-WLAN still gestört ist (UX-Review SYNC-20261111-149/-154/-161).
 - **Alternativen:** — (in der Quelle nicht genannt).
-- **Konsequenzen:** Reine Anzeige, keine Sicherheitsabfrage entfällt.
+- **Konsequenzen:** Reine Anzeige, keine Sicherheitsabfrage entfällt. Ergänzung 0.16.6 (SYNC-20261111-192): Der Hinweis erscheint nur, wenn ein Profil den WLAN-Namen braucht (Erkennungsart WLAN oder Beides mit Namen).
 - **Betroffene Komponenten:** `ui/HomeStatus.kt`, `ui/HomeParts.kt`, `ui/HomeScreen.kt`
 - **Abhängigkeiten:** DEC-241
 
@@ -2699,6 +2707,39 @@ Pausiert angezeigt.
 - **Konsequenzen:** —
 - **Betroffene Komponenten:** `ui/ConflictScreen.kt`
 - **Abhängigkeiten:** DEC-037
+
+### DEC-249: Wartende Dateien nur lokal gezählt; leere WLAN-Zeile bleibt als Leerzeile
+- **Status:** Implemented (0.16.8 laut Development)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-199, -201)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Die Zahl wartender Dateien wird nur lokal ermittelt (kein Netzwerk) und auf der Statuskarte nur bei «Keine Verbindung» genannt. Die Profilkarte eines Ordner-Profils zeigt zusätzlich «· N offen» (neue oder seit dem letzten Abgleich geänderte Dateien im Handy-Ordner; bei «PC → Handy» kein Zähler; Fotos-Profile unverändert). Die leere WLAN-Zeile bleibt als Leerzeile stehen.
+- **Begründung:** Ohne Verbindung ist ein Netzwerkabgleich nicht möglich. Die Karte behält eine feste Position des übrigen Inhalts (Benutzerauftrag 0.16.7).
+- **Alternativen:** Die leere WLAN-Zeile weglassen (Vorschlag UX): verworfen, weil der Benutzer gleichbleibende Position wünscht.
+- **Konsequenzen:** Die Zahl «offen» ist eine lokale Schätzung, kein Abgleich mit dem PC.
+- **Betroffene Komponenten:** Startseite (Statuskarte), Profilkarte
+- **Abhängigkeiten:** DEC-241
+
+### DEC-250: Icon-Stil «Variante C Duotone» statt Emojis
+- **Status:** Implemented (0.16.12 laut Development)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-195, Entscheidung des Benutzers)
+- **Kategorie:** UI / Designsystem
+- **Entscheidung:** Symbole und Emojis in der Oberfläche sind durch eigene Icons im Stil «Variante C Duotone» ersetzt (Hell und Dunkel). Die Umsetzung läuft über eine zentrale Textkomponente. Bewusst Text geblieben: → in Beschriftungen, ⏭, ⤼, ≤. Benachrichtigungen und Diagnose-Export bleiben Text.
+- **Begründung:** — (in der Quelle nicht genannt; Auswahl des Benutzers aus den Varianten).
+- **Alternativen:** Weitere Varianten in der Designvorschau (SYNC-20261111-195).
+- **Konsequenzen:** Die Hilfe nennt teils noch Emoji-Symbole im Text (z. B. «⏸», «↻»).
+- **Betroffene Komponenten:** UI (zentrale Textkomponente)
+- **Abhängigkeiten:** —
+
+### DEC-251: Geänderte Handy-Datei beim Upload wird zurückgestellt statt als Fehler gezählt
+- **Status:** Implemented (0.16.13 laut Development)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-202)
+- **Kategorie:** Sync / Übertragung
+- **Entscheidung:** Ändert oder wächst eine Handy-Datei vor oder während des Uploads, gilt sie als «folgt später» (`deferred`) statt als Fehler oder «Teilweise». Die `.s2ptmp` wird gelöscht, kein Sync-Stand für die abgebrochene Version, Folgelauf nach 5 Minuten (DEC-238). Am Laufende plant ein Änderungsstempel-Vergleich der Ordner einen Folgelauf für nach dem Einlesen neu entstandene Dateien (0.16.14, SYNC-20261111-213, Entscheidung des Benutzers).
+- **Begründung:** Eine sich ändernde Quelldatei ist kein Fehler; auf dem PC soll nie eine halbe Datei bleiben.
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Siehe SYNC-ENGINE 6.7. QA-Prüfung des Folgelaufs offen (SYNC-20261111-214).
+- **Betroffene Komponenten:** `MirrorEngine`, `SmbSession.upload`, `mirror/UploadVerdict.kt`, `SyncWorker`
+- **Abhängigkeiten:** DEC-238
 
 ---
 
