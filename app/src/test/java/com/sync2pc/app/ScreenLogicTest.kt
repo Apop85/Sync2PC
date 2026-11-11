@@ -1,14 +1,10 @@
 package com.sync2pc.app
 
-import com.sync2pc.app.data.ConflictResolution
-import com.sync2pc.app.data.MirrorConflict
 import com.sync2pc.app.ui.ConflictUi
 import com.sync2pc.app.ui.DecisionChoice
 import com.sync2pc.app.ui.PreviewGroupLabel
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** SYNC-20261110-135 V4/O1 und -136 K1: reine Logik von Vorschau, Ordnerauswahl und Konflikten */
@@ -46,13 +42,5 @@ class ScreenLogicTest {
     @Test fun secondsAreAddedOnce() {
         assertEquals("dd.MM.yyyy HH:mm:ss", ConflictUi.patternWithSeconds("dd.MM.yyyy HH:mm"))
         assertEquals("yyyy-MM-dd HH:mm:ss", ConflictUi.patternWithSeconds("yyyy-MM-dd HH:mm:ss"))
-    }
-
-    @Test fun undoOnlyWhileDecisionIsStillStored() {
-        val open = MirrorConflict(1, "a.txt", 1, 1, 1, 1, 1, resolution = ConflictResolution.KEEP_REMOTE)
-        assertTrue(ConflictUi.canUndo(open, ConflictResolution.KEEP_REMOTE))
-        assertFalse(ConflictUi.canUndo(null, ConflictResolution.KEEP_REMOTE)) // bereits angewendet und gelöscht
-        assertFalse(ConflictUi.canUndo(open, ConflictResolution.KEEP_LOCAL))
-        assertFalse(ConflictUi.canUndo(open.copy(resolution = null), ConflictResolution.KEEP_REMOTE))
     }
 }

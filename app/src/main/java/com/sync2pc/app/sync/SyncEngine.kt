@@ -101,6 +101,10 @@ class SyncEngine(
     override var connectionFailed: Boolean = false
         private set
 
+    /** true, wenn «Verschlüsselung erforderlich» am PC nicht verfügbar war (SYNC-20261111-172) */
+    override var encryptionUnavailable: Boolean = false
+        private set
+
     /** Frühester Zeitpunkt (ms), zu dem zu junge Dateien übertragen werden dürfen; 0 = keine */
     override var nextYoungFileAt: Long = 0
         private set
@@ -396,6 +400,7 @@ class SyncEngine(
                     up(), sk(), fl(), waiting, by()
                 )
             }
+            if (isEncryptionUnavailable(e)) encryptionUnavailable = true
             log("E", Msg.of(R.string.eng_run_failed, shortError(e)))
             return finish(RunStatus.FAILED, userErrorMsg(e), up(), sk(), fl(), waiting, by())
         } finally {

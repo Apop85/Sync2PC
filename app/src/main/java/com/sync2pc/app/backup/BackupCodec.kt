@@ -248,8 +248,8 @@ object BackupCodec {
             pcGuidHost = PcIdentity.normalizeHost(o.optString("pcGuidHost", "")),
             // Ordnerstruktur (SYNC-20261109-083): fehlend = V1; unbekannte Codes wurden in parse() schon aussortiert
             folderLayout = FolderLayout.parse(if (o.has("folderLayout")) o.optString("folderLayout") else null)?.code ?: FolderLayout.MONTH_SUFFIX.code,
-            // SMB3-Verschlüsselung (SYNC-20261111-144): fehlend oder unbekannt = PREFERRED
-            smbEncryption = SmbEncryption.parse(o.optString("smbEncryption", "")).name,
+            // SMB3-Verschlüsselung (SYNC-20261111-144): fehlend/leer = PREFERRED, vorhanden aber unbekannt = REQUIRED (-172)
+            smbEncryption = SmbEncryption.parse(if (o.isNull("smbEncryption")) "" else o.optString("smbEncryption", "")).name,
         )
     }
 

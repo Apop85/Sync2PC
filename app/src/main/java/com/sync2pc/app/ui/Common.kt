@@ -12,7 +12,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -126,7 +137,12 @@ fun CollapsibleCard(
                     modifier = Modifier.weight(1f))
                 Icon(
                     if (open) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = str(if (open) R.string.profile_section_collapse else R.string.profile_section_unset),
+                    contentDescription = when {
+                        open -> str(R.string.profile_section_collapse)
+                        // R8a: eingeklappt mit Wert (nicht «Nicht eingestellt»)
+                        titleSuffix != null -> str(R.string.profile_section_collapsed_value, titleSuffix)
+                        else -> str(R.string.profile_section_unset)
+                    },
                 )
             }
             if (open) content() else Hint(closedHint)
@@ -153,6 +169,57 @@ fun SwitchRow(
         }
         Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
+}
+
+/**
+ * Dialogtext vertikal scrollbar (-122 Punkt 1): Titel und Schaltflächen bleiben stehen, der Text ist bei jeder
+ * Systemschrift bis zum letzten Wort erreichbar (der Material3-AlertDialog scrollt seinen Textbereich nicht selbst).
+ * SYNC-20261111-176 R2: Solange Text überläuft, zeigt ein Scrollbalken am Rand und ein Verlauf am unteren Rand,
+ * dass es weitergeht.
+ */
+@Composable
+fun DialogScroll(
+    spacing: Arrangement.Vertical = Arrangement.Top,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val state = rememberScrollState()
+    val bar = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val fade = AlertDialogDefaults.containerColor
+    Column(
+        Modifier
+            .drawWithContent {
+                drawContent()
+                val max = state.maxValue
+                if (max > 0 && max != Int.MAX_VALUE) {
+                    val h = size.height
+                    val fadeH = 32.dp.toPx().coerceAtMost(h)
+                    if (state.canScrollForward) drawRect(
+                        Brush.verticalGradient(listOf(Color.Transparent, fade), startY = h - fadeH, endY = h),
+                        topLeft = Offset(0f, h - fadeH), size = Size(size.width, fadeH),
+                    )
+                    val thumb = (h * h / (h + max)).coerceAtLeast(24.dp.toPx())
+                    val top = (h - thumb) * state.value / max
+                    drawRoundRect(bar, Offset(size.width - 4.dp.toPx(), top), Size(3.dp.toPx(), thumb), CornerRadius(2.dp.toPx()))
+                }
+            }
+            .verticalScroll(state),
+        verticalArrangement = spacing,
+        content = content,
+    )
+}
+
+/**
+ * Knopfspalte für Dialoge mit drei oder mehr Knöpfen (SYNC-20261111-176 R1): gestapelt, je Knopf volle Breite,
+ * Reihenfolge von oben nach unten wie übergeben. In den Knopfplatz `confirmButton` setzen, `dismissButton` weglassen.
+ */
+@Composable
+fun DialogButtonColumn(content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth(), content = content)
+}
+
+@Composable
+fun ColumnScope.StackedButton(text: String, color: Color = Color.Unspecified, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(text, color = color) }
 }
 
 @Composable

@@ -14,6 +14,7 @@
     <string name="trigger_pause_end">Pause beendet</string>
     <string name="trigger_resumed">Fortgesetzt</string>
     <string name="trigger_deferred">Nachgeholt (Start während einer laufenden Synchronisierung)</string>
+    <string name="trigger_skip_followup">Nachholen geänderter Dateien</string>
     <string name="trigger_generic">Auslöser</string>
 
     <!-- Hintergrund-Lauf (SyncWorker) -->
@@ -63,6 +64,7 @@
         <item quantity="other">%1$s Konflikte</item>
     </plurals>
     <string name="run_space_full">Speicher voll</string>
+    <string name="run_deferred">%1$s folgen später</string>
 
     <!-- Schutzbremse (MirrorGuard) -->
     <string name="guard_title_remote">PC-Ordner nicht gefunden</string>
@@ -83,6 +85,7 @@
     <string name="delete_log_pc_missing">Nicht vom Handy entfernt: Die Kopie auf dem PC fehlt oder weicht ab, die Datei wird erneut gesichert: %1$s</string>
     <string name="delete_log_phone_unreadable">Nicht vom Handy entfernt: Die Datei ist für die Prüfung nicht lesbar: %1$s</string>
     <string name="delete_pc_unreachable">PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt.</string>
+    <string name="delete_pc_unreachable_retry">PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt. Prüfe die Verbindung und versuche es erneut.</string>
     <string name="delete_pc_rejected">PC nicht erkannt – nichts gelöscht. %1$s</string>
     <string name="delete_pc_reset">%1$d Dateien nicht entfernt: Die Kopie auf dem PC fehlt oder weicht ab. Sie werden erneut gesichert.</string>
     <string name="update_err_404">Kein Release gefunden (Repository „%1$s“ privat, falsch geschrieben oder noch ohne Release)</string>
@@ -170,6 +173,9 @@
     <string name="eng_on_pc">auf dem PC</string>
     <string name="eng_on_phone">auf dem Handy</string>
     <string name="eng_err_renamed_missing">Umbenannte Datei nicht gefunden</string>
+    <string name="eng_conflict_undone">Auswahl für %1$s wurde rückgängig gemacht – der Konflikt bleibt offen</string>
+    <string name="eng_err_conflict_name_exhausted">Kein freier Name für die Konfliktkopie von %1$s</string>
+    <string name="eng_err_conflict_name_differs">Der Speicher-Anbieter hat die Konfliktkopie \"%2$s\" statt \"%1$s\" genannt – nicht hochgeladen, die nächste Synchronisierung überträgt sie als neue Datei</string>
     <string name="eng_err_after_upload_missing">Datei nach Upload nicht gefunden</string>
     <string name="eng_err_after_upload_size">Grösse nach Upload stimmt nicht</string>
     <string name="eng_err_after_download_missing">Datei nach Download nicht gefunden</string>

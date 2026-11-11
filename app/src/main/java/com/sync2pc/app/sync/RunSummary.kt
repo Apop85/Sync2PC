@@ -15,7 +15,7 @@ object RunSummary {
      * Speicher voll). Namen der Ressourcen, die unten verwendet werden – bei Umbenennung hier mitziehen
      * (Unit-Test prüft die Verwendung).
      */
-    val NOT_IDLE_KEYS: Set<String> = setOf("run_trashed", "run_found", "run_conflicts", "run_space_full")
+    val NOT_IDLE_KEYS: Set<String> = setOf("run_trashed", "run_found", "run_conflicts", "run_space_full", "run_deferred")
 
     val NOTHING: Msg get() = Msg.of(R.string.run_nothing)
 
@@ -30,8 +30,11 @@ object RunSummary {
         return if (parts.isEmpty()) NOTHING else Msg.join(", ", parts)
     }
 
-    /** Ordner-Sync: nur Teile, die nicht 0 sind */
-    fun mirror(up: Int, down: Int, trashed: Int, conflicts: Int, failed: Int, spaceShortage: Boolean): Msg {
+    /**
+     * Ordner-Sync: nur Teile, die nicht 0 sind. [deferred] = während des Laufs geänderte Dateien, die beim nächsten Sync folgen
+     * (SYNC-20261111-173/-177): angehängt als «… · N folgen später», kein Fehler.
+     */
+    fun mirror(up: Int, down: Int, trashed: Int, conflicts: Int, failed: Int, spaceShortage: Boolean, deferred: Int = 0): Msg {
         val parts = buildList {
             if (up > 0) add(Msg.of(R.string.run_up, up))
             if (down > 0) add(Msg.of(R.string.run_down, down))
@@ -40,6 +43,9 @@ object RunSummary {
             if (failed > 0) add(Msg.plural(R.plurals.run_failed, failed))
             if (spaceShortage) add(Msg.of(R.string.run_space_full))
         }
-        return if (parts.isEmpty()) NOTHING else Msg.join(", ", parts)
+        val base = if (parts.isEmpty()) null else Msg.join(", ", parts)
+        if (deferred <= 0) return base ?: NOTHING
+        val later = Msg.of(R.string.run_deferred, deferred)
+        return if (base == null) later else Msg.join(" · ", listOf(base, later))
     }
 }

@@ -892,19 +892,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    createdId = null
-                    scope.launch {
-                        // Neues Profil = erste Synchronisierung -> ohne Ladegerät vorher warnen
-                        if (!FirstSync.isCharging(ctx)) chargeWarnFor = id
-                        else { SyncScheduler.enqueueManual(ctx); onBack() }
+                DialogButtonColumn {
+                    StackedButton(str(R.string.home_sync)) {
+                        createdId = null
+                        scope.launch {
+                            // Neues Profil = erste Synchronisierung -> ohne Ladegerät vorher warnen
+                            if (!FirstSync.isCharging(ctx)) chargeWarnFor = id
+                            else { SyncScheduler.enqueueManual(ctx); onBack() }
+                        }
                     }
-                }) { Text(str(R.string.home_sync)) }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(onClick = { createdId = null; onBack() }) { Text(str(R.string.profile_later)) }
-                    TextButton(onClick = { createdId = null; onSimulate(id) }) { Text(str(R.string.profile_simulate)) }
+                    StackedButton(str(R.string.profile_later)) { createdId = null; onBack() }
+                    StackedButton(str(R.string.profile_simulate)) { createdId = null; onSimulate(id) }
                 }
             },
         )
@@ -920,11 +918,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         onDismissRequest = { askLeave = false },
         title = { Text(str(R.string.profile_leave_title)) },
         text = { Text(str(R.string.profile_leave_text)) },
-        confirmButton = { TextButton(onClick = { askLeave = false; save() }) { Text(str(R.string.common_save)) } },
-        dismissButton = {
-            Row {
-                TextButton(onClick = { askLeave = false }) { Text(str(R.string.common_cancel)) }
-                TextButton(onClick = { askLeave = false; onBack() }) { Text(str(R.string.home_discard)) }
+        // R1: drei Knöpfe gestapelt, von oben Speichern, Verwerfen, Abbrechen
+        confirmButton = {
+            DialogButtonColumn {
+                StackedButton(str(R.string.common_save)) { askLeave = false; save() }
+                StackedButton(str(R.string.home_discard)) { askLeave = false; onBack() }
+                StackedButton(str(R.string.common_cancel)) { askLeave = false }
             }
         },
     )
@@ -982,14 +981,14 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                 }
             },
             confirmButton = {
-                Column(horizontalAlignment = Alignment.End) {
-                    TextButton(onClick = {
+                DialogButtonColumn {
+                    StackedButton(str(R.string.guard_choose_other)) {
                         folderWarning = null
                         if (Side.LOCAL in w.sides) treePicker.launch(null) else showRemotePicker = true
-                    }) { Text(str(R.string.guard_choose_other)) }
-                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.ACCEPT) }) { Text(str(R.string.guard_accept)) }
-                    TextButton(onClick = { folderWarning = null; save(w.force, FolderChoice.RESET) }) { Text(str(R.string.guard_as_new)) }
-                    TextButton(onClick = { folderWarning = null }) { Text(str(R.string.common_cancel)) }
+                    }
+                    StackedButton(str(R.string.guard_accept)) { folderWarning = null; save(w.force, FolderChoice.ACCEPT) }
+                    StackedButton(str(R.string.guard_as_new)) { folderWarning = null; save(w.force, FolderChoice.RESET) }
+                    StackedButton(str(R.string.common_cancel)) { folderWarning = null }
                 }
             },
         )
@@ -1065,18 +1064,6 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         },
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(str(R.string.common_cancel)) } },
     )
-}
-
-/**
- * Dialogtext vertikal scrollbar (-122 Punkt 1): Titel und Schaltflächen bleiben stehen, der Text ist bei jeder
- * Systemschrift bis zum letzten Wort erreichbar (der Material3-AlertDialog scrollt seinen Textbereich nicht selbst).
- */
-@Composable
-private fun DialogScroll(
-    spacing: Arrangement.Vertical = Arrangement.Top,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = spacing, content = content)
 }
 
 /** Optionaler Bereich: beim Bearbeiten aufklappbar, im Assistenten eine normale Karte (0.9.0) */

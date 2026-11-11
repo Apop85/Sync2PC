@@ -176,7 +176,7 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 
 `SyncWorker.doWork` → `work()`. Reihenfolge:
 
-1. **Sperre:** `SyncGate` (seit 0.15.0, reine Klasse; ersetzt den früheren `SyncWorker.mutex`, Sperre und Nachlauf-Merker unter einer gemeinsamen `synchronized`-Sperre). Ist bereits ein Lauf aktiv, endet der Worker sofort mit `Result.success()` (Ausgabedaten `deferred = true`), die Anfrage wird aber als **Nachlauf vorgemerkt** und nach dem laufenden Sync genau einmal nachgeholt (Abschnitt 11.2, DEC-221).
+1. **Sperre:** `SyncGate` (seit 0.15.0, reine Klasse; ersetzt den früheren `SyncWorker.mutex`, Sperre und Nachlauf-Merker unter einer gemeinsamen `synchronized`-Sperre). Ist bereits ein Lauf aktiv, endet der Worker sofort mit `Result.success()` (Ausgabedaten `deferred = true`), die Anfrage wird aber als **Nachlauf vorgemerkt** und nach dem laufenden Sync genau einmal nachgeholt (Abschnitt 11.2, DEC-221). **Ausnahme (seit 0.16.0, DEC-233):** Aufträge «Fortsetzen» (`KEY_RESUME`), «PC-Wiederholung» (`KEY_RETRY`) und der Folgelauf nach übersprungenen Dateien (6.7) nehmen die Sperre über `SyncGate.tryAcquire()` ohne Merker; ist sie belegt, endet der Worker mit `Result.retry()` (WorkManager behält Auftrag und Eingabedaten, linearer Backoff 30 s), statt in den Nachlauf-Merker umgewandelt zu werden. Daten und die 24-h-Grenze bleiben so erhalten. AUTO/MANUAL-Aufträge sind unverändert.
 2. `dao.closeDanglingRuns()`: Läufe mit Status `RUNNING` (App wurde währenddessen beendet) werden auf `INTERRUPTED` gesetzt **[IMPL]**.
 3. **Pause:** Nicht-manuell und `settings.isPaused()` → Lauf entfällt (Grund wird notiert).
 4. **Profilauswahl:** aktiv (`enabled`), konfiguriert (`isConfigured`), bei automatischen Läufen nicht in `awaitingFirstStart` (neue Profile warten auf ersten manuellen Start, DEC-103), **nicht durch die Schutzbremse blockiert** (`GuardStore.blockedIds`), nicht gerade zum Löschen vorgemerkt (`PendingProfileDelete`).
@@ -184,7 +184,7 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 6. **PC-Erreichbarkeit** (`SmbSession.isReachable`, TCP Port 445, 3 s): automatisch im WLAN bis 5 Versuche (0, 5, 10, 15, 30 s), manuell 2 (0, 3 s), ausserhalb des WLAN (nur mobile Daten/VPN, seit 0.11.7) 2 (0, 5 s) (`NetworkRules.reachabilityWaits`). **Ausnahme:** Foto-Profile ohne übertragungsbereite Dateien (`PendingCheck.readyFiles == 0`) überspringen den Test. Danach folgt bei Profilen mit `GUID`/`BOTH` die Vorab-Prüfung der PC-Kennung (Abschnitt 6.0, seit 0.13.0).
 7. **Vordergrunddienst:** `setForeground(...)`; scheitert das (Android 12+), normale Benachrichtigung. `TransferLocks.acquire` hält WLAN- und CPU-Sperre (max. 4 h).
 8. **Schleife über alle lauffähigen Profile, nacheinander** (nicht parallel): Engine erzeugen (`MIRROR` → `MirrorEngine`, sonst `SyncEngine`), `engine.run()`, danach Flags auswerten:
-   `engine.blocked` → Benachrichtigung „Entscheidung nötig“; `wifiLost && !manual` → `markInterrupted()`; `connectionFailed` → Profil zählt als „nicht erreichbar“ und der Lauf als mitten unterbrochen; `FAILED` → harter Fehler.
+   `engine.blocked` → Benachrichtigung „Entscheidung nötig“; `wifiLost && !manual` → `markInterrupted()`; `connectionFailed` → Profil zählt als „nicht erreichbar“ und der Lauf als mitten unterbrochen; `encryptionUnavailable` (seit 0.16.0, DEC-237; Verschlüsselung «Erforderlich», Server bietet sie nicht an) → Verlauf `FAILED`, die Fehlermeldung kommt bei automatischen Läufen je Profil nur einmal (Merker `encNotified`, zurückgesetzt nach einem erfolgreichen Lauf des Profils, auch für WLAN-Profile), bei manuellem Start immer; `FAILED` → harter Fehler.
 9. **Abschluss:** Sperren freigeben, Zusammenfassungs-Benachrichtigungen (Fehler, Übertragen, Entscheidungen, Konflikte, Speichermangel, Löschfreigaben), Nachhol-Sync für während des Laufs entstandene Medien (`MediaScanner.hasAddedSince`), `handleUnreachable` (Wiederholung bzw. `markInterrupted`; Wartezeit nach `NetworkRules.retryMinutes`: 30 min, mitten im Lauf 2 min, ausserhalb des WLAN immer 2 h; die Wartezeit endet durch neue WLAN-Verbindung, manuellen Start oder erfolgreichen Lauf, neue Auslöser (Fotos, Sicherheitsnetz, Ordner-Prüfung) ignorieren sie, DEC-126).
 10. `finally` in `doWork`: Fortschritt entfernen; wenn von Android gestoppt (nicht vom Benutzer) und nicht manuell → `markInterrupted()`; Sperre (`SyncGate`) in jedem Fall freigeben (verschachteltes `finally`, auch wenn `markInterrupted`/`cancelProgress` eine Ausnahme werfen); danach genau einen vorgemerkten Nachlauf einreihen (Abschnitt 11.2); `armContentTrigger`; Sicherheitsnetz neu starten.
 
@@ -522,7 +522,7 @@ unterschiedliche Gross-/Kleinschreibung (Abschnitt 8.5).
 |---|---|---|
 | **Handy behalten** (`KEEP_LOCAL` = `"LOCAL"`) | `ConflictScreen` | `UPLOAD`, PC-Version in Papierkorb |
 | **PC behalten** (`KEEP_REMOTE` = `"REMOTE"`) | `ConflictScreen` | `DOWNLOAD`, Handy-Version in Papierkorb |
-| **Beide behalten** (`KEEP_BOTH` = `"BOTH"`) | `ConflictScreen` | Handy-Datei → `<name>_conflict-phone.<ext>`, diese hochladen, PC-Version unter Originalnamen herunterladen |
+| **Beide behalten** (`KEEP_BOTH` = `"BOTH"`) | `ConflictScreen` | Handy-Datei → `<name>_conflict-phone.<ext>` (bzw. `_conflict-phone-2` … , siehe 5.6), diese hochladen, PC-Version unter Originalnamen herunterladen |
 | **Alle: neuere** | `ConflictScreen` (Knopf oben) | je Konflikt `KEEP_LOCAL`, wenn gespeichertes `localModified >= remoteModified`, sonst `KEEP_REMOTE` (Werte vom **Erkennungszeitpunkt**) |
 | **Immer neuere** | Profil-Option `ConflictMode.NEWER` | automatisch ohne Rückfrage (Tabelle C) |
 
@@ -544,6 +544,7 @@ stateDiagram-v2
 - Tabelle `mirror_conflicts` (Schlüssel `profileId + relPath` in Originalschreibweise); Abgleich mit Dateien über `relPath.lowercase()`.
 - Eine Entscheidung stösst per `SyncScheduler.enqueueAuto` einen Lauf an; ausgeführt wird sie dort, nicht im Dialog.
 - `dao.deleteConflict` läuft **vor** der Ausführung der Übertragung (`MirrorEngine.kt:266`).
+- **Rückgängig atomar (seit 0.16.0, DEC-232):** `ConflictScreen` macht eine Entscheidung nur über `undoResolution(profileId, relPath, expected)` rückgängig (`UPDATE … SET resolution = NULL … AND resolution = :expected`); gezählt wird nur Ergebnis 1, die Zeile wird nie wiederbelebt (kein `upsertConflict` mehr). Die Engine löscht die Zeile für Aktionen aus einer Konfliktentscheidung über `deleteConflictIf(profileId, relPath, expected)` (`DELETE … AND resolution = :expected`); liefert das 0 (der Benutzer hat rückgängig gemacht), entfernt sie die Aktion aus `actions` und führt sie nicht aus. Konflikte, bei denen eine Seite fehlt, werden weiterhin unbedingt gelöscht. Der Sync startet nach einer Entscheidung weiterhin sofort.
 
 > **[RISIKO] R-K2:** Wird nach dem Löschen der Konfliktzeile und vor/während der Übertragung der Lauf unterbrochen (Netz weg, App beendet), ist die Entscheidung des Benutzers **verloren**. Beim nächsten Lauf gilt die Datei weiterhin als „beide geändert“ und wird erneut als Konflikt gemeldet. Es entsteht kein Datenverlust, aber der Benutzer muss erneut entscheiden.
 
@@ -555,13 +556,14 @@ stateDiagram-v2
 |---|---|---|
 | Handy behalten / Handy neuer | bleibt | wird überschrieben; alte Version unter `.LeoSync-Bin\<Datum>\…` |
 | PC behalten / PC neuer | wird ersetzt; alte Version in `.LeoSync-Bin/<Datum>/…` | bleibt |
-| Beide behalten | Original wird zu `*_conflict-phone.*` (neue Datei im Sync-Stand), Originalname bekommt PC-Inhalt | `*_conflict-phone.*` neu hochgeladen, Originalname bleibt |
+| Beide behalten | Original wird zu `*_conflict-phone.*` bzw. `*_conflict-phone-2.*` … (neue Datei im Sync-Stand), Originalname bekommt PC-Inhalt | Konfliktkopie neu hochgeladen (nie überschreibend), Originalname bleibt |
 
 ### 5.6 Sonderfälle
 
 - Eine der beiden Seiten fehlt, obwohl ein Konflikt offen ist → Konfliktzeile wird verworfen, die Datei normal geplant (`MirrorEngine.kt:247`).
-- `KEEP_BOTH` prüft **nicht**, ob sich Handy- oder PC-Datei seit dem Einlesen geändert haben, und der Umbenennungsname kann bereits existieren (Verhalten von `tree.rename` in diesem Fall: **[OFFEN]**, SAF-Anbieter-abhängig).
-- `KEEP_BOTH`: Scheitert der Download der PC-Version nach dem Umbenennen, fehlt der Originalname auf dem Handy. Der Stand für den Originalschlüssel wurde vorher gelöscht; im nächsten Lauf gilt die PC-Datei als „neu auf dem PC“ und wird (bei `dir.down`, hier immer `BOTH`) geladen.
+- `KEEP_BOTH` prüft **nicht**, ob sich Handy- oder PC-Datei seit dem Einlesen geändert haben.
+- **`KEEP_BOTH` seit 0.16.0 (DEC-239, SYNC-20261111-171) [IMPL]:** (1) *Freier Name:* `ConflictName` wählt `name_conflict-phone.ext`, sonst `-2`, `-3` … bis 100 (danach Fehler ohne Änderung); der Name darf weder auf dem Handy (`tree.find`) noch auf dem PC (`stat`) noch in den eingelesenen Listen vorkommen. (2) *Anbieter-Name prüfen:* Nach `tree.rename` wird der Name des zurückgegebenen Dokuments gelesen; weicht er vom geplanten ab (der Speicher-Anbieter hängt « (1)» an), wird nicht übertragen, die Datei bleibt umbenannt, und der nächste Lauf überträgt sie als neu. Hochgeladen wird nur die Datei aus dem Ergebnis des Umbenennens. (3) *Nie überschreibend:* Upload mit `replaceExisting = false`; eine vorhandene PC-Datei führt zu einem Fehler statt zum Überschreiben (vorher konnte eine gleichnamige PC-Datei ohne Papierkorb überschrieben werden). (4) *Sync-Stand* des Originalschlüssels wird sofort nach dem Umbenennen vergessen. (5) *Wiederholbar:* Die Merker `renamedByRun` und `uploadedByRun` (nur für den laufenden Lauf, wie `trashedByRun`) verhindern bei der Wiederholung nach Verbindungsabbruch ein zweites Umbenennen und einen bereits fertigen Upload; fortgesetzt wird mit dem gemerkten Namen und dem Download der PC-Version unter dem Originalnamen.
+- `KEEP_BOTH`: Scheitert der Download der PC-Version nach dem Umbenennen und gibt es keine Wiederholung, fehlt der Originalname auf dem Handy. Der Stand für den Originalschlüssel wurde vorher gelöscht; im nächsten Lauf gilt die PC-Datei als „neu auf dem PC“ und wird (bei `dir.down`, hier immer `BOTH`) geladen.
 - Konflikte können nur in `BOTH` entstehen; in Einweg-Profilen nie.
 - `MirrorConflict.localModified/remoteModified` sind nur Anzeigedaten (Dialog, „Alle: neuere“), keine Beweislage für die Ausführung.
 
@@ -697,7 +699,13 @@ Bei einem Netzwerkfehler während einer Übertragung (`UPLOAD`/`DOWNLOAD`, Phase
 
 **Behobener Fehler (-166):** Der erste Versuch verschob die alte Version am Ziel in den Papierkorb und brach dann ab. Beim zweiten Versuch fehlte das Ziel, die Prüfung «Ziel unverändert» schlug an, und die Übertragung wurde ohne Fehler übersprungen. Folge: Die Datei fehlte nach einem «erfolgreichen» Lauf, der Status lautete «alles aktuell».
 
-**Nicht gelöst / offen:** Anzeige übersprungener Dateien im Status (SYNC-20261111-167); Wiederholung von `KEEP_BOTH` (SYNC-20261111-168); QA-Prüfung (SYNC-20261111-169). Getestet ist nur die Entscheidungsfunktion (`TransferResumeTest`, 8 Tests), nicht die Verdrahtung in `MirrorEngine` und kein Verbindungsabbruch im Gerätetest.
+**Stand:** Die Anzeige übersprungener Dateien (6.7, -167/-173) und die Wiederholung von `KEEP_BOTH` (5.6, -168/-171) sind seit 0.16.0 umgesetzt. **Offen:** Gerätetest der Wiederholungspfade (QA SYNC-20261111-178). Getestet ist nur die Entscheidungsfunktion (`TransferResumeTest`, 8 Tests), nicht die Verdrahtung in `MirrorEngine` und kein Verbindungsabbruch im Gerätetest.
+
+### 6.7 Während des Laufs geänderte Dateien: Zähler `deferred` und Folgelauf (seit 0.16.0, DEC-238) **[IMPL]**
+
+- **Zähler:** `MirrorEngine.skipChanged` (Datei wurde während des Laufs auf Handy oder PC geändert bzw. ist neu entstanden; bisher nur eine Warnung im Log) zählt in einem `AtomicInteger deferred`. `finish()` schreibt ihn in `sync_runs.deferred` (DB 11, siehe `DATA-MODEL.md` 3.9). Bewusst nicht `skipped`: Dort heisst der Wert bei Fotoprofilen «bereits vorhanden/unverändert».
+- **Status:** Der Lauf bleibt `OK`. Die Verlauf-Zusammenfassung (`RunSummary.mirror`) ergänzt «· N folgen später» (EN «· N follow later»). Die Startseite zeigt bei ausstehenden Dateien nicht «Alles gesichert und aktuell» (`allUpToDate` ist bei `deferred > 0` falsch; Anzeige siehe DEC-241). Die Zahl für die Startseite liefert die Abfrage `pendingDeferredFlow`: Summe `deferred` aus dem jeweils letzten echten (keine Simulation), erfolgreichen Lauf je aktivem Profil.
+- **Folgelauf:** Nach einem echten Lauf mit `deferred > 0` plant `SyncWorker` einen automatischen Folgelauf in **5 Minuten** (Auftragsname `sync-skip-followup`, `APPEND_OR_REPLACE`, Bedingungen wie bei automatischen Läufen, Auslöser-Text «Nachholen geänderter Dateien»; Teil von `ALL_SYNC_WORK`, damit «Pausieren/Abbrechen» ihn entfernen). **Begrenzung:** höchstens **einer pro Stunde** (Zeitstempel `lastSkipFollowUpAt` in `GlobalSettings`; reine Funktion, getestet in `SkipFollowUpTest`); danach übernehmen die regulären Auslöser (Ordnerprüfung, WLAN, Sicherheitsnetz 6 h). Pause und «nur manuell» werden wie bei jedem automatischen Lauf beachtet. Bei belegter Sperre gilt `Result.retry()` (3.1, Punkt 1). Ein bestehender `WORK_FOLLOWUP` (junge Fotos) wird nicht ersetzt, deshalb der eigene Name.
 
 ---
 
@@ -1275,7 +1283,7 @@ WLAN verschwindet bei 60 %. Worker: Netzwerkfehler ⇒ Sitzung schliessen, 2 s w
 ## 18. Offene Fragen, Nicht-Geprüftes, Geplantes
 
 ### 18.1 Nicht eindeutig nachvollziehbar / nicht geprüft
-- Verhalten von `tree.rename` bei bereits existierendem `*_conflict-phone.*` (SAF-Anbieter-abhängig).
+- Verhalten von `tree.rename` bei bereits existierendem `*_conflict-phone.*` (SAF-Anbieter-abhängig). Seit 0.16.0 durch freien Namen und Prüfung des Anbieter-Namens abgefangen (5.6); am Gerät nicht geprüft (QA SYNC-20261111-178).
 - Verhalten von SAF-Anbietern ohne `COLUMN_LAST_MODIFIED` (R-M1) und von SD-Karten (Zeitstempel-Granularität).
 - ~~Ob die Oberfläche einen verworfenen manuellen Start (R-N1) sichtbar macht~~ – geklärt: bis 0.14.7 nicht sichtbar (Home wertete nur RUNNING/ENQUEUED); seit 0.15.0 zeigt die Oberfläche den Nachlauf (Snackbar, Zeile «Danach: …», DEC-224).
 - ~~SMB-Sicherheitsparameter~~ – belegter Ist-Stand in Abschnitt 10.2; offen bleiben Signieren erzwingen, Sicherheitsanbieter (BouncyCastle gegen JCE), Verhalten gegen echte Windows-/NAS-Server mit Verschlüsselungspflicht, Zusammenspiel `withMultiProtocolNegotiate` mit eingeschränkten Dialekten, Durchsatz mit/ohne Verschlüsselung, SMB-Verschlüsselung des lokalen QA-Testservers.

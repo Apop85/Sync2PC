@@ -39,8 +39,8 @@ enum class StartResult { STARTED, DEFERRED }
 /** Ablage des Merkers über Prozessgrenzen (Produktion: GlobalSettings mit commit()) */
 interface DeferredStore {
     fun read(): DeferredKind?
-    /** null = Merker löschen */
-    fun write(kind: DeferredKind?)
+    /** null = Merker löschen. true = dauerhaft gespeichert, false = Speichern fehlgeschlagen (SYNC-20261111-172) */
+    fun write(kind: DeferredKind?): Boolean
 }
 
 /**
@@ -54,7 +54,11 @@ interface DeferredStore {
  *  - [release] gibt frei und liefert den Merker genau einmal zurück (kein zweiter Nachlauf ohne neue Anforderung, keine Schleife).
  * Der Merker liegt im Speicher und im [DeferredStore] (nach Prozess-Kill wirksam über [claimIfIdle]).
  */
-class SyncGate(private val store: DeferredStore) {
+class SyncGate(
+    private val store: DeferredStore,
+    /** Meldung ins Diagnose-Log (Logcat), wenn der Merker nicht gespeichert werden konnte; der Merker im Speicher bleibt */
+    private val onStoreFailure: (String) -> Unit = {},
+) {
     private val lock = Any()
     private var running = false
     private var pending: DeferredKind? = runCatching { store.read() }.getOrNull()
@@ -73,6 +77,17 @@ class SyncGate(private val store: DeferredStore) {
         if (!running) { running = true; return true }
         record(if (manual) DeferredKind.MANUAL else DeferredKind.AUTO)
         false
+    }
+
+    /**
+     * Sperre für Sonderaufträge (Fortsetzen, Wiederholung, Folgelauf): true = erhalten (mit [release]/[finishRun] freigeben).
+     * false = ein Lauf ist aktiv: KEIN Merker, der Aufrufer bleibt eingereiht und versucht es später erneut
+     * (`Result.retry()`), damit Eingabedaten und Auftragsart (KEY_RESUME/KEY_RETRY) erhalten bleiben.
+     */
+    fun tryAcquire(): Boolean = synchronized(lock) {
+        if (running) return false
+        running = true
+        true
     }
 
     /**
@@ -122,7 +137,7 @@ class SyncGate(private val store: DeferredStore) {
     private fun record(kind: DeferredKind) {
         val merged = if (pending == DeferredKind.MANUAL || kind == DeferredKind.MANUAL) DeferredKind.MANUAL else DeferredKind.AUTO
         if (merged == pending) return
-        runCatching { store.write(merged) }
+        persist(merged)
         pending = merged
         _state.value = DeferredState.of(merged)
     }
@@ -130,8 +145,14 @@ class SyncGate(private val store: DeferredStore) {
     private fun take(): DeferredKind? {
         val kind = pending ?: return null
         pending = null
-        runCatching { store.write(null) }
+        persist(null)
         _state.value = DeferredState.NONE
         return kind
+    }
+
+    /** Speichern darf den Ablauf nie stören; ein Fehlschlag (false oder Ausnahme) wird nur gemeldet */
+    private fun persist(kind: DeferredKind?) {
+        val ok = try { store.write(kind) } catch (t: Throwable) { false }
+        if (!ok) runCatching { onStoreFailure("Merker «${kind?.toStore() ?: "gelöscht"}» nicht gespeichert") }
     }
 }

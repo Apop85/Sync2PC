@@ -205,6 +205,21 @@ interface SyncDao {
     @Query("DELETE FROM mirror_conflicts WHERE profileId = :profileId AND relPath = :relPath")
     suspend fun deleteConflict(profileId: Long, relPath: String)
 
+    /**
+     * Konflikt-Rückgängig atomar (SYNC-20261111-172): nur wenn noch genau die Entscheidung [expected] gespeichert ist.
+     * Liefert die Zahl geänderter Zeilen (1 = rückgängig gemacht, 0 = schon angewendet, gelöscht oder anders entschieden).
+     * Kein upsert: eine von der Synchronisierung gelöschte Zeile wird nie mit altem Stand wiederbelebt.
+     */
+    @Query("UPDATE mirror_conflicts SET resolution = NULL WHERE profileId = :profileId AND relPath = :relPath AND resolution = :expected")
+    suspend fun undoResolution(profileId: Long, relPath: String, expected: String): Int
+
+    /**
+     * Löscht den Konflikt nur, wenn noch die Entscheidung [expected] gespeichert ist (Engine, SYNC-20261111-172).
+     * 0 = der Benutzer hat inzwischen rückgängig gemacht: die Aktion darf nicht ausgeführt werden.
+     */
+    @Query("DELETE FROM mirror_conflicts WHERE profileId = :profileId AND relPath = :relPath AND resolution = :expected")
+    suspend fun deleteConflictIf(profileId: Long, relPath: String, expected: String): Int
+
     @Query("DELETE FROM mirror_conflicts WHERE profileId = :profileId")
     suspend fun clearConflicts(profileId: Long)
 
@@ -224,6 +239,13 @@ interface SyncDao {
 
     @Query("SELECT * FROM sync_runs WHERE dryRun = 0 ORDER BY id DESC LIMIT :limit")
     fun runsFlow(limit: Int = 100): Flow<List<SyncRun>>
+
+    /**
+     * Startseite (SYNC-20261111-173/-177): Zahl der Dateien, die laut dem jeweils letzten echten, erfolgreichen Lauf eines aktiven
+     * Profils beim nächsten Sync folgen (während des Laufs geändert).
+     */
+    @Query("SELECT COALESCE(SUM(deferred), 0) FROM sync_runs WHERE status = 'OK' AND dryRun = 0 AND id IN (SELECT MAX(id) FROM sync_runs WHERE dryRun = 0 AND finishedAt IS NOT NULL GROUP BY profileId) AND profileId IN (SELECT id FROM profiles WHERE enabled = 1)")
+    fun pendingDeferredFlow(): Flow<Int>
 
     @Query("SELECT * FROM sync_runs WHERE dryRun = 0 AND finishedAt IS NOT NULL ORDER BY id DESC LIMIT 1")
     fun lastRunFlow(): Flow<SyncRun?>

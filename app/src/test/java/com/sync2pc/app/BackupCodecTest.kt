@@ -160,12 +160,12 @@ class BackupCodecTest {
         }
     }
 
-    @Test fun olderOrUnknownSmbEncryptionIsPreferred() {
+    @Test fun olderSmbEncryptionIsPreferredAndUnknownIsRequired() {
         val json = """{"format":"leosync-backup","version":1,"profiles":[
             {"id":1,"name":"Alt"},{"id":2,"name":"Neu","smbEncryption":"ULTRA"},{"id":3,"name":"Leer","smbEncryption":""},
             {"id":4,"name":"Req","smbEncryption":"REQUIRED"}]}"""
         val p = BackupCodec.parse(json, null).content.profiles
-        assertEquals(listOf("PREFERRED", "PREFERRED", "PREFERRED", "REQUIRED"), p.map { it.smbEncryption })
+        assertEquals(listOf("PREFERRED", "REQUIRED", "PREFERRED", "REQUIRED"), p.map { it.smbEncryption }) // ULTRA (unbekannt) = REQUIRED
     }
 
     @Test fun rejectsForeignAndFutureFiles() {

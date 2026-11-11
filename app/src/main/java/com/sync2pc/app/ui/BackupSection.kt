@@ -214,14 +214,12 @@ fun BackupSection() {
                 }
             },
             // Reihenfolge unverändert (Abbrechen, Hinzufügen, Ersetzen); «Ersetzen» löscht alle bisherigen Profile und steht
-            // deshalb in der Fehlerfarbe. FlowRow: bei grosser Schrift stehen die Knöpfe untereinander statt abgeschnitten.
+            // deshalb in der Fehlerfarbe. Drei Knöpfe gestapelt, je volle Breite (SYNC-20261111-176 R1).
             confirmButton = {
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { parsed = null; importJson = null }) { Text(str(R.string.common_cancel)) }
-                    TextButton(onClick = { runImport(b, replace = false) }) { Text(str(R.string.profile_add)) }
-                    TextButton(onClick = { runImport(b, replace = true) }) {
-                        Text(str(R.string.backup_replace), color = MaterialTheme.colorScheme.error)
-                    }
+                DialogButtonColumn {
+                    StackedButton(str(R.string.common_cancel)) { parsed = null; importJson = null }
+                    StackedButton(str(R.string.profile_add)) { runImport(b, replace = false) }
+                    StackedButton(str(R.string.backup_replace), MaterialTheme.colorScheme.error) { runImport(b, replace = true) }
                 }
             },
         )

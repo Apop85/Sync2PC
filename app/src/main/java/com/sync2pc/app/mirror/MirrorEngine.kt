@@ -81,7 +81,7 @@ class MirrorEngine(
         val TRASH_DIRS = listOf(TRASH_DIR, LEGACY_TRASH_DIR, OLD_TRASH_DIR)
         fun isTrashDir(name: String): Boolean = TRASH_DIRS.any { it.equals(name, ignoreCase = true) }
         /** Zusatz beim Behalten beider Versionen (bis 0.7.x "_Konflikt-Handy") */
-        const val CONFLICT_SUFFIX = "_conflict-phone"
+        const val CONFLICT_SUFFIX = ConflictName.SUFFIX
         /** Mindestens so viel Speicher frei lassen */
         private const val RESERVE_BYTES = 300L * 1024 * 1024
     }
@@ -98,6 +98,8 @@ class MirrorEngine(
         private set
     override var blocked = false
         private set
+    @Volatile override var encryptionUnavailable = false
+        private set
 
     private val dao = AppDatabase.get(context).dao()
     private val guards = GuardStore(context)
@@ -109,6 +111,9 @@ class MirrorEngine(
 
     /** key = relativer Pfad in Kleinbuchstaben, rel = Originalschreibweise */
     private data class Action(val key: String, val rel: String, val kind: Kind, val trashOther: Boolean = false)
+
+    /** Erledigter Konflikt; [expected] = die Entscheidung, die der Plan ausführt (null = Seite fehlt, unbedingt löschen) */
+    private data class DoneConflict(val key: String, val relPath: String, val expected: String?)
 
     private lateinit var tree: LocalTree
     private var smb: SmbSession? = null
@@ -136,6 +141,8 @@ class MirrorEngine(
     // Zähler (threadsicher, parallele Übertragungen)
     private val up = AtomicInteger(); private val down = AtomicInteger(); private val failed = AtomicInteger()
     private val bytes = AtomicLong(); private val trashed = AtomicInteger()
+    /** Dateien, die während des Laufs geändert wurden und deshalb erst beim nächsten Sync folgen (SYNC-20261111-173) */
+    private val deferred = AtomicInteger()
 
     /** Zwischen den parallelen Übertragungen geteilter Zustand */
     private class Shared(val totalFiles: Int, val totalBytes: Long, budget: Long) {
@@ -247,7 +254,7 @@ class MirrorEngine(
             emit(str(R.string.eng_comparing), 0, 0, 0, 0, null)
             val actions = ArrayList<Action>()
             // Erledigte Konflikte erst nach der Schutzbremse entfernen (sonst ginge die Entscheidung verloren)
-            val doneConflicts = ArrayList<String>()
+            val doneConflicts = ArrayList<DoneConflict>()
             val keys = (local.keys + remote.keys + states.keys).toSortedSet()
             for (k in keys) {
                 currentCoroutineContext().ensureActive()
@@ -262,11 +269,11 @@ class MirrorEngine(
                             ConflictResolution.KEEP_REMOTE -> actions += Action(k, rel, Kind.DOWNLOAD, trashOther = true)
                             else -> actions += Action(k, rel, Kind.KEEP_BOTH)
                         }
-                        doneConflicts += c.relPath
+                        doneConflicts += DoneConflict(k, c.relPath, c.resolution)
                         continue
                     }
-                    // Eine Seite ist inzwischen weg -> Konflikt erledigt, normal weiter
-                    doneConflicts += c.relPath
+                    // Eine Seite ist inzwischen weg -> Konflikt erledigt, normal weiter (unbedingt löschen)
+                    doneConflicts += DoneConflict(k, c.relPath, null)
                 }
                 val planned = plan(k, rel, l?.second, r?.second, st)
                 // Vergleich wegen WLAN-Verlust abgebrochen: Ergebnis wäre "nicht gleich" ohne Beweis -> nichts ausführen
@@ -292,7 +299,15 @@ class MirrorEngine(
                     if (g.folder.isNotEmpty()) Msg.of(R.string.eng_would_trash_folder, g.folder)
                     else Msg.of(R.string.eng_would_trash_files, toTrash, states.size))
             }
-            if (!dryRun) for (p in doneConflicts) dao.deleteConflict(profile.id, p)
+            if (!dryRun) for (d in doneConflicts) {
+                if (d.expected == null) { dao.deleteConflict(profile.id, d.relPath); continue }
+                // Entscheidung des Benutzers: nur löschen, wenn sie noch genau so gespeichert ist. Hat er inzwischen
+                // «Rückgängig» gedrückt, wird die Aktion nicht ausgeführt (SYNC-20261111-172)
+                if (dao.deleteConflictIf(profile.id, d.relPath, d.expected) == 0) {
+                    actions.removeAll { it.key == d.key }
+                    log("I", Msg.of(R.string.eng_conflict_undone, d.relPath))
+                }
+            }
 
             // --- 3. Ausführen -----------------------------------------------------
             // Phase A (nacheinander): Verwaltung – Papierkorb, Stand merken, Konflikte, Aufräumen
@@ -329,7 +344,7 @@ class MirrorEngine(
 
             if (status == RunStatus.OK && (failed.get() > 0 || spaceShortage)) status = RunStatus.PARTIAL
             val summary = message ?: com.sync2pc.app.sync.RunSummary.mirror(
-                up.get(), down.get(), trashed.get(), newConflicts, failed.get(), spaceShortage
+                up.get(), down.get(), trashed.get(), newConflicts, failed.get(), spaceShortage, deferred.get()
             )
             return finish(status, summary)
         } catch (e: CancellationException) {
@@ -350,6 +365,7 @@ class MirrorEngine(
                 log("W", Msg.of(R.string.eng_connection_log_mirror, com.sync2pc.app.sync.shortError(e)))
                 return finish(RunStatus.INTERRUPTED, Msg.of(R.string.eng_connection_mirror, up.get(), down.get()))
             }
+            if (com.sync2pc.app.sync.isEncryptionUnavailable(e)) encryptionUnavailable = true
             log("E", Msg.of(R.string.eng_run_failed, com.sync2pc.app.sync.shortError(e)))
             return finish(RunStatus.FAILED, com.sync2pc.app.sync.userErrorMsg(e))
         } finally {
@@ -499,6 +515,12 @@ class MirrorEngine(
     /** Schlüssel der Dateien, die dieser Lauf selbst schon in den Papierkorb verschoben hat (für die Wiederholung, -166) */
     private val trashedByRun: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
+    /** «Beide behalten», von diesem Lauf schon umbenannt: Schlüssel -> (neuer relativer Pfad, neue Dokument-ID) (-171) */
+    private val renamedByRun = ConcurrentHashMap<String, Pair<String, String>>()
+
+    /** «Beide behalten», Konfliktkopie schon hochgeladen: bei einer Wiederholung nur noch der Download (-171) */
+    private val uploadedByRun: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
     private suspend fun transferWorker(queue: ConcurrentLinkedQueue<Action>, sh: Shared) {
         var session: SmbSession? = null
         try {
@@ -576,7 +598,7 @@ class MirrorEngine(
                     }
                     TransferStep.TRANSFER -> {}
                 }
-                upload(s, a.key, a.rel, l, onBytes)
+                upload(s, a.key, a.rel, l, onBytes = onBytes)
             }
             Kind.DOWNLOAD -> {
                 r ?: return
@@ -599,24 +621,57 @@ class MirrorEngine(
             }
             Kind.KEEP_BOTH -> {
                 if (l == null || r == null) return
-                // Handy-Version umbenennen und hochladen, PC-Version unter Originalnamen holen
+                // Handy-Version umbenennen und hochladen, PC-Version unter Originalnamen holen (SYNC-20261111-171):
+                // freier Name (nie eine vorhandene Datei), Upload ohne Überschreiben, Wiederholung ohne zweites Umbenennen
                 val parent = a.rel.substringBeforeLast('/', "")
                 val name = a.rel.substringAfterLast('/')
-                val dot = name.lastIndexOf('.')
-                val newName = if (dot > 0) name.substring(0, dot) + CONFLICT_SUFFIX + name.substring(dot) else name + CONFLICT_SUFFIX
-                val newRel = if (parent.isEmpty()) newName else "$parent/$newName"
-                val newDoc = tree.rename(l.docId, newName)
-                val ls = (try { tree.find(newRel) } catch (e: Exception) { null }) ?: tree.stat(newDoc)
+                fun relOf(n: String) = if (parent.isEmpty()) n else "$parent/$n"
+                val prior = renamedByRun[a.key]
+                val newRel: String
+                val newDoc: String
+                if (prior != null) {
+                    // Wiederholung nach Verbindungsabbruch: Die alte Dokument-ID gilt nicht mehr, nur der Merker
+                    newRel = prior.first; newDoc = prior.second
+                } else {
+                    val newName = ConflictName.free(name) { c ->
+                        val rel = relOf(c)
+                        local.containsKey(rel.lowercase()) || remote.containsKey(rel.lowercase()) ||
+                            (try { tree.find(rel) } catch (e: Exception) { null }) != null ||
+                            s.stat(remotePath(s, rel)) != null
+                    } ?: throw IOException(str(R.string.eng_err_conflict_name_exhausted, a.rel))
+                    newRel = relOf(newName)
+                    newDoc = tree.rename(l.docId, newName)
+                    // Sofort vergessen (Review -171 H1): Scheitert eine der folgenden Prüfungen oder stirbt der Prozess, gilt die
+                    // Datei im nächsten Lauf als neu. Mit altem Stand sähe der Planer «auf dem Handy gelöscht» und
+                    // würde die PC-Version in den Papierkorb verschieben.
+                    dao.deleteMirrorState(profile.id, a.key)
+                    // Der Anbieter darf den Namen nicht eigenmächtig ändern (z. B. « (1)» anhängen): sonst nicht hochladen.
+                    // Die Datei bleibt umbenannt erhalten; der nächste Lauf überträgt sie als neue Datei.
+                    val actual = try { tree.stat(newDoc)?.name } catch (e: Exception) { null }
+                    if (!ConflictName.sameName(newName, actual))
+                        throw IOException(str(R.string.eng_err_conflict_name_differs, newName, actual ?: "?"))
+                    renamedByRun[a.key] = newRel to newDoc
+                }
+                // Hochgeladen wird nur die umbenannte Datei selbst, nie eine zufällig gleichnamige andere
+                val listed = try { tree.find(newRel) } catch (e: Exception) { null }
+                val ls = listed?.takeIf { it.docId == newDoc } ?: tree.stat(newDoc)
                     ?: throw IOException(str(R.string.eng_err_renamed_missing))
                 dao.deleteMirrorState(profile.id, a.key)
-                upload(s, newRel.lowercase(), newRel, ls, onBytes)
+                // Wiederholung nach einem Abbruch im Download: Der Upload ist schon fertig und darf nicht erneut laufen
+                // (die Zieldatei existiert, ohne Überschreiben gäbe es einen Fehler; Review -171 M1)
+                if (a.key !in uploadedByRun) {
+                    upload(s, newRel.lowercase(), newRel, ls, replaceExisting = false, onBytes = onBytes)
+                    uploadedByRun.add(a.key)
+                }
                 download(s, a.key, a.rel, r) { b -> onBytes(ls.size + b) }
             }
             else -> {} // Phase A
         }
     }
 
-    private suspend fun upload(s: SmbSession, key: String, rel: String, l: LocalEntry, onBytes: (Long) -> Unit) {
+    private suspend fun upload(
+        s: SmbSession, key: String, rel: String, l: LocalEntry, replaceExisting: Boolean = true, onBytes: (Long) -> Unit,
+    ) {
         val path = remotePath(s, rel)
         s.ensureDir(path.substringBeforeLast('\\', ""))
         val ctx = currentCoroutineContext()
@@ -624,7 +679,7 @@ class MirrorEngine(
             finalPath = path, size = l.size,
             openInput = { off -> tree.openInput(l.docId, off) },
             onProgress = onBytes, checkCancel = { ctx.ensureActive() },
-            modifiedMillis = l.modified, replaceExisting = true,
+            modifiedMillis = l.modified, replaceExisting = replaceExisting,
             // Fortsetzen einer angefangenen .s2ptmp nur mit Prüfung gegen die Handy-Datei (0.4.1)
             expectedHash = { PartialHash.compute(l.size) { off, len -> tree.readAt(l.docId, off, len) } },
         )
@@ -788,6 +843,7 @@ class MirrorEngine(
 
     /** Datei wurde seit dem Einlesen geändert -> nicht überschreiben; der nächste Lauf sieht beide Stände */
     private suspend fun skipChanged(rel: String, where: Msg) {
+        deferred.incrementAndGet()
         log("W", Msg.of(R.string.eng_changed_during_run, rel, where))
     }
 
@@ -872,7 +928,7 @@ class MirrorEngine(
         val text = message.text()
         run = run.copy(
             finishedAt = System.currentTimeMillis(), status = status, message = text, messageCode = message.toCode(),
-            uploaded = up.get() + down.get(), skipped = 0, failed = failed.get(), waiting = newConflicts, bytes = bytes.get()
+            uploaded = up.get() + down.get(), skipped = 0, failed = failed.get(), waiting = newConflicts, bytes = bytes.get(), deferred = deferred.get()
         )
         dao.updateRun(run)
         if (!dryRun) log("I", Msg.of(R.string.eng_end, message))

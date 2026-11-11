@@ -100,7 +100,7 @@ object DeletionManager {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: PcIdentityException) {
-                return CopyVerdict.Rejected(e.message ?: "")
+                return CopyVerdict.Rejected(e.message)
             } catch (e: Exception) {
                 return CopyVerdict.Unreachable
             }

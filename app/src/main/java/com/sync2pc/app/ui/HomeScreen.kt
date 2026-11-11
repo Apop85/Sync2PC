@@ -115,7 +115,12 @@ fun rememberResumeTick(): Int {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
+fun HomeScreen(
+    navigate: (Screen) -> Unit,
+    onConfirmDeletes: () -> Unit,
+    /** Snackbar der Startseite; von aussen übergeben, damit der Löschablauf (MainActivity) darin melden kann (R12) */
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
+) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).dao() }
     val tick = rememberResumeTick()
@@ -127,7 +132,6 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     // 0.11.0: ein Profil, das gerade gelöscht wird (Rückgängig noch möglich), ist ausgeblendet
     val pendingDelete by PendingProfileDelete.pending.collectAsState()
     val profiles = allProfiles.filter { it.id != pendingDelete?.id }
-    val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(pendingDelete) {
         val pd = pendingDelete ?: return@LaunchedEffect
         val r = snackbar.showSnackbar(
@@ -142,6 +146,8 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     val conflicts = allConflicts.filter { it.profileId != pendingDelete?.id }
     val deleteCount by remember { dao.queuedDeleteCount() }.collectAsState(initial = 0)
     val lastRun by remember { dao.lastRunFlow() }.collectAsState(initial = null)
+    // -173/-177: Dateien, die beim nächsten Sync folgen (jeweils letzter echter Lauf je aktivem Profil)
+    val pendingFiles by remember { dao.pendingDeferredFlow() }.collectAsState(initial = 0)
     val pendingRestores by remember { dao.pendingRestoreCount() }.collectAsState(initial = 0)
 
     val wm = remember { WorkManager.getInstance(ctx) }
@@ -251,9 +257,11 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     // PC im Ziel-WLAN nicht erreichbar -> Hinweis mit Zeitpunkt der nächsten Prüfung
     val shareWait = remember(tick, workKey) {
         val s = settings
-        if (s.shareRetryAt > System.currentTimeMillis())
-            str(R.string.home_pc_unreachable, s.shareUnreachable, formatTime(s.shareRetryAt).substringAfter(' '))
-        else null
+        if (s.shareRetryAt > System.currentTimeMillis()) {
+            // R7: Nennt die Zeile «Nächste Prüfung um …» (nextPlanned) den Zeitpunkt schon, steht er nicht doppelt im Fehlertext
+            if (nextPlanned != null) str(R.string.home_pc_unreachable_short, s.shareUnreachable)
+            else str(R.string.home_pc_unreachable, s.shareUnreachable, formatTime(s.shareRetryAt).substringAfter(' '))
+        } else null
     }
 
     // Gesamtzustand für die Statuskarte (SYNC-20261110-113): Verbindung, Profile, offene Entscheidungen
@@ -268,6 +276,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     // Offene Entscheidungen: Konflikte, Ordnerzuordnung, Schutzbremse, Löschbestätigung
     val attentionCount = conflicts.size + decisions.size + guards.size + (if (deleteCount > 0) 1 else 0)
     val lastRunErrors = lastRun?.takeIf { it.status == RunStatus.FAILED || it.failed > 0 }?.failed ?: -1
+    val locationMissing = PermNeeds.of(profiles).wifi && !perms.location
     val headline = HomeStatus.headline(HomeStatusInput(
         isRunning = running != null,
         hasProfiles = profiles.isNotEmpty(),
@@ -279,7 +288,11 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         lastRunHadErrors = lastRunErrors >= 0,
         // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
         allUpToDate = lastRun?.status == RunStatus.OK && !queued && skipInfo == null &&
-            decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0 && guards.isEmpty(),
+            decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0 && guards.isEmpty() &&
+            pendingFiles == 0,
+        pendingFiles = pendingFiles,
+        // R4: ohne Standort-Berechtigung ist der WLAN-Name nicht lesbar (automatische Synchronisierung still gestört)
+        locationMissing = locationMissing,
     ))
     val attentionText = if (conflicts.isNotEmpty()) plural(R.plurals.home_status_conflict_detail, conflicts.size)
         else str(R.string.home_status_attention_detail)
@@ -410,6 +423,9 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     attentionCount = attentionCount,
                     attentionText = attentionText,
                     lastRunErrors = lastRunErrors.coerceAtLeast(0),
+                    pendingFiles = pendingFiles,
+                    locationMissing = locationMissing,
+                    onOpenPermissions = { navigate(Screen.Settings(SettingsSection.PERMISSIONS)) },
                     onSync = startSync,
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onResume = { SyncScheduler.resume(ctx); pauseVersion++ },

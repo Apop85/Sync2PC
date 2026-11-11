@@ -14,6 +14,133 @@ import os
 import sys
 
 from impacket import ntlm, smbserver
+from impacket import smb3structs as smb2
+from impacket.nt_errors import (
+    STATUS_END_OF_FILE, STATUS_INVALID_HANDLE, STATUS_NO_SUCH_FILE, STATUS_OBJECT_NAME_COLLISION,
+    STATUS_OBJECT_NAME_NOT_FOUND, STATUS_OBJECT_PATH_SYNTAX_BAD, STATUS_ACCESS_DENIED, STATUS_SUCCESS,
+)
+
+STATUS_SMB_BAD_TID = smbserver.STATUS_SMB_BAD_TID
+
+
+def patch_windows_behaviour() -> None:
+    """Gleicht vier Abweichungen von impacket gegenueber Windows aus (SYNC-20261111-165), damit Upload, Rename,
+    Loeschen, Fortsetzen und Verbindungsabbruch der Ordner-Spiegelung pruefbar sind. Nur Testserver, nie produktiv.
+
+    1. Oeffnen einer nicht vorhandenen Datei: STATUS_OBJECT_NAME_NOT_FOUND statt STATUS_NO_SUCH_FILE
+       (smbj meldet sonst "Create failed", die App kann "Datei fehlt" nicht erkennen).
+    2. Lesen am Dateiende: STATUS_END_OF_FILE mit Fehler-Antwort (SMB2Error) statt einer Read-Antwort
+       (smbj: BufferException Underflow, der Lauf haengt im Logoff bis zum Timeout).
+    3. Rename (SetInfo FileRenameInformation): Handle vor dem Umbenennen schliessen, os.replace statt os.rename,
+       danach neu oeffnen (unter Windows scheitert os.rename bei offenem Handle mit WinError 32).
+    4. Handles abgebrochener Verbindungen schliessen (sonst bleibt die Datei bis zum Serverneustart gesperrt).
+    """
+    cmds = smbserver.SMB2Commands
+
+    # 1. Fehlercode beim Oeffnen
+    orig_create = cmds.smb2Create
+
+    def create(connId, smbServer, recvPacket):
+        resp, extra, code = orig_create(connId, smbServer, recvPacket)
+        if code == STATUS_NO_SUCH_FILE:
+            code = STATUS_OBJECT_NAME_NOT_FOUND
+        return resp, extra, code
+
+    cmds.smb2Create = staticmethod(create)
+
+    # 2. Dateiende als Fehler-Antwort
+    orig_read = cmds.smb2Read
+
+    def read(connId, smbServer, recvPacket):
+        resp, extra, code = orig_read(connId, smbServer, recvPacket)
+        if code == STATUS_END_OF_FILE:
+            return [smb2.SMB2Error()], extra, code
+        return resp, extra, code
+
+    cmds.smb2Read = staticmethod(read)
+
+    # 3. Rename mit geschlossenem Handle
+    orig_setinfo = cmds.smb2SetInfo
+
+    def setinfo(connId, smbServer, recvPacket):
+        try:
+            info = smb2.SMB2SetInfo(recvPacket["Data"])
+            is_rename = info["InfoType"] == smb2.SMB2_0_INFO_FILE and info["FileInfoClass"] == smb2.SMB2_FILE_RENAME_INFO
+        except Exception:
+            is_rename = False
+        if not is_rename:
+            return orig_setinfo(connId, smbServer, recvPacket)
+        return rename(connId, smbServer, recvPacket, info)
+
+    def rename(connId, smbServer, recvPacket, info):
+        conn = smbServer.getConnectionData(connId)
+        file_id = info["FileID"].getData()
+        if file_id == b"\xff" * 16 and "SMB2_CREATE" in conn["LastRequest"]:
+            file_id = conn["LastRequest"]["SMB2_CREATE"]["FileID"]
+        tid = recvPacket["TreeID"]
+        if tid not in conn["ConnectedShares"]:
+            return [smb2.SMB2Error()], None, STATUS_SMB_BAD_TID
+        share = conn["ConnectedShares"][tid]
+        if file_id not in conn["OpenedFiles"]:
+            return [smb2.SMB2Error()], None, STATUS_INVALID_HANDLE
+        opened = conn["OpenedFiles"][file_id]
+        root = share["path"]
+        rinfo = smb2.FILE_RENAME_INFORMATION_TYPE_2(info["Buffer"])
+        new_name = smbserver.normalize_path(rinfo["FileName"].decode("utf-16le"))
+        new_path = os.path.join(root, new_name)
+        if not smbserver.isInFileJail(root, new_name):
+            return [smb2.SMB2Error()], None, STATUS_OBJECT_PATH_SYNTAX_BAD
+        if rinfo["ReplaceIfExists"] == 0 and os.path.exists(new_path):
+            return [smb2.SMB2Error()], None, STATUS_OBJECT_NAME_COLLISION
+        if share["read only"] == "yes":
+            return [smb2.SMB2Error()], None, STATUS_ACCESS_DENIED
+        old_path = opened["FileName"]
+        handle = opened["FileHandle"]
+        had_handle = handle not in (smbserver.VOID_FILE_DESCRIPTOR, smbserver.PIPE_FILE_DESCRIPTOR)
+        try:
+            if had_handle:
+                os.close(handle)
+            os.replace(old_path, new_path)
+            opened["FileName"] = new_path
+            if had_handle:
+                opened["FileHandle"] = os.open(new_path, os.O_RDWR | getattr(os, "O_BINARY", 0))
+        except Exception as e:
+            smbServer.log("smb2SetInfo(rename): %s" % e, logging.ERROR, connData=conn)
+            # Handle moeglichst wiederherstellen, damit das spaetere Close nicht ins Leere greift
+            if had_handle:
+                try:
+                    opened["FileHandle"] = os.open(opened["FileName"], os.O_RDWR | getattr(os, "O_BINARY", 0))
+                except Exception:
+                    opened["FileHandle"] = smbserver.VOID_FILE_DESCRIPTOR
+            return [smb2.SMB2Error()], None, STATUS_ACCESS_DENIED
+        smbServer.setConnectionData(connId, conn)
+        return [smb2.SMB2SetInfo_Response()], None, STATUS_SUCCESS
+
+    cmds.smb2SetInfo = staticmethod(setinfo)
+
+    # 4. Handles beim Ende einer Verbindung schliessen (auch bei Abbruch)
+    orig_remove = smbserver.SMBSERVER.removeConnection
+
+    def remove_connection(self, name):
+        try:
+            conn = self.getConnectionData(name, checkStatus=False)
+            for opened in list(conn.get("OpenedFiles", {}).values()):
+                handle = opened.get("FileHandle")
+                if handle not in (None, smbserver.VOID_FILE_DESCRIPTOR, smbserver.PIPE_FILE_DESCRIPTOR):
+                    try:
+                        os.close(handle)
+                    except Exception:
+                        pass
+                if opened.get("DeleteOnClose") is True:
+                    try:
+                        os.remove(opened["FileName"])
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        return orig_remove(self, name)
+
+    smbserver.SMBSERVER.removeConnection = remove_connection
 
 
 def main() -> int:
@@ -49,6 +176,7 @@ def main() -> int:
 
         smbserver.SMB2Commands.smb2Negotiate = staticmethod(negotiate)
 
+    patch_windows_behaviour()
     server = smbserver.SimpleSMBServer(listenAddress=args.address, listenPort=args.port)
     server.addShare(args.share.upper(), os.path.abspath(args.dir), "LeoSync-Test")
     server.setSMB2Support(True)

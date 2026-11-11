@@ -21,7 +21,7 @@ class MigrationTest {
         AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4,
         AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7,
         AppDatabase.MIGRATION_7_8, AppDatabase.MIGRATION_8_9,
-        AppDatabase.MIGRATION_9_10,
+        AppDatabase.MIGRATION_9_10, AppDatabase.MIGRATION_10_11,
     )
 
     @get:Rule
@@ -37,7 +37,7 @@ class MigrationTest {
             )
             close()
         }
-        val d = helper.runMigrationsAndValidate(db, 10, true, *all)
+        val d = helper.runMigrationsAndValidate(db, 11, true, *all)
         d.query("SELECT name, profileType, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel, folderLayout, smbEncryption FROM profiles").use { c ->
             c.moveToFirst()
             assertEquals("Fotos", c.getString(0))
@@ -81,6 +81,38 @@ class MigrationTest {
             c.moveToFirst()
             assertEquals("10 - Ägypten", c.getString(0))
         }
+        d.close()
+    }
+
+    /** 10 -> 11 (SYNC-20261111-173): Zähler «verschoben»; bestehende Läufe behalten alle Werte und bekommen deferred = 0 */
+    @Test fun deferredFromVersion10() {
+        helper.createDatabase(db, 10).apply {
+            execSQL(
+                "INSERT INTO sync_runs (id, profileId, profileName, `trigger`, dryRun, startedAt, finishedAt, status, " +
+                    "uploaded, skipped, failed, waiting, bytes, message, messageCode, triggerCode) VALUES " +
+                    "(1, 1, 'Fotos', 'WLAN verbunden', 0, 1000, 2000, 'OK', 3, 2, 1, 0, 4096, '3 übertragen', '{\"k\":\"run_nothing\"}', NULL)"
+            )
+            execSQL("INSERT INTO log_entries (id, runId, time, level, message) VALUES (1, 1, 1500, 'I', 'a.jpg')")
+            close()
+        }
+        val d = helper.runMigrationsAndValidate(db, 11, true, AppDatabase.MIGRATION_10_11)
+        d.query("SELECT uploaded, skipped, failed, waiting, bytes, message, messageCode, deferred FROM sync_runs WHERE id = 1").use { c ->
+            assertEquals(true, c.moveToFirst())
+            assertEquals(3, c.getInt(0))
+            assertEquals(2, c.getInt(1))
+            assertEquals(1, c.getInt(2))
+            assertEquals(0, c.getInt(3))
+            assertEquals(4096L, c.getLong(4))
+            assertEquals("3 übertragen", c.getString(5))
+            assertEquals("{\"k\":\"run_nothing\"}", c.getString(6))
+            assertEquals(0, c.getInt(7)) // neue Spalte: Standard 0
+        }
+        d.query("SELECT message FROM log_entries WHERE runId = 1").use { c ->
+            assertEquals(true, c.moveToFirst())
+            assertEquals("a.jpg", c.getString(0))
+        }
+        // Neue Läufe lassen sich mit deferred schreiben
+        d.execSQL("UPDATE sync_runs SET deferred = 2 WHERE id = 1")
         d.close()
     }
 

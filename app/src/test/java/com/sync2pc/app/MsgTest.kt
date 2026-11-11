@@ -138,7 +138,7 @@ class MsgTest {
             assertNotNull("Schlüssel $k fehlt in den Texten", s ?: p)
         }
         // und sie kommen in den Kurztexten wirklich vor
-        val used = RunSummary.mirror(1, 1, 1, 1, 1, true).keys() + RunSummary.photos(1, 1, 1, 1).keys()
+        val used = RunSummary.mirror(1, 1, 1, 1, 1, true, 1).keys() + RunSummary.photos(1, 1, 1, 1).keys()
         assertTrue(used.containsAll(RunSummary.NOT_IDLE_KEYS))
     }
 }

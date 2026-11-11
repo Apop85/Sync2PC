@@ -89,6 +89,7 @@
     <string name="profile_filter_hint">Separate several patterns with a comma or line break. * = anything, ? = one character, folder/** = everything in this folder. If “Only these files” is empty, everything counts. “Exclude” takes precedence.</string>
     <string name="profile_section_unset">Not set – tap to open</string>
     <string name="profile_section_collapse">Collapse</string>
+    <string name="profile_section_collapsed_value">Collapsed, value: %1$s – tap to open</string>
     <string name="profile_guard">Safety brake (optional)</string>
     <string name="profile_guard_percent" formatted="false">Ask if more than … % would be deleted</string>
     <string name="profile_guard_hint">If more than this percentage of files would go to the trash at once, the sync stops and asks you first. Default: 20. Regardless of this, LeoSync always asks from 100 deletions at once and when a whole subfolder with more than 5 files would disappear. With at most 5 files in the profile only if all would be deleted.</string>
@@ -209,7 +210,7 @@
     <string name="enc_preferred_sub">Encrypted as soon as the PC supports it. Otherwise the connection stays unencrypted.</string>
     <string name="enc_required">Required</string>
     <string name="enc_required_sub">Connects only if encrypted. If the PC cannot do that, no connection is made and no password is sent. Most secure.</string>
-    <string name="enc_test_ok">✓ Encrypted (%1$s)</string>
+    <string name="enc_test_ok">✓ Encrypted (SMB %1$s)</string>
     <string name="enc_test_warn">⚠ Not encrypted (%1$s). Your PC or NAS cannot encrypt, or it is switched off.</string>
     <string name="enc_test_off">Not encrypted (%1$s), as set.</string>
     <string name="enc_help">Help: turn on encryption</string>

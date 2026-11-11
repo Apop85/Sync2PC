@@ -24,7 +24,7 @@ class SyncGateTest {
     private class FakeStore(var kind: DeferredKind? = null) : DeferredStore {
         var writes = 0
         override fun read(): DeferredKind? = kind
-        override fun write(kind: DeferredKind?) { this.kind = kind; writes++ }
+        override fun write(kind: DeferredKind?): Boolean { this.kind = kind; writes++; return true }
     }
 
     // ---- T1: zwei Aufträge gleichzeitig -------------------------------------------------------------------------
@@ -164,13 +164,63 @@ class SyncGateTest {
     @Test fun errorInStoreNeverBlocksTheGate() {
         val broken = object : DeferredStore {
             override fun read(): DeferredKind? = throw RuntimeException("read")
-            override fun write(kind: DeferredKind?) = throw RuntimeException("write")
+            override fun write(kind: DeferredKind?): Boolean = throw RuntimeException("write")
         }
         val gate = SyncGate(broken)
         assertTrue(gate.tryAcquireOrDefer(false))
         assertFalse(gate.tryAcquireOrDefer(true))
         assertEquals(DeferredKind.MANUAL, gate.release()) // Merker im Speicher bleibt gültig
         assertTrue(gate.tryAcquireOrDefer(false))
+    }
+
+    // ---- SYNC-20261111-172: Sonderaufträge und Merker-Schreibfehler ----------------------------------------------------
+
+    @Test fun tryAcquireTakesFreeLockWithoutMarker() {
+        val store = FakeStore()
+        val gate = SyncGate(store)
+        assertTrue(gate.tryAcquire())
+        assertTrue(gate.isRunning)
+        assertNull(gate.release())
+        assertEquals(0, store.writes)
+    }
+
+    @Test fun tryAcquireOnBusyLockSetsNoMarker() {
+        val store = FakeStore()
+        val gate = SyncGate(store)
+        assertTrue(gate.tryAcquireOrDefer(false))
+        assertFalse(gate.tryAcquire())                 // Sonderauftrag: wartet per Result.retry(), kein Merker
+        assertEquals(DeferredState.NONE, gate.state.value)
+        assertEquals(0, store.writes)
+        assertNull(gate.release())                     // kein Nachlauf entstanden
+        assertTrue(gate.tryAcquire())                  // beim nächsten Versuch frei
+    }
+
+    @Test fun storeFailureIsReportedAndMarkerStaysInMemory() {
+        val failing = object : DeferredStore {
+            override fun read(): DeferredKind? = null
+            override fun write(kind: DeferredKind?): Boolean = false
+        }
+        val reports = ArrayList<String>()
+        val gate = SyncGate(failing, onStoreFailure = { reports += it })
+        gate.tryAcquireOrDefer(false)
+        assertFalse(gate.tryAcquireOrDefer(true))
+        assertEquals(1, reports.size)
+        assertEquals(DeferredState(requested = true, manual = true), gate.state.value) // Merker im Speicher bleibt
+        assertEquals(DeferredKind.MANUAL, gate.release())
+        assertEquals(2, reports.size)                  // auch das Löschen wird gemeldet
+    }
+
+    @Test fun storeExceptionIsReportedToo() {
+        val throwing = object : DeferredStore {
+            override fun read(): DeferredKind? = null
+            override fun write(kind: DeferredKind?): Boolean = throw RuntimeException("commit")
+        }
+        val reports = ArrayList<String>()
+        val gate = SyncGate(throwing, onStoreFailure = { reports += it })
+        gate.tryAcquireOrDefer(false)
+        gate.tryAcquireOrDefer(false)
+        assertEquals(1, reports.size)
+        assertEquals(DeferredKind.AUTO, gate.release())
     }
 
     // ---- Nebenläufigkeit ------------------------------------------------------------------------------------------

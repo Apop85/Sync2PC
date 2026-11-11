@@ -65,6 +65,9 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
                     if (!id.startsWith("raw:") && !id.startsWith("/storage/")) {
                         // -122 Punkt 3: ganzer Pfad (Download/Testsync/unter) über die Elternkette, sonst nur der Ordnername
                         downloadPathLabel(context, uri, id)?.let { return it }
+                        // SYNC-20261111-176 R3: Kette nicht lieferbar -> vollständiger Pfad aus der MediaStore-Ablage (API 29+),
+                        // sonst fehlen Zwischenordner («Download/unter» statt «Download/Testsync/unter»)
+                        mediaStorePathLabel(context, id)?.let { return it }
                         val doc = DocumentsContract.buildDocumentUriUsingTree(uri, id)
                         context.contentResolver.query(
                             doc, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null,
@@ -76,6 +79,29 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             } catch (e: Exception) { /* Anzeige-Fallback unten */ }
             return label(uri)
         }
+
+        /**
+         * Pfad eines Download-Ordners mit Nummern-Kennung («msf:12», «msd:12») aus der MediaStore-Ablage: RELATIVE_PATH
+         * («Download/Testsync/») plus Anzeigename. null = nicht ermittelbar (vor Android 10, Eintrag fehlt).
+         */
+        internal fun mediaStorePathLabel(context: Context, docId: String): String? = try {
+            val num = docId.substringAfter(':', "").toLongOrNull()
+            if (num == null || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) null else {
+                val base = if (docId.startsWith("msd:")) android.provider.MediaStore.Downloads.getContentUri("external")
+                    else android.provider.MediaStore.Files.getContentUri("external")
+                context.contentResolver.query(
+                    android.content.ContentUris.withAppendedId(base, num),
+                    arrayOf(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.provider.MediaStore.MediaColumns.DISPLAY_NAME),
+                    null, null, null,
+                )?.use { c ->
+                    if (!c.moveToFirst()) null else {
+                        val rel = c.getString(0)?.trim('/').orEmpty()
+                        val name = c.getString(1)?.takeIf { it.isNotBlank() } ?: return@use null
+                        if (rel.isEmpty()) name else "$rel/$name"
+                    }
+                }?.takeIf { it.startsWith("Download") }
+            }
+        } catch (e: Exception) { null }
 
         /**
          * Pfad eines Ordners des Download-Anbieters von der Wurzel aus (ab Android 8 über `findDocumentPath`). Das erste Element der

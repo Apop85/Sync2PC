@@ -44,6 +44,7 @@
     <string name="conflict_none">No open conflicts.</string>
     <string name="conflict_hint">These files were changed on the mobile and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
     <string name="conflict_newer">(newer)</string>
+    <string name="conflict_same_age">(same age)</string>
     <string name="conflict_keep_phone">Keep mobile</string>
     <string name="conflict_keep_pc">Keep PC</string>
     <string name="conflict_keep_both">Keep both</string>

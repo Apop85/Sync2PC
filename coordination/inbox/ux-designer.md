@@ -4,6 +4,5 @@ Nur Verweise auf aktive, an UX adressierte Aufträge (Details in der Task-Datei)
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261111-161 | Development | UX-Review 0.15.1: Verlauf löschen, Papierkorb, Speicher freigeben, Update-Seite, Eingabefelder, Berechtigungen, Import-Dialog | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-161.md |
-| SYNC-20261111-149 | Development | UX-Review: scrollbare Dialoge Schrift 2,0, Assistent-Sperre, Ordneranzeige (0.14.8) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-149.md |
-| SYNC-20261111-154 | Development | UX-Review 0.15.0: Home-Status, Konflikte, Ordnerauswahl, Vorschau, Nachlauf-Hinweis, Verschlüsselungskarte, Überschneidungsmeldungen | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-154.md |
+| SYNC-20261111-181 | Development | UX-Review Startseite 0.16.2 (-177, -176 R4–R7) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-181.md |
+| SYNC-20261111-184 | Development | UX-Review 0.16.3: Befunde R1–R3, R8–R12 aus -176 | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-184.md |

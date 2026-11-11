@@ -37,6 +37,9 @@ import com.sync2pc.app.sync.Notifications
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 
 sealed class Screen {
     data object Home : Screen()
@@ -167,19 +170,28 @@ private fun AppRoot(
             deleteLauncher.launch(IntentSenderRequest.Builder(it.intent.intentSender).build())
         }
     }
+    val homeSnackbar = remember { SnackbarHostState() }
     val confirmDeletes: () -> Unit = {
         scope.launch {
             val out = withContext(Dispatchers.IO) { DeletionManager.buildRequests(ctx) }
             // Vor dem Systemdialog wird die PC-Kopie geprüft (SYNC-20261111-142): Ist der PC nicht erreichbar, wird nichts
             // gelöscht, die Dateien bleiben vorgemerkt
             val note = when {
-                out.unreachable -> str(R.string.delete_pc_unreachable)
+                out.unreachable -> str(R.string.delete_pc_unreachable_retry)
                 out.rejectedMessage != null -> str(R.string.delete_pc_rejected, out.rejectedMessage)
                 out.reset > 0 -> str(R.string.delete_pc_reset, out.reset)
                 out.batches.isEmpty() -> str(R.string.main_nothing_to_remove)
                 else -> null
             }
-            if (note != null) Toast.makeText(ctx, note, Toast.LENGTH_LONG).show()
+            if (out.unreachable) {
+                // R12: Snackbar (ca. 8 s, schliessbar) statt flüchtigem Toast, mit Empfehlung
+                homeSnackbar.currentSnackbarData?.dismiss()
+                launch {
+                    withTimeoutOrNull(8_000) {
+                        homeSnackbar.showSnackbar(note!!, withDismissAction = true, duration = SnackbarDuration.Indefinite)
+                    }
+                }
+            } else if (note != null) Toast.makeText(ctx, note, Toast.LENGTH_LONG).show()
             batches = out.batches
         }
     }
@@ -193,7 +205,7 @@ private fun AppRoot(
 
     val back = { navigate(Screen.Home) }
     when (screen) {
-        Screen.Home -> HomeScreen(navigate = navigate, onConfirmDeletes = confirmDeletes)
+        Screen.Home -> HomeScreen(navigate = navigate, onConfirmDeletes = confirmDeletes, snackbar = homeSnackbar)
         is Screen.Settings -> SettingsScreen(section = screen.section, onBack = back)
         is Screen.ProfileEdit -> ProfileScreen(
             profileId = screen.id, onBack = back,

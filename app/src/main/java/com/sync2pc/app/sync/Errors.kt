@@ -52,6 +52,9 @@ fun userErrorMsg(e: Throwable): com.sync2pc.app.l10n.Msg =
 private fun pcIdentityOf(e: Throwable): PcIdentityException? =
     generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).firstOrNull { it is PcIdentityException } as? PcIdentityException
 
+/** Ist die Ursache «Verschlüsselung erforderlich, aber nicht verfügbar»? (SYNC-20261111-172) */
+fun isEncryptionUnavailable(e: Throwable): Boolean = encryptionOf(e) != null
+
 /** "Verschlüsselung erforderlich, aber nicht verfügbar" (Text mit Host als Argument, SYNC-20261111-144) */
 private fun encryptionOf(e: Throwable): com.sync2pc.app.smb.SmbEncryptionUnavailableException? =
     generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9)

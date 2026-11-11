@@ -44,6 +44,7 @@
     <string name="conflict_none">Keine offenen Konflikte.</string>
     <string name="conflict_hint">Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. Die andere Version wird in den Ordner „%1$s“ verschoben, nicht gelöscht. Die Auswahl wird bei der nächsten Synchronisierung im WLAN angewendet.</string>
     <string name="conflict_newer">(neuer)</string>
+    <string name="conflict_same_age">(gleich alt)</string>
     <string name="conflict_keep_phone">Handy behalten</string>
     <string name="conflict_keep_pc">PC behalten</string>
     <string name="conflict_keep_both">Beide behalten</string>

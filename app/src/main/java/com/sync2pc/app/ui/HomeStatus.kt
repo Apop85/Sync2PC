@@ -23,6 +23,8 @@ internal enum class HomeHeadline {
     NO_CONNECTION,
     /** Letzter Lauf mit Fehlern */
     ERRORS,
+    /** Dateien wurden während des Laufs geändert und folgen beim nächsten Sync (SYNC-20261111-177): weder Fehler noch «aktuell» */
+    PENDING,
     /** Alles gesichert und aktuell */
     UP_TO_DATE,
     /** Sonst: neutral, wartet */
@@ -43,10 +45,14 @@ internal data class HomeStatusInput(
     val lastRunHadErrors: Boolean,
     /** Letzter Lauf ohne Probleme und nichts mehr offen (wie bisher berechnet) */
     val allUpToDate: Boolean,
+    /** Dateien, die laut dem letzten Lauf je aktivem Ordner-Profil beim nächsten Sync folgen (SYNC-20261111-177) */
+    val pendingFiles: Int = 0,
+    /** Standort-Berechtigung fehlt, obwohl ein Profil den WLAN-Namen braucht (SYNC-20261111-176 R4): nie «alles aktuell» */
+    val locationMissing: Boolean = false,
 )
 
 internal object HomeStatus {
-    /** Vorrang: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > gesichert > neutral */
+    /** Vorrang: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > ausstehende Dateien > gesichert > neutral */
     fun headline(i: HomeStatusInput): HomeHeadline = when {
         i.isRunning -> HomeHeadline.RUNNING
         !i.hasProfiles -> HomeHeadline.NOT_CONFIGURED
@@ -55,7 +61,8 @@ internal object HomeStatus {
         i.userPaused || i.wifiPaused -> HomeHeadline.PAUSED
         i.noConnection -> HomeHeadline.NO_CONNECTION
         i.lastRunHadErrors -> HomeHeadline.ERRORS
-        i.allUpToDate -> HomeHeadline.UP_TO_DATE
+        i.pendingFiles > 0 -> HomeHeadline.PENDING
+        i.allUpToDate && !i.locationMissing -> HomeHeadline.UP_TO_DATE
         else -> HomeHeadline.IDLE
     }
 
@@ -66,7 +73,7 @@ internal object HomeStatus {
         HomeHeadline.PAUSED -> if (userPaused) DogState.PAUSED else DogState.WAITING
         HomeHeadline.UP_TO_DATE -> DogState.SLEEPING
         HomeHeadline.NOT_CONFIGURED, HomeHeadline.NO_ACTIVE_PROFILE,
-        HomeHeadline.NO_CONNECTION, HomeHeadline.IDLE -> DogState.WAITING
+        HomeHeadline.NO_CONNECTION, HomeHeadline.IDLE, HomeHeadline.PENDING -> DogState.WAITING
     }
 
     /** Symbol (Warnzeichen) vor der Überschrift: nie nur Farbe (A4) */

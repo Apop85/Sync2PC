@@ -89,6 +89,7 @@
     <string name="profile_filter_hint">Mehrere Muster mit Komma oder Zeilenumbruch trennen. * = beliebig, ? = ein Zeichen, Ordner/** = alles in diesem Ordner. Ist „Nur diese Dateien“ leer, gilt alles. „Ausschliessen“ hat Vorrang.</string>
     <string name="profile_section_unset">Nicht eingestellt – antippen zum Öffnen</string>
     <string name="profile_section_collapse">Einklappen</string>
+    <string name="profile_section_collapsed_value">Eingeklappt, Wert: %1$s – antippen zum Öffnen</string>
     <string name="profile_guard">Schutzbremse (optional)</string>
     <string name="profile_guard_percent" formatted="false">Nachfragen, wenn mehr als … % gelöscht würden</string>
     <string name="profile_guard_hint">Sollen auf einmal mehr als so viele Prozent der Dateien in den Papierkorb, hält die Synchronisierung an und fragt dich zuerst. Standard: 20. Unabhängig davon fragt LeoSync immer ab 100 Löschungen auf einmal und wenn ein ganzer Unterordner mit mehr als 5 Dateien verschwinden würde. Bei höchstens 5 Dateien im Profil nur, wenn alle gelöscht würden.</string>
@@ -209,7 +210,7 @@
     <string name="enc_preferred_sub">Verschlüsselt, sobald der PC es kann. Sonst läuft die Verbindung unverschlüsselt weiter.</string>
     <string name="enc_required">Erforderlich</string>
     <string name="enc_required_sub">Verbindet nur verschlüsselt. Kann der PC das nicht, kommt keine Verbindung zustande und es wird kein Passwort gesendet. Am sichersten.</string>
-    <string name="enc_test_ok">✓ Verschlüsselt (%1$s)</string>
+    <string name="enc_test_ok">✓ Verschlüsselt (SMB %1$s)</string>
     <string name="enc_test_warn">⚠ Nicht verschlüsselt (%1$s). Dein PC oder NAS kann nicht verschlüsseln oder es ist ausgeschaltet.</string>
     <string name="enc_test_off">Nicht verschlüsselt (%1$s), wie eingestellt.</string>
     <string name="enc_help">Hilfe: Verschlüsselung einschalten</string>

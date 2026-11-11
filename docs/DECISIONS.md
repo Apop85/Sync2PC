@@ -19,6 +19,7 @@
 > **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-205 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted; DEC-203 Implemented; DEC-204 und DEC-205 am 2026-11-09, seit 0.13.0/0.13.1 Implemented); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
+> - Versionen 0.16.0 bis 0.16.3 (2026-11-11): DEC-231 bis DEC-248 (Sync-Sperre und Folgelauf, «Beide behalten», Konflikt-Rückgängig, Verschlüsselungswert, Startseite und Dialoge, Teststruktur); Status Implemented laut Development, DEC-240 Accepted; QA- und UX-Prüfung offen.
 > - Version 0.15.1 (2026-11-11): DEC-226 bis DEC-230 (Verlauf löschen, Papierkorb, Import «Ersetzen», Update-Hinweis, Sprache ausserhalb der Sicherung), Status Implemented laut Development.
 > - Version 0.15.0 (2026-11-11): DEC-221 bis DEC-225 (Nachlauf, SMB-Verschlüsselung, Gleichheit vor Löschen, UX Nachlauf-Hinweis und Karte «Verschlüsselung»), Status Implemented laut Development; Aktualisierungen an DEC-021, DEC-052, DEC-092, DEC-134, DEC-217, DEC-219.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
@@ -45,20 +46,20 @@ Die Entscheidungen sind nach Themen gruppiert (innerhalb eines Themas nach DEC-I
 ### Themen
 
 1. [Architektur und Projektstruktur](#1-architektur-und-projektstruktur) (7) – Plattform, Profilmodell, Namen, Lizenz und Codeaufbau.
-2. [Synchronisationsengine und 3-Wege-Abgleich](#2-synchronisationsengine-und-3-wege-abgleich) (7) – Richtung, Abgleichsregeln, Filter, Start neuer Profile, Sperre und Eingriffe beim laufenden Sync.
-3. [Konflikterkennung und Konfliktbehandlung](#3-konflikterkennung-und-konfliktbehandlung) (3) – Rückfragen bei Konflikten, Änderungen während des Laufs, Konflikt-Zusatz.
-4. [Dateiübertragung und SMB](#4-dateiübertragung-und-smb) (8) – SMB-Zugriff, Upload/Download, Fortsetzen, Zeitstempel, Verbindungsabbrüche, Zielauswahl auf dem PC.
+2. [Synchronisationsengine und 3-Wege-Abgleich](#2-synchronisationsengine-und-3-wege-abgleich) (8) – Richtung, Abgleichsregeln, Filter, Start neuer Profile, Sperre und Eingriffe beim laufenden Sync.
+3. [Konflikterkennung und Konfliktbehandlung](#3-konflikterkennung-und-konfliktbehandlung) (5) – Rückfragen bei Konflikten, Änderungen während des Laufs, Konflikt-Zusatz.
+4. [Dateiübertragung und SMB](#4-dateiübertragung-und-smb) (9) – SMB-Zugriff, Upload/Download, Fortsetzen, Zeitstempel, Verbindungsabbrüche, Zielauswahl auf dem PC.
 5. [Foto-Sortierung (Bildordner)](#5-foto-sortierung-bildordner) (9) – Zielstruktur Jahr/Monat/Land, Datums- und Ländererkennung, Live-Fotos, Mindestalter, PC-Import-Skript.
 6. [Datenbank und Datenmodell](#6-datenbank-und-datenmodell) (7) – Room, Migrationen, DB-Versionen, gespeicherte Namen und Texte.
 7. [Datenintegrität und Duplikaterkennung](#7-datenintegrität-und-duplikaterkennung) (11) – Prüfsummen, Prüfstufen, Duplikatsuche, Namenskonflikte, sichere Vergleiche, doppelte Profile.
-8. [Lösch- und Wiederherstellungslogik](#8-lösch--und-wiederherstellungslogik) (16) – Löschen nach dem Sync, Papierkorb, Versionsschutz, Wiederherstellen, Schutzbremse, Speicher freigeben.
-9. [Android und Hintergrundprozesse](#9-android-und-hintergrundprozesse) (24) – WorkManager, Auslöser, WLAN-Erkennung, PC-Kennung, Pause, Vordergrunddienst, Akku, Berechtigungen, Zielversion.
-10. [Benutzeroberfläche und UX](#10-benutzeroberfläche-und-ux) (39) – Startseite, Profil-Editor, Statusanzeigen, Verlauf, Einstellungen, Hinweise, Barrierefreiheit.
+8. [Lösch- und Wiederherstellungslogik](#8-lösch--und-wiederherstellungslogik) (17) – Löschen nach dem Sync, Papierkorb, Versionsschutz, Wiederherstellen, Schutzbremse, Speicher freigeben.
+9. [Android und Hintergrundprozesse](#9-android-und-hintergrundprozesse) (27) – WorkManager, Auslöser, WLAN-Erkennung, PC-Kennung, Pause, Vordergrunddienst, Akku, Berechtigungen, Zielversion.
+10. [Benutzeroberfläche und UX](#10-benutzeroberfläche-und-ux) (48) – Startseite, Profil-Editor, Statusanzeigen, Verlauf, Einstellungen, Hinweise, Barrierefreiheit.
 11. [Lokalisierung und Sprache](#11-lokalisierung-und-sprache) (6) – Zweisprachigkeit, Textzugriff, Sprachwahl, Übersetzungsregeln.
 12. [Performance und Optimierungen](#12-performance-und-optimierungen) (6) – R8, Parallelität, Protokollierung, Symbole, Neuzeichnen.
 13. [Sicherheit, Datenschutz und Diagnose](#13-sicherheit-datenschutz-und-diagnose) (6) – Passwortschutz, Diagnosedaten, Absturzbericht, Sicherung/Export, Sicherheitsprüfung.
 14. [Verteilung: Updates, Play Store und Support](#14-verteilung-updates-play-store-und-support) (10) – Selbst-Update, Play-Store-Ziel, Paket-ID, Play Protect, Feedback, Kontakt, Produktseite.
-15. [Build, Tests, Versionierung und Arbeitsregeln](#15-build-tests-versionierung-und-arbeitsregeln) (13) – Builder, Versionsplan, Arbeitsregeln für Agents, Testumgebung.
+15. [Build, Tests, Versionierung und Arbeitsregeln](#15-build-tests-versionierung-und-arbeitsregeln) (14) – Builder, Versionsplan, Arbeitsregeln für Agents, Testumgebung.
 16. [Verworfene und überholte Lösungsansätze](#16-verworfene-und-überholte-lösungsansätze) (33) – Alle Entscheidungen mit Status Rejected oder Superseded, mit Verweis auf die ersetzende Entscheidung.
 
 Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungsbedarf](#b-änderungsbedarf-an-bestehenden-entscheidungen) · [C. Dokumentationsbedarf](#c-dokumentationsbedarf) · [D. Technische Risiken](#d-technische-risiken)
@@ -84,12 +85,15 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-135: Importierte Ordner-Profile warten auf den ersten Start und eine Stichprobe
 - DEC-144: Sperre zwischen Ordner-Sync und Eingriffen von Hand
 - DEC-201: Eingriffe beim laufenden Ordner-Sync prozessweit vormerken
+- DEC-238: Während des Laufs geänderte Dateien: Zähler `deferred` und begrenzter Folgelauf
 
 **3. Konflikterkennung und Konfliktbehandlung**
 
 - DEC-037: Konflikte fragen, optional pro Profil „immer neuere Datei“
 - DEC-133: Nichts überschreiben, was sich während des Laufs geändert hat
 - DEC-164: Konflikt-Zusatz `_conflict-phone`
+- DEC-232: Konflikt-Rückgängig und Anwenden schliessen sich über bedingte DB-Abfragen aus
+- DEC-239: «Beide behalten»: freier Konfliktname, nie überschreibend, wiederholbar
 
 **4. Dateiübertragung und SMB**
 
@@ -101,6 +105,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-094: Abgebrochene Downloads aufs Handy fortsetzen
 - DEC-131: Upload nur mit Hash-Prüfung fortsetzen
 - DEC-192: Ziel auf dem PC auswählen – Freigaben auflisten
+- DEC-234: Gespeicherter Verschlüsselungswert: fehlend = «Bevorzugt», unbekannt = «Erforderlich»
 
 **5. Foto-Sortierung (Bildordner)**
 
@@ -159,6 +164,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-146: Wiederherstellen rollt bei Fehlern zurück, die Vormerkung bleibt
 - DEC-147: Speicher freigeben auch für Ordner-Profile Handy → PC
 - DEC-163: Papierkorb heisst `.LeoSync-Bin`, alte Namen bleiben erkannt
+- DEC-231: Löschen über den Android-Systemdialog: Prüfung der PC-Kopie nur unmittelbar davor
 
 **9. Android und Hintergrundprozesse**
 
@@ -190,6 +196,9 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-152: App nur im Hochformat
 - DEC-183: Ziel-Version Android 16 (API 36) vorgezogen
 - DEC-190: Berechtigungen erst bei Bedarf
+- DEC-233: Sonderaufträge bei belegter Sync-Sperre: Wiederholung statt Nachlauf-Merker
+- DEC-236: Fehler beim Speichern des Nachlauf-Merkers: nur Diagnose-Log
+- DEC-237: «Verschlüsselung nicht verfügbar» bei automatischen Läufen: einmal je Profil bis zum nächsten Erfolg
 
 **10. Benutzeroberfläche und UX**
 
@@ -242,6 +251,15 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-228: Import «Ersetzen» in Warnfarbe, ohne zusätzliche Bestätigung
 - DEC-229: Update: Hinweis statt automatischem Neustart
 - DEC-230: Die App-Sprache bleibt ausserhalb der Sicherung
+- DEC-235: Überschneidungswarnung Fotos ↔ Ordner: datenträgerunabhängig, Speicherwurzel warnt
+- DEC-241: Statuskarte: neuer Zustand «↻ Noch nicht alles gesichert»
+- DEC-242: Startseite: Hinweis bei fehlender Standort-Berechtigung (R4)
+- DEC-243: Profilkarte: Zeile bei verlorenem Handy-Ordner-Zugriff (R5)
+- DEC-244: Startseite: «⏸ Pausiert» als Überschrift (R6)
+- DEC-245: «Keine Verbindung»: «PC nicht erreichbar» ohne doppelte Zeitangabe (R7)
+- DEC-246: Dialoge mit drei oder mehr Knöpfen sind gestapelt
+- DEC-247: Überlaufender Dialogtext zeigt Scrollbalken und Verlauf
+- DEC-248: Konfliktkarte: «(neuer)» erst ab einer Sekunde Unterschied, sonst «(gleich alt)»
 
 **11. Lokalisierung und Sprache**
 
@@ -305,6 +323,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-214: QA führt keine Builds aus
 - DEC-215: UX prüft selbstständig und führt eine Navigationsdatei
 - DEC-220: QA baut Debug-/Test-Builds selbstständig (ergänzt DEC-214)
+- DEC-240: Teststruktur für Engine-Abläufe: `RemoteStore`, `LocalFiles`, ausgelagertes Wiederherstellen
 
 **16. Verworfene und überholte Lösungsansätze**
 
@@ -576,6 +595,24 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-217 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-218 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-219 | Implemented | 7. Datenintegrität und Duplikaterkennung |
+| DEC-231 | Implemented | 8. Lösch- und Wiederherstellungslogik |
+| DEC-232 | Implemented | 3. Konflikterkennung und Konfliktbehandlung |
+| DEC-233 | Implemented | 9. Android und Hintergrundprozesse |
+| DEC-234 | Implemented | 4. Dateiübertragung und SMB |
+| DEC-235 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-236 | Implemented | 9. Android und Hintergrundprozesse |
+| DEC-237 | Implemented | 9. Android und Hintergrundprozesse |
+| DEC-238 | Implemented | 2. Synchronisationsengine und 3-Wege-Abgleich |
+| DEC-239 | Implemented | 3. Konflikterkennung und Konfliktbehandlung |
+| DEC-240 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-241 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-242 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-243 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-244 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-245 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-246 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-247 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-248 | Implemented | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -761,6 +798,17 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Betroffene Komponenten:** `mirror/MirrorLock.kt`, `TrashCleaner`, `TrashPurge`, `PurgeStore`, `FolderFreer`, `ui/TrashScreen.kt`, `ui/FreeSpaceScreen.kt`
 - **Abhängigkeiten:** DEC-140, DEC-144, DEC-147, DEC-196 (Muster `PendingProfileDelete`)
 
+### DEC-238: Während des Laufs geänderte Dateien: Zähler `deferred` und begrenzter Folgelauf
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-173; Startseiten-Anzeige 0.16.1, DEC-241; QA-/UX-Prüfung offen)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-167, -173; Benutzerfreigabe erteilt, Chat Architecture)
+- **Kategorie:** Sync
+- **Entscheidung:** Dateien, die während des Laufs auf Handy oder PC geändert wurden (`skipChanged`), werden im Lauf gezählt (`SyncRun.deferred`, DB 11, Migration 10 → 11). Der Lauf bleibt `OK`; die Zusammenfassung nennt «· N folgen später», die Startseite zeigt nicht «aktuell». Nach einem echten Lauf mit `deferred > 0` plant `SyncWorker` einen Folgelauf nach 5 Minuten (eigener Auftragsname `sync-skip-followup`, Bedingungen wie automatische Läufe), höchstens einen pro Stunde (`lastSkipFollowUpAt`); danach gelten die regulären Auslöser. Pause und «nur manuell» werden beachtet.
+- **Begründung:** Vorher wurde nur eine Warnung geloggt, es gab keinen Folgelauf, und die Startseite zeigte «Alles gesichert und aktuell»; ohne Ordnerprüfung holte erst das Sicherheitsnetz (6 h) nach (SYNC-20261111-173, Technischer Kontext). Die Begrenzung verhindert Endlosschleifen bei dauernd geänderten Dateien.
+- **Alternativen:** Wiederverwendung von `skipped` (verworfen: bei Fotoprofilen bedeutet es «bereits vorhanden/unverändert»); Statusmerker in den Einstellungen statt in der Datenbank (verworfen).
+- **Konsequenzen:** DB-Version 11; neuer Auftrag in `ALL_SYNC_WORK`; Details `docs/SYNC-ENGINE.md` 6.7, `docs/DATA-MODEL.md` 3.9.
+- **Betroffene Komponenten:** `mirror/MirrorEngine.kt`, `data/Entities.kt` (`SyncRun`), `data/AppDatabase.kt`, `sync/SyncWorker.kt`, `sync/SyncScheduler.kt`, `sync/RunSummary.kt`, `data/GlobalSettings.kt`
+- **Abhängigkeiten:** DEC-233, DEC-241
+
 ---
 
 ## 3. Konflikterkennung und Konfliktbehandlung
@@ -803,6 +851,28 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Bereits umbenannte `_Konflikt-Handy`-Dateien bleiben normale Dateien.
 - **Betroffene Komponenten:** `mirror/MirrorEngine.kt`
 - **Abhängigkeiten:** DEC-037
+
+### DEC-232: Konflikt-Rückgängig und Anwenden schliessen sich über bedingte DB-Abfragen aus
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-172; QA-Prüfung offen, SYNC-20261111-178)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 3, -172; Benutzerfreigabe erteilt, Chat Architecture)
+- **Kategorie:** Sync / Konflikte
+- **Entscheidung:** Eine Konfliktentscheidung wird über `undoResolution(profileId, relPath, expected)` nur rückgängig gemacht, wenn die Entscheidung unverändert ist; die Engine löscht die Zeile für Aktionen aus einer Entscheidung über `deleteConflictIf(…, expected)` und führt die Aktion nicht aus, wenn das 0 liefert. Entweder gilt «rückgängig» oder «zu spät». Der Sync startet weiterhin sofort.
+- **Begründung:** Zeitfenster: Die Engine plant, der Benutzer drückt Rückgängig (Zeile noch da), die Engine löscht die Zeile unbedingt und führt die Entscheidung trotzdem aus; zusätzlich konnte `upsertConflict` eine gelöschte Zeile mit altem Stand wiederbeleben (SYNC-20261111-172, Technischer Kontext).
+- **Alternativen:** Start erst nach Ablauf der Rückgängig-Frist (verworfen: Aufwand, und der Start ginge beim Verlassen des Bildschirms verloren).
+- **Konsequenzen:** `ConflictScreen` zählt nur Ergebnis 1 als rückgängig gemacht; Konflikte, bei denen eine Seite fehlt, werden weiterhin unbedingt gelöscht. Keine Room-In-Memory-Tests der Abfragen (Gerät nötig).
+- **Betroffene Komponenten:** `data/SyncDao.kt`, `ui/ConflictScreen.kt`, `ui/ScreenLogic.kt`, `mirror/MirrorEngine.kt`
+- **Abhängigkeiten:** DEC-037
+
+### DEC-239: «Beide behalten»: freier Konfliktname, nie überschreibend, wiederholbar
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-171; QA-Prüfung offen, SYNC-20261111-178)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-168, -171; Benutzerfreigabe erteilt, Chat Architecture)
+- **Kategorie:** Sync / Konflikte
+- **Entscheidung:** Die Konfliktkopie erhält einen auf Handy und PC freien Namen (`_conflict-phone`, `-2`, `-3` … bis 100, danach Fehler ohne Änderung). Nach dem Umbenennen wird der vom Anbieter vergebene Name geprüft (Abweichung: keine Übertragung, nächster Lauf überträgt als neu). Der Upload überschreibt nie (`replaceExisting = false`). Das Umbenennen geschieht einmal je Lauf (Merker `renamedByRun`/`uploadedByRun`), die Wiederholung nach Verbindungsabbruch setzt fort.
+- **Begründung:** Vorher konnte eine vorhandene Konfliktkopie (der Speicher-Anbieter hängt « (1)» an) oder eine gleichnamige PC-Datei ohne Papierkorb überschrieben werden; die Wiederholung nach Abbruch scheiterte, weil die alte Dokument-ID nach dem Umbenennen ungültig war (SYNC-20261111-171, Technischer Kontext).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Details `docs/SYNC-ENGINE.md` 5.6. Die Engine-Fehlerpfade (Umbenennen, Anbieter-Name, Wiederholung) sind nur am Gerät prüfbar.
+- **Betroffene Komponenten:** `mirror/MirrorEngine.kt` (`executeTransfer`, `transferWorker`), `mirror/ConflictName`
+- **Abhängigkeiten:** DEC-037, DEC-232
 
 ---
 
@@ -905,6 +975,17 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
   - Anlegen über `SmbSession.ensureDir` auf eigener Verbindung; Erfolg nur, wenn der Ordner danach existiert. Fehler (Rechte, Netz) erscheinen im Dialog, die Eingabe bleibt; nach Erfolg wechselt die Auswahl in den neuen Ordner.
   - Restrisiko: Windows-reservierte Namen (CON, NUL …) werden nicht lokal abgefangen; der Serverfehler wird angezeigt.
   - Quelle: Rückmeldung Development (SYNC-20261108-017), Code von Documentation nicht selbst geprüft.
+
+### DEC-234: Gespeicherter Verschlüsselungswert: fehlend = «Bevorzugt», unbekannt = «Erforderlich»
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-172)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 4, -172)
+- **Kategorie:** SMB / Sicherheit
+- **Entscheidung:** `SmbEncryption.parse` liefert bei leerem oder fehlendem Wert `PREFERRED` (wie bisher), bei einem vorhandenen, unbekannten Wert `REQUIRED` (sicherer Ausfall). Gilt für den Datenbankwert und die Sicherung (`BackupCodec`).
+- **Begründung:** Sicherer Ausfall (SYNC-20261111-175: «unbekannt → Erforderlich (sicherer Ausfall)»).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Ein unbekannter Wert führt nie zu einer unverschlüsselten Verbindung.
+- **Betroffene Komponenten:** `data/Entities.kt` (`SmbEncryption.parse`), `backup/BackupCodec.kt`
+- **Abhängigkeiten:** DEC-222
 
 ---
 
@@ -1538,6 +1619,17 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Betroffene Komponenten:** `mirror/MirrorEngine.kt`, `mirror/FileFilter.kt` (`ALWAYS_EXCLUDED`), `mirror/LocalTree.kt`, `mirror/TrashCleaner.kt`, `mirror/RestoreManager.kt`, `mirror/FolderFreer.kt`
 - **Abhängigkeiten:** DEC-036, DEC-141
 
+### DEC-231: Löschen über den Android-Systemdialog: Prüfung der PC-Kopie nur unmittelbar davor
+- **Status:** Implemented (unverändert umgesetzt, keine Änderung in 0.16.0; Restrisiko akzeptiert)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 1, -172; Chat Architecture)
+- **Kategorie:** Löschen
+- **Entscheidung:** Die volle Prüfung der PC-Kopie läuft unmittelbar vor `createDeleteRequest`/`createTrashRequest`. Eine Prüfung nach der Bestätigung im Systemdialog ist nicht möglich. Das Restrisiko ist akzeptiert.
+- **Begründung:** Das System führt das Löschen bei Bestätigung selbst aus; ein Eingriff dazwischen ist technisch nicht möglich (SYNC-20261111-172, Technischer Kontext).
+- **Alternativen:** Prüfung «nach Bestätigung, vor dem Löschen» (technisch nicht möglich).
+- **Konsequenzen:** Das Zeitfenster zwischen Prüfung und Bestätigung bleibt als Restrisiko.
+- **Betroffene Komponenten:** Löschweg der Fotos (`DeletionManager`, `SpaceFreer`)
+- **Abhängigkeiten:** DEC-223
+
 ---
 
 ## 9. Android und Hintergrundprozesse
@@ -1893,6 +1985,39 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Neue reine Klasse `SyncGate`, `SyncScheduler.enqueueDeferred`, `GlobalSettings.deferredStart`; «Pausieren» und «Abbrechen» verwerfen den Merker; Details in `docs/SYNC-ENGINE.md` 11.2. Die Anzeige regelt DEC-224. Offen (keine Entscheidung): `PauseService`/`dataSync`-Budget (R-BG1/R-BG3).
 - **Betroffene Komponenten:** `sync/SyncGate.kt`, `sync/SyncWorker.kt`, `sync/SyncScheduler.kt`, `data/GlobalSettings`, `SyncGateTest`
 - **Abhängigkeiten:** DEC-052, DEC-103
+
+### DEC-233: Sonderaufträge bei belegter Sync-Sperre: Wiederholung statt Nachlauf-Merker
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-172; QA-Prüfung offen, SYNC-20261111-178)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 6, -172; Benutzerfreigabe erteilt, Chat Architecture)
+- **Kategorie:** Hintergrund
+- **Entscheidung:** Aufträge «Fortsetzen» (`KEY_RESUME`), «PC-Wiederholung» (`KEY_RETRY`) und «Folgelauf übersprungener Dateien» nehmen die Sperre über `SyncGate.tryAcquire()` ohne Merker; ist sie belegt, endet der Worker mit `Result.retry()` (linearer Backoff 30 s). Normale AUTO/MANUAL-Aufträge bleiben unverändert (DEC-221).
+- **Begründung:** Als Nachlauf-Merker verloren die Aufträge Daten und die 24-h-Grenze: `markInterrupted` reiht `WORK_RESUME` ein, während die Sperre noch gehalten wird; startet er sofort, wurde er zum AUTO-Merker ohne `KEY_RESUME` (kein 15-Minuten-Nachfassen, keine 24-h-Grenze, «Pausiert» konnte stehen bleiben).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Daten und 24-h-Grenze bleiben erhalten. Details `docs/SYNC-ENGINE.md` 3.1.
+- **Betroffene Komponenten:** `sync/SyncGate.kt`, `sync/SyncWorker.kt`, `sync/SyncScheduler.kt`
+- **Abhängigkeiten:** DEC-221, DEC-238
+
+### DEC-236: Fehler beim Speichern des Nachlauf-Merkers: nur Diagnose-Log
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-172)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 2, -172)
+- **Kategorie:** Hintergrund / Diagnose
+- **Entscheidung:** `DeferredStore.write` liefert das Ergebnis von `commit()`; bei `false` oder Ausnahme gibt es einen Eintrag im Diagnose-Log (Logcat), keinen Verlaufseintrag. Der Merker im Speicher bleibt.
+- **Begründung:** In der Quelle nicht genannt.
+- **Alternativen:** Verlaufseintrag (nicht gewählt).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** `data/GlobalSettings.kt` (`DeferredStore`)
+- **Abhängigkeiten:** DEC-221
+
+### DEC-237: «Verschlüsselung nicht verfügbar» bei automatischen Läufen: einmal je Profil bis zum nächsten Erfolg
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-172)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 7, -172)
+- **Kategorie:** Hintergrund / Benachrichtigung
+- **Entscheidung:** Die Engine meldet den Fall über ein Flag (`encryptionUnavailable`, ohne GUID-Vorabtest); der Verlauf bleibt `FAILED`. `SyncWorker` meldet bei automatischen Läufen die Fehlermeldung je Profil nur einmal (Merker `encNotified`) und setzt ihn nach einem erfolgreichen Lauf des Profils zurück (auch für WLAN-Profile). Ein manueller Start meldet immer.
+- **Begründung:** Jeder automatische Lauf (Ordnerprüfung ab 15 Minuten) meldete den Fall sonst neu, weil die Engine bis `PcLogin` lief und scheiterte (SYNC-20261111-172, Technischer Kontext).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Umsetzung mit eigenem Merker-Set `encNotified` statt `pcNotified` (Hinweis Development).
+- **Betroffene Komponenten:** `mirror/MirrorEngine.kt`, `sync/SyncWorker.kt`, `data/GlobalSettings.kt`
+- **Abhängigkeiten:** DEC-222
 
 ---
 
@@ -2475,6 +2600,105 @@ Pausiert angezeigt.
 - **Konsequenzen:** Nach Neuinstallation/Import bleibt die Sprache wie auf dem Gerät eingestellt.
 - **Betroffene Komponenten:** ackup/BackupCodec.kt (unverändert), ui/BackupSection.kt
 - **Abhängigkeiten:** DEC-228
+
+### DEC-235: Überschneidungswarnung Fotos ↔ Ordner: datenträgerunabhängig, Speicherwurzel warnt
+- **Status:** Implemented (0.16.0 laut Development, SYNC-20261111-172)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-156 Punkt 5, -172)
+- **Kategorie:** UI / Profile
+- **Entscheidung:** `phoneOverlap` vergleicht Handy-Pfade datenträgerunabhängig (interner Speicher, SD-Karte). Ein Ordner-Profil auf der Speicherwurzel warnt. Reine Warnung, kein Schema.
+- **Begründung:** Fotoprofile erfassen über `VOLUME_EXTERNAL` gleiche relative Pfade auf allen Datenträgern (SYNC-20261111-172, Technischer Kontext).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Restrisiko: Kollision zweier gleichnamiger Dateien auf zwei Datenträgern; das Löschen bleibt durch die volle Hash-Prüfung geschützt.
+- **Betroffene Komponenten:** `data/ProfileOverlap.kt`
+- **Abhängigkeiten:** DEC-219, DEC-134
+
+### DEC-241: Statuskarte: neuer Zustand «↻ Noch nicht alles gesichert»
+- **Status:** Implemented (0.16.1 laut Development, SYNC-20261111-177; UX-Review offen, SYNC-20261111-181)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-174, -177 UX-Specialist; -182)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Hat der letzte Lauf (OK) N ≥ 1 ausstehende Dateien (`SyncRun.deferred`), steht die Überschrift «↻ Noch nicht alles gesichert» (EN «↻ Not everything backed up yet»; Symbol als Text, normale Textfarbe, nicht ⚠/✓), der Hund sitzt (`DogState.WAITING`), und der Hinweis nennt die Zahl («N Dateien wurden während des Laufs geändert und folgen beim nächsten Sync.»). Ist kein Folgelauf geplant, entfällt die Zeile «Nächste Prüfung», und der Hinweis lautet «… folgen mit der nächsten Prüfung.». Rangfolge der Überschrift: läuft > nichts eingerichtet > wartet auf dich > pausiert > keine Verbindung > Fehler > ausstehende Dateien > gesichert > neutral. Der Verlauf zeigt «· N folgen später», der Lauf bleibt OK. Kehrt ein Lauf ohne ausstehende Dateien zurück, erscheint wieder «✓ Alles gesichert und aktuell».
+- **Begründung:** Die Startseite soll ehrlich und ohne Fehleranmutung zeigen, dass nicht alles gesichert ist; es wird nichts von der Person verlangt (daher sitzender Hund).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Zahl aus `pendingDeferredFlow` (letzter echter, erfolgreicher Lauf je aktivem Profil). Abweichung zur Vorgabe: «Folgelauf geplant» wird an der bestehenden Zeile «Nächste Prüfung» erkannt, nicht an einem eigenen Merker.
+- **Betroffene Komponenten:** `ui/HomeStatus.kt`, `ui/HomeParts.kt`, `ui/HomeScreen.kt`
+- **Abhängigkeiten:** DEC-238
+
+### DEC-242: Startseite: Hinweis bei fehlender Standort-Berechtigung (R4)
+- **Status:** Implemented (0.16.1 laut Development, SYNC-20261111-176 R4; UX-Review offen, SYNC-20261111-181)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-176 UX-Specialist, -182)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Fehlt die Standort-Berechtigung, zeigt die Statuskarte «⚠ Standort-Berechtigung fehlt – der WLAN-Name ist nicht lesbar.» mit dem Textknopf «Berechtigungen» (öffnet Einstellungen → App-Berechtigungen). Die Überschrift bleibt neutral und nie «Alles gesichert» (Rangfolge nach «Fehler»).
+- **Begründung:** Nach Entzug der Berechtigung stand «✓ Alles gesichert und aktuell» ohne Hinweis und ohne Weg zur Lösung, obwohl die automatische Synchronisierung im Heim-WLAN still gestört ist (UX-Review SYNC-20261111-149/-154/-161).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Reine Anzeige, keine Sicherheitsabfrage entfällt.
+- **Betroffene Komponenten:** `ui/HomeStatus.kt`, `ui/HomeParts.kt`, `ui/HomeScreen.kt`
+- **Abhängigkeiten:** DEC-241
+
+### DEC-243: Profilkarte: Zeile bei verlorenem Handy-Ordner-Zugriff (R5)
+- **Status:** Implemented (0.16.1 laut Development, SYNC-20261111-176 R5; UX-Review offen, SYNC-20261111-181)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-176, -182; der Inhaber hat der Richtung zugestimmt)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Fehlt der Zugriff auf den Handy-Ordner, zeigt die Profilkarte «⚠ Handy-Ordner: Zugriff verloren – tippen und neu wählen» (Fehlerfarbe plus Symbol); Tippen öffnet das Profilformular. Geprüft wird `LocalTree.hasPermission` auf der Profilkarte.
+- **Begründung:** Nach einem Import zeigte die Karte «0 Dateien synchronisiert / Wartet auf den ersten Start», obwohl der Zugriff fehlte; «Zugriff verloren» stand nur im Profilformular.
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Reine Anzeige.
+- **Betroffene Komponenten:** `ui/HomeParts.kt`, `ui/HomeScreen.kt`, `mirror/LocalTree.kt`
+- **Abhängigkeiten:** —
+
+### DEC-244: Startseite: «⏸ Pausiert» als Überschrift (R6)
+- **Status:** Implemented (0.16.1 laut Development, SYNC-20261111-176 R6; UX-Review offen, SYNC-20261111-181)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-154/-176 UX-Specialist, -182)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Der Pausiert-Zustand hat die Überschrift «⏸ Pausiert» (EN «⏸ Paused»; titleSmall, Symbol plus Text) und darunter die Detailzeile «Bis 06:23.» bzw. bei «für immer» «Nur manuell synchronisieren.» (EN «Until 06:23.» / «Manual sync only.»), statt «⏸ Pausiert bis 06:23».
+- **Begründung:** Gestaltungsfrage aus dem UX-Review SYNC-20261111-154, entschieden; gleiches Muster wie «✓ Alles gesichert» und «⚠ Keine Verbindung».
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** `ui/HomeStatus.kt`, `ui/HomeParts.kt`
+- **Abhängigkeiten:** DEC-241
+
+### DEC-245: «Keine Verbindung»: «PC nicht erreichbar» ohne doppelte Zeitangabe (R7)
+- **Status:** Implemented (0.16.1 laut Development, SYNC-20261111-176 R7; UX-Review offen, SYNC-20261111-181)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-176, -182)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Der Fehlertext lautet nur «PC nicht erreichbar (Folder)»; die Zeit steht allein in der Zeile «Nächste Prüfung um HH:MM».
+- **Begründung:** Die Angabe «nächste Prüfung um 05:08» stand vorher doppelt (im Fehlertext und in der Zeile darunter).
+- **Alternativen:** Die Zeile statt des Fehlertexts entfernen (in der Quelle nicht gewählt; vorgeschlagen war das Kürzen des Fehlertexts).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** `ui/HomeStatus.kt`, `ui/HomeParts.kt`
+- **Abhängigkeiten:** —
+
+### DEC-246: Dialoge mit drei oder mehr Knöpfen sind gestapelt
+- **Status:** Implemented (0.16.3 laut Development, SYNC-20261111-176 R1; UX-Review offen, SYNC-20261111-184)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-176 UX-Specialist, -186)
+- **Kategorie:** UI / Dialoge
+- **Entscheidung:** Dialoge mit drei oder mehr Knöpfen zeigen die Knöpfe gestapelt, volle Breite, einzeilig, von oben: bestätigende Aktion zuerst, Abbrechen zuletzt (z. B. «Speichern», «Verwerfen», «Abbrechen»). Der Import-Dialog behält seine Reihenfolge Abbrechen, Hinzufügen, Ersetzen (Ersetzen in Warnfarbe, DEC-228).
+- **Begründung:** Bei Schrift 2,0 brach «Verwerfen» mitten im Wort um, «Speichern» stand rechts oben, «Abbrechen» und «Verwerfen» nebeneinander (UX-Review).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Bausteine `DialogButtonColumn`/`StackedButton` in `ui/Common.kt`; betroffen u. a. «Änderungen speichern?», «Profil angelegt», Ordnerwechsel-Warnung (vier Knöpfe, jetzt volle Breite), Import-Dialog.
+- **Betroffene Komponenten:** `ui/Common.kt`, `ui/ProfileScreen.kt`, `ui/BackupSection.kt`
+- **Abhängigkeiten:** DEC-228
+
+### DEC-247: Überlaufender Dialogtext zeigt Scrollbalken und Verlauf
+- **Status:** Implemented (0.16.3 laut Development, SYNC-20261111-176 R2; UX-Review offen, SYNC-20261111-184)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-176 UX-Specialist, -186)
+- **Kategorie:** UI / Dialoge
+- **Entscheidung:** Läuft der Text eines Dialogs über, zeigt er einen Scrollbalken und einen Verlauf am unteren Rand (`DialogScroll` in `ui/Common.kt`), auch in den Dialogen «Änderung bestätigen», «Alle: neuere» und «Alle übernehmen».
+- **Begründung:** Der Text scrollte bei Schrift 2,0, aber nichts zeigte es an; der wichtigste Satz stand ganz unten, mitten im Satz abgeschnitten.
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** `ui/Common.kt`, `ui/ConflictScreen.kt`, `ui/DecisionScreen.kt`
+- **Abhängigkeiten:** DEC-246
+
+### DEC-248: Konfliktkarte: «(neuer)» erst ab einer Sekunde Unterschied, sonst «(gleich alt)»
+- **Status:** Implemented (0.16.3 laut Development, SYNC-20261111-176 R11; UX-Review offen, SYNC-20261111-184)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-176 UX-Specialist, -186)
+- **Kategorie:** UI / Konflikte
+- **Entscheidung:** «(neuer)» steht nur bei einem Zeitunterschied von mindestens einer Sekunde, sonst «(gleich alt)» (Text `conflict_same_age`). Die Entscheidung «Alle: neuere» bei Gleichstand bleibt unverändert: Handy.
+- **Begründung:** «(neuer)» erschien auch bei gleichem Zeitstempel (beide 05:28:40), damit sah «Alle: neuere» scheinbar begründet aus.
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** `ui/ConflictScreen.kt`
+- **Abhängigkeiten:** DEC-037
 
 ---
 
@@ -3105,6 +3329,17 @@ Pausiert angezeigt.
 - **Konsequenzen:** UX darf im Verzeichnis `.claude/ux/` schreiben (`CLAUDE.md` §1). Fehlt ein Weg, ergänzt UX die Datei eigenständig, sobald feststeht, wie man zum Zielfenster navigiert. Ändert sich ein Weg, passt UX nur den betroffenen Abschnitt an.
 - **Betroffene Komponenten:** `.claude/ux/navigation.md`, `CLAUDE.md` §1, `.claude/roles/UX-Specialist.md`
 - **Abhängigkeiten:** DEC-212
+
+### DEC-240: Teststruktur für Engine-Abläufe: `RemoteStore`, `LocalFiles`, ausgelagertes Wiederherstellen
+- **Status:** Accepted (Benutzerfreigabe erteilt 2026-11-11; Umsetzung durch Development in SYNC-20261111-163 Stufe 2, Stand der Umsetzung nicht bestätigt)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261111-183, Chat Architecture)
+- **Kategorie:** Tests / Architektur
+- **Entscheidung:** `RemoteFiles` bleibt nur lesend (Löschweg Fotos ohne Schreibrechte). Neue Schnittstelle `RemoteStore : RemoteFiles` für Schreibzugriffe (u. a. `dirExists`, `listRecursive`, `ensureDir`, `move`, `delete`, `deleteDir`, Hash-Lesen sowie die Upload-/Download-Aufrufe des Wiederherstellens); `SmbSession` implementiert sie mit den vorhandenen Methoden. Schmale Schnittstelle `LocalFiles` nur für das Wiederherstellen (`LocalTree` implementiert sie 1:1). Das Wiederherstellen wird verhaltensgleich aus der `MirrorEngine` in eine eigene Klasse ausgelagert (z. B. `mirror/RestoreExecutor`, Absturz-Tests). `androidx.work:work-testing` nur als `androidTestImplementation` (kein Robolectric). Gemeinsamer `FakeShare` unter `app/src/test/java/com/sync2pc/app/` (bestehende Klasse erweitern). Die Protokolle `SmbSession.upload` und `LocalTree.writeFileResumable` bleiben; nur ihre Entscheidungen werden als reine Funktionen testbar.
+- **Begründung:** Geringste Rechte für den Löschweg Fotos; Fehlerinjektion je Schritt des Wiederherstellens (datenverlustkritisch) wird testbar; der `FakeShare` besteht schon und wird von `DataIntegrityTest` genutzt.
+- **Alternativen:** `RemoteFiles` um Schreiboperationen erweitern (verworfen: Löschweg Fotos bekäme Schreibrechte); allgemeine Schnittstelle für `LocalTree` / End-zu-End-Test der `MirrorEngine` auf der JVM (verworfen: sehr grosser Umbau wegen Room, Context, SAF); `testFixtures` (verworfen: Gradle-Aufwand ohne Nutzen); Robolectric (verworfen: WorkManager-Testtreiber braucht einen echten Context).
+- **Konsequenzen:** B1/B5 laufen nur mit `connectedDebugAndroidTest`. Restrisiko: Die Auslagerung kann trotz «verhaltensgleich» Fehler einführen; abgesichert durch Spezialagent, Review, QA und neue Tests. Eintrag in `docs/TESTING.md` nach der Umsetzung (Übergabe Development aus SYNC-20261111-163 offen).
+- **Betroffene Komponenten:** `smb/SmbSession.kt`, `mirror/LocalTree.kt`, `mirror/MirrorEngine.kt`, `app/src/test`, `app/build.gradle.kts`
+- **Abhängigkeiten:** DEC-223
 
 ---
 

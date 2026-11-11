@@ -389,6 +389,8 @@ data class SyncRun(
     val messageCode: String? = null,
     /** Auslöser als Kennung (JSON); null = nur [trigger] */
     val triggerCode: String? = null,
+    /** seit DB v11 (SYNC-20261111-173): Dateien, die im Lauf übersprungen wurden, weil sie sich währenddessen änderten; sie folgen beim nächsten Sync. Nicht [skipped] (bei Fotoprofilen «schon vorhanden»). */
+    val deferred: Int = 0,
 )
 
 @Entity(tableName = "log_entries", indices = [Index("runId")])
@@ -409,7 +411,15 @@ enum class SmbEncryption {
     OFF, PREFERRED, REQUIRED;
 
     companion object {
-        /** Unbekannte oder leere Werte (ältere Sicherung, Fehler) ergeben PREFERRED */
-        fun parse(s: String?): SmbEncryption = entries.firstOrNull { it.name == s?.trim()?.uppercase() } ?: PREFERRED
+        /**
+         * Fehlender oder leerer Wert (ältere Sicherung, Profil ohne Angabe) = PREFERRED. Ein vorhandener, aber unbekannter
+         * Wert (z. B. aus einer neueren App-Version) = REQUIRED: sicherer Ausfall, nie stillschweigend weniger Schutz
+         * (SYNC-20261111-172).
+         */
+        fun parse(s: String?): SmbEncryption {
+            val v = s?.trim()?.uppercase().orEmpty()
+            if (v.isEmpty()) return PREFERRED
+            return entries.firstOrNull { it.name == v } ?: REQUIRED
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.sync2pc.app.ui
 
-import com.sync2pc.app.data.MirrorConflict
 
 /**
  * Reine Hilfslogik für Vorschau, Ordnerauswahl und Konflikte (SYNC-20261110-135/-136), ohne Android-Abhängigkeit,
@@ -54,10 +53,5 @@ object ConflictUi {
     fun patternWithSeconds(pattern: String): String =
         if (pattern.contains("ss")) pattern else pattern.replace("HH:mm", "HH:mm:ss")
 
-    /**
-     * Rückgängig ist nur möglich, solange der Konflikt noch existiert und genau die zuvor gesetzte Entscheidung
-     * trägt (nach Anwendung bei der Synchronisierung wird die Zeile gelöscht).
-     */
-    fun canUndo(current: MirrorConflict?, expectedResolution: String): Boolean =
-        current != null && current.resolution == expectedResolution
+    // Rückgängig: atomar über SyncDao.undoResolution (SYNC-20261111-172), keine Prüfung mehr in der Oberfläche
 }

@@ -18,6 +18,8 @@ interface SyncRunner {
     val spaceShortage: Boolean get() = false
     /** Schutzbremse (0.4.1): Lauf hat angehalten und wartet auf eine Entscheidung des Benutzers */
     val blocked: Boolean get() = false
+    /** Lauf scheiterte, weil «Verschlüsselung erforderlich» am PC nicht verfügbar ist (SYNC-20261111-172, Punkt 7) */
+    val encryptionUnavailable: Boolean get() = false
 
     suspend fun run(): SyncRun
 }

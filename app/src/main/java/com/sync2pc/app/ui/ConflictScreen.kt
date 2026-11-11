@@ -83,16 +83,10 @@ fun ConflictScreen(onBack: () -> Unit) {
             snackbar.currentSnackbarData?.dismiss()
             val r = snackbar.showSnackbar(message, actionLabel = str(R.string.home_undo), duration = SnackbarDuration.Long)
             if (r == SnackbarResult.ActionPerformed) {
-                // Rückgängig = Konflikt wieder offen (resolution = null), nur wenn noch nicht angewendet (Zeile noch vorhanden)
+                // Rückgängig = Konflikt wieder offen (resolution = null), atomar und nur bei unveränderter Entscheidung:
+                // Hat die Synchronisierung die Zeile schon gelöscht, ändert die Abfrage nichts (SYNC-20261111-172)
                 val restored = withContext(Dispatchers.IO) {
-                    var n = 0
-                    for (c in list) {
-                        val cur = dao.conflicts(c.profileId).firstOrNull { it.relPath == c.relPath }
-                        if (ConflictUi.canUndo(cur, chosen[c.profileId to c.relPath]!!)) {
-                            dao.upsertConflict(c.copy(resolution = null)); n++
-                        }
-                    }
-                    n
+                    list.count { c -> dao.undoResolution(c.profileId, c.relPath, chosen[c.profileId to c.relPath]!!) == 1 }
                 }
                 snackbar.currentSnackbarData?.dismiss()
                 if (restored < list.size) snackbar.showSnackbar(str(R.string.conflict_undo_late), duration = SnackbarDuration.Short)
@@ -109,7 +103,7 @@ fun ConflictScreen(onBack: () -> Unit) {
             onDismissRequest = { confirmAllNewer = false },
             title = { Text(str(R.string.conflict_all_newer)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
+                DialogScroll {
                     Text(plural(R.plurals.conflict_all_confirm, conflicts.size, conflicts.size, newerMsgArgs))
                 }
             },
@@ -150,15 +144,18 @@ fun ConflictScreen(onBack: () -> Unit) {
             else item { Hint(str(R.string.conflict_hint, MirrorEngine.TRASH_DIR)) }
             items(conflicts, key = { "${it.profileId}|${it.relPath}" }) { c ->
                 val profileName = profiles.firstOrNull { it.id == c.profileId }?.name ?: ""
-                val localNewer = c.localModified >= c.remoteModified
+                // R11: «(neuer)» nur bei echtem Zeitunterschied (auf die Sekunde); sonst «(gleich alt)» auf beiden Seiten
+                val sameAge = c.localModified / 1000 == c.remoteModified / 1000
+                val localNewer = c.localModified > c.remoteModified
                 val newer = "  " + str(R.string.conflict_newer)
+                val same = "  " + str(R.string.conflict_same_age)
                 SectionCard {
                     Text(c.relPath, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     if (profiles.size > 1) Hint(str(R.string.decision_profile, profileName))
                     Text("📱 " + str(R.string.side_phone) + ": ${formatTimeSec(c.localModified)} · ${Notifications.formatBytes(c.localSize)}" +
-                        if (localNewer) newer else "")
+                        if (sameAge) same else if (localNewer) newer else "")
                     Text("💻 " + str(R.string.side_pc) + ": ${formatTimeSec(c.remoteModified)} · ${Notifications.formatBytes(c.remoteSize)}" +
-                        if (!localNewer) newer else "")
+                        if (sameAge) same else if (!localNewer) newer else "")
                     // FlowRow: bei grosser Schrift umbrechen die Knöpfe, statt abgeschnitten zu werden
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(

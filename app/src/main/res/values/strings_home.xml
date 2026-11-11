@@ -106,15 +106,28 @@
     <string name="home_wifi_none">not connected / not readable</string>
     <string name="home_progress">%1$s: %2$s / %3$s files – %4$s of %5$s</string>
     <string name="home_running">Sync running…</string>
-    <string name="home_manual_only">⏸ Automatic off – manual syncs only</string>
+    <string name="home_manual_only">Manual sync only.</string>
     <string name="home_manual_only_hint">Syncing only happens when you tap “Sync”. ▶ at the top right turns automatic syncing back on.</string>
     <string name="home_last_sync">Last sync: %1$s (%2$s)</string>
-    <string name="home_paused_until">⏸ Paused until %1$s</string>
+    <string name="home_paused_until">Until %1$s.</string>
     <string name="home_paused_until_hint">Automatic syncs rest until then. “Resume” or “Sync” ends the pause immediately.</string>
-    <string name="home_paused_wifi">⏸ Paused – waiting for the home Wi-Fi</string>
+    <string name="home_paused_wifi">Waiting for the home Wi-Fi.</string>
     <string name="home_paused_wifi_hint">The sync was stopped by a Wi-Fi interruption and continues automatically as soon as the Wi-Fi is connected again.</string>
     <string name="home_pc_unreachable_hint">Is the PC switched on and the Share active? “Sync” checks right away.</string>
     <string name="home_nothing_to_do">Nothing to do – everything up to date</string>
+    <string name="home_pc_unreachable_short">PC not reachable (%1$s)</string>
+    <string name="home_status_paused">⏸ Paused</string>
+    <string name="home_status_pending">↻ Not everything backed up yet</string>
+    <plurals name="home_pending_hint">
+        <item quantity="one">%1$s file changed during the run and follows at the next sync.</item>
+        <item quantity="other">%1$s files changed during the run and follow at the next sync.</item>
+    </plurals>
+    <plurals name="home_pending_hint_check">
+        <item quantity="one">%1$s file changed during the run and follows with the next check.</item>
+        <item quantity="other">%1$s files changed during the run and follow with the next check.</item>
+    </plurals>
+    <string name="home_location_missing">⚠ Location permission missing – the Wi-Fi name cannot be read.</string>
+    <string name="home_profile_access_lost">⚠ Phone folder: access lost – tap to choose again</string>
     <string name="home_no_sync_yet">No sync yet.</string>
     <string name="home_next_check">Next check at %1$s</string>
     <string name="home_skipped">⚠ Automatic start skipped – %1$s</string>

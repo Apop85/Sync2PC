@@ -62,7 +62,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         // R-N1: Bekommt dieser Auftrag die Sperre nicht, ist ein Lauf aktiv. Der Start wird dann nicht mehr stumm verworfen,
         // sondern atomar vorgemerkt (Merker im Speicher und in GlobalSettings); der Lauf-Inhaber reiht nach seiner Freigabe
         // genau einen Nachlauf ein. Die Oberfläche sieht es an deferred = true bzw. an SyncScheduler.deferredState.
-        if (!gate.tryAcquireOrDefer(manual = inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)))
+        // SYNC-20261111-172 (6): Sonderaufträge (Fortsetzen, Wiederholung, Folgelauf) wandeln sich nicht in einen
+        // Nachlauf-Merker um (der hätte weder KEY_RESUME noch KEY_RETRY): bei belegter Sperre bleibt der Auftrag mit seinen
+        // Eingabedaten bei WorkManager und versucht es nach dem Backoff erneut.
+        if (SyncScheduler.isSpecialRun(inputData)) {
+            if (!gate.tryAcquire()) return@withContext Result.retry()
+        } else if (!gate.tryAcquireOrDefer(manual = inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)))
             return@withContext Result.success(workDataOf(SyncScheduler.KEY_DEFERRED to true))
         // Zwischen tryAcquireOrDefer und try darf nichts stehen: die Sperre muss in jedem Fall wieder frei werden (R-BG4)
         // -157: Scheitert work() UND der Abschluss, bleibt die Ursache aus work() erhalten (die zweite Ausnahme wird nur
@@ -306,6 +311,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         var conflicts = 0
         var spaceShortage = false
         var interruptedMidRun = false
+        var deferredFiles = 0
         // WLAN während der Übertragung wach halten (sonst schaltet Android es im Standby in den Stromsparmodus)
         val locks = TransferLocks.acquire(ctx)
         try {
@@ -341,13 +347,21 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 }
                 // Erster manueller Start eines neuen Profils -> ab jetzt auch automatisch
                 if (manual && p.id in awaiting && r.status != RunStatus.FAILED) settings.setAwaitingFirstStart(p.id, false)
-                uploaded += r.uploaded; failed += r.failed; bytes += r.bytes
+                uploaded += r.uploaded; failed += r.failed; bytes += r.bytes; deferredFiles += r.deferred
                 if (p.type() == ProfileType.PHOTOS) waiting += r.waiting
                 conflicts += engine.newConflicts
                 if (engine.spaceShortage) spaceShortage = true
                 if (engine.wifiLost && !manual) markInterrupted()
                 if (engine.connectionFailed) { unreachable += p; lostMidRun += p; interruptedMidRun = true }
+                else if (engine.encryptionUnavailable) {
+                    // «Verschlüsselung nicht verfügbar»: ändert sich nur durch den Benutzer. Automatische Läufe melden es je Profil
+                    // einmal, bis ein Lauf des Profils gelingt; ein manueller Start meldet immer. Der Verlauf bleibt FAILED.
+                    if (manual || !settings.encNotified(p.id)) hardFailure = "${p.name}: ${r.messageText()}"
+                    settings.setEncNotified(p.id, true)
+                }
                 else if (r.status == RunStatus.FAILED) hardFailure = "${p.name}: ${r.messageText()}"
+                if (!engine.connectionFailed && !engine.encryptionUnavailable && r.status != RunStatus.FAILED)
+                    settings.setEncNotified(p.id, false)
                 if (engine.nextYoungFileAt > 0 && (youngAt == 0L || engine.nextYoungFileAt < youngAt)) youngAt = engine.nextYoungFileAt
             }
         } finally {
@@ -384,6 +398,13 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (youngAt == 0L || at < youngAt) youngAt = at
         }
         if (youngAt > 0) SyncScheduler.enqueueFollowUp(ctx, youngAt)
+        // SYNC-20261111-173: Dateien, die sich während des Laufs änderten, folgen per automatischem Folgelauf (höchstens einer
+        // pro Stunde). Pause/«nur manuell» gelten wie bei jedem automatischen Lauf (nicht planen, kein Stundenkontingent verbrauchen).
+        val now = System.currentTimeMillis()
+        if (!interruptedMidRun && !settings.isPaused() && SkipFollowUp.mayPlan(deferredFiles, now, settings.lastSkipFollowUpAt)) {
+            SyncScheduler.enqueueSkipFollowUp(ctx)
+            settings.lastSkipFollowUpAt = now // erst nach dem Einreihen: scheitert es, bleibt das Stundenkontingent erhalten
+        }
         // Erfolgreich gesichert -> eine offene Erinnerung "lange nicht gesichert" ist erledigt
         if (hardFailure == null && !interruptedMidRun && unreachable.isEmpty() && rejected.isEmpty()) {
             Notifications.cancelStale(ctx)

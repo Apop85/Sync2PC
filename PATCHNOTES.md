@@ -2,6 +2,56 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.3 (2026-11-11)
+
+### Geändert
+- **Dialoge mit drei oder mehr Knöpfen** sind gestapelt, volle Breite, einzeilig (bestätigende Aktion zuerst, Abbrechen zuletzt): «Änderungen speichern?», «Profil angelegt», Ordnerwechsel-Warnung, Import-Dialog (dieser behält seine Reihenfolge, DEC-246).
+- **Scroll-Hinweis:** Überlaufender Dialogtext zeigt Scrollbalken und Verlauf am unteren Rand, auch in «Änderung bestätigen», «Alle: neuere» und «Alle übernehmen» (DEC-247).
+- **Ordneranzeige:** Bei Download-Ordnern erscheint der vollständige Pfad ab dem Speicherstamm (ab Android 10; am Gerät belegbar).
+- **Verschlüsselungskarte:** Bedienhilfe «Eingeklappt, Wert: …»; Verbindungstest zeigt «✓ Verschlüsselt (SMB 3.1.1)».
+- **Aufräumen-Sheet:** Der Hinweis «Bitte Anzahl Tage eingeben» steht nur noch unter dem Feld.
+- **Papierkorb-Dialog:** Punkt vor «Das lässt sich nicht rückgängig machen.».
+- **Konfliktkarte:** «(neuer)» nur bei mindestens einer Sekunde Zeitunterschied, sonst «(gleich alt)» (DEC-248).
+- **PC nicht erreichbar:** Beim Entfernen nach der Sicherung erscheint statt eines Toasts eine Snackbar (ca. 8 s) mit «Prüfe die Verbindung und versuche es erneut.».
+
+### Intern
+- Neue Bausteine `DialogButtonColumn`, `StackedButton`, `DialogScroll` in `ui/Common.kt`; `LocalTree.mediaStorePathLabel`. Stand 47 Klassen, 464 Tests, 0 Fehler (Angabe Development, JDK 17; nicht von QA oder Documentation ausgeführt).
+- Offen: UX-Review am Gerät (SYNC-20261111-184), QA (SYNC-20261111-185); R1–R3 und R12 nur kompiliert geprüft.
+
+## 0.16.2 (2026-11-11)
+
+### Intern
+- Testwerkzeug (QA-SMB-Testserver) an vier Abweichungen von impacket gegenüber einem echten Server angepasst. **Keine Änderung an der App.** Nur lokal gegen den impacket-Client geprüft; Emulatorlauf durch QA offen (SYNC-20261111-180).
+
+## 0.16.1 (2026-11-11)
+
+### Geändert
+- **Startseite:** Statt «Alles gesichert» zeigt sie «↻ Noch nicht alles gesichert», solange Dateien auf den nächsten Sync warten (DEC-241).
+- **Standort-Berechtigung:** Fehlt sie, erscheint ein Hinweis mit Knopf «Berechtigungen» (DEC-242).
+- **Handy-Ordner:** Bei verlorenem Zugriff zeigt die Profilkarte «Zugriff verloren – tippen und neu wählen» (DEC-243).
+- **Pausiert** ist eine eigene Überschrift mit Detailzeile (DEC-244).
+- **PC nicht erreichbar** zeigt die Zeit der nächsten Prüfung nur noch einmal (DEC-245).
+
+### Intern
+- Neue Abfrage `pendingDeferredFlow`; `HomeStatusTest` erweitert. UX-Review offen (SYNC-20261111-181).
+
+## 0.16.0 (2026-11-11)
+
+### Behoben
+- **«Beide behalten» überschreibt nie mehr** (SYNC-20261111-171, DEC-239): Die Konfliktkopie erhält einen freien Namen (`_conflict-phone`, `-2`, `-3` …), der vom System vergebene Name wird geprüft, der Upload überschreibt keine vorhandene PC-Datei, und die Wiederholung nach Verbindungsabbruch benennt nicht ein zweites Mal um. Vorher konnte eine vorhandene Konfliktkopie oder gleichnamige PC-Datei ohne Papierkorb überschrieben werden.
+- **Konflikt-Rückgängig zuverlässig** (SYNC-20261111-172, DEC-232): Hat der Benutzer rückgängig gemacht, führt die Engine die Entscheidung auch bei laufendem Sync nicht mehr aus.
+- **«Fortsetzen» und Wiederholung bei laufendem Sync:** Wird nachgeholt (`Result.retry()`, 30 s Backoff) statt in einen einfachen Nachlauf umgewandelt zu werden (DEC-233).
+- **Unbekannter Verschlüsselungswert = «Erforderlich»** (fehlender = «Wenn möglich»; DEC-234).
+- **Überschneidungswarnung:** Fotos ↔ Ordner wird datenträgerunabhängig verglichen (SD-Karte); ein Ordner auf der Speicherwurzel warnt (DEC-235).
+- **Fehlermeldung «Verschlüsselung nicht verfügbar»** kommt bei automatischen Läufen nur einmal je Profil (DEC-237).
+
+### Neu
+- **Geänderte Dateien folgen per Folgelauf** (DEC-238): Dateien, die während des Laufs geändert wurden, holt LeoSync nach 5 Minuten nach (höchstens ein Folgelauf pro Stunde). Der Verlauf zeigt «· N folgen später»; der Lauf bleibt «OK». Datenbank Version 11 (`sync_runs.deferred`, Migration 10 → 11).
+
+### Intern
+- Neue Tests `ConflictNameTest`, `SkipFollowUpTest`; erweitert `SyncGateTest`, `ProfileOverlapTest`, `PcLoginTest`, `BackupCodecTest`. `MigrationTest` 10 → 11 nur als androidTest, nicht ausgeführt; keine Room-Tests der neuen DAO-Abfragen (Gerät nötig). Fehler beim Speichern des Nachlauf-Merkers nur im Diagnose-Log (DEC-236).
+- Offen: QA-Prüfung am Gerät (SYNC-20261111-178).
+
 ## 0.15.5 (2026-11-11)
 
 ### Behoben

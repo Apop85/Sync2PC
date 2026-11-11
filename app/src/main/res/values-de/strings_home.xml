@@ -106,15 +106,28 @@
     <string name="home_wifi_none">nicht verbunden / nicht lesbar</string>
     <string name="home_progress">%1$s: %2$s / %3$s Dateien – %4$s von %5$s</string>
     <string name="home_running">Synchronisierung läuft…</string>
-    <string name="home_manual_only">⏸ Automatik aus – nur manuelle Synchronisierungen</string>
+    <string name="home_manual_only">Nur manuell synchronisieren.</string>
     <string name="home_manual_only_hint">Es wird nur synchronisiert, wenn du „Synchronisieren“ tippst. ▶ oben rechts schaltet die Automatik wieder ein.</string>
     <string name="home_last_sync">Letzte Synchronisierung: %1$s (%2$s)</string>
-    <string name="home_paused_until">⏸ Pausiert bis %1$s</string>
+    <string name="home_paused_until">Bis %1$s.</string>
     <string name="home_paused_until_hint">Automatische Synchronisierungen ruhen bis dahin. „Fortsetzen“ oder „Synchronisieren“ beendet die Pause sofort.</string>
-    <string name="home_paused_wifi">⏸ Pausiert – wartet auf das Heim-WLAN</string>
+    <string name="home_paused_wifi">Wartet auf das Heim-WLAN.</string>
     <string name="home_paused_wifi_hint">Die Synchronisierung wurde durch einen WLAN-Unterbruch angehalten und läuft automatisch weiter, sobald das WLAN wieder verbunden ist.</string>
     <string name="home_pc_unreachable_hint">Ist der PC eingeschaltet und die Freigabe aktiv? „Synchronisieren“ prüft sofort.</string>
     <string name="home_nothing_to_do">Nichts zu tun – alles aktuell</string>
+    <string name="home_pc_unreachable_short">PC nicht erreichbar (%1$s)</string>
+    <string name="home_status_paused">⏸ Pausiert</string>
+    <string name="home_status_pending">↻ Noch nicht alles gesichert</string>
+    <plurals name="home_pending_hint">
+        <item quantity="one">%1$s Datei wurde während des Laufs geändert und folgt beim nächsten Sync.</item>
+        <item quantity="other">%1$s Dateien wurden während des Laufs geändert und folgen beim nächsten Sync.</item>
+    </plurals>
+    <plurals name="home_pending_hint_check">
+        <item quantity="one">%1$s Datei wurde während des Laufs geändert und folgt mit der nächsten Prüfung.</item>
+        <item quantity="other">%1$s Dateien wurden während des Laufs geändert und folgen mit der nächsten Prüfung.</item>
+    </plurals>
+    <string name="home_location_missing">⚠ Standort-Berechtigung fehlt – der WLAN-Name ist nicht lesbar.</string>
+    <string name="home_profile_access_lost">⚠ Handy-Ordner: Zugriff verloren – tippen und neu wählen</string>
     <string name="home_no_sync_yet">Noch keine Synchronisierung durchgeführt.</string>
     <string name="home_next_check">Nächste Prüfung um %1$s</string>
     <string name="home_skipped">⚠ Automatischer Start übersprungen – %1$s</string>

@@ -156,6 +156,36 @@ class ProfileOverlapTest {
         assertNull(ProfileOverlap.check(ph, listOf(mirror(1, "\\\\pc\\Doku", dl + "msd%3A12"))))
     }
 
+    @Test fun sdCardFolderOverlapsPhotosByRelativePath() {
+        // Fotoprofile erfassen alle Datenträger mit demselben relativen Pfad (SYNC-20261111-172)
+        val sd = mirror(1, "\\\\pc\\Doku", ext + "1A2B-3C4D%3ADCIM%2FCamera", "BOTH")
+        val ph = photos(0, "\\\\pc\\Fotos", "DCIM/Camera/")
+        assertEquals(ProfileOverlap.Cross.PHONE_FROM_PHOTOS, ProfileOverlap.check(ph, listOf(sd))?.cross)
+        assertEquals(ProfileOverlap.Cross.PHONE_FROM_MIRROR,
+            ProfileOverlap.check(sd.copy(id = 0), listOf(photos(2, "\\\\pc\\Fotos", "DCIM/Camera/")))?.cross)
+        // anderer Ordner auf der SD-Karte: keine Warnung
+        assertNull(ProfileOverlap.check(ph, listOf(mirror(1, "\\\\pc\\Doku", ext + "1A2B-3C4D%3AMusik", "BOTH"))))
+        // schreibt nicht aufs Handy: keine Warnung
+        assertNull(ProfileOverlap.check(ph, listOf(sd.copy(direction = "UPLOAD"))))
+    }
+
+    @Test fun storageRootFolderWarnsForAnyPhotoFolder() {
+        for (root in listOf(ext + "primary%3A", ext + "1A2B-3C4D%3A")) {
+            val m = mirror(1, "\\\\pc\\Doku", root, "BOTH")
+            assertEquals(ProfileOverlap.Cross.PHONE_FROM_PHOTOS,
+                ProfileOverlap.check(photos(0, "\\\\pc\\Fotos", "DCIM/Camera/", sub = false), listOf(m))?.cross)
+            assertEquals(ProfileOverlap.Cross.PHONE_FROM_MIRROR,
+                ProfileOverlap.check(m.copy(id = 0), listOf(photos(2, "\\\\pc\\Fotos", "Pictures/")))?.cross)
+        }
+    }
+
+    @Test fun externalRelativeReadsAnyVolume() {
+        assertEquals("dcim/camera", ProfileOverlap.externalRelative(ext + "1A2B-3C4D%3ADCIM%2FCamera"))
+        assertEquals("", ProfileOverlap.externalRelative(ext + "primary%3A"))
+        assertNull(ProfileOverlap.externalRelative(dl + "msd%3A12"))
+        assertNull(ProfileOverlap.externalRelative(ext + "keinedoppelpunkt"))
+    }
+
     @Test fun canonicalTreeMapsPrimaryAndRaw() {
         assertEquals("primary:documents/scans", ProfileOverlap.canonicalTree(ext + "primary%3ADocuments%2FScans"))
         assertEquals("primary:documents/scans", ProfileOverlap.canonicalTree(ext + "primary%3ADocuments%2FScans%2F/document/primary%3ADocuments"))

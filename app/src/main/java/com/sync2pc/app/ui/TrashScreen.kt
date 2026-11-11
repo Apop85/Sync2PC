@@ -441,15 +441,14 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(
+            // R9: der Hinweis «Bitte Anzahl Tage eingeben» steht nur unter dem Feld, nicht doppelt in der Fusszeile
+            if (!(mode == PurgeRule.Mode.OLDER && days == null)) Text(
                 when {
-                    mode == PurgeRule.Mode.OLDER && days == null -> str(R.string.trash_days_invalid)
                     rule == null -> str(R.string.trash_choose_what)
                     else -> plural(R.plurals.trash_affects, affected.size, affected.size, affectedBytes) +
                         if (pcUnknown) " " + str(R.string.trash_affects_pc_later) else ""
                 },
-                color = if (mode == PurgeRule.Mode.OLDER && days == null) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (pcUnknown) Hint(str(R.string.trash_pc_later_hint))
             if (kept > 0) Hint(plural(R.plurals.trash_kept_reserved, kept))
@@ -474,7 +473,8 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
         text = {
             Text(plural(R.plurals.trash_purge_confirm, affected.size, affected.size, affectedBytes, sides.label) +
                 (if (pcUnknown) " " + str(R.string.trash_purge_confirm_pc) else "") +
-                " " + str(R.string.trash_purge_irreversible) +
+                // R10: Satzende vor dem Zusatz «Das lässt sich nicht rückgängig machen.»
+                ". " + str(R.string.trash_purge_irreversible) +
                 if (kept > 0) " " + plural(R.plurals.trash_kept_reserved, kept) else "")
         },
         confirmButton = {

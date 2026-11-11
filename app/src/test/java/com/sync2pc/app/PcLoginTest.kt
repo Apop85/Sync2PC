@@ -389,7 +389,8 @@ class PcLoginTest {
         assertEquals(SmbEncryption.PREFERRED, Profile().encryption())
         assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse(null))
         assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse(""))
-        assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse("quatsch"))
+        assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse("  "))
+        assertEquals(SmbEncryption.REQUIRED, SmbEncryption.parse("quatsch")) // vorhanden, aber unbekannt: sicherer Ausfall
         assertEquals(SmbEncryption.REQUIRED, SmbEncryption.parse("required"))
     }
 

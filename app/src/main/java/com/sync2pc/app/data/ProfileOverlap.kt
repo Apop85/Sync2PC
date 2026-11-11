@@ -128,15 +128,40 @@ object ProfileOverlap {
         return null
     }
 
-    /** Liegt ein Foto-Quellordner im Handy-Ordner des Ordner-Profils, ist gleich oder enthält ihn (nur primärer Speicher)? */
+    /**
+     * Liegt ein Foto-Quellordner im Handy-Ordner des Ordner-Profils, ist gleich oder enthält ihn? Datenträgerunabhängig
+     * (SYNC-20261111-172): Fotoprofile erfassen über `VOLUME_EXTERNAL` alle Datenträger mit demselben relativen Pfad, darum
+     * zählt bei jeder Kennung `<Datenträger>:<pfad>` (primary, SD-Karte `XXXX-XXXX`) nur der relative Pfad. Ein Ordner-Profil auf
+     * der Speicherwurzel (leerer Pfad) enthält alle Fotoordner und warnt immer.
+     */
     private fun phoneOverlap(photos: Profile, mirror: Profile, canonical: (String) -> String?): Boolean {
-        val c = canonical(mirror.localTreeUri) ?: return false
-        if (!c.startsWith("primary:")) return false
-        val m = c.removePrefix("primary:").trim('/')
-        if (m.isEmpty()) return false
-        return photos.folders().map { folder(it).trim('/') }.any { f ->
+        val m = phoneRelative(mirror.localTreeUri, canonical) ?: return false
+        val folders = photos.folders().map { folder(it).trim('/') }.filter { it.isNotEmpty() }
+        if (m.isEmpty()) return folders.isNotEmpty()
+        return folders.any { f ->
             f == m || inside(f, m, '/') || (photos.includeSubfolders && inside(m, f, '/'))
         }
+    }
+
+    /** Relativer Pfad (Kleinbuchstaben, "" = Speicherwurzel) eines Handy-Ordners auf irgendeinem Datenträger, null = nicht abbildbar */
+    private fun phoneRelative(uri: String, canonical: (String) -> String?): String? {
+        canonical(uri)?.takeIf { it.startsWith("primary:") }?.let { return it.removePrefix("primary:").trim('/') }
+        return externalRelative(uri)
+    }
+
+    /**
+     * `com.android.externalstorage.documents` mit Kennung `<Datenträger>:<pfad>` (primary oder SD-Karte): relativer Pfad in
+     * Kleinbuchstaben, "" = Wurzel des Datenträgers. Alles andere (andere Anbieter, Kennung ohne ":") ergibt null.
+     */
+    fun externalRelative(uri: String): String? {
+        if (uri.isBlank()) return null
+        val authority = uri.substringAfter("://", "").substringBefore('/')
+        if (authority != "com.android.externalstorage.documents") return null
+        val raw = uri.substringAfter("/tree/", "").substringBefore("/document/")
+        if (raw.isEmpty()) return null
+        val id = try { java.net.URLDecoder.decode(raw.replace("+", "%2B"), "UTF-8") } catch (e: Exception) { return null }
+        if (!id.contains(':')) return null
+        return id.substringAfter(':').replace('\\', '/').trim('/').lowercase()
     }
 
     /** Liegt [child] innerhalb von [parent]? (Pfade in Kleinbuchstaben, ohne abschliessenden Trenner) */

@@ -75,6 +75,33 @@ class HomeStatusTest {
     }
 
     @Test
+    fun ausstehendeDateienSindWederAktuellNochFehler() {
+        // SYNC-20261111-177: Rangfolge ... Fehler > ausstehend > gesichert
+        val h = HomeStatus.headline(good.copy(pendingFiles = 2, allUpToDate = false))
+        assertEquals(HomeHeadline.PENDING, h)
+        assertFalse(HomeStatus.showsWarning(h))
+        assertEquals(DogState.WAITING, HomeStatus.dogFor(h, false))
+        // auch wenn allUpToDate fälschlich gesetzt wäre
+        assertEquals(HomeHeadline.PENDING, HomeStatus.headline(good.copy(pendingFiles = 1)))
+    }
+
+    @Test
+    fun ausstehendeDateienHabenNiedrigereRangAlsFehlerUndVerbindung() {
+        assertEquals(HomeHeadline.ERRORS, HomeStatus.headline(good.copy(pendingFiles = 1, lastRunHadErrors = true)))
+        assertEquals(HomeHeadline.NO_CONNECTION, HomeStatus.headline(good.copy(pendingFiles = 1, noConnection = true)))
+        assertEquals(HomeHeadline.ATTENTION, HomeStatus.headline(good.copy(pendingFiles = 1, attentionCount = 1)))
+        assertEquals(HomeHeadline.PAUSED, HomeStatus.headline(good.copy(pendingFiles = 1, userPaused = true)))
+    }
+
+    @Test
+    fun fehlendeStandortBerechtigungIstNieGesichert() {
+        // SYNC-20261111-176 R4: neutral statt «Alles gesichert und aktuell»
+        assertEquals(HomeHeadline.IDLE, HomeStatus.headline(good.copy(locationMissing = true)))
+        // Fehler und Verbindung behalten ihren Vorrang
+        assertEquals(HomeHeadline.ERRORS, HomeStatus.headline(good.copy(locationMissing = true, lastRunHadErrors = true)))
+    }
+
+    @Test
     fun neutralWennNichtAktuellUndNichtsOffen() {
         val h = HomeStatus.headline(good.copy(allUpToDate = false))
         assertEquals(HomeHeadline.IDLE, h)

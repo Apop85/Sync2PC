@@ -14,6 +14,7 @@
     <string name="trigger_pause_end">Pause ended</string>
     <string name="trigger_resumed">Resumed</string>
     <string name="trigger_deferred">Caught up (start requested during a running sync)</string>
+    <string name="trigger_skip_followup">Catching up changed files</string>
     <string name="trigger_generic">Trigger</string>
 
     <!-- Hintergrund-Lauf (SyncWorker) -->
@@ -63,6 +64,7 @@
         <item quantity="other">%1$s conflicts</item>
     </plurals>
     <string name="run_space_full">storage full</string>
+    <string name="run_deferred">%1$s follow later</string>
 
     <!-- Schutzbremse (MirrorGuard) -->
     <string name="guard_title_remote">PC folder not found</string>
@@ -83,6 +85,7 @@
     <string name="delete_log_pc_missing">Not removed from the phone: the copy on the PC is missing or differs, the file will be backed up again: %1$s</string>
     <string name="delete_log_phone_unreadable">Not removed from the phone: the file cannot be read for the check: %1$s</string>
     <string name="delete_pc_unreachable">PC not reachable – nothing deleted. The files stay queued.</string>
+    <string name="delete_pc_unreachable_retry">PC not reachable – nothing deleted. The files stay queued. Check the connection and try again.</string>
     <string name="delete_pc_rejected">PC not recognised – nothing deleted. %1$s</string>
     <string name="delete_pc_reset">%1$d files not removed: the copy on the PC is missing or differs. They will be backed up again.</string>
     <string name="update_err_404">No release found (repository “%1$s” private, misspelled or without a release yet)</string>
@@ -170,6 +173,9 @@
     <string name="eng_on_pc">on the PC</string>
     <string name="eng_on_phone">on the mobile</string>
     <string name="eng_err_renamed_missing">Renamed file not found</string>
+    <string name="eng_conflict_undone">Choice for %1$s was undone – the conflict stays open</string>
+    <string name="eng_err_conflict_name_exhausted">No free name for the conflict copy of %1$s</string>
+    <string name="eng_err_conflict_name_differs">The storage app named the conflict copy \"%2$s\" instead of \"%1$s\" – not uploaded, the next sync transfers it as a new file</string>
     <string name="eng_err_after_upload_missing">File not found after upload</string>
     <string name="eng_err_after_upload_size">Size after upload does not match</string>
     <string name="eng_err_after_download_missing">File not found after download</string>

@@ -224,6 +224,11 @@ internal fun StatusCard(
     attentionText: String,
     /** Letzter Lauf mit Fehlern: Anzahl (0 = Lauf fehlgeschlagen ohne Einzelfehler) */
     lastRunErrors: Int,
+    /** Dateien, die beim nächsten Sync folgen (SYNC-20261111-177), nur bei [HomeHeadline.PENDING] von Bedeutung */
+    pendingFiles: Int,
+    /** Standort-Berechtigung fehlt, obwohl der WLAN-Name gebraucht wird (SYNC-20261111-176 R4) */
+    locationMissing: Boolean,
+    onOpenPermissions: () -> Unit,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onResume: () -> Unit,
@@ -286,17 +291,18 @@ internal fun StatusCard(
                 lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
             }
             headline == HomeHeadline.NO_ACTIVE_PROFILE -> Text(str(R.string.home_no_active_detail))
+            // R6: Die Überschrift «⏸ Pausiert» steht in der Überschriftszeile, hier nur die Detailzeile
             userPaused && userPausedUntil == Long.MAX_VALUE -> {
-                Text(str(R.string.home_manual_only), style = MaterialTheme.typography.titleSmall)
+                Text(str(R.string.home_manual_only))
                 Hint(str(R.string.home_manual_only_hint))
                 lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
             }
             userPaused -> {
-                Text(str(R.string.home_paused_until, pauseEndText(userPausedUntil)), style = MaterialTheme.typography.titleSmall)
+                Text(str(R.string.home_paused_until, pauseEndText(userPausedUntil)))
                 Hint(str(R.string.home_paused_until_hint))
             }
             paused -> {
-                Text(str(R.string.home_paused_wifi), style = MaterialTheme.typography.titleSmall)
+                Text(str(R.string.home_paused_wifi))
                 Hint(str(R.string.home_paused_wifi_hint))
             }
             shareWait != null -> {
@@ -314,6 +320,11 @@ internal fun StatusCard(
                 val nothing = lastRun.status == RunStatus.OK && lastRun.uploaded == 0 && lastRun.failed == 0
                 // «Nichts zu tun – alles aktuell» nur, wenn die Überschrift ebenfalls «aktuell» sagt
                 if (headline == HomeHeadline.ERRORS) Hint(str(R.string.home_status_errors_hint))
+                // -177: Ist ein Folgelauf geplant, nennt ihn die Zeile «Nächste Prüfung um …» (keine Zeit im Hinweis);
+                // sonst «… folgen mit der nächsten Prüfung» (kein Zeitversprechen)
+                else if (headline == HomeHeadline.PENDING) Hint(plural(
+                    if (nextPlanned != null) R.plurals.home_pending_hint else R.plurals.home_pending_hint_check,
+                    pendingFiles, pendingFiles))
                 else if (nothing && headline == HomeHeadline.UP_TO_DATE) Hint(str(R.string.home_nothing_to_do))
                 else if (!nothing) Hint(lastRun.messageText())
             }
@@ -325,6 +336,12 @@ internal fun StatusCard(
         if (hasProfiles && !isRunning && !userPaused && shareWait == null && skipInfo != null) {
             Text(str(R.string.home_skipped, skipInfo), color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
+        }
+        // R4: Fehlende Standort-Berechtigung nie still lassen: Zeile mit Symbol und Weg zur Lösung
+        if (locationMissing && !isRunning) {
+            Text(str(R.string.home_location_missing), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = onOpenPermissions) { Text(str(R.string.settings_perm_title), maxLines = 1) }
         }
         }
         // Zwei gleich breite Knöpfe, Text einzeilig (kein Umbruch wie "Vorsc-hau")
@@ -352,7 +369,8 @@ private fun StatusHeadline(headline: HomeHeadline, attentionCount: Int, errors: 
         HomeHeadline.NOT_CONFIGURED -> str(R.string.home_status_not_configured)
         HomeHeadline.NO_ACTIVE_PROFILE -> str(R.string.home_status_no_active)
         HomeHeadline.ATTENTION -> plural(R.plurals.home_status_attention, attentionCount.coerceAtLeast(1))
-        HomeHeadline.PAUSED -> "" // Pausentext steht fett im Zustandsbereich (Symbol ⏸ im Text)
+        HomeHeadline.PAUSED -> str(R.string.home_status_paused) // R6: Überschrift «⏸ Pausiert», Detail im Zustandsbereich
+        HomeHeadline.PENDING -> str(R.string.home_status_pending)
         HomeHeadline.NO_CONNECTION -> str(R.string.home_status_no_connection)
         HomeHeadline.ERRORS ->
             if (errors > 0) plural(R.plurals.home_status_errors, errors) else str(R.string.home_status_failed)
@@ -518,6 +536,11 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 Text("📷 $target")
                 Hint(str(R.string.home_profile_sources, p.folders().joinToString(", ").ifBlank { str(R.string.home_profile_none) }))
             }
+            // R5: Fehlender Handy-Ordner-Zugriff (z. B. nach Import) sofort auf der Karte sichtbar, tippen öffnet das Profil
+            if (p.type() == ProfileType.MIRROR && p.localTreeUri.isNotBlank() &&
+                !com.sync2pc.app.mirror.LocalTree.hasPermission(ctx, android.net.Uri.parse(p.localTreeUri)))
+                Text(str(R.string.home_profile_access_lost), color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall)
             val pcMode = p.pcMode()
             if (com.sync2pc.app.sync.NetworkRules.needsWifiName(pcMode))
                 Hint(str(R.string.home_wifi, p.ssids().joinToString(", ").ifBlank { str(R.string.home_profile_no_wifi) }))

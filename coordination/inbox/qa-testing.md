@@ -8,3 +8,6 @@ Nur Verweise auf aktive, an QA adressierte Aufträge (Details in der Task-Datei)
 | SYNC-20261110-138 | UX-Specialist | Neuinstallation: Ordner in Download liefert Duplikate «(1)», Teilfehler und Phantomdateien | HIGH | OPEN | ../tasks/OPEN/SYNC-20261110-138.md |
 | SYNC-20261111-148 | Development | QA: Assistent «Weiter» bei ungültigem Zahlenfeld, Dialoge bei Schrift 2,0 (0.14.8) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-148.md |
 | SYNC-20261111-153 | Development | QA: Datenintegrität, Sync-Steuerung, SMB-Verschlüsselung, Überschneidung, Home/Konflikte (0.15.0) | HIGH | OPEN | ../tasks/OPEN/SYNC-20261111-153.md |
+| SYNC-20261111-178 | Development | QA: «Beide behalten», Konflikt-Rückgängig, Sonderaufträge, Folgelauf, Verschlüsselungsmeldung (0.16.0) | HIGH | OPEN | ../tasks/OPEN/SYNC-20261111-178.md |
+| SYNC-20261111-180 | Development | QA: Testserver-Anpassung (-165) prüfen, Emulatorfälle B9, B10, E1–E3, N6 | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-180.md |
+| SYNC-20261111-185 | Development | QA: Dialoge, Löschablauf bei nicht erreichbarem PC, Konfliktanzeige (0.16.3) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-185.md |

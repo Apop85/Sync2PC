@@ -41,10 +41,21 @@ object SyncScheduler {
     /** Nachlauf nach einem während eines Laufs verworfenen Start (R-N1): automatisch bzw. manuell */
     const val WORK_DEFERRED_AUTO = "sync-deferred"
     const val WORK_DEFERRED_MANUAL = "sync-deferred-manual"
+    /** Folgelauf nach übersprungenen (während des Laufs geänderten) Dateien, SYNC-20261111-173; eigener Name: WORK_FOLLOWUP bleibt unberührt */
+    const val WORK_SKIP_FOLLOWUP = "sync-skip-followup"
     val ALL_SYNC_WORK = listOf(
-        WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY, WORK_RESUME, WORK_DEFERRED_AUTO, WORK_DEFERRED_MANUAL
+        WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY, WORK_RESUME, WORK_DEFERRED_AUTO, WORK_DEFERRED_MANUAL,
+        WORK_SKIP_FOLLOWUP
     )
+    const val KEY_SKIP_FOLLOWUP = "skipFollowUp"
     const val KEY_RESUME = "resume"
+
+    /** Sonderauftrag (Fortsetzen, Wiederholung nach «PC nicht erreichbar», Folgelauf): bei belegter Sperre `Result.retry()` statt Merker */
+    fun isSpecialRun(d: Data): Boolean =
+        d.getBoolean(KEY_RESUME, false) || d.getBoolean(KEY_RETRY, false) || d.getBoolean(KEY_SKIP_FOLLOWUP, false)
+
+    /** Wartezeit, bevor ein Sonderauftrag bei belegter Sperre erneut versucht wird (linearer Backoff) */
+    const val SPECIAL_BACKOFF_SECONDS = 30L
 
     /**
      * Nach einem WLAN-Unterbruch: Auftrag beim Android-Aufgabenplaner hinterlegen, der startet,
@@ -56,6 +67,7 @@ object SyncScheduler {
         val b = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_resume), KEY_MANUAL to false, KEY_RESUME to true))
             .setConstraints(autoConstraints(context))
+            .setBackoffCriteria(BackoffPolicy.LINEAR, SPECIAL_BACKOFF_SECONDS, TimeUnit.SECONDS)
         if (delayMinutes > 0) b.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
         // Aus dem laufenden Fortsetzen-Auftrag heraus anhängen statt ersetzen (sonst bricht er sich selbst ab)
         val policy = if (appendToCurrent) ExistingWorkPolicy.APPEND_OR_REPLACE else ExistingWorkPolicy.REPLACE
@@ -87,6 +99,7 @@ object SyncScheduler {
         val req = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_retry), KEY_MANUAL to false, KEY_RETRY to true))
             .setConstraints(autoConstraints(context))
+            .setBackoffCriteria(BackoffPolicy.LINEAR, SPECIAL_BACKOFF_SECONDS, TimeUnit.SECONDS)
             .setInitialDelay(minutes, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_RETRY, ExistingWorkPolicy.REPLACE, req)
@@ -174,8 +187,8 @@ object SyncScheduler {
         gateInstance ?: SyncGate(object : DeferredStore {
             private val settings = GlobalSettings(context.applicationContext)
             override fun read(): DeferredKind? = DeferredKind.fromStore(settings.deferredStart)
-            override fun write(kind: DeferredKind?) { settings.deferredStart = kind?.toStore() ?: "" }
-        }).also { gateInstance = it }
+            override fun write(kind: DeferredKind?): Boolean = settings.writeDeferredStart(kind?.toStore() ?: "")
+        }, onStoreFailure = { android.util.Log.w("SyncGate", it) }).also { gateInstance = it }
     }
 
     /**
@@ -221,6 +234,20 @@ object SyncScheduler {
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(WORK_FOLLOWUP, ExistingWorkPolicy.REPLACE, req)
+    }
+
+    /**
+     * Folgelauf in [SkipFollowUp.DELAY_MINUTES] Minuten (Bedingungen wie automatische Läufe). APPEND_OR_REPLACE: ein gerade laufender Folgelauf (gleicher Name) verwirft den neuen nicht (KEEP täte es);
+     * die Begrenzung auf einen pro Stunde liegt bei [SkipFollowUp.mayPlan].
+     */
+    fun enqueueSkipFollowUp(context: Context) {
+        val req = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_skip_followup), KEY_MANUAL to false, KEY_SKIP_FOLLOWUP to true))
+            .setConstraints(autoConstraints(context))
+            .setBackoffCriteria(BackoffPolicy.LINEAR, SPECIAL_BACKOFF_SECONDS, TimeUnit.SECONDS)
+            .setInitialDelay(SkipFollowUp.DELAY_MINUTES, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_SKIP_FOLLOWUP, ExistingWorkPolicy.APPEND_OR_REPLACE, req)
     }
 
     /** Einmaliger Content-Trigger; wird nach jedem Sync-Lauf neu "scharf" gestellt. */

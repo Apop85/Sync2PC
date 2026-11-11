@@ -136,9 +136,11 @@ class GlobalSettings(context: Context) {
      * laufenden Syncs kam, wird nach dessen Ende nachgeholt. Mit `commit()` (nicht `apply()`): muss einen Prozess-Kill
      * kurz nach der Anforderung überleben (vgl. R-S1). Nicht Teil der exportierbaren Einstellungen.
      */
-    var deferredStart: String
+    val deferredStart: String
         get() = prefs.getString("deferredStart", "") ?: ""
-        set(v) = prefs.edit().putString("deferredStart", v).commit().let { }
+
+    /** Speichert den Nachlauf-Merker synchron; false = nicht gespeichert (SYNC-20261111-172) */
+    fun writeDeferredStart(v: String): Boolean = prefs.edit().putString("deferredStart", v).commit()
 
     /** Kürzestes Prüfintervall aller aktiven Ordner-Profile (Minuten), 0 = keine Ordner-Profile */
     var remotePollMinutes: Int
@@ -161,6 +163,21 @@ class GlobalSettings(context: Context) {
         val cur = (prefs.getStringSet("pcNotified", emptySet()) ?: emptySet()).toMutableSet()
         if (!(if (notified) cur.add(profileId.toString()) else cur.remove(profileId.toString()))) return
         prefs.edit().putStringSet("pcNotified", cur).apply()
+    }
+
+    /** Zeitpunkt der letzten Planung eines Folgelaufs nach übersprungenen Dateien (SYNC-20261111-173), 0 = nie */
+    var lastSkipFollowUpAt: Long
+        get() = prefs.getLong("lastSkipFollowUpAt", 0)
+        set(v) = prefs.edit().putLong("lastSkipFollowUpAt", v).apply()
+
+    // ---- «Verschlüsselung nicht verfügbar»: Fehlermeldung je Profil nur einmal, bis ein Lauf gelingt (SYNC-20261111-172) ----
+    fun encNotified(profileId: Long): Boolean =
+        (prefs.getStringSet("encNotified", emptySet()) ?: emptySet()).contains(profileId.toString())
+
+    fun setEncNotified(profileId: Long, notified: Boolean) {
+        val cur = (prefs.getStringSet("encNotified", emptySet()) ?: emptySet()).toMutableSet()
+        if (!(if (notified) cur.add(profileId.toString()) else cur.remove(profileId.toString()))) return
+        prefs.edit().putStringSet("encNotified", cur).apply()
     }
 
     // ---- Neue Profile warten auf den ersten manuellen Start (0.3.6) ------------------

@@ -153,7 +153,7 @@ fun DecisionScreen(onBack: () -> Unit) {
             onDismissRequest = { confirmAll = false },
             title = { Text(str(R.string.decision_apply_all)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
+                DialogScroll {
                     Text(plural(R.plurals.decision_all_confirm, ready.size, ready.size, plural(R.plurals.decision_n_files, readyFiles, readyFiles)))
                 }
             },
