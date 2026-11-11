@@ -2,7 +2,7 @@
 
 Zentrales Register **aktiver** Aufträge (OPEN, IN_PROGRESS, BLOCKED). Nur Metadaten, keine Beschreibungen. Abgeschlossene Aufträge stehen nicht hier, sondern als Datei in `tasks/COMPLETED/`. Bedienung: `README.md`.
 
-**Letzte vergebene Nummer: 227** (Stand 2026-11-11). Nächste ID: `SYNC-YYYYMMDD-228`.
+**Letzte vergebene Nummer: 231** (Stand 2026-11-11). Nächste ID: `SYNC-YYYYMMDD-232`.
 
 | ID | Kurzbeschreibung | Von | An | Prio | Status | Datei |
 |---|---|---|---|---|---|---|
@@ -23,3 +23,6 @@ Zentrales Register **aktiver** Aufträge (OPEN, IN_PROGRESS, BLOCKED). Nur Metad
 | SYNC-20261111-216 | QA: Speicher freigeben (Neuprüfung), Namensänderung durch Anbieter, .s2ptmp-Rest (0.16.15) | Development | QA & Testing | MEDIUM | IN_PROGRESS | tasks/IN_PROGRESS/SYNC-20261111-216.md |
 | SYNC-20261111-224 | Doku/Patchnotes 0.16.19: Begriff Abgleichstand, Profilkarte Pfadumbruch | Development | Documentation | LOW | OPEN | tasks/OPEN/SYNC-20261111-224.md |
 | SYNC-20261111-226 | Doku 0.16.20: Icon «Verschlüsselt» an der Profilkachel | Development | Documentation | LOW | OPEN | tasks/OPEN/SYNC-20261111-226.md |
+| SYNC-20261111-228 | Patchnotes 0.16.22: Eigenes Warn-Icon in Statuskachel und Warnkarten | Development | Documentation | LOW | OPEN | tasks/OPEN/SYNC-20261111-228.md |
+| SYNC-20261111-230 | QA: Handy-Papierkorb @LeoSync-Bin bei msd:-Ordnern (0.16.25) | Development | QA & Testing | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-230.md |
+| SYNC-20261111-231 | Doku 0.16.25: Handy-Papierkorb @LeoSync-Bin bei msd:-Ordnern | Development | Documentation | MEDIUM | OPEN | tasks/OPEN/SYNC-20261111-231.md |

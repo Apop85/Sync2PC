@@ -31,8 +31,19 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     /** relativer Ordnerpfad (Kleinbuchstaben) -> Dokument-ID (parallele Übertragungen -> threadsicher) */
     private val dirIds = java.util.concurrent.ConcurrentHashMap<String, String>().apply { put("", rootDocId) }
 
+    /**
+     * Name des Papierkorb-Ordners auf dem Handy: Beim Download-Anbieter mit Nummern-Kennung (msd:) ohne Punkt, weil MediaStore
+     * Punkt-Ordner nicht anzeigt und der Papierkorb sonst nie auflistbar wäre (SYNC-20261111-229). Sonst [MirrorEngine.TRASH_DIR].
+     */
+    val trashDirName: String = if (usesMediaStoreIndex(treeUri, rootDocId)) MirrorEngine.MEDIASTORE_TRASH_DIR else MirrorEngine.TRASH_DIR
+
     companion object {
         const val FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+
+        /** Ordner des Download-Anbieters mit Nummern-Kennung (nicht raw:, kein Pfad): die Liste kommt aus MediaStore */
+        fun usesMediaStoreIndex(treeUri: Uri, rootDocId: String): Boolean =
+            treeUri.authority == "com.android.providers.downloads.documents" &&
+                !rootDocId.startsWith("raw:") && !rootDocId.startsWith("/storage/")
 
         /** Ist die dauerhafte Lese-/Schreibberechtigung für den Ordner noch vorhanden? */
         fun hasPermission(context: Context, uri: Uri): Boolean =
@@ -447,7 +458,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     override fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String {
         val parentRel = relPath.substringBeforeLast('/', "")
         val sourceParent = ensureDir(parentRel)
-        val trashDir = listOf(MirrorEngine.TRASH_DIR, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
+        val trashDir = listOf(trashDirName, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
         val targetParent = ensureDir(trashDir)
         val existing = children(targetParent).map { it.name.lowercase() }.toSet()
         val name = TrashIndex.uniqueTrashName(entry.name, TrashIndex.timeNow()) { it.lowercase() in existing }

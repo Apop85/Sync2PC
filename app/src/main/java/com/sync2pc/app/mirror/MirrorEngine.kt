@@ -80,7 +80,14 @@ class MirrorEngine(
         const val OLD_TRASH_DIR = ".Sync2PC-Papierkorb"
         /** Alle Papierkorb-Namen: der aktuelle zuerst (dorthin wird neu verschoben) */
         val TRASH_DIRS = listOf(TRASH_DIR, LEGACY_TRASH_DIR, OLD_TRASH_DIR)
-        fun isTrashDir(name: String): Boolean = TRASH_DIRS.any { it.equals(name, ignoreCase = true) }
+        /**
+         * Handy-Papierkorb in Ordnern des Download-Anbieters mit Nummern-Kennung (msd:, Android 10): MediaStore indexiert Ordner
+         * mit Punkt am Namensanfang nicht, sie fehlen in der Ordnerliste (SYNC-20261111-229). Dort heisst der Papierkorb ohne
+         * Punkt. Nur auf dem Handy; der PC-Papierkorb heisst weiter [TRASH_DIR] (darum nicht in [TRASH_DIRS]).
+         */
+        const val MEDIASTORE_TRASH_DIR = "@LeoSync-Bin"
+        fun isTrashDir(name: String): Boolean =
+            TRASH_DIRS.any { it.equals(name, ignoreCase = true) } || MEDIASTORE_TRASH_DIR.equals(name, ignoreCase = true)
         /** Zusatz beim Behalten beider Versionen (bis 0.7.x "_Konflikt-Handy") */
         const val CONFLICT_SUFFIX = ConflictName.SUFFIX
         /** Mindestens so viel Speicher frei lassen */

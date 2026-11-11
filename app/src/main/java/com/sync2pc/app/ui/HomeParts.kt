@@ -38,8 +38,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -396,9 +394,13 @@ private fun StatusHeadline(headline: HomeHeadline, attentionCount: Int, errors: 
             .semantics { liveRegion = LiveRegionMode.Polite },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (warn) { Icon(Icons.Filled.Warning, null, tint = color, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)) }
+        // Eigenes Icon «Warnung» (Variante C, wie in Zeilen mit ⚠), nicht das Material-Icon; Farbe trägt das Icon selbst
+        if (warn) {
+            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_warn), null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+        }
         else if (headline == HomeHeadline.NOT_CONFIGURED) {
-            Icon(Icons.Filled.Info, null, tint = color, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_info), null, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
         }
         Text(text, style = MaterialTheme.typography.titleSmall, color = color, minLines = 1, maxLines = 2,
             overflow = TextOverflow.Ellipsis)
@@ -448,7 +450,7 @@ internal fun GuardCard(g: Guard, profileName: String, onChooseFolder: () -> Unit
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Warning, null); Spacer(Modifier.width(8.dp))
+                androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_warn), null, modifier = Modifier.size(24.dp)); Spacer(Modifier.width(8.dp))
                 Text(MirrorGuard.title(g), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
             Text(MirrorGuard.text(g, profileName))
@@ -607,7 +609,7 @@ internal fun PermissionCard(perms: PermStatus, needs: PermNeeds) {
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Warning, null); Spacer(Modifier.width(8.dp))
+                androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_warn), null, modifier = Modifier.size(24.dp)); Spacer(Modifier.width(8.dp))
                 Text(str(R.string.perm_incomplete), style = MaterialTheme.typography.titleMedium)
             }
             PermissionRows(perms, showDone = false, needs = needs)

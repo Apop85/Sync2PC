@@ -16,6 +16,7 @@ class FileFilterTest {
         assertFalse(f.accepts(".LeoSync-Bin/2026-11-01/x.txt")) // seit 0.8.0
         assertFalse(f.accepts(".LeoSync-Papierkorb/2026-11-01/x.txt")) // 0.0.12 bis 0.7.x
         assertFalse(f.accepts(".Sync2PC-Papierkorb/2026-11-01/x.txt")) // alter Name bis 0.0.11
+        assertFalse(f.accepts("@LeoSync-Bin/2026-11-01/x.txt")) // Handy-Papierkorb bei msd:-Ordnern (SYNC-20261111-229)
     }
 
     @Test fun whitelist() {

@@ -4,7 +4,7 @@ package com.sync2pc.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -108,7 +108,7 @@ fun ConflictScreen(onBack: () -> Unit) {
             },
             confirmButton = {
                 TextButton(
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                     onClick = {
                         confirmAllNewer = false
                         resolve(conflicts, plural(R.plurals.conflict_snack_all, conflicts.size, conflicts.size), ::keepNewer)
@@ -116,7 +116,7 @@ fun ConflictScreen(onBack: () -> Unit) {
                 ) { Text(str(R.string.conflict_all_newer)) }
             },
             dismissButton = {
-                TextButton(modifier = Modifier.heightIn(min = 48.dp), onClick = { confirmAllNewer = false }) {
+                TextButton(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = { confirmAllNewer = false }) {
                     Text(str(R.string.common_cancel))
                 }
             },
@@ -129,7 +129,7 @@ fun ConflictScreen(onBack: () -> Unit) {
         snackbarHost = { LeoSnackbarHost(snackbar) },
         actions = {
             if (conflicts.isNotEmpty()) TextButton(
-                modifier = Modifier.heightIn(min = 48.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 onClick = { confirmAllNewer = true },
             ) { Text(str(R.string.conflict_all_newer)) }
         },
@@ -156,18 +156,18 @@ fun ConflictScreen(onBack: () -> Unit) {
                         if (sameAge) same else if (localNewer) newer else "")
                     Text("💻 " + str(R.string.side_pc) + ": ${formatTimeSec(c.remoteModified)} · ${Notifications.formatBytes(c.remoteSize)}" +
                         if (sameAge) same else if (!localNewer) newer else "")
-                    // FlowRow: bei grosser Schrift umbrechen die Knöpfe, statt abgeschnitten zu werden
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // Knöpfe untereinander, gleich breit (bei grosser Schrift nie abgeschnitten)
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                             onClick = { resolve(listOf(c), str(R.string.conflict_snack_phone, fileName(c))) { ConflictResolution.KEEP_LOCAL } },
                         ) { Text(str(R.string.conflict_keep_phone)) }
                         OutlinedButton(
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                             onClick = { resolve(listOf(c), str(R.string.conflict_snack_pc, fileName(c))) { ConflictResolution.KEEP_REMOTE } },
                         ) { Text(str(R.string.conflict_keep_pc)) }
                         OutlinedButton(
-                            modifier = Modifier.heightIn(min = 48.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                             onClick = { resolve(listOf(c), str(R.string.conflict_snack_both, fileName(c))) { ConflictResolution.KEEP_BOTH } },
                         ) { Text(str(R.string.conflict_keep_both)) }
                     }
