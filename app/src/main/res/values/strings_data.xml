@@ -6,10 +6,10 @@
     <string name="delete_mode_delete">Delete permanently</string>
     <string name="profile_type_label_photos">Back up photos &amp; videos</string>
     <string name="profile_type_label_mirror">Sync a folder</string>
-    <string name="direction_upload">Mobile → PC</string>
+    <string name="direction_upload">Phone → PC</string>
     <string name="direction_upload_short">→ PC</string>
-    <string name="direction_download">PC → Mobile</string>
-    <string name="direction_download_short">→ Mobile</string>
+    <string name="direction_download">PC → Phone</string>
+    <string name="direction_download_short">→ Phone</string>
     <string name="direction_both">Both ways</string>
     <string name="direction_both_short">⇄</string>
     <string name="conflict_mode_ask">Ask every time</string>
@@ -23,8 +23,8 @@
     <string name="wizard_step_filter">Filter</string>
     <string name="wizard_step_guard">Safety brake</string>
     <string name="wizard_missing_name">Please give the profile a name.</string>
-    <string name="wizard_missing_local">Please choose the folder on the mobile.</string>
-    <string name="wizard_missing_sources">Please choose at least one folder on the mobile.</string>
+    <string name="wizard_missing_local">Please choose the folder on the phone.</string>
+    <string name="wizard_missing_sources">Please choose at least one folder on the phone.</string>
     <string name="wizard_missing_media">Please turn on photos, videos or both.</string>
     <string name="wizard_missing_target">Please enter the Share path, e.g. \\\\192.168.1.20\\Photos.</string>
 
@@ -40,8 +40,8 @@
 
     <!-- Typwahl und Ordnerauswahl auf dem Share (ProfileParts) -->
     <string name="type_chooser_title">What do you want to sync?</string>
-    <string name="type_chooser_photos">Photos and videos from the mobile to the PC. Stored by year, month and travel country, e.g. 2026\\06 - Egypt. Optionally remove them from the mobile afterwards.</string>
-    <string name="type_chooser_mirror">Mirror any folder 1:1, with subfolders and all file types. Direction selectable: mobile → PC, PC → mobile or both ways.</string>
+    <string name="type_chooser_photos">Photos and videos from the phone to the PC. Stored by year, month and travel country, e.g. 2026\\06 - Egypt. Optionally remove them from the phone afterwards.</string>
+    <string name="type_chooser_mirror">Mirror any folder 1:1, with subfolders and all file types. Direction selectable: phone → PC, PC → phone or both ways.</string>
     <string name="remote_picker_title">Folder on the Share</string>
     <string name="remote_picker_title_shares">Shares on the PC</string>
     <string name="remote_picker_no_shares">No Shares found. Is a folder shared on the PC (Properties → Sharing)?</string>
@@ -56,7 +56,7 @@
     <!-- SYNC-20261111-195: Bedienhilfe-Beschreibungen der Icons (Symbole im Text, ui/SymbolText.kt) -->
     <string name="icon_folder">Folder</string>
     <string name="icon_camera">Camera</string>
-    <string name="icon_phone">Mobile</string>
+    <string name="icon_phone">Phone</string>
     <string name="icon_pc">PC</string>
     <string name="icon_server">Server</string>
     <string name="icon_add">Add</string>

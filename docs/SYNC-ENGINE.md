@@ -619,6 +619,7 @@ Eine gespeicherte Kennung gilt nur, wenn `pcGuidHost` dem aktuellen Host entspri
 5. Nach Fortsetzen: Teil-Hash der Temp-Datei muss `expectedHash()` entsprechen, sonst `deleteOnClose` + `IOException` (nächster Versuch beginnt neu).
 6. Änderungs-/Erstelldatum der Temp-Datei auf das Originaldatum setzen (Fehler ignoriert: „nice to have“).
 7. `f.rename(finalPath, replaceExisting)` – Foto: `false` (kein Überschreiben), Ordner: `true`.
+8. Ist die Handy-Quelle nicht lesbar (seit 0.16.15, -203), wird die `.s2ptmp` entfernt, statt als 0-Byte-Datei liegen zu bleiben.
 
 Zugriffe: Foto-Engine `openAt(item, offset)` über `ContentResolver` (mit `setRequireOriginal` für GPS), Ordner-Engine `tree.openInput(docId, offset)`.
 
@@ -643,6 +644,7 @@ Temp-Datei  → "<name>"          (umbenennen)
 Scheitert das Umbenennen der Temp-Datei, wird die alte Version zurückbenannt (Temp bleibt liegen, wird nie synchronisiert).
 **Recovery nach Absturz** in `LocalTree.listRecursive(recover = true)` (nur echte Läufe): Existiert `<name>.s2pold`, aber `<name>` nicht → zurückbenennen (alte Version gilt); existiert beides → `.s2pold` löschen.
 Auf dem **PC** gibt es kein `.s2pold`: dort ersetzt `rename(replace = true)` die Datei serverseitig in einem Schritt.
+**Namensschutz (seit 0.16.15, -203):** Vergibt der Anbieter beim Umbenennen einen anderen Namen (nicht indizierte Datei, «name (1).ext»), wird die Kopie verworfen und ein Fehler gemeldet (Text `tree_err_name_taken`), statt ein Duplikat zu hinterlassen.
 
 ### 6.4 Prüfung und Konsistenz
 
@@ -774,7 +776,7 @@ Regeln **[IMPL]**:
 - `stillSame` vergleicht seit 0.15.0 Grösse **und** `DATE_MODIFIED` mit der DB-Zeile (bis 0.14.7 nur die Grösse, R-I1). Vor dem Löschen (Android 10: `sweep`; ab Android 11: `buildRequests` vor dem Systemdialog) wird die **PC-Kopie erneut geprüft** (Datei vorhanden, gleiche Grösse, gleicher LOW-Teil-Hash gegen die aktuelle Handy-Datei; gemeinsame Funktion mit `SpaceFreer`). Fehlt die Kopie oder weicht sie ab: das Original bleibt, die Zeile wird mit `SyncDao.deleteSynced` entfernt und die Datei beim nächsten Lauf neu gesichert (Toast und Verlaufszeile). PC nicht erreichbar oder von der PC-Erkennung abgelehnt: **nichts löschen**, die Zeilen bleiben vorgemerkt. `syncedBy` zählt eine Zeile nur bei passender Grösse und passendem Änderungsdatum. **[RISIKO]** Android 11+: nach dem Systemdialog keine erneute Prüfung (Zeitfenster).
 - Zusammenhang mit R-F1: Eine als „bereits vorhanden“ erkannte Datei erhält bei `deleteMode ≠ KEEP` seit 0.15.0 `verified = true` nur nach Prüfung mindestens auf Stufe „Mittel“ (bis 0.14.7 nach Teil-Hash, unabhängig von der Stufe).
 
-`SpaceFreer` („Speicher freigeben“, Fotos) prüft vor dem Entfernen jede Datei erneut auf dem PC: am gespeicherten Pfad (`RemoteFinder.existsAtPath`) seit 0.15.0 Grösse **und** LOW-Teil-Hash (bis 0.14.7 nur Grösse, R-I2), sonst in den anderen Ordnern des Monats (Name, Grösse, Teil-Hash); als „gesichert“ gilt eine Foto-Zeile nur, wenn Grösse **und** `dateModified` zur aktuellen Datei passen (`photoItems`). Details in `DECISIONS.md` DEC-091/136; der Rest der Datei wurde hier nicht gelesen (**[OFFEN]**). `SpaceFreer` nimmt keinen `MirrorLock` und keinen Worker-Mutex (nur `ensureActive` im Prüfablauf).
+`SpaceFreer` („Speicher freigeben“, Fotos) prüft vor dem Entfernen jede Datei erneut auf dem PC: am gespeicherten Pfad (`RemoteFinder.existsAtPath`) seit 0.15.0 Grösse **und** LOW-Teil-Hash (bis 0.14.7 nur Grösse, R-I2), sonst in den anderen Ordnern des Monats (Name, Grösse, Teil-Hash); als „gesichert“ gilt eine Foto-Zeile nur, wenn Grösse **und** `dateModified` zur aktuellen Datei passen (`photoItems`). Details in `DECISIONS.md` DEC-091/136; der Rest der Datei wurde hier nicht gelesen (**[OFFEN]**). Seit 0.16.15 (-205) prüft `SpaceFreer.recheckUnchanged` unmittelbar vor Papierkorb/Löschen Grösse und Änderungsdatum erneut; eine inzwischen geänderte Datei bleibt, Meldung «inzwischen geändert» (Text `free_changed`). **Bekannte Grenze:** Eine Bearbeitung mit unveränderter Grösse und gleichem Datum wird nicht erkannt. `SpaceFreer` nimmt keinen `MirrorLock` und keinen Worker-Mutex (nur `ensureActive` im Prüfablauf).
 
 ### 7.6 Papierkorb, Frist und Wiederherstellung (Ordner-Profile)
 

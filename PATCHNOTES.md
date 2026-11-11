@@ -2,9 +2,20 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.16 (2026-11-11)
+
+### Geändert
+- **Englische App-Texte:** Das Gerät heisst auf Englisch «Phone» statt «Mobile» (11 Sprachdateien; «mobile data» und «mobile plan» unverändert).
+
 ## 0.16.15 (2026-11-11)
 
-- Automatischer Build: Quellcode geaendert, Patchnotes bitte ergaenzen.
+### Behoben
+- **Speicher freigeben (Fotos):** Unmittelbar vor Papierkorb oder Löschen werden Grösse und Änderungsdatum der Datei erneut geprüft. Eine inzwischen bearbeitete Datei bleibt erhalten («inzwischen geändert»). Grenze: Eine Bearbeitung mit unveränderter Grösse und gleichem Datum wird nicht erkannt.
+- **Ordner-Sync, Duplikate:** Vergibt der Anbieter beim Ersetzen einer nicht indizierten Handy-Datei einen anderen Namen («name (1).ext»), wird die Kopie verworfen und ein Fehler gemeldet.
+- **Upload:** Ist die Handy-Quelle nicht lesbar, bleibt keine 0-Byte-`.s2ptmp` auf dem PC.
+
+### Intern
+- Neuer Test `DataIntegrityTest.speicherFreigeben_neupruefungVorLoeschenErkenntBearbeitung`. Nicht von QA bestätigt.
 
 ## 0.16.14 (2026-11-11)
 

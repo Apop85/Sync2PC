@@ -13,15 +13,15 @@
         <item quantity="other">%1$s files in %2$s are waiting: there are renamed month folders. Tap to assign.</item>
     </plurals>
     <plurals name="notif_delete_text">
-        <item quantity="one">%1$s file is verified as backed up. Tap to remove it from the mobile.</item>
-        <item quantity="other">%1$s files are verified as backed up. Tap to remove them from the mobile.</item>
+        <item quantity="one">%1$s file is verified as backed up. Tap to remove it from the phone.</item>
+        <item quantity="other">%1$s files are verified as backed up. Tap to remove them from the phone.</item>
     </plurals>
     <string name="notif_wait_wifi">Waiting for Wi-Fi</string>
     <string name="notif_wait_wifi_named">Waiting for Wi-Fi “%1$s”</string>
     <string name="notif_paused_files">%1$s / %2$s files</string>
     <plurals name="notif_conflict_text">
-        <item quantity="one">%1$s file was changed on mobile and PC. Tap to decide which version wins.</item>
-        <item quantity="other">%1$s files were changed on mobile and PC. Tap to decide which version wins.</item>
+        <item quantity="one">%1$s file was changed on phone and PC. Tap to decide which version wins.</item>
+        <item quantity="other">%1$s files were changed on phone and PC. Tap to decide which version wins.</item>
     </plurals>
     <string name="notif_guard_title">LeoSync is waiting for you</string>
     <string name="notif_guard_text">The folder sync “%1$s” was stopped for safety. Tap to decide.</string>

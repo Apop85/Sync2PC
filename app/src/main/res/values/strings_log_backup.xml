@@ -49,10 +49,10 @@
     <string name="backup_skipped_layout_blocked">Skipped because the target is already used by another photo profile with a different folder structure: %1$s</string>
     <string name="backup_skipped_layout_unknown">Not imported because the folder structure is unknown (backup from a newer version?): %1$s</string>
     <string name="backup_without_password">Enter the password again for: %1$s</string>
-    <string name="backup_need_folder">Choose the mobile folder again for: %1$s (Android does not transfer the folder permission).</string>
+    <string name="backup_need_folder">Choose the phone folder again for: %1$s (Android does not transfer the folder permission).</string>
     <string name="backup_import_failed">Import failed: %1$s</string>
     <string name="backup_title">Backup</string>
-    <string name="backup_hint">Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing mobiles or reinstalling.</string>
+    <string name="backup_hint">Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing phones or reinstalling.</string>
     <string name="backup_export">Export…</string>
     <string name="backup_import">Import…</string>
     <string name="backup_export_title">Export backup</string>
@@ -84,7 +84,7 @@
     <string name="log_clear_text">%1$d entries will be deleted and cannot be restored. Use “Share history” first to keep a copy.</string>
     <string name="log_cleared">History deleted</string>
     <string name="log_undo">Undo</string>
-    <string name="log_advice_missing">The file no longer exists on the mobile. Sync again; if the error stays, check the file list in the profile.</string>
+    <string name="log_advice_missing">The file no longer exists on the phone. Sync again; if the error stays, check the file list in the profile.</string>
     <string name="log_advice_connection">Check the connection to the PC (Wi-Fi, share), then sync again.</string>
     <string name="log_advice_unknown">Sync again. If the error stays, share the history with the developer.</string>
 </resources>

@@ -15,3 +15,4 @@ Nur Verweise auf aktive, an QA adressierte Aufträge (Details in der Task-Datei)
 | SYNC-20261111-208 | Development | androidTests (ContentTrigger, Keystore, Gate) und Auslagerungen aus -207 prüfen (0.16.11) | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-208.md |
 | SYNC-20261111-211 | Development | QA: wachsende/geänderte Handy-Datei beim Upload (0.16.13, aus -202) | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-211.md |
 | SYNC-20261111-214 | Development | QA: Folgelauf für Dateien, die nach dem Einlesen neu entstehen (0.16.14, aus -213) | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-214.md |
+| SYNC-20261111-216 | Development | QA: Speicher freigeben (Neuprüfung), Namensänderung durch Anbieter, .s2ptmp-Rest (0.16.15) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-216.md |

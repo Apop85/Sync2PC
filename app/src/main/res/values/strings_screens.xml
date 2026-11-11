@@ -42,16 +42,16 @@
     <string name="conflict_title">Conflicts</string>
     <string name="conflict_all_newer">All: newer</string>
     <string name="conflict_none">No open conflicts.</string>
-    <string name="conflict_hint">These files were changed on the mobile and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
+    <string name="conflict_hint">These files were changed on the phone and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
     <string name="conflict_newer">(newer)</string>
     <string name="conflict_same_age">(same age)</string>
-    <string name="conflict_keep_phone">Keep mobile</string>
+    <string name="conflict_keep_phone">Keep phone</string>
     <string name="conflict_keep_pc">Keep PC</string>
     <string name="conflict_keep_both">Keep both</string>
-    <string name="conflict_keep_phone_hint">Keep mobile: the PC version goes to %1$s.</string>
-    <string name="conflict_keep_pc_hint">Keep PC: the mobile version goes to %1$s.</string>
-    <string name="conflict_keep_both_hint">Keep both: both files stay; the mobile version gets the name suffix %1$s.</string>
-    <string name="conflict_snack_phone">%1$s: mobile version kept (applies at the next sync on Wi-Fi)</string>
+    <string name="conflict_keep_phone_hint">Keep phone: the PC version goes to %1$s.</string>
+    <string name="conflict_keep_pc_hint">Keep PC: the phone version goes to %1$s.</string>
+    <string name="conflict_keep_both_hint">Keep both: both files stay; the phone version gets the name suffix %1$s.</string>
+    <string name="conflict_snack_phone">%1$s: phone version kept (applies at the next sync on Wi-Fi)</string>
     <string name="conflict_snack_pc">%1$s: PC version kept (applies at the next sync on Wi-Fi)</string>
     <string name="conflict_snack_both">%1$s: both versions kept (applies at the next sync on Wi-Fi)</string>
     <plurals name="conflict_snack_all">
@@ -101,7 +101,7 @@
 
     <!-- Erste Synchronisierung, Hund -->
     <string name="first_sync_title">First sync</string>
-    <string name="first_sync_text">The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the mobile to the charger.</string>
+    <string name="first_sync_text">The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the phone to the charger.</string>
     <string name="first_sync_start">Start anyway</string>
     <string name="dog_waiting">Waiting</string>
     <string name="dog_idle">Everything backed up</string>

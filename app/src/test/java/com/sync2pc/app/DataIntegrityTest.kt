@@ -144,6 +144,13 @@ class DataIntegrityTest {
         assertFalse(SpaceFreer.rowMatches(r, 101, 1000))
     }
 
+    @Test fun speicherFreigeben_neupruefungVorLoeschenErkenntBearbeitung() {   // SYNC-20261111-205
+        assertTrue(SpaceFreer.unchanged(100, 1000, 100, 1000))
+        assertFalse(SpaceFreer.unchanged(100, 1000, 101, 1000))    // andere Grösse
+        assertFalse(SpaceFreer.unchanged(100, 1000, 100, 1001))    // bearbeitet (neues Datum)
+        assertFalse(SpaceFreer.unchanged(100, 1000, null, null))   // nicht lesbar = geändert
+    }
+
     // ===== R-I1: Löschen nach Sicherung ===================================================================
 
     @Test fun r1_syncedByZaehltNurZeilenZurAktuellenDatei() {

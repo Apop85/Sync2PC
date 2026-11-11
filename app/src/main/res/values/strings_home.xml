@@ -28,7 +28,7 @@
     <string name="home_wait_charger">Waiting for the charger (“Only while charging” is on).</string>
     <string name="home_starting">Sync is starting…</string>
     <string name="home_tool_trash_text">Restore files or delete them permanently</string>
-    <string name="home_tool_trash_used">Used: mobile %1$s · PC %2$s</string>
+    <string name="home_tool_trash_used">Used: phone %1$s · PC %2$s</string>
     <string name="home_guard_note_all">Waiting for your decision (safety brake) – it continues only after that.</string>
     <string name="home_guard_note_some">One profile is waiting for your decision (safety brake).</string>
     <string name="home_pc_unreachable">PC not reachable (%1$s) – next check at %2$s</string>
@@ -43,8 +43,8 @@
     <string name="home_update_button">View</string>
     <string name="home_conflicts_title">Folder sync conflicts</string>
     <plurals name="home_conflicts_text">
-        <item quantity="one">%1$s file was changed on both mobile and PC. Choose which version wins.</item>
-        <item quantity="other">%1$s files were changed on both mobile and PC. Choose which version wins.</item>
+        <item quantity="one">%1$s file was changed on both phone and PC. Choose which version wins.</item>
+        <item quantity="other">%1$s files were changed on both phone and PC. Choose which version wins.</item>
     </plurals>
     <string name="home_conflicts_button">Decide</string>
     <string name="home_decisions_title">Folder selection needed</string>
@@ -68,8 +68,8 @@
     <string name="home_no_profile">No profile yet. Create a profile with a target Share, Wi-Fi and source folders.</string>
     <string name="home_first_profile">Create first profile</string>
     <string name="home_tool_free">Free up space</string>
-    <string name="home_tool_free_text">Remove old files from the mobile that are backed up on the PC</string>
-    <string name="home_tool_free_disabled">Only for photo profiles and folder profiles mobile → PC</string>
+    <string name="home_tool_free_text">Remove old files from the phone that are backed up on the PC</string>
+    <string name="home_tool_free_disabled">Only for photo profiles and folder profiles phone → PC</string>
     <string name="home_tool_trash">Trash</string>
     <string name="home_tool_trash_disabled">Only for folder profiles</string>
     <string name="home_tool_trash_hint">The trash is only available for folder profiles.</string>
@@ -163,7 +163,7 @@
     <string name="home_profile_disabled">disabled</string>
     <string name="home_profile_on_wifi">on Wi-Fi ✓</string>
     <string name="home_profile_no_target">No target set</string>
-    <string name="home_profile_no_local">no mobile folder</string>
+    <string name="home_profile_no_local">no phone folder</string>
     <string name="home_profile_propagate">apply deletions</string>
     <string name="home_profile_sources">Sources: %1$s</string>
     <string name="home_profile_none">none</string>

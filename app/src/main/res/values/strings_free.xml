@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Speicher freigeben (FreeSpaceScreen) -->
-    <string name="free_hint">Free up space is only available for photo profiles and for folder profiles mobile → PC without “Apply deletions”.</string>
+    <string name="free_hint">Free up space is only available for photo profiles and for folder profiles phone → PC without “Apply deletions”.</string>
     <string name="free_no_profile">No suitable profile.</string>
     <string name="free_choose_profile">For which profile do you want to free up space?</string>
     <string name="free_kind_photos">Photos &amp; videos</string>
-    <string name="free_kind_folder">Folder mobile → PC</string>
+    <string name="free_kind_folder">Folder phone → PC</string>
     <string name="free_read_error">Error while reading</string>
     <plurals name="free_moved_to_gallery_trash">
         <item quantity="one">%1$s file moved to the gallery trash.</item>
@@ -20,6 +20,10 @@
     <plurals name="free_missing">
         <item quantity="one">%1$s was not found on the PC or is different – it stays.</item>
         <item quantity="other">%1$s were not found on the PC or are different – they stay.</item>
+    </plurals>
+    <plurals name="free_changed">
+        <item quantity="one">%1$s file was changed on the phone in the meantime – it stays.</item>
+        <item quantity="other">%1$s files were changed on the phone in the meantime – they stay.</item>
     </plurals>
     <string name="free_unreachable_hosts">PC not reachable: %1$s.</string>
     <string name="free_other_pc_hosts">A different or not yet recognised PC answers: %1$s. No sign-in data was sent.</string>
@@ -39,7 +43,7 @@
     <string name="free_pc_lost">The PC was not (or no longer) reachable.</string>
     <string name="free_intro_photos">Moves photos and videos that are verifiably backed up on the PC to the gallery trash. Before that LeoSync checks every file on the PC. Whatever is missing there or different stays.</string>
     <string name="free_verify_off_hint">The check after upload is set to “Off” for this profile. Unchecked photos are not offered here. Set at least “Low” in the profile; newly backed-up photos appear from the next sync on.</string>
-    <string name="free_intro_folder">Deletes files on the mobile that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check.</string>
+    <string name="free_intro_folder">Deletes files on the phone that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check.</string>
     <string name="free_selection">Selection</string>
     <string name="free_profile">Profile</string>
     <string name="free_older_taken">Older than (date taken)</string>
@@ -63,7 +67,7 @@
         <item quantity="other">%1$s patterns</item>
     </plurals>
     <string name="free_keep_favorites">Keep favorites</string>
-    <string name="free_keep_favorites_sub">Photos marked as favorite in the gallery stay on the mobile.</string>
+    <string name="free_keep_favorites_sub">Photos marked as favorite in the gallery stay on the phone.</string>
     <string name="free_favorites_android11">Android can only report favorites from version 11.</string>
     <plurals name="free_matching">
         <item quantity="one">Matching: %1$s file · %2$s</item>
@@ -90,12 +94,12 @@
         <item quantity="one">Delete %1$s file?</item>
         <item quantity="other">Delete %1$s files?</item>
     </plurals>
-    <string name="free_confirm_text">LeoSync checks every file on the PC (present, same size, same content) and then deletes it permanently from the mobile (%1$s). They are kept on the PC. Whatever is missing there or different stays on the mobile.</string>
+    <string name="free_confirm_text">LeoSync checks every file on the PC (present, same size, same content) and then deletes it permanently from the phone (%1$s). They are kept on the PC. Whatever is missing there or different stays on the phone.</string>
     <string name="free_confirm_button">Check and delete</string>
     <string name="free_direct_title">Delete permanently?</string>
     <plurals name="free_direct_text">
-        <item quantity="one">Android 10 has no trash. %1$s file will be permanently deleted from the mobile. It is present on the PC.</item>
-        <item quantity="other">Android 10 has no trash. %1$s files will be permanently deleted from the mobile. They are present on the PC.</item>
+        <item quantity="one">Android 10 has no trash. %1$s file will be permanently deleted from the phone. It is present on the PC.</item>
+        <item quantity="other">Android 10 has no trash. %1$s files will be permanently deleted from the phone. They are present on the PC.</item>
     </plurals>
     <plurals name="free_direct_done">
         <item quantity="one">%1$s file deleted</item>
@@ -114,7 +118,7 @@
     <string name="free_own_extensions_example">e.g. iso, bak</string>
     <string name="free_other_hint">“%1$s” = everything that fits none of the groups.</string>
     <string name="free_custom_value">Custom value</string>
-    <string name="free_exclude_hint">One pattern per line. Matching files always stay on the mobile.</string>
+    <string name="free_exclude_hint">One pattern per line. Matching files always stay on the phone.</string>
     <string name="free_exclude_examples">Examples: *.kdbx (all files with this extension), Important/** (everything in the folder “Important”), Thumbs.db</string>
     <string name="free_patterns">Patterns</string>
 
@@ -147,14 +151,14 @@
     </plurals>
     <string name="free_enter_one_or_more">Enter 1 or more.</string>
     <string name="free_none_match">No file matches, or none is backed up on the PC yet. Relax the selection or sync first.</string>
-    <string name="free_no_trash_android10">Android 10 has no trash: files are permanently deleted from the mobile.</string>
+    <string name="free_no_trash_android10">Android 10 has no trash: files are permanently deleted from the phone.</string>
     <plurals name="free_deleted_from_mobile">
-        <item quantity="one">%1$s file confirmed on the PC and deleted from the mobile (%2$s freed).</item>
-        <item quantity="other">%1$s files confirmed on the PC and deleted from the mobile (%2$s freed).</item>
+        <item quantity="one">%1$s file confirmed on the PC and deleted from the phone (%2$s freed).</item>
+        <item quantity="other">%1$s files confirmed on the PC and deleted from the phone (%2$s freed).</item>
     </plurals>
     <string name="free_partial_result">%1$d deleted, %2$d skipped.</string>
     <plurals name="free_skipped_note">
-        <item quantity="one">%1$s file skipped (not confirmed on the PC) and stays on the mobile.</item>
-        <item quantity="other">%1$s files skipped (not confirmed on the PC) and stay on the mobile.</item>
+        <item quantity="one">%1$s file skipped (not confirmed on the PC) and stays on the phone.</item>
+        <item quantity="other">%1$s files skipped (not confirmed on the PC) and stay on the phone.</item>
     </plurals>
 </resources>

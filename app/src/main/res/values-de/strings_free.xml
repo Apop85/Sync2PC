@@ -21,6 +21,10 @@
         <item quantity="one">%1$s wurde auf dem PC nicht gefunden oder ist anders – sie bleibt.</item>
         <item quantity="other">%1$s wurden auf dem PC nicht gefunden oder sind anders – sie bleiben.</item>
     </plurals>
+    <plurals name="free_changed">
+        <item quantity="one">%1$s Datei wurde inzwischen auf dem Handy geändert – sie bleibt.</item>
+        <item quantity="other">%1$s Dateien wurden inzwischen auf dem Handy geändert – sie bleiben.</item>
+    </plurals>
     <string name="free_unreachable_hosts">PC nicht erreichbar: %1$s.</string>
     <string name="free_other_pc_hosts">Es antwortet ein anderer oder noch nicht erkannter PC: %1$s. Es wurden keine Anmeldedaten gesendet.</string>
     <string name="free_check_failed">Prüfung fehlgeschlagen: %1$s</string>

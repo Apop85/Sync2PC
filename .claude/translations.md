@@ -42,7 +42,7 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 29 | `home_wait_charger` | Wartet auf das Ladegerät („Nur beim Laden“ ist eingeschaltet). | Waiting for the charger (“Only while charging” is on). |
 | 30 | `home_starting` | Synchronisierung startet gleich… | Sync is starting… |
 | 31 | `home_tool_trash_text` | Dateien zurückholen oder endgültig löschen | Restore files or delete them permanently |
-| 32 | `home_tool_trash_used` | Belegt: Handy %1$s · PC %2$s | Used: mobile %1$s · PC %2$s |
+| 32 | `home_tool_trash_used` | Belegt: Handy %1$s · PC %2$s | Used: phone %1$s · PC %2$s |
 | 33 | `home_guard_note_all` | Wartet auf deine Entscheidung (Schutzbremse) – erst danach geht es weiter. | Waiting for your decision (safety brake) – it continues only after that. |
 | 34 | `home_guard_note_some` | Bei einem Profil wartet es auf deine Entscheidung (Schutzbremse). | One profile is waiting for your decision (safety brake). |
 | 35 | `home_pc_unreachable` | PC nicht erreichbar (%1$s) – nächste Prüfung um %2$s | PC not reachable (%1$s) – next check at %2$s |
@@ -56,8 +56,8 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 43 | `home_update_text` | Version %1$s ist verfügbar (installiert: %2$s). | Version %1$s is available (installed: %2$s). |
 | 44 | `home_update_button` | Ansehen | View |
 | 45 | `home_conflicts_title` | Konflikte bei der Ordner-Synchronisierung | Folder sync conflicts |
-| 46 | `home_conflicts_text (one)` | %1$s Datei wurde auf Handy und PC geändert. Wähle, welche Version gilt. | %1$s file was changed on both mobile and PC. Choose which version wins. |
-| 47 | `home_conflicts_text (other)` | %1$s Dateien wurden auf Handy und PC geändert. Wähle, welche Version gilt. | %1$s files were changed on both mobile and PC. Choose which version wins. |
+| 46 | `home_conflicts_text (one)` | %1$s Datei wurde auf Handy und PC geändert. Wähle, welche Version gilt. | %1$s file was changed on both phone and PC. Choose which version wins. |
+| 47 | `home_conflicts_text (other)` | %1$s Dateien wurden auf Handy und PC geändert. Wähle, welche Version gilt. | %1$s files were changed on both phone and PC. Choose which version wins. |
 | 48 | `home_conflicts_button` | Entscheiden | Decide |
 | 49 | `home_decisions_title` | Ordnerauswahl nötig | Folder selection needed |
 | 50 | `home_decisions_text (one)` | %1$s Datei in %2$s wartet, weil es umbenannte Monatsordner gibt. | %1$s file in %2$s is waiting because there are renamed month folders. |
@@ -74,8 +74,8 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 61 | `home_no_profile` | Noch kein Profil. Lege ein Profil mit Ziel-Freigabe, WLAN und Quellordnern an. | No profile yet. Create a profile with a target Share, Wi-Fi and source folders. |
 | 62 | `home_first_profile` | Erstes Profil anlegen | Create first profile |
 | 63 | `home_tool_free` | Speicher freigeben | Free up space |
-| 64 | `home_tool_free_text` | Alte, auf dem PC gesicherte Dateien vom Handy entfernen | Remove old files from the mobile that are backed up on the PC |
-| 65 | `home_tool_free_disabled` | Nur bei Fotos-Profilen und Ordner-Profilen Handy → PC | Only for photo profiles and folder profiles mobile → PC |
+| 64 | `home_tool_free_text` | Alte, auf dem PC gesicherte Dateien vom Handy entfernen | Remove old files from the phone that are backed up on the PC |
+| 65 | `home_tool_free_disabled` | Nur bei Fotos-Profilen und Ordner-Profilen Handy → PC | Only for photo profiles and folder profiles phone → PC |
 | 66 | `home_tool_trash` | Papierkorb | Trash |
 | 67 | `home_tool_trash_disabled` | Nur bei Ordner-Profilen | Only for folder profiles |
 | 68 | `home_tool_trash_hint` | Den Papierkorb gibt es nur bei Ordner-Profilen. | The trash is only available for folder profiles. |
@@ -152,7 +152,7 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 139 | `home_profile_disabled` | deaktiviert | disabled |
 | 140 | `home_profile_on_wifi` | im WLAN ✓ | on Wi-Fi ✓ |
 | 141 | `home_profile_no_target` | Kein Ziel festgelegt | No target set |
-| 142 | `home_profile_no_local` | kein Handy-Ordner | no mobile folder |
+| 142 | `home_profile_no_local` | kein Handy-Ordner | no phone folder |
 | 143 | `home_profile_propagate` | Löschungen übernehmen | apply deletions |
 | 144 | `home_profile_sources` | Quellen: %1$s | Sources: %1$s |
 | 145 | `home_profile_none` | keine | none |
@@ -242,7 +242,7 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 224 | `settings_vendor_web` | Anleitung im Browser | Instructions in the browser |
 | 225 | `settings_language` | Sprache | Language |
 | 226 | `settings_language_system` | Systemsprache | System language |
-| 227 | `settings_language_hint` | „Systemsprache“ zeigt Deutsch, wenn das Handy auf Deutsch eingestellt ist, sonst Englisch. | “System language” shows German if the mobile is set to German, otherwise English. |
+| 227 | `settings_language_hint` | „Systemsprache“ zeigt Deutsch, wenn das Handy auf Deutsch eingestellt ist, sonst Englisch. | “System language” shows German if the phone is set to German, otherwise English. |
 | 228 | `settings_geo_loading` | Lade Länderdaten… | Loading country data… |
 | 229 | `settings_geo_loaded` | %1$s Länder geladen (offline) | %1$s countries loaded (offline) |
 | 230 | `settings_geo_missing` | Länderdaten fehlen – Ordner werden ohne Land angelegt | Country data missing – folders are created without a country |
@@ -284,13 +284,13 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 261 | `profile_active` | Profil aktiv | Profile active |
 | 262 | `profile_type_mirror` | Typ: %1$s – 1:1-Spiegelung mit Unterordnern | Type: %1$s – 1:1 mirror with subfolders |
 | 263 | `profile_type_photos` | Typ: %1$s – sortiert nach Jahr und Monat | Type: %1$s – sorted by year and month |
-| 264 | `profile_local_folder` | Ordner auf dem Handy | Folder on the mobile |
+| 264 | `profile_local_folder` | Ordner auf dem Handy | Folder on the phone |
 | 265 | `profile_no_folder_yet` | Noch kein Ordner gewählt. | No folder chosen yet. |
 | 266 | `profile_access_lost` | Zugriff verloren – bitte erneut wählen. | Access lost – please choose again. |
 | 267 | `profile_choose_folder` | Ordner wählen… | Choose folder… |
 | 268 | `profile_choose_other_folder` | Anderen Ordner wählen… | Choose another folder… |
 | 269 | `profile_local_folder_hint` | Alle Dateien in diesem Ordner und seinen Unterordnern werden mit dem PC abgeglichen. Android fragt einmalig, ob LeoSync auf den Ordner zugreifen darf (nötig für alle Dateitypen). | All files in this folder and its subfolders are compared with the PC. Android asks once whether LeoSync may access the folder (needed for all file types). |
-| 270 | `profile_sources` | Quellordner auf dem Handy | Source folders on the mobile |
+| 270 | `profile_sources` | Quellordner auf dem Handy | Source folders on the phone |
 | 271 | `profile_sources_empty` | Noch kein Ordner gewählt (z. B. DCIM/Camera). | No folder chosen yet (e.g. DCIM/Camera). |
 | 272 | `profile_remove` | Entfernen | Remove |
 | 273 | `profile_add_folder` | Ordner hinzufügen… | Add folder… |
@@ -315,7 +315,7 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 292 | `profile_domain_hint` | Bei einem lokalen Windows-Konto meist leer lassen. Microsoft-Konto: E-Mail-Adresse als Benutzer. | Usually leave empty for a local Windows account. Microsoft account: use the e-mail address as user. |
 | 293 | `profile_test` | Verbindung testen | Test connection |
 | 294 | `profile_wifi` | WLAN (automatische Synchronisierung) | Wi-Fi (automatic sync) |
-| 295 | `profile_wifi_hint` | Optional. Ist das Handy mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst (z. B. wenn du den PC über VPN erreichst). | Optional. When the mobile is connected to one of these Wi-Fi networks, LeoSync syncs automatically in the background. Without a Wi-Fi name this profile only syncs when you tap “Sync” (e.g. when you reach the PC via VPN). |
+| 295 | `profile_wifi_hint` | Optional. Ist das Handy mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst (z. B. wenn du den PC über VPN erreichst). | Optional. When the phone is connected to one of these Wi-Fi networks, LeoSync syncs automatically in the background. Without a Wi-Fi name this profile only syncs when you tap “Sync” (e.g. when you reach the PC via VPN). |
 | 296 | `profile_wifi_add_current` | Aktuelles WLAN „%1$s“ hinzufügen | Add current Wi-Fi “%1$s” |
 | 297 | `profile_wifi_name` | WLAN-Name | Wi-Fi name |
 | 298 | `profile_add` | Hinzufügen | Add |
@@ -326,20 +326,20 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 303 | `profile_keep_versions` | Alte Versionen im Papierkorb behalten | Keep old versions in the trash |
 | 304 | `profile_keep_versions_sub` | Wird eine Datei überschrieben, kommt die alte Version in den Ordner „%1$s“ und lässt sich über den Papierkorb zurückholen. Braucht etwas mehr Speicher. | If a file is overwritten, the old version goes to the folder “%1$s” and can be brought back via the trash. Needs a bit more storage. |
 | 305 | `profile_trash_days` | Papierkorb leeren nach … Tagen | Empty trash after … days |
-| 306 | `profile_trash_days_hint` | Ältere Einträge in „%1$s“ werden auf Handy und PC endgültig gelöscht. 0 = nie. Standard: 30 | Older entries in “%1$s” are permanently deleted on mobile and PC. 0 = never. Default: 30 |
+| 306 | `profile_trash_days_hint` | Ältere Einträge in „%1$s“ werden auf Handy und PC endgültig gelöscht. 0 = nie. Standard: 30 | Older entries in “%1$s” are permanently deleted on phone and PC. 0 = never. Default: 30 |
 | 307 | `profile_conflict_question` | Wenn eine Datei auf beiden Seiten geändert wurde: | If a file was changed on both sides: |
 | 308 | `profile_conflict_newer_hint` | Die ältere Version wird in den Papierkorb verschoben, nicht gelöscht. | The older version is moved to the trash, not deleted. |
 | 309 | `profile_poll` | Auf Änderungen prüfen alle … Minuten | Check for changes every … minutes |
-| 310 | `profile_poll_hint` | Nur solange das Handy im Ziel-WLAN ist (mindestens 15). Zusätzlich sofort beim Verbinden mit dem WLAN. | Only while the mobile is on the target Wi-Fi (at least 15). Additionally right when connecting to the Wi-Fi. |
+| 310 | `profile_poll_hint` | Nur solange das Handy im Ziel-WLAN ist (mindestens 15). Zusätzlich sofort beim Verbinden mit dem WLAN. | Only while the phone is on the target Wi-Fi (at least 15). Additionally right when connecting to the Wi-Fi. |
 | 311 | `profile_after_upload` | Nach erfolgreicher Übertragung | After a successful transfer |
-| 312 | `profile_after_upload_hint` | Was passiert mit den Fotos auf dem Handy, wenn sie sicher auf dem PC liegen? | What happens to the photos on the mobile once they are safely on the PC? |
+| 312 | `profile_after_upload_hint` | Was passiert mit den Fotos auf dem Handy, wenn sie sicher auf dem PC liegen? | What happens to the photos on the phone once they are safely on the PC? |
 | 313 | `profile_delete_hint` | Dateien werden nur entfernt, wenn der Upload geprüft wurde (Grösse + Prüfsumme). Android fragt dabei einmal pro Durchgang nach Bestätigung. | Files are only removed if the upload was verified (size + checksum). Android asks for confirmation once per run. |
-| 314 | `profile_delete_final_hint` | Achtung: Endgültig gelöschte Fotos kommen nicht in den Papierkorb der Galerie und lassen sich auf dem Handy nicht wiederherstellen. Sie sind danach nur noch auf dem PC. | Caution: permanently deleted photos do not go to the gallery trash and cannot be restored on the mobile. Afterwards they only exist on the PC. |
+| 314 | `profile_delete_final_hint` | Achtung: Endgültig gelöschte Fotos kommen nicht in den Papierkorb der Galerie und lassen sich auf dem Handy nicht wiederherstellen. Sie sind danach nur noch auf dem PC. | Caution: permanently deleted photos do not go to the gallery trash and cannot be restored on the phone. Afterwards they only exist on the PC. |
 | 315 | `profile_verify` | Prüfung nach dem Hochladen | Check after upload |
 | 316 | `profile_verify_hint` | Liest die Datei auf dem PC zurück und vergleicht sie mit dem Original. Gründlicher heisst sicherer, aber langsamer. | Reads the file back from the PC and compares it with the original. More thorough means safer, but slower. |
-| 317 | `profile_verify_required` | Mindestens „Wenig“ ist Pflicht, weil Dateien vom Handy entfernt werden. | At least “Low” is required because files are removed from the mobile. |
+| 317 | `profile_verify_required` | Mindestens „Wenig“ ist Pflicht, weil Dateien vom Handy entfernt werden. | At least “Low” is required because files are removed from the phone. |
 | 318 | `verify_off` | Aus | Off |
-| 319 | `verify_off_sub` | Nur die Dateigrösse wird verglichen. Nur möglich, wenn die Fotos auf dem Handy bleiben. | Only the file size is compared. Only possible if the photos stay on the mobile. |
+| 319 | `verify_off_sub` | Nur die Dateigrösse wird verglichen. Nur möglich, wenn die Fotos auf dem Handy bleiben. | Only the file size is compared. Only possible if the photos stay on the phone. |
 | 320 | `verify_low` | Wenig | Low |
 | 321 | `verify_low_sub` | Anfang, Mitte und Ende (192 KB pro Datei) | Start, middle and end (192 KB per file) |
 | 322 | `verify_medium` | Mittel | Medium |
@@ -351,7 +351,7 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 328 | `verify_full_title` | Komplett prüfen? | Check completely? |
 | 329 | `verify_full_text` | Jede Datei wird nach dem Hochladen vollständig vom PC zurückgelesen. Bei Videos dauert die Sicherung dadurch etwa doppelt so lange und braucht deutlich mehr Akku. | Every file is read back completely from the PC after uploading. For videos the backup takes about twice as long and uses considerably more battery. |
 | 330 | `verify_full_confirm` | Komplett prüfen | Check completely |
-| 331 | `verify_raised` | Prüfung auf „Mittel“ gestellt: Wer Fotos vom Handy entfernt, braucht eine Prüfung. | Check set to “Medium”: removing photos from the mobile requires a check. |
+| 331 | `verify_raised` | Prüfung auf „Mittel“ gestellt: Wer Fotos vom Handy entfernt, braucht eine Prüfung. | Check set to “Medium”: removing photos from the phone requires a check. |
 | 332 | `profile_filter` | Filter (optional) | Filter (optional) |
 | 333 | `profile_filter_include` | Nur diese Dateien | Only these files |
 | 334 | `profile_filter_exclude` | Diese Dateien ausschliessen | Exclude these files |
@@ -373,9 +373,9 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 350 | `profile_reset` | Synchronisierungsstatus zurücksetzen | Reset sync status |
 | 351 | `profile_delete_button` | Profil löschen | Delete profile |
 | 352 | `profile_maintenance_closed` | Synchronisierungsstatus zurücksetzen, Profil löschen – antippen zum Öffnen | Reset sync status, delete profile – tap to open |
-| 353 | `profile_delete_section_hint` | Löscht Einstellungen und Synchronisierungsstatus dieses Profils. Dateien auf Handy und PC bleiben erhalten. | Deletes the settings and sync status of this profile. Files on the mobile and PC are kept. |
+| 353 | `profile_delete_section_hint` | Löscht Einstellungen und Synchronisierungsstatus dieses Profils. Dateien auf Handy und PC bleiben erhalten. | Deletes the settings and sync status of this profile. Files on the phone and PC are kept. |
 | 354 | `profile_delete_title` | Profil löschen? | Delete profile? |
-| 355 | `profile_delete_text` | Einstellungen und Synchronisierungsstatus dieses Profils werden gelöscht. Dateien auf Handy und PC bleiben erhalten. | Settings and sync status of this profile are deleted. Files on the mobile and PC are kept. |
+| 355 | `profile_delete_text` | Einstellungen und Synchronisierungsstatus dieses Profils werden gelöscht. Dateien auf Handy und PC bleiben erhalten. | Settings and sync status of this profile are deleted. Files on the phone and PC are kept. |
 | 356 | `profile_created_title` | Profil gespeichert | Profile saved |
 | 357 | `profile_created_text` | Wie weiter? Bis du dieses Profil einmal synchronisierst, startet es nicht automatisch. So kannst du zuerst in Ruhe simulieren. | What next? Until you sync this profile once, it does not start automatically. That way you can simulate first. |
 | 358 | `profile_later` | Später | Later |
@@ -405,11 +405,11 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 382 | `profile_reset_done` | Zurückgesetzt | Reset |
 | 383 | `profile_reset_button` | Zurücksetzen | Reset |
 | 384 | `wizard_intro_name` | Wie soll das Profil heissen? Der Name erscheint auf der Startseite, im Verlauf und in den Benachrichtigungen, z. B. „Kamera“ oder „Dokumente“. | What should the profile be called? The name appears on the home screen, in the history and in notifications, e.g. “Camera” or “Documents”. |
-| 385 | `wizard_intro_source_mirror` | Welcher Ordner auf dem Handy soll mit dem PC abgeglichen werden? Alle Dateien und Unterordner darin werden synchronisiert. | Which folder on the mobile should be compared with the PC? All files and subfolders in it are synced. |
-| 386 | `wizard_intro_source_photos` | Welche Fotos und Videos sollen gesichert werden? Wähle die Ordner auf dem Handy, in denen sie liegen. | Which photos and videos should be backed up? Choose the folders on the mobile where they are stored. |
+| 385 | `wizard_intro_source_mirror` | Welcher Ordner auf dem Handy soll mit dem PC abgeglichen werden? Alle Dateien und Unterordner darin werden synchronisiert. | Which folder on the phone should be compared with the PC? All files and subfolders in it are synced. |
+| 386 | `wizard_intro_source_photos` | Welche Fotos und Videos sollen gesichert werden? Wähle die Ordner auf dem Handy, in denen sie liegen. | Which photos and videos should be backed up? Choose the folders on the phone where they are stored. |
 | 387 | `wizard_intro_target` | Wohin auf dem PC? Gib die Windows-Freigabe an und melde dich mit dem Windows-Benutzer an, der darauf zugreifen darf. „Verbindung testen“ zeigt, ob alles stimmt. | Where on the PC? Enter the Windows Share and sign in with the Windows user who may access it. “Test connection” shows whether everything is right. |
 | 388 | `wizard_intro_options_mirror` | Wann wird synchronisiert, in welche Richtung, und was passiert mit gelöschten oder geänderten Dateien? | When does it sync, in which direction, and what happens to deleted or changed files? |
-| 389 | `wizard_intro_options_photos` | Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Handy? | When does it sync, and what happens to the photos on the mobile afterwards? |
+| 389 | `wizard_intro_options_photos` | Wann wird synchronisiert, und was passiert danach mit den Fotos auf dem Handy? | When does it sync, and what happens to the photos on the phone afterwards? |
 | 390 | `wizard_intro_filter` | Optional: Nur bestimmte Dateien synchronisieren oder einzelne ausschliessen. Ohne Angaben wird alles synchronisiert. | Optional: sync only certain files or exclude some. Without entries everything is synced. |
 | 391 | `wizard_intro_guard` | Optional: Ab wann LeoSync bei vielen Löschungen zuerst nachfragt. Der Standard passt für die meisten. | Optional: from when LeoSync asks first when there are many deletions. The default suits most people. |
 | 392 | `profile_pc_check` | PC-Kennung | PC ID |
@@ -442,8 +442,8 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 419 | `profile_test_need_path` | Bitte zuerst den Freigabe-Pfad eingeben, z. B. %1$s. | Please enter the share path first, e.g. %1$s. |
 | 420 | `profile_test_bad_input` | Die Eingabe ist ungültig. Bitte Freigabe-Pfad und Benutzer prüfen. | The input is invalid. Please check the share path and user. |
 | 421 | `profile_confirm_title` | Änderung bestätigen | Confirm change |
-| 422 | `profile_confirm_dir_up` | Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung gilt das Handy als Quelle: abweichende Dateien auf dem PC werden durch die Handy-Version ersetzt. Die ersetzte Version kann in den Papierkorb „%3$s“ kommen. | The direction changes from “%1$s” to “%2$s”. From the next sync, the mobile is the source: differing files on the PC are replaced by the mobile version. The replaced version may go to the trash “%3$s”. |
-| 423 | `profile_confirm_dir_down` | Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung gilt der PC als Quelle: abweichende Dateien auf dem Handy werden durch die PC-Version ersetzt. Die ersetzte Version kann in den Papierkorb „%3$s“ kommen. | The direction changes from “%1$s” to “%2$s”. From the next sync, the PC is the source: differing files on the mobile are replaced by the PC version. The replaced version may go to the trash “%3$s”. |
+| 422 | `profile_confirm_dir_up` | Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung gilt das Handy als Quelle: abweichende Dateien auf dem PC werden durch die Handy-Version ersetzt. Die ersetzte Version kann in den Papierkorb „%3$s“ kommen. | The direction changes from “%1$s” to “%2$s”. From the next sync, the phone is the source: differing files on the PC are replaced by the phone version. The replaced version may go to the trash “%3$s”. |
+| 423 | `profile_confirm_dir_down` | Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung gilt der PC als Quelle: abweichende Dateien auf dem Handy werden durch die PC-Version ersetzt. Die ersetzte Version kann in den Papierkorb „%3$s“ kommen. | The direction changes from “%1$s” to “%2$s”. From the next sync, the PC is the source: differing files on the phone are replaced by the PC version. The replaced version may go to the trash “%3$s”. |
 | 424 | `profile_confirm_dir_both` | Die Richtung wird von „%1$s“ auf „%2$s“ geändert. Ab der nächsten Synchronisierung werden Änderungen in beide Richtungen übertragen. | The direction changes from “%1$s” to “%2$s”. From the next sync, changes are transferred in both directions. |
 | 425 | `profile_confirm_propagate` | Gelöschte Dateien werden ab jetzt auf der anderen Seite ebenfalls entfernt (in den Papierkorb „%1$s“). | Files deleted on one side will now also be removed on the other side (to the trash “%1$s”). |
 | 426 | `profile_folder_unusable_root` | Der gewählte Ordner ist der oberste Ordner des Speichers und kann nicht verwendet werden. Bitte einen Unterordner wählen. | The selected folder is the top level of the storage and cannot be used. Please choose a subfolder. |
@@ -454,11 +454,11 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 431 | `profile_filter_summary_exclude` | Ausgeschlossen: %1$d Muster | Excluded: %1$d patterns |
 | 432 | `profile_folder_warning_options` | Trotzdem übernehmen: der bisherige Synchronisierungsstand bleibt. / Als neuen Ordner behandeln: der Stand wird zurückgesetzt, alle Dateien werden neu abgeglichen. | Accept anyway: the previous sync state is kept. / Treat as new folder: the state is reset and all files are compared again. |
 | 433 | `overlap_nested_remote` | Der Zielordner auf dem PC liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen. | The target folder on the PC lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions. |
-| 434 | `overlap_cross_pc_from_photos` | Der Zielordner dieser Fotosicherung liegt im PC-Ordner von Profil „%1$s“ (oder umgekehrt). Das Ordner-Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können wieder aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden. | The target folder of this photo backup lies inside the PC folder of profile “%1$s” (or vice versa). The folder profile treats the backed-up photos like its own files: they can be downloaded to the mobile again or moved to the recycle bin when deletions are applied. |
-| 435 | `overlap_cross_phone_from_photos` | Ein Quellordner dieser Fotosicherung liegt im Handy-Ordner von Profil „%1$s“, das Dateien aufs Handy lädt (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden. | A source folder of this photo backup lies inside the mobile folder of profile “%1$s”, which loads files onto the mobile (or vice versa). That profile can replace files there or add new files that would then be backed up as photos. |
-| 436 | `overlap_cross_phone_from_mirror` | Der Handy-Ordner dieses Profils, das Dateien aufs Handy lädt, liegt in einem Quellordner der Fotosicherung „%1$s“ (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden. | The mobile folder of this profile, which loads files onto the mobile, lies inside a source folder of photo backup “%1$s” (or vice versa). This profile can replace files there or add new files that would then be backed up as photos. |
-| 437 | `overlap_cross_pc_from_mirror` | Der PC-Ordner dieses Profils liegt im Zielordner der Fotosicherung „%1$s“ (oder umgekehrt). Dieses Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden. | The PC folder of this profile lies inside the target folder of photo backup “%1$s” (or vice versa). This profile treats the backed-up photos like its own files: they can be downloaded to the mobile or moved to the recycle bin when deletions are applied. |
-| 438 | `overlap_nested_local` | Der Ordner auf dem Handy liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen. | The folder on the mobile lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions. |
+| 434 | `overlap_cross_pc_from_photos` | Der Zielordner dieser Fotosicherung liegt im PC-Ordner von Profil „%1$s“ (oder umgekehrt). Das Ordner-Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können wieder aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden. | The target folder of this photo backup lies inside the PC folder of profile “%1$s” (or vice versa). The folder profile treats the backed-up photos like its own files: they can be downloaded to the phone again or moved to the recycle bin when deletions are applied. |
+| 435 | `overlap_cross_phone_from_photos` | Ein Quellordner dieser Fotosicherung liegt im Handy-Ordner von Profil „%1$s“, das Dateien aufs Handy lädt (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden. | A source folder of this photo backup lies inside the phone folder of profile “%1$s”, which loads files onto the phone (or vice versa). That profile can replace files there or add new files that would then be backed up as photos. |
+| 436 | `overlap_cross_phone_from_mirror` | Der Handy-Ordner dieses Profils, das Dateien aufs Handy lädt, liegt in einem Quellordner der Fotosicherung „%1$s“ (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden. | The phone folder of this profile, which loads files onto the phone, lies inside a source folder of photo backup “%1$s” (or vice versa). This profile can replace files there or add new files that would then be backed up as photos. |
+| 437 | `overlap_cross_pc_from_mirror` | Der PC-Ordner dieses Profils liegt im Zielordner der Fotosicherung „%1$s“ (oder umgekehrt). Dieses Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden. | The PC folder of this profile lies inside the target folder of photo backup “%1$s” (or vice versa). This profile treats the backed-up photos like its own files: they can be downloaded to the phone or moved to the recycle bin when deletions are applied. |
+| 438 | `overlap_nested_local` | Der Ordner auf dem Handy liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen. | The folder on the phone lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions. |
 | 439 | `home_profile_filter_active` | Filter aktiv | Filter active |
 | 440 | `enc_title` | Verschlüsselung | Encryption |
 | 441 | `enc_title_value` | %1$s · %2$s | %1$s · %2$s |
@@ -487,10 +487,10 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 459 | `delete_mode_delete` | Endgültig löschen | Delete permanently |
 | 460 | `profile_type_label_photos` | Fotos & Videos sichern | Back up photos & videos |
 | 461 | `profile_type_label_mirror` | Ordner synchronisieren | Sync a folder |
-| 462 | `direction_upload` | Handy → PC | Mobile → PC |
+| 462 | `direction_upload` | Handy → PC | Phone → PC |
 | 463 | `direction_upload_short` | → PC | → PC |
-| 464 | `direction_download` | PC → Handy | PC → Mobile |
-| 465 | `direction_download_short` | → Handy | → Mobile |
+| 464 | `direction_download` | PC → Handy | PC → Phone |
+| 465 | `direction_download_short` | → Handy | → Phone |
 | 466 | `direction_both` | Beidseitig | Both ways |
 | 467 | `direction_both_short` | ⇄ | ⇄ |
 | 468 | `conflict_mode_ask` | Jedes Mal fragen | Ask every time |
@@ -502,8 +502,8 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 474 | `wizard_step_filter` | Filter | Filter |
 | 475 | `wizard_step_guard` | Schutzbremse | Safety brake |
 | 476 | `wizard_missing_name` | Bitte gib dem Profil einen Namen. | Please give the profile a name. |
-| 477 | `wizard_missing_local` | Bitte wähle den Ordner auf dem Handy. | Please choose the folder on the mobile. |
-| 478 | `wizard_missing_sources` | Bitte wähle mindestens einen Ordner auf dem Handy. | Please choose at least one folder on the mobile. |
+| 477 | `wizard_missing_local` | Bitte wähle den Ordner auf dem Handy. | Please choose the folder on the phone. |
+| 478 | `wizard_missing_sources` | Bitte wähle mindestens einen Ordner auf dem Handy. | Please choose at least one folder on the phone. |
 | 479 | `wizard_missing_media` | Bitte schalte Fotos, Videos oder beides ein. | Please turn on photos, videos or both. |
 | 480 | `wizard_missing_target` | Bitte gib den Freigabe-Pfad ein, z. B. \\192.168.1.20\Fotos. | Please enter the Share path, e.g. \\192.168.1.20\Photos. |
 | 481 | `overlap_identical` | Profil „%1$s“ hat bereits dasselbe Ziel und dieselben Quellen. | Profile “%1$s” already has the same target and the same sources. |
@@ -515,8 +515,8 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 487 | `folder_layout_country_subfolder` | Jahr\MM\[Land] | Year\MM\[Country] |
 | 488 | `overlap_same_target` | Gleiches Ziel wie Profil „%1$s“. Diese Dateien würden von beiden Profilen geprüft und übertragen. | Same target as profile “%1$s”. These files would be checked and transferred by both profiles. |
 | 489 | `type_chooser_title` | Was möchtest du synchronisieren? | What do you want to sync? |
-| 490 | `type_chooser_photos` | Fotos und Videos vom Handy auf den PC. Ablage sortiert nach Jahr, Monat und Reiseland, z. B. 2026\06 - Ägypten. Optional danach vom Handy entfernen. | Photos and videos from the mobile to the PC. Stored by year, month and travel country, e.g. 2026\06 - Egypt. Optionally remove them from the mobile afterwards. |
-| 491 | `type_chooser_mirror` | Einen beliebigen Ordner 1:1 spiegeln, mit Unterordnern und allen Dateitypen. Richtung wählbar: Handy → PC, PC → Handy oder beidseitig. | Mirror any folder 1:1, with subfolders and all file types. Direction selectable: mobile → PC, PC → mobile or both ways. |
+| 490 | `type_chooser_photos` | Fotos und Videos vom Handy auf den PC. Ablage sortiert nach Jahr, Monat und Reiseland, z. B. 2026\06 - Ägypten. Optional danach vom Handy entfernen. | Photos and videos from the phone to the PC. Stored by year, month and travel country, e.g. 2026\06 - Egypt. Optionally remove them from the phone afterwards. |
+| 491 | `type_chooser_mirror` | Einen beliebigen Ordner 1:1 spiegeln, mit Unterordnern und allen Dateitypen. Richtung wählbar: Handy → PC, PC → Handy oder beidseitig. | Mirror any folder 1:1, with subfolders and all file types. Direction selectable: phone → PC, PC → phone or both ways. |
 | 492 | `remote_picker_title` | Ordner auf der Freigabe | Folder on the Share |
 | 493 | `remote_picker_title_shares` | Freigaben auf dem PC | Shares on the PC |
 | 494 | `remote_picker_no_shares` | Keine Freigaben gefunden. Ist ein Ordner auf dem PC freigegeben (Eigenschaften → Freigabe)? | No Shares found. Is a folder shared on the PC (Properties → Sharing)? |
@@ -528,659 +528,678 @@ Erzeugt mit `tools/make-translations.ps1` aus `res/values-de` (Deutsch) und `res
 | 500 | `remote_picker_name_invalid` | Ungültiger Name. Kein \ / : * ? " < > \|, kein Punkt oder Leerzeichen am Ende. | Invalid name. No \ / : * ? " < > \|, no dot or space at the end. |
 | 501 | `remote_picker_name_exists` | Ein Ordner «%1$s» existiert bereits. | A folder named "%1$s" already exists. |
 | 502 | `remote_picker_create_failed` | Der Ordner konnte nicht angelegt werden. | The folder could not be created. |
+| 503 | `icon_folder` | Ordner | Folder |
+| 504 | `icon_camera` | Kamera | Camera |
+| 505 | `icon_phone` | Handy | Phone |
+| 506 | `icon_pc` | PC | PC |
+| 507 | `icon_server` | Server | Server |
+| 508 | `icon_add` | Hinzufügen | Add |
+| 509 | `icon_up` | Hoch | Up |
+| 510 | `icon_down` | Runter | Down |
+| 511 | `icon_pause` | Pause | Pause |
+| 512 | `icon_play` | Fortsetzen | Play |
+| 513 | `icon_ok` | Erledigt | Done |
+| 514 | `icon_error` | Fehler | Error |
+| 515 | `icon_warn` | Warnung | Warning |
+| 516 | `icon_sync` | Synchronisieren | Sync |
+| 517 | `icon_bin` | Papierkorb | Trash |
+| 518 | `icon_both` | Beidseitig | Both directions |
 
 ## Speicher freigeben
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 503 | `free_hint` | Speicher freigeben gibt es nur bei Fotos-Profilen und bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“. | Free up space is only available for photo profiles and for folder profiles mobile → PC without “Apply deletions”. |
-| 504 | `free_no_profile` | Kein passendes Profil. | No suitable profile. |
-| 505 | `free_choose_profile` | Für welches Profil möchtest du Speicher freigeben? | For which profile do you want to free up space? |
-| 506 | `free_kind_photos` | Fotos & Videos | Photos & videos |
-| 507 | `free_kind_folder` | Ordner Handy → PC | Folder mobile → PC |
-| 508 | `free_read_error` | Fehler beim Einlesen | Error while reading |
-| 509 | `free_moved_to_gallery_trash (one)` | %1$s Datei in den Papierkorb der Galerie verschoben. | %1$s file moved to the gallery trash. |
-| 510 | `free_moved_to_gallery_trash (other)` | %1$s Dateien in den Papierkorb der Galerie verschoben. | %1$s files moved to the gallery trash. |
-| 511 | `free_reading` | Lese Dateien… | Reading files… |
-| 512 | `free_checking_pc` | Prüfe auf dem PC… | Checking on the PC… |
-| 513 | `free_confirmed (one)` | %1$s Datei auf dem PC bestätigt. | %1$s file confirmed on the PC. |
-| 514 | `free_confirmed (other)` | %1$s Dateien auf dem PC bestätigt. | %1$s files confirmed on the PC. |
-| 515 | `free_missing (one)` | %1$s wurde auf dem PC nicht gefunden oder ist anders – sie bleibt. | %1$s was not found on the PC or is different – it stays. |
-| 516 | `free_missing (other)` | %1$s wurden auf dem PC nicht gefunden oder sind anders – sie bleiben. | %1$s were not found on the PC or are different – they stay. |
-| 517 | `free_unreachable_hosts` | PC nicht erreichbar: %1$s. | PC not reachable: %1$s. |
-| 518 | `free_other_pc_hosts` | Es antwortet ein anderer oder noch nicht erkannter PC: %1$s. Es wurden keine Anmeldedaten gesendet. | A different or not yet recognised PC answers: %1$s. No sign-in data was sent. |
-| 519 | `free_check_failed` | Prüfung fehlgeschlagen: %1$s | Check failed: %1$s |
-| 520 | `free_deleted (one)` | %1$s Datei gelöscht, %2$s frei. | %1$s file deleted, %2$s freed. |
-| 521 | `free_deleted (other)` | %1$s Dateien gelöscht, %2$s frei. | %1$s files deleted, %2$s freed. |
-| 522 | `free_folders_removed (one)` | %1$s leerer Ordner entfernt. | %1$s empty folder removed. |
-| 523 | `free_folders_removed (other)` | %1$s leere Ordner entfernt. | %1$s empty folders removed. |
-| 524 | `free_kept (one)` | %1$s Datei bleibt (auf dem PC nicht gefunden, anders oder inzwischen geändert). | %1$s file stays (not found on the PC, different or changed in the meantime). |
-| 525 | `free_kept (other)` | %1$s Dateien bleiben (auf dem PC nicht gefunden, anders oder inzwischen geändert). | %1$s files stay (not found on the PC, different or changed in the meantime). |
-| 526 | `free_pc_lost` | Der PC war nicht (mehr) erreichbar. | The PC was not (or no longer) reachable. |
-| 527 | `free_intro_photos` | Verschiebt Fotos und Videos, die nachweislich auf dem PC gesichert sind, in den Papierkorb der Galerie. Vorher prüft LeoSync jede Datei auf dem PC. Was dort fehlt oder anders ist, bleibt. | Moves photos and videos that are verifiably backed up on the PC to the gallery trash. Before that LeoSync checks every file on the PC. Whatever is missing there or different stays. |
-| 528 | `free_verify_off_hint` | Die Prüfung nach dem Hochladen steht bei diesem Profil auf „Aus“. Ungeprüfte Fotos werden hier nicht angeboten. Stelle im Profil mindestens „Wenig“ ein; ab der nächsten Synchronisierung erscheinen neu gesicherte Fotos. | The check after upload is set to “Off” for this profile. Unchecked photos are not offered here. Set at least “Low” in the profile; newly backed-up photos appear from the next sync on. |
-| 529 | `free_intro_folder` | Löscht Dateien auf dem Handy, die nachweislich unverändert auf dem PC liegen. Auf dem PC bleiben sie erhalten. Ordner-Dateien kommen nicht in einen Papierkorb, sie werden nach der Prüfung direkt gelöscht. | Deletes files on the mobile that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check. |
-| 530 | `free_selection` | Auswahl | Selection |
-| 531 | `free_profile` | Profil | Profile |
-| 532 | `free_older_taken` | Älter als (Aufnahmedatum) | Older than (date taken) |
-| 533 | `free_older_modified` | Älter als (Änderungsdatum) | Older than (date modified) |
-| 534 | `free_any` | egal | any |
-| 535 | `free_folders` | Ordner | Folders |
-| 536 | `free_all` | Alle | All |
-| 537 | `free_n_folders (one)` | %1$s Ordner | %1$s folder |
-| 538 | `free_n_folders (other)` | %1$s Ordner | %1$s folders |
-| 539 | `free_less` | Weitere Kriterien ausblenden | Hide more criteria |
-| 540 | `free_more` | Weitere Kriterien… | More criteria… |
-| 541 | `free_types` | Dateitypen | File types |
-| 542 | `free_min_size` | Grösse ab | Minimum size |
-| 543 | `free_no_minimum` | Kein Minimum | No minimum |
-| 544 | `free_exclude` | Ausnehmen | Exclude |
-| 545 | `free_nothing` | Nichts | Nothing |
-| 546 | `free_n_patterns (one)` | %1$s Muster | %1$s pattern |
-| 547 | `free_n_patterns (other)` | %1$s Muster | %1$s patterns |
-| 548 | `free_keep_favorites` | Favoriten behalten | Keep favorites |
-| 549 | `free_keep_favorites_sub` | In der Galerie als Favorit markierte Fotos bleiben auf dem Handy. | Photos marked as favorite in the gallery stay on the mobile. |
-| 550 | `free_favorites_android11` | Favoriten kann Android erst ab Version 11 melden. | Android can only report favorites from version 11. |
-| 551 | `free_matching (one)` | Passend: %1$s Datei · %2$s | Matching: %1$s file · %2$s |
-| 552 | `free_matching (other)` | Passend: %1$s Dateien · %2$s | Matching: %1$s files · %2$s |
-| 553 | `free_deselected` | %1$s in der Vorschau abgewählt. | %1$s deselected in the preview. |
-| 554 | `free_not_backed_up (one)` | %1$s passende Datei ist (noch) nicht gesichert und bleibt. | %1$s matching file is not backed up (yet) and stays. |
-| 555 | `free_not_backed_up (other)` | %1$s passende Dateien sind (noch) nicht gesichert und bleiben. | %1$s matching files are not backed up (yet) and stay. |
-| 556 | `free_favorites_kept (one)` | %1$s Favorit bleibt. | %1$s favorite stays. |
-| 557 | `free_favorites_kept (other)` | %1$s Favoriten bleiben. | %1$s favorites stay. |
-| 558 | `free_preview_hide` | Vorschau ausblenden | Hide preview |
-| 559 | `free_preview` | Vorschau | Preview |
-| 560 | `free_run_trash` | Auf dem PC prüfen und in den Papierkorb | Check on the PC and move to trash |
-| 561 | `free_run_delete` | Auf dem PC prüfen und löschen | Check on the PC and delete |
-| 562 | `free_gallery_trash_hint` | Im Papierkorb der Galerie bleiben die Dateien 30 Tage wiederherstellbar. | Files in the gallery trash can be restored for 30 days. |
-| 563 | `free_result` | Ergebnis | Result |
-| 564 | `free_main_folder` | (Hauptordner) | (main folder) |
-| 565 | `free_live_photos` | Live-Fotos (Bild + Video) werden nur gemeinsam entfernt. | Live photos (image + video) are only removed together. |
-| 566 | `free_confirm_title (one)` | %1$s Datei löschen? | Delete %1$s file? |
-| 567 | `free_confirm_title (other)` | %1$s Dateien löschen? | Delete %1$s files? |
-| 568 | `free_confirm_text` | LeoSync prüft jede Datei auf dem PC (vorhanden, gleiche Grösse, gleicher Inhalt) und löscht sie danach endgültig vom Handy (%1$s). Auf dem PC bleiben sie erhalten. Was dort fehlt oder anders ist, bleibt auf dem Handy. | LeoSync checks every file on the PC (present, same size, same content) and then deletes it permanently from the mobile (%1$s). They are kept on the PC. Whatever is missing there or different stays on the mobile. |
-| 569 | `free_confirm_button` | Prüfen und löschen | Check and delete |
-| 570 | `free_direct_title` | Endgültig löschen? | Delete permanently? |
-| 571 | `free_direct_text (one)` | Android 10 hat keinen Papierkorb. %1$s Datei wird endgültig vom Handy gelöscht. Sie ist auf dem PC vorhanden. | Android 10 has no trash. %1$s file will be permanently deleted from the mobile. It is present on the PC. |
-| 572 | `free_direct_text (other)` | Android 10 hat keinen Papierkorb. %1$s Dateien werden endgültig vom Handy gelöscht. Sie sind auf dem PC vorhanden. | Android 10 has no trash. %1$s files will be permanently deleted from the mobile. They are present on the PC. |
-| 573 | `free_direct_done (one)` | %1$s Datei gelöscht | %1$s file deleted |
-| 574 | `free_direct_done (other)` | %1$s Dateien gelöscht | %1$s files deleted |
-| 575 | `free_age_title` | Älter als | Older than |
-| 576 | `free_apply` | Übernehmen | Apply |
-| 577 | `free_age_any` | Alter egal | Any age |
-| 578 | `free_age_older` | Älter als … | Older than … |
-| 579 | `free_amount` | Anzahl | Amount |
-| 580 | `free_all_folders` | Alle Ordner | All folders |
-| 581 | `free_no_subfolders` | Keine Unterordner. | No subfolders. |
-| 582 | `free_folder_includes_sub` | Ein Ordner schliesst seine Unterordner ein. | A folder includes its subfolders. |
-| 583 | `free_all_types` | Alle Typen | All types |
-| 584 | `free_own_extensions` | Eigene Endungen | Own extensions |
-| 585 | `free_own_extensions_example` | z. B. iso, bak | e.g. iso, bak |
-| 586 | `free_other_hint` | „%1$s“ = alles, was in keine der Gruppen passt. | “%1$s” = everything that fits none of the groups. |
-| 587 | `free_custom_value` | Eigener Wert | Custom value |
-| 588 | `free_exclude_hint` | Ein Muster pro Zeile. Passende Dateien bleiben immer auf dem Handy. | One pattern per line. Matching files always stay on the mobile. |
-| 589 | `free_exclude_examples` | Beispiele: *.kdbx (alle Dateien mit dieser Endung), Wichtig/** (alles im Ordner „Wichtig“), Thumbs.db | Examples: *.kdbx (all files with this extension), Important/** (everything in the folder “Important”), Thumbs.db |
-| 590 | `free_patterns` | Muster | Patterns |
-| 591 | `kind_images` | Bilder | Images |
-| 592 | `kind_videos` | Videos | Videos |
-| 593 | `kind_audio` | Audio | Audio |
-| 594 | `kind_documents` | Dokumente | Documents |
-| 595 | `kind_archives` | Archive | Archives |
-| 596 | `kind_other` | Andere | Other |
-| 597 | `unit_days` | Tage | Days |
-| 598 | `unit_weeks` | Wochen | Weeks |
-| 599 | `unit_months` | Monate | Months |
-| 600 | `unit_years` | Jahre | Years |
-| 601 | `age_days (one)` | %1$s Tag | %1$s day |
-| 602 | `age_days (other)` | %1$s Tage | %1$s days |
-| 603 | `age_weeks (one)` | %1$s Woche | %1$s week |
-| 604 | `age_weeks (other)` | %1$s Wochen | %1$s weeks |
-| 605 | `age_months (one)` | %1$s Monat | %1$s month |
-| 606 | `age_months (other)` | %1$s Monate | %1$s months |
-| 607 | `age_years (one)` | %1$s Jahr | %1$s year |
-| 608 | `age_years (other)` | %1$s Jahre | %1$s years |
-| 609 | `free_enter_one_or_more` | Bitte 1 oder mehr eingeben. | Enter 1 or more. |
-| 610 | `free_none_match` | Keine Datei erfüllt die Auswahl oder ist bereits auf dem PC gesichert. Auswahl lockern oder zuerst synchronisieren. | No file matches, or none is backed up on the PC yet. Relax the selection or sync first. |
-| 611 | `free_no_trash_android10` | Android 10 hat keinen Papierkorb: Dateien werden endgültig vom Handy gelöscht. | Android 10 has no trash: files are permanently deleted from the mobile. |
-| 612 | `free_deleted_from_mobile (one)` | %1$s Datei auf dem PC bestätigt und vom Handy gelöscht (%2$s frei). | %1$s file confirmed on the PC and deleted from the mobile (%2$s freed). |
-| 613 | `free_deleted_from_mobile (other)` | %1$s Dateien auf dem PC bestätigt und vom Handy gelöscht (%2$s frei). | %1$s files confirmed on the PC and deleted from the mobile (%2$s freed). |
-| 614 | `free_partial_result` | %1$d gelöscht, %2$d übersprungen. | %1$d deleted, %2$d skipped. |
-| 615 | `free_skipped_note (one)` | %1$s Datei übersprungen (nicht auf dem PC bestätigt) und bleibt auf dem Handy. | %1$s file skipped (not confirmed on the PC) and stays on the mobile. |
-| 616 | `free_skipped_note (other)` | %1$s Dateien übersprungen (nicht auf dem PC bestätigt) und bleiben auf dem Handy. | %1$s files skipped (not confirmed on the PC) and stay on the mobile. |
+| 519 | `free_hint` | Speicher freigeben gibt es nur bei Fotos-Profilen und bei Ordner-Profilen Handy → PC ohne „Löschungen übernehmen“. | Free up space is only available for photo profiles and for folder profiles phone → PC without “Apply deletions”. |
+| 520 | `free_no_profile` | Kein passendes Profil. | No suitable profile. |
+| 521 | `free_choose_profile` | Für welches Profil möchtest du Speicher freigeben? | For which profile do you want to free up space? |
+| 522 | `free_kind_photos` | Fotos & Videos | Photos & videos |
+| 523 | `free_kind_folder` | Ordner Handy → PC | Folder phone → PC |
+| 524 | `free_read_error` | Fehler beim Einlesen | Error while reading |
+| 525 | `free_moved_to_gallery_trash (one)` | %1$s Datei in den Papierkorb der Galerie verschoben. | %1$s file moved to the gallery trash. |
+| 526 | `free_moved_to_gallery_trash (other)` | %1$s Dateien in den Papierkorb der Galerie verschoben. | %1$s files moved to the gallery trash. |
+| 527 | `free_reading` | Lese Dateien… | Reading files… |
+| 528 | `free_checking_pc` | Prüfe auf dem PC… | Checking on the PC… |
+| 529 | `free_confirmed (one)` | %1$s Datei auf dem PC bestätigt. | %1$s file confirmed on the PC. |
+| 530 | `free_confirmed (other)` | %1$s Dateien auf dem PC bestätigt. | %1$s files confirmed on the PC. |
+| 531 | `free_missing (one)` | %1$s wurde auf dem PC nicht gefunden oder ist anders – sie bleibt. | %1$s was not found on the PC or is different – it stays. |
+| 532 | `free_missing (other)` | %1$s wurden auf dem PC nicht gefunden oder sind anders – sie bleiben. | %1$s were not found on the PC or are different – they stay. |
+| 533 | `free_changed (one)` | %1$s Datei wurde inzwischen auf dem Handy geändert – sie bleibt. | %1$s file was changed on the phone in the meantime – it stays. |
+| 534 | `free_changed (other)` | %1$s Dateien wurden inzwischen auf dem Handy geändert – sie bleiben. | %1$s files were changed on the phone in the meantime – they stay. |
+| 535 | `free_unreachable_hosts` | PC nicht erreichbar: %1$s. | PC not reachable: %1$s. |
+| 536 | `free_other_pc_hosts` | Es antwortet ein anderer oder noch nicht erkannter PC: %1$s. Es wurden keine Anmeldedaten gesendet. | A different or not yet recognised PC answers: %1$s. No sign-in data was sent. |
+| 537 | `free_check_failed` | Prüfung fehlgeschlagen: %1$s | Check failed: %1$s |
+| 538 | `free_deleted (one)` | %1$s Datei gelöscht, %2$s frei. | %1$s file deleted, %2$s freed. |
+| 539 | `free_deleted (other)` | %1$s Dateien gelöscht, %2$s frei. | %1$s files deleted, %2$s freed. |
+| 540 | `free_folders_removed (one)` | %1$s leerer Ordner entfernt. | %1$s empty folder removed. |
+| 541 | `free_folders_removed (other)` | %1$s leere Ordner entfernt. | %1$s empty folders removed. |
+| 542 | `free_kept (one)` | %1$s Datei bleibt (auf dem PC nicht gefunden, anders oder inzwischen geändert). | %1$s file stays (not found on the PC, different or changed in the meantime). |
+| 543 | `free_kept (other)` | %1$s Dateien bleiben (auf dem PC nicht gefunden, anders oder inzwischen geändert). | %1$s files stay (not found on the PC, different or changed in the meantime). |
+| 544 | `free_pc_lost` | Der PC war nicht (mehr) erreichbar. | The PC was not (or no longer) reachable. |
+| 545 | `free_intro_photos` | Verschiebt Fotos und Videos, die nachweislich auf dem PC gesichert sind, in den Papierkorb der Galerie. Vorher prüft LeoSync jede Datei auf dem PC. Was dort fehlt oder anders ist, bleibt. | Moves photos and videos that are verifiably backed up on the PC to the gallery trash. Before that LeoSync checks every file on the PC. Whatever is missing there or different stays. |
+| 546 | `free_verify_off_hint` | Die Prüfung nach dem Hochladen steht bei diesem Profil auf „Aus“. Ungeprüfte Fotos werden hier nicht angeboten. Stelle im Profil mindestens „Wenig“ ein; ab der nächsten Synchronisierung erscheinen neu gesicherte Fotos. | The check after upload is set to “Off” for this profile. Unchecked photos are not offered here. Set at least “Low” in the profile; newly backed-up photos appear from the next sync on. |
+| 547 | `free_intro_folder` | Löscht Dateien auf dem Handy, die nachweislich unverändert auf dem PC liegen. Auf dem PC bleiben sie erhalten. Ordner-Dateien kommen nicht in einen Papierkorb, sie werden nach der Prüfung direkt gelöscht. | Deletes files on the phone that are verifiably unchanged on the PC. They are kept on the PC. Folder files do not go to a trash, they are deleted directly after the check. |
+| 548 | `free_selection` | Auswahl | Selection |
+| 549 | `free_profile` | Profil | Profile |
+| 550 | `free_older_taken` | Älter als (Aufnahmedatum) | Older than (date taken) |
+| 551 | `free_older_modified` | Älter als (Änderungsdatum) | Older than (date modified) |
+| 552 | `free_any` | egal | any |
+| 553 | `free_folders` | Ordner | Folders |
+| 554 | `free_all` | Alle | All |
+| 555 | `free_n_folders (one)` | %1$s Ordner | %1$s folder |
+| 556 | `free_n_folders (other)` | %1$s Ordner | %1$s folders |
+| 557 | `free_less` | Weitere Kriterien ausblenden | Hide more criteria |
+| 558 | `free_more` | Weitere Kriterien… | More criteria… |
+| 559 | `free_types` | Dateitypen | File types |
+| 560 | `free_min_size` | Grösse ab | Minimum size |
+| 561 | `free_no_minimum` | Kein Minimum | No minimum |
+| 562 | `free_exclude` | Ausnehmen | Exclude |
+| 563 | `free_nothing` | Nichts | Nothing |
+| 564 | `free_n_patterns (one)` | %1$s Muster | %1$s pattern |
+| 565 | `free_n_patterns (other)` | %1$s Muster | %1$s patterns |
+| 566 | `free_keep_favorites` | Favoriten behalten | Keep favorites |
+| 567 | `free_keep_favorites_sub` | In der Galerie als Favorit markierte Fotos bleiben auf dem Handy. | Photos marked as favorite in the gallery stay on the phone. |
+| 568 | `free_favorites_android11` | Favoriten kann Android erst ab Version 11 melden. | Android can only report favorites from version 11. |
+| 569 | `free_matching (one)` | Passend: %1$s Datei · %2$s | Matching: %1$s file · %2$s |
+| 570 | `free_matching (other)` | Passend: %1$s Dateien · %2$s | Matching: %1$s files · %2$s |
+| 571 | `free_deselected` | %1$s in der Vorschau abgewählt. | %1$s deselected in the preview. |
+| 572 | `free_not_backed_up (one)` | %1$s passende Datei ist (noch) nicht gesichert und bleibt. | %1$s matching file is not backed up (yet) and stays. |
+| 573 | `free_not_backed_up (other)` | %1$s passende Dateien sind (noch) nicht gesichert und bleiben. | %1$s matching files are not backed up (yet) and stay. |
+| 574 | `free_favorites_kept (one)` | %1$s Favorit bleibt. | %1$s favorite stays. |
+| 575 | `free_favorites_kept (other)` | %1$s Favoriten bleiben. | %1$s favorites stay. |
+| 576 | `free_preview_hide` | Vorschau ausblenden | Hide preview |
+| 577 | `free_preview` | Vorschau | Preview |
+| 578 | `free_run_trash` | Auf dem PC prüfen und in den Papierkorb | Check on the PC and move to trash |
+| 579 | `free_run_delete` | Auf dem PC prüfen und löschen | Check on the PC and delete |
+| 580 | `free_gallery_trash_hint` | Im Papierkorb der Galerie bleiben die Dateien 30 Tage wiederherstellbar. | Files in the gallery trash can be restored for 30 days. |
+| 581 | `free_result` | Ergebnis | Result |
+| 582 | `free_main_folder` | (Hauptordner) | (main folder) |
+| 583 | `free_live_photos` | Live-Fotos (Bild + Video) werden nur gemeinsam entfernt. | Live photos (image + video) are only removed together. |
+| 584 | `free_confirm_title (one)` | %1$s Datei löschen? | Delete %1$s file? |
+| 585 | `free_confirm_title (other)` | %1$s Dateien löschen? | Delete %1$s files? |
+| 586 | `free_confirm_text` | LeoSync prüft jede Datei auf dem PC (vorhanden, gleiche Grösse, gleicher Inhalt) und löscht sie danach endgültig vom Handy (%1$s). Auf dem PC bleiben sie erhalten. Was dort fehlt oder anders ist, bleibt auf dem Handy. | LeoSync checks every file on the PC (present, same size, same content) and then deletes it permanently from the phone (%1$s). They are kept on the PC. Whatever is missing there or different stays on the phone. |
+| 587 | `free_confirm_button` | Prüfen und löschen | Check and delete |
+| 588 | `free_direct_title` | Endgültig löschen? | Delete permanently? |
+| 589 | `free_direct_text (one)` | Android 10 hat keinen Papierkorb. %1$s Datei wird endgültig vom Handy gelöscht. Sie ist auf dem PC vorhanden. | Android 10 has no trash. %1$s file will be permanently deleted from the phone. It is present on the PC. |
+| 590 | `free_direct_text (other)` | Android 10 hat keinen Papierkorb. %1$s Dateien werden endgültig vom Handy gelöscht. Sie sind auf dem PC vorhanden. | Android 10 has no trash. %1$s files will be permanently deleted from the phone. They are present on the PC. |
+| 591 | `free_direct_done (one)` | %1$s Datei gelöscht | %1$s file deleted |
+| 592 | `free_direct_done (other)` | %1$s Dateien gelöscht | %1$s files deleted |
+| 593 | `free_age_title` | Älter als | Older than |
+| 594 | `free_apply` | Übernehmen | Apply |
+| 595 | `free_age_any` | Alter egal | Any age |
+| 596 | `free_age_older` | Älter als … | Older than … |
+| 597 | `free_amount` | Anzahl | Amount |
+| 598 | `free_all_folders` | Alle Ordner | All folders |
+| 599 | `free_no_subfolders` | Keine Unterordner. | No subfolders. |
+| 600 | `free_folder_includes_sub` | Ein Ordner schliesst seine Unterordner ein. | A folder includes its subfolders. |
+| 601 | `free_all_types` | Alle Typen | All types |
+| 602 | `free_own_extensions` | Eigene Endungen | Own extensions |
+| 603 | `free_own_extensions_example` | z. B. iso, bak | e.g. iso, bak |
+| 604 | `free_other_hint` | „%1$s“ = alles, was in keine der Gruppen passt. | “%1$s” = everything that fits none of the groups. |
+| 605 | `free_custom_value` | Eigener Wert | Custom value |
+| 606 | `free_exclude_hint` | Ein Muster pro Zeile. Passende Dateien bleiben immer auf dem Handy. | One pattern per line. Matching files always stay on the phone. |
+| 607 | `free_exclude_examples` | Beispiele: *.kdbx (alle Dateien mit dieser Endung), Wichtig/** (alles im Ordner „Wichtig“), Thumbs.db | Examples: *.kdbx (all files with this extension), Important/** (everything in the folder “Important”), Thumbs.db |
+| 608 | `free_patterns` | Muster | Patterns |
+| 609 | `kind_images` | Bilder | Images |
+| 610 | `kind_videos` | Videos | Videos |
+| 611 | `kind_audio` | Audio | Audio |
+| 612 | `kind_documents` | Dokumente | Documents |
+| 613 | `kind_archives` | Archive | Archives |
+| 614 | `kind_other` | Andere | Other |
+| 615 | `unit_days` | Tage | Days |
+| 616 | `unit_weeks` | Wochen | Weeks |
+| 617 | `unit_months` | Monate | Months |
+| 618 | `unit_years` | Jahre | Years |
+| 619 | `age_days (one)` | %1$s Tag | %1$s day |
+| 620 | `age_days (other)` | %1$s Tage | %1$s days |
+| 621 | `age_weeks (one)` | %1$s Woche | %1$s week |
+| 622 | `age_weeks (other)` | %1$s Wochen | %1$s weeks |
+| 623 | `age_months (one)` | %1$s Monat | %1$s month |
+| 624 | `age_months (other)` | %1$s Monate | %1$s months |
+| 625 | `age_years (one)` | %1$s Jahr | %1$s year |
+| 626 | `age_years (other)` | %1$s Jahre | %1$s years |
+| 627 | `free_enter_one_or_more` | Bitte 1 oder mehr eingeben. | Enter 1 or more. |
+| 628 | `free_none_match` | Keine Datei erfüllt die Auswahl oder ist bereits auf dem PC gesichert. Auswahl lockern oder zuerst synchronisieren. | No file matches, or none is backed up on the PC yet. Relax the selection or sync first. |
+| 629 | `free_no_trash_android10` | Android 10 hat keinen Papierkorb: Dateien werden endgültig vom Handy gelöscht. | Android 10 has no trash: files are permanently deleted from the phone. |
+| 630 | `free_deleted_from_mobile (one)` | %1$s Datei auf dem PC bestätigt und vom Handy gelöscht (%2$s frei). | %1$s file confirmed on the PC and deleted from the phone (%2$s freed). |
+| 631 | `free_deleted_from_mobile (other)` | %1$s Dateien auf dem PC bestätigt und vom Handy gelöscht (%2$s frei). | %1$s files confirmed on the PC and deleted from the phone (%2$s freed). |
+| 632 | `free_partial_result` | %1$d gelöscht, %2$d übersprungen. | %1$d deleted, %2$d skipped. |
+| 633 | `free_skipped_note (one)` | %1$s Datei übersprungen (nicht auf dem PC bestätigt) und bleibt auf dem Handy. | %1$s file skipped (not confirmed on the PC) and stays on the phone. |
+| 634 | `free_skipped_note (other)` | %1$s Dateien übersprungen (nicht auf dem PC bestätigt) und bleiben auf dem Handy. | %1$s files skipped (not confirmed on the PC) and stay on the phone. |
 
 ## Papierkorb
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 617 | `side_phone` | Handy | Mobile |
-| 618 | `side_pc` | PC | PC |
-| 619 | `trash_switch_profile` | Profil wechseln | Switch profile |
-| 620 | `trash_choose_profile` | Welchen Papierkorb möchtest du öffnen? | Which trash do you want to open? |
-| 621 | `trash_photos_hint` | Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie und werden in der Galerie-App geleert. | Photo profiles have no trash of their own: removed photos are in the gallery trash and are emptied in the gallery app. |
-| 622 | `intervention_waiting` | Wird nach der laufenden Synchronisierung ausgeführt. | Will run after the current sync. |
-| 623 | `intervention_waiting_hint` | Sie können diese Ansicht verlassen. Beendet das System LeoSync, bevor die Aktion an der Reihe ist, wird nichts gelöscht. | You can leave this view. If the system ends LeoSync before it is the turn of this action, nothing is deleted. |
-| 624 | `intervention_running` | Wird ausgeführt… | Running… |
-| 625 | `intervention_running_hint` | Sie können diese Ansicht verlassen. Das Ergebnis erscheint hier oder als Hinweis. | You can leave this view. The result is shown here or as a notice. |
-| 626 | `intervention_already_pending` | Für dieses Profil wartet oder läuft bereits eine Aktion. | Another action for this profile is already waiting or running. |
-| 627 | `intervention_failed` | Fehlgeschlagen: %1$s | Failed: %1$s |
-| 628 | `trash_nothing_deleted` | Nichts gelöscht: Die Einträge sind nicht mehr vorhanden, haben sich geändert oder sind zum Wiederherstellen vorgemerkt. | Nothing deleted: the entries are gone, have changed or are reserved for restoring. |
-| 629 | `trash_reading` | Lese den Papierkorb auf Handy und PC… | Reading the trash on mobile and PC… |
-| 630 | `trash_phone_summary (one)` | Handy: %1$s Datei, %2$s | Mobile: %1$s file, %2$s |
-| 631 | `trash_phone_summary (other)` | Handy: %1$s Dateien, %2$s | Mobile: %1$s files, %2$s |
-| 632 | `trash_pc_summary (one)` | PC: %1$s Datei, %2$s | PC: %1$s file, %2$s |
-| 633 | `trash_pc_summary (other)` | PC: %1$s Dateien, %2$s | PC: %1$s files, %2$s |
-| 634 | `trash_pc_unreachable` | PC: nicht erreichbar | PC: not reachable |
-| 635 | `trash_pc_unreachable_hint` | Einträge aus dem PC-Papierkorb fehlen in der Liste. Wiederherstellen und Löschen auf dem PC werden vorgemerkt und bei der nächsten Synchronisierung mit erreichbarem PC ausgeführt. | Entries from the PC trash are missing from the list. Restoring and deleting on the PC are scheduled and carried out at the next sync with a reachable PC. |
-| 636 | `trash_cleanup_button` | Papierkorb aufräumen… | Clean up trash… |
-| 637 | `trash_reload` | Neu einlesen | Reload |
-| 638 | `trash_empty` | Der Papierkorb ist leer. | The trash is empty. |
-| 639 | `trash_intro` | Hier liegen gelöschte Dateien und ältere Versionen. Markiere Einträge, um sie wiederherzustellen oder endgültig zu löschen. | Deleted files and older versions are kept here. Mark entries to restore them or delete them permanently. |
-| 640 | `trash_day` | Tag | Day |
-| 641 | `trash_all_days` | Alle Tage | All days |
-| 642 | `trash_select_day` | Alles vom %1$s auswählen | Select everything from %1$s |
-| 643 | `trash_whole_folder` | Neueste Version je Datei wählen | Select newest version of each file |
-| 644 | `trash_older_version` | ältere Version | older version |
-| 645 | `trash_deleted` | gelöscht | deleted |
-| 646 | `trash_reserved` | zum Wiederherstellen vorgemerkt | scheduled for restore |
-| 647 | `trash_selected` | %1$s ausgewählt · %2$s | %1$s selected · %2$s |
-| 648 | `trash_clear_selection` | Auswahl aufheben | Clear selection |
-| 649 | `trash_restore` | Wiederherstellen | Restore |
-| 650 | `trash_purged_pc_pending` | Handy geleert – PC wird bei der nächsten Synchronisierung mit PC geleert | Mobile emptied – the PC will be emptied at the next sync with the PC |
-| 651 | `trash_purged` | Papierkorb aufgeräumt | Trash cleaned up |
-| 652 | `trash_delete_title (one)` | %1$s Datei endgültig löschen? | Delete %1$s file permanently? |
-| 653 | `trash_delete_title (other)` | %1$s Dateien endgültig löschen? | Delete %1$s files permanently? |
-| 654 | `trash_delete_text` | Die markierten Einträge werden aus dem Papierkorb gelöscht und lassen sich danach nicht mehr wiederherstellen. | The marked entries are deleted from the trash and can no longer be restored afterwards. |
-| 655 | `trash_delete_pc_later` | Der PC ist nicht erreichbar: Dort wird bei der nächsten Synchronisierung mit PC gelöscht. | The PC is not reachable: it will be deleted there at the next sync with the PC. |
-| 656 | `trash_deleted_pc_pending` | Gelöscht – PC folgt bei der nächsten Synchronisierung mit PC | Deleted – the PC follows at the next sync with the PC |
-| 657 | `trash_deleted_done` | Endgültig gelöscht | Permanently deleted |
-| 658 | `trash_restore_title (one)` | %1$s Datei wiederherstellen? | Restore %1$s file? |
-| 659 | `trash_restore_title (other)` | %1$s Dateien wiederherstellen? | Restore %1$s files? |
-| 660 | `trash_restore_text` | Die aktuellen Versionen kommen zuerst in den Papierkorb. Die gewählten Versionen werden auf Handy und PC zurückgeschrieben. | The current versions go to the trash first. The chosen versions are written back on mobile and PC. |
-| 661 | `trash_restore_now` | Das passiert gleich mit einer Synchronisierung. | This happens right away with a sync. |
-| 662 | `trash_restore_later` | Der PC ist nicht erreichbar: Das passiert bei der nächsten Synchronisierung mit PC. | The PC is not reachable: this happens at the next sync with the PC. |
-| 663 | `trash_cleanup` | Papierkorb aufräumen | Clean up trash |
-| 664 | `trash_cleanup_hint` | Endgültig gelöschte Dateien lassen sich nicht mehr wiederherstellen. | Permanently deleted files can no longer be restored. |
-| 665 | `trash_what` | Was? | What? |
-| 666 | `trash_mode_older` | Älter als … Tage | Older than … days |
-| 667 | `trash_mode_dates` | Einzelne Tage | Single days |
-| 668 | `trash_no_days` | Keine Tage im Papierkorb. | No days in the trash. |
-| 669 | `trash_none_chosen` | Keine gewählt | None chosen |
-| 670 | `trash_days_chosen (one)` | %1$s Tag gewählt | %1$s day chosen |
-| 671 | `trash_days_chosen (other)` | %1$s Tage gewählt | %1$s days chosen |
-| 672 | `trash_mode_all` | Alles | Everything |
-| 673 | `trash_where` | Wo? | Where? |
-| 674 | `trash_phone_only_hint` | „%1$s“ schafft Platz auf dem Handy; die Kopien im PC-Papierkorb bleiben erhalten. | “%1$s” frees up space on the mobile; the copies in the PC trash are kept. |
-| 675 | `trash_choose_what` | Bitte auswählen, was geleert werden soll. | Please choose what should be emptied. |
-| 676 | `trash_affects (one)` | Betrifft %1$s Datei (%2$s) | Affects %1$s file (%2$s) |
-| 677 | `trash_affects (other)` | Betrifft %1$s Dateien (%2$s) | Affects %1$s files (%2$s) |
-| 678 | `trash_affects_pc_later` | – dazu der PC-Papierkorb, sobald der PC erreichbar ist | – plus the PC trash as soon as the PC is reachable |
-| 679 | `trash_pc_later_hint` | Der PC ist nicht erreichbar. Das Handy wird sofort geleert, der PC bei der nächsten Synchronisierung mit PC. | The PC is not reachable. The mobile is emptied right away, the PC at the next sync with the PC. |
-| 680 | `trash_kept_reserved (one)` | %1$s Datei ist zum Wiederherstellen vorgemerkt und bleibt. | %1$s file is scheduled for restore and stays. |
-| 681 | `trash_kept_reserved (other)` | %1$s Dateien sind zum Wiederherstellen vorgemerkt und bleiben. | %1$s files are scheduled for restore and stay. |
-| 682 | `trash_purge_confirm (one)` | %1$s Datei (%2$s) wird endgültig gelöscht (%3$s) | %1$s file (%2$s) will be permanently deleted (%3$s) |
-| 683 | `trash_purge_confirm (other)` | %1$s Dateien (%2$s) werden endgültig gelöscht (%3$s) | %1$s files (%2$s) will be permanently deleted (%3$s) |
-| 684 | `trash_purge_confirm_pc` | – auf dem PC bei der nächsten Synchronisierung mit PC | – on the PC at the next sync with the PC |
-| 685 | `trash_purge_irreversible` | Das lässt sich nicht rückgängig machen. | This cannot be undone. |
-| 686 | `trash_pick_days` | Tage wählen | Choose days |
-| 687 | `trash_pick_day` | Tag wählen | Choose day |
-| 688 | `trash_none` | Keine | None |
-| 689 | `trash_day_files (one)` | %1$s Datei · %2$s | %1$s file · %2$s |
-| 690 | `trash_day_files (other)` | %1$s Dateien · %2$s | %1$s files · %2$s |
-| 691 | `trash_days_invalid` | Bitte Anzahl Tage eingeben (1 oder mehr). | Enter a number of days (1 or more). |
-| 692 | `trash_delete_title_one` | «%1$s» endgültig löschen? | Delete “%1$s” permanently? |
+| 635 | `side_phone` | Handy | Phone |
+| 636 | `side_pc` | PC | PC |
+| 637 | `trash_switch_profile` | Profil wechseln | Switch profile |
+| 638 | `trash_choose_profile` | Welchen Papierkorb möchtest du öffnen? | Which trash do you want to open? |
+| 639 | `trash_photos_hint` | Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie und werden in der Galerie-App geleert. | Photo profiles have no trash of their own: removed photos are in the gallery trash and are emptied in the gallery app. |
+| 640 | `intervention_waiting` | Wird nach der laufenden Synchronisierung ausgeführt. | Will run after the current sync. |
+| 641 | `intervention_waiting_hint` | Sie können diese Ansicht verlassen. Beendet das System LeoSync, bevor die Aktion an der Reihe ist, wird nichts gelöscht. | You can leave this view. If the system ends LeoSync before it is the turn of this action, nothing is deleted. |
+| 642 | `intervention_running` | Wird ausgeführt… | Running… |
+| 643 | `intervention_running_hint` | Sie können diese Ansicht verlassen. Das Ergebnis erscheint hier oder als Hinweis. | You can leave this view. The result is shown here or as a notice. |
+| 644 | `intervention_already_pending` | Für dieses Profil wartet oder läuft bereits eine Aktion. | Another action for this profile is already waiting or running. |
+| 645 | `intervention_failed` | Fehlgeschlagen: %1$s | Failed: %1$s |
+| 646 | `trash_nothing_deleted` | Nichts gelöscht: Die Einträge sind nicht mehr vorhanden, haben sich geändert oder sind zum Wiederherstellen vorgemerkt. | Nothing deleted: the entries are gone, have changed or are reserved for restoring. |
+| 647 | `trash_reading` | Lese den Papierkorb auf Handy und PC… | Reading the trash on phone and PC… |
+| 648 | `trash_phone_summary (one)` | Handy: %1$s Datei, %2$s | Phone: %1$s file, %2$s |
+| 649 | `trash_phone_summary (other)` | Handy: %1$s Dateien, %2$s | Phone: %1$s files, %2$s |
+| 650 | `trash_pc_summary (one)` | PC: %1$s Datei, %2$s | PC: %1$s file, %2$s |
+| 651 | `trash_pc_summary (other)` | PC: %1$s Dateien, %2$s | PC: %1$s files, %2$s |
+| 652 | `trash_pc_unreachable` | PC: nicht erreichbar | PC: not reachable |
+| 653 | `trash_pc_unreachable_hint` | Einträge aus dem PC-Papierkorb fehlen in der Liste. Wiederherstellen und Löschen auf dem PC werden vorgemerkt und bei der nächsten Synchronisierung mit erreichbarem PC ausgeführt. | Entries from the PC trash are missing from the list. Restoring and deleting on the PC are scheduled and carried out at the next sync with a reachable PC. |
+| 654 | `trash_cleanup_button` | Papierkorb aufräumen… | Clean up trash… |
+| 655 | `trash_reload` | Neu einlesen | Reload |
+| 656 | `trash_empty` | Der Papierkorb ist leer. | The trash is empty. |
+| 657 | `trash_intro` | Hier liegen gelöschte Dateien und ältere Versionen. Markiere Einträge, um sie wiederherzustellen oder endgültig zu löschen. | Deleted files and older versions are kept here. Mark entries to restore them or delete them permanently. |
+| 658 | `trash_day` | Tag | Day |
+| 659 | `trash_all_days` | Alle Tage | All days |
+| 660 | `trash_select_day` | Alles vom %1$s auswählen | Select everything from %1$s |
+| 661 | `trash_whole_folder` | Neueste Version je Datei wählen | Select newest version of each file |
+| 662 | `trash_older_version` | ältere Version | older version |
+| 663 | `trash_deleted` | gelöscht | deleted |
+| 664 | `trash_reserved` | zum Wiederherstellen vorgemerkt | scheduled for restore |
+| 665 | `trash_selected` | %1$s ausgewählt · %2$s | %1$s selected · %2$s |
+| 666 | `trash_clear_selection` | Auswahl aufheben | Clear selection |
+| 667 | `trash_restore` | Wiederherstellen | Restore |
+| 668 | `trash_purged_pc_pending` | Handy geleert – PC wird bei der nächsten Synchronisierung mit PC geleert | Phone emptied – the PC will be emptied at the next sync with the PC |
+| 669 | `trash_purged` | Papierkorb aufgeräumt | Trash cleaned up |
+| 670 | `trash_delete_title (one)` | %1$s Datei endgültig löschen? | Delete %1$s file permanently? |
+| 671 | `trash_delete_title (other)` | %1$s Dateien endgültig löschen? | Delete %1$s files permanently? |
+| 672 | `trash_delete_text` | Die markierten Einträge werden aus dem Papierkorb gelöscht und lassen sich danach nicht mehr wiederherstellen. | The marked entries are deleted from the trash and can no longer be restored afterwards. |
+| 673 | `trash_delete_pc_later` | Der PC ist nicht erreichbar: Dort wird bei der nächsten Synchronisierung mit PC gelöscht. | The PC is not reachable: it will be deleted there at the next sync with the PC. |
+| 674 | `trash_deleted_pc_pending` | Gelöscht – PC folgt bei der nächsten Synchronisierung mit PC | Deleted – the PC follows at the next sync with the PC |
+| 675 | `trash_deleted_done` | Endgültig gelöscht | Permanently deleted |
+| 676 | `trash_restore_title (one)` | %1$s Datei wiederherstellen? | Restore %1$s file? |
+| 677 | `trash_restore_title (other)` | %1$s Dateien wiederherstellen? | Restore %1$s files? |
+| 678 | `trash_restore_text` | Die aktuellen Versionen kommen zuerst in den Papierkorb. Die gewählten Versionen werden auf Handy und PC zurückgeschrieben. | The current versions go to the trash first. The chosen versions are written back on phone and PC. |
+| 679 | `trash_restore_now` | Das passiert gleich mit einer Synchronisierung. | This happens right away with a sync. |
+| 680 | `trash_restore_later` | Der PC ist nicht erreichbar: Das passiert bei der nächsten Synchronisierung mit PC. | The PC is not reachable: this happens at the next sync with the PC. |
+| 681 | `trash_cleanup` | Papierkorb aufräumen | Clean up trash |
+| 682 | `trash_cleanup_hint` | Endgültig gelöschte Dateien lassen sich nicht mehr wiederherstellen. | Permanently deleted files can no longer be restored. |
+| 683 | `trash_what` | Was? | What? |
+| 684 | `trash_mode_older` | Älter als … Tage | Older than … days |
+| 685 | `trash_mode_dates` | Einzelne Tage | Single days |
+| 686 | `trash_no_days` | Keine Tage im Papierkorb. | No days in the trash. |
+| 687 | `trash_none_chosen` | Keine gewählt | None chosen |
+| 688 | `trash_days_chosen (one)` | %1$s Tag gewählt | %1$s day chosen |
+| 689 | `trash_days_chosen (other)` | %1$s Tage gewählt | %1$s days chosen |
+| 690 | `trash_mode_all` | Alles | Everything |
+| 691 | `trash_where` | Wo? | Where? |
+| 692 | `trash_phone_only_hint` | „%1$s“ schafft Platz auf dem Handy; die Kopien im PC-Papierkorb bleiben erhalten. | “%1$s” frees up space on the phone; the copies in the PC trash are kept. |
+| 693 | `trash_choose_what` | Bitte auswählen, was geleert werden soll. | Please choose what should be emptied. |
+| 694 | `trash_affects (one)` | Betrifft %1$s Datei (%2$s) | Affects %1$s file (%2$s) |
+| 695 | `trash_affects (other)` | Betrifft %1$s Dateien (%2$s) | Affects %1$s files (%2$s) |
+| 696 | `trash_affects_pc_later` | – dazu der PC-Papierkorb, sobald der PC erreichbar ist | – plus the PC trash as soon as the PC is reachable |
+| 697 | `trash_pc_later_hint` | Der PC ist nicht erreichbar. Das Handy wird sofort geleert, der PC bei der nächsten Synchronisierung mit PC. | The PC is not reachable. The phone is emptied right away, the PC at the next sync with the PC. |
+| 698 | `trash_kept_reserved (one)` | %1$s Datei ist zum Wiederherstellen vorgemerkt und bleibt. | %1$s file is scheduled for restore and stays. |
+| 699 | `trash_kept_reserved (other)` | %1$s Dateien sind zum Wiederherstellen vorgemerkt und bleiben. | %1$s files are scheduled for restore and stay. |
+| 700 | `trash_purge_confirm (one)` | %1$s Datei (%2$s) wird endgültig gelöscht (%3$s) | %1$s file (%2$s) will be permanently deleted (%3$s) |
+| 701 | `trash_purge_confirm (other)` | %1$s Dateien (%2$s) werden endgültig gelöscht (%3$s) | %1$s files (%2$s) will be permanently deleted (%3$s) |
+| 702 | `trash_purge_confirm_pc` | – auf dem PC bei der nächsten Synchronisierung mit PC | – on the PC at the next sync with the PC |
+| 703 | `trash_purge_irreversible` | Das lässt sich nicht rückgängig machen. | This cannot be undone. |
+| 704 | `trash_pick_days` | Tage wählen | Choose days |
+| 705 | `trash_pick_day` | Tag wählen | Choose day |
+| 706 | `trash_none` | Keine | None |
+| 707 | `trash_day_files (one)` | %1$s Datei · %2$s | %1$s file · %2$s |
+| 708 | `trash_day_files (other)` | %1$s Dateien · %2$s | %1$s files · %2$s |
+| 709 | `trash_days_invalid` | Bitte Anzahl Tage eingeben (1 oder mehr). | Enter a number of days (1 or more). |
+| 710 | `trash_delete_title_one` | «%1$s» endgültig löschen? | Delete “%1$s” permanently? |
 
 ## Ordner-Sync: Seiten
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 693 | `sides_both` | Handy und PC | Mobile and PC |
-| 694 | `sides_phone_only` | Nur Handy | Mobile only |
-| 695 | `sides_pc_only` | Nur PC | PC only |
-| 696 | `err_local_access_lost` | Kein Zugriff mehr auf den Handy-Ordner – bitte im Profil neu auswählen | No access to the mobile folder anymore – please choose it again in the profile |
+| 711 | `sides_both` | Handy und PC | Phone and PC |
+| 712 | `sides_phone_only` | Nur Handy | Phone only |
+| 713 | `sides_pc_only` | Nur PC | PC only |
+| 714 | `err_local_access_lost` | Kein Zugriff mehr auf den Handy-Ordner – bitte im Profil neu auswählen | No access to the phone folder anymore – please choose it again in the profile |
 
 ## Verlauf und Sicherung
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 697 | `log_export_file` | LeoSync-Verlauf_%1$s.txt | LeoSync-History_%1$s.txt |
-| 698 | `log_export_failed` | Export fehlgeschlagen: %1$s | Export failed: %1$s |
-| 699 | `log_share` | Verlauf teilen | Share history |
-| 700 | `log_clear` | Verlauf löschen | Delete history |
-| 701 | `log_filter_errors` | Fehler | Errors |
-| 702 | `log_filter_transfers` | Übertragungen | Transfers |
-| 703 | `log_empty` | Noch keine Einträge. | No entries yet. |
-| 704 | `log_empty_both` | Keine Läufe mit Fehlern oder Übertragungen. | No runs with errors or transfers. |
-| 705 | `log_empty_errors` | Keine Läufe mit Fehlern. | No runs with errors. |
-| 706 | `log_empty_transfers` | Keine Läufe mit Übertragungen. | No runs with transfers. |
-| 707 | `log_idle_group` | %1$s× geprüft – nichts zu tun | %1$s× checked – nothing to do |
-| 708 | `log_status_partial` | Teilweise | Partial |
-| 709 | `log_status_failed` | Fehler | Error |
-| 710 | `log_status_paused` | Pausiert | Paused |
-| 711 | `log_status_interrupted` | Unterbrochen | Interrupted |
-| 712 | `log_status_waiting` | Wartet auf dich | Waiting for you |
-| 713 | `log_status_running` | Läuft | Running |
-| 714 | `log_trigger` | Auslöser: %1$s | Trigger: %1$s |
-| 715 | `backup_exporting` | Exportiere… | Exporting… |
-| 716 | `backup_exported (one)` | Gesichert: %1$s Profil | Backed up: %1$s profile |
-| 717 | `backup_exported (other)` | Gesichert: %1$s Profile | Backed up: %1$s profiles |
-| 718 | `backup_exported_sync (one)` | %1$s Datei Synchronisierungsstatus | sync status of %1$s file |
-| 719 | `backup_exported_sync (other)` | %1$s Dateien Synchronisierungsstatus | sync status of %1$s files |
-| 720 | `backup_passwords_encrypted` | Passwörter verschlüsselt | passwords encrypted |
-| 721 | `backup_without_passwords` | ohne Passwörter | without passwords |
-| 722 | `backup_reading` | Lese Sicherung… | Reading backup… |
-| 723 | `backup_unreadable` | Sicherung nicht lesbar | Backup not readable |
-| 724 | `backup_file_unreadable` | Datei nicht lesbar: %1$s | File not readable: %1$s |
-| 725 | `backup_importing` | Importiere… | Importing… |
-| 726 | `backup_imported (one)` | %1$s Profil importiert | %1$s profile imported |
-| 727 | `backup_imported (other)` | %1$s Profile importiert | %1$s profiles imported |
-| 728 | `backup_imported_sync (one)` | Synchronisierungsstatus für %1$s Datei | sync status for %1$s file |
-| 729 | `backup_imported_sync (other)` | Synchronisierungsstatus für %1$s Dateien | sync status for %1$s files |
-| 730 | `backup_skipped_identical` | Übersprungen, weil schon vorhanden (gleiches Ziel und gleiche Quellen): %1$s | Skipped because already present (same target and same sources): %1$s |
-| 731 | `backup_overlapping` | Hinweis: Überschneidet sich mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner): %1$s | Note: overlaps with an existing profile (same target, shared source folders): %1$s |
-| 732 | `backup_skipped_layout_blocked` | Übersprungen, weil das Ziel schon von einem anderen Fotoprofil mit anderer Ordnerstruktur verwendet wird: %1$s | Skipped because the target is already used by another photo profile with a different folder structure: %1$s |
-| 733 | `backup_skipped_layout_unknown` | Nicht importiert, weil die Ordnerstruktur unbekannt ist (Sicherung aus einer neueren Version?): %1$s | Not imported because the folder structure is unknown (backup from a newer version?): %1$s |
-| 734 | `backup_without_password` | Passwort neu eingeben bei: %1$s | Enter the password again for: %1$s |
-| 735 | `backup_need_folder` | Handy-Ordner neu wählen bei: %1$s (Android überträgt die Ordner-Freigabe nicht). | Choose the mobile folder again for: %1$s (Android does not transfer the folder permission). |
-| 736 | `backup_import_failed` | Import fehlgeschlagen: %1$s | Import failed: %1$s |
-| 737 | `backup_title` | Sicherung | Backup |
-| 738 | `backup_hint` | Sichert Profile, Einstellungen, Ordner-Zuordnungen und auf Wunsch den Synchronisierungsstatus in eine Datei – z. B. vor einem Handywechsel oder einer Neuinstallation. | Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing mobiles or reinstalling. |
-| 739 | `backup_export` | Exportieren… | Export… |
-| 740 | `backup_import` | Importieren… | Import… |
-| 741 | `backup_export_title` | Sicherung exportieren | Export backup |
-| 742 | `backup_include_sync` | Synchronisierungsstatus mitsichern | Include sync status |
-| 743 | `backup_include_sync_sub` | Nach dem Import ist sofort bekannt, welche Dateien schon auf dem PC sind. | After the import it is known right away which files are already on the PC. |
-| 744 | `backup_password_optional` | Export-Passwort (optional) | Export password (optional) |
-| 745 | `backup_password_repeat` | Export-Passwort wiederholen | Repeat export password |
-| 746 | `backup_no_password_hint` | Ohne Export-Passwort enthält die Datei keine SMB-Passwörter; du gibst sie nach dem Import neu ein. | Without an export password the file contains no SMB passwords; you enter them again after the import. |
-| 747 | `backup_password_hint` | Die SMB-Passwörter werden mit diesem Passwort verschlüsselt. Ohne es lassen sie sich nicht wiederherstellen. | The SMB passwords are encrypted with this password. Without it they cannot be restored. |
-| 748 | `backup_choose_file` | Datei wählen… | Choose file… |
-| 749 | `backup_password` | Export-Passwort | Export password |
-| 750 | `backup_ask_password_hint` | Die Sicherung enthält verschlüsselte SMB-Passwörter. Ohne Export-Passwort werden die Profile trotzdem importiert, die Passwörter gibst du dann neu ein. | The backup contains encrypted SMB passwords. Without the export password the profiles are imported anyway, you then enter the passwords again. |
-| 751 | `backup_without_password_button` | Ohne Passwort | Without password |
-| 752 | `backup_import_title` | Sicherung importieren | Import backup |
-| 753 | `backup_created` | Erstellt: %1$s (LeoSync %2$s) | Created: %1$s (LeoSync %2$s) |
-| 754 | `backup_profiles` | Profile: %1$s | Profiles: %1$s |
-| 755 | `backup_sync_status (one)` | Synchronisierungsstatus: %1$s Datei | Sync status: %1$s file |
-| 756 | `backup_sync_status (other)` | Synchronisierungsstatus: %1$s Dateien | Sync status: %1$s files |
-| 757 | `backup_pw_taken` | SMB-Passwörter: werden übernommen | SMB passwords: will be taken over |
-| 758 | `backup_pw_wrong` | SMB-Passwörter: Export-Passwort fehlt oder ist falsch – Passwörter werden nicht übernommen | SMB passwords: export password missing or wrong – passwords are not taken over |
-| 759 | `backup_pw_none` | SMB-Passwörter: nicht enthalten | SMB passwords: not included |
-| 760 | `backup_replace_hint` | „Ersetzen“ löscht alle bisherigen Profile samt Synchronisierungsstatus und übernimmt auch die Einstellungen (nicht die Sprache der App, sie bleibt unverändert). „Hinzufügen“ legt die Profile zusätzlich an. | “Replace” deletes all existing profiles including sync status and also takes over the settings (not the app language, which stays as it is). “Add” creates the profiles in addition. |
-| 761 | `backup_replace` | Ersetzen | Replace |
-| 762 | `backup_import_done` | Import abgeschlossen | Import finished |
-| 763 | `backup_err_replace_rejected` | Ersetzen abgebrochen, nichts wurde gelöscht: Die Sicherung enthält Profile, die nicht importiert werden können (unbekannte Ordnerstruktur, Sicherung aus einer neueren Version?): %1$s | Replace cancelled, nothing was deleted: the backup contains profiles that cannot be imported (unknown folder structure, backup from a newer version?): %1$s |
-| 764 | `log_clear_title` | Gesamten Verlauf löschen? | Delete the whole history? |
-| 765 | `log_clear_text` | %1$d Einträge werden gelöscht und lassen sich danach nicht wiederherstellen. Mit «Verlauf teilen» kannst du sie vorher sichern. | %1$d entries will be deleted and cannot be restored. Use “Share history” first to keep a copy. |
-| 766 | `log_cleared` | Verlauf gelöscht | History deleted |
-| 767 | `log_undo` | Rückgängig | Undo |
-| 768 | `log_advice_missing` | Die Datei existiert auf dem Handy nicht mehr. Synchronisiere erneut; bleibt der Fehler, die Dateiliste im Profil prüfen. | The file no longer exists on the mobile. Sync again; if the error stays, check the file list in the profile. |
-| 769 | `log_advice_connection` | Verbindung zum PC prüfen (WLAN, Freigabe), dann erneut synchronisieren. | Check the connection to the PC (Wi-Fi, share), then sync again. |
-| 770 | `log_advice_unknown` | Synchronisiere erneut. Bleibt der Fehler, teile den Verlauf mit dem Entwickler. | Sync again. If the error stays, share the history with the developer. |
+| 715 | `log_export_file` | LeoSync-Verlauf_%1$s.txt | LeoSync-History_%1$s.txt |
+| 716 | `log_export_failed` | Export fehlgeschlagen: %1$s | Export failed: %1$s |
+| 717 | `log_share` | Verlauf teilen | Share history |
+| 718 | `log_clear` | Verlauf löschen | Delete history |
+| 719 | `log_filter_errors` | Fehler | Errors |
+| 720 | `log_filter_transfers` | Übertragungen | Transfers |
+| 721 | `log_empty` | Noch keine Einträge. | No entries yet. |
+| 722 | `log_empty_both` | Keine Läufe mit Fehlern oder Übertragungen. | No runs with errors or transfers. |
+| 723 | `log_empty_errors` | Keine Läufe mit Fehlern. | No runs with errors. |
+| 724 | `log_empty_transfers` | Keine Läufe mit Übertragungen. | No runs with transfers. |
+| 725 | `log_idle_group` | %1$s× geprüft – nichts zu tun | %1$s× checked – nothing to do |
+| 726 | `log_status_partial` | Teilweise | Partial |
+| 727 | `log_status_failed` | Fehler | Error |
+| 728 | `log_status_paused` | Pausiert | Paused |
+| 729 | `log_status_interrupted` | Unterbrochen | Interrupted |
+| 730 | `log_status_waiting` | Wartet auf dich | Waiting for you |
+| 731 | `log_status_running` | Läuft | Running |
+| 732 | `log_trigger` | Auslöser: %1$s | Trigger: %1$s |
+| 733 | `backup_exporting` | Exportiere… | Exporting… |
+| 734 | `backup_exported (one)` | Gesichert: %1$s Profil | Backed up: %1$s profile |
+| 735 | `backup_exported (other)` | Gesichert: %1$s Profile | Backed up: %1$s profiles |
+| 736 | `backup_exported_sync (one)` | %1$s Datei Synchronisierungsstatus | sync status of %1$s file |
+| 737 | `backup_exported_sync (other)` | %1$s Dateien Synchronisierungsstatus | sync status of %1$s files |
+| 738 | `backup_passwords_encrypted` | Passwörter verschlüsselt | passwords encrypted |
+| 739 | `backup_without_passwords` | ohne Passwörter | without passwords |
+| 740 | `backup_reading` | Lese Sicherung… | Reading backup… |
+| 741 | `backup_unreadable` | Sicherung nicht lesbar | Backup not readable |
+| 742 | `backup_file_unreadable` | Datei nicht lesbar: %1$s | File not readable: %1$s |
+| 743 | `backup_importing` | Importiere… | Importing… |
+| 744 | `backup_imported (one)` | %1$s Profil importiert | %1$s profile imported |
+| 745 | `backup_imported (other)` | %1$s Profile importiert | %1$s profiles imported |
+| 746 | `backup_imported_sync (one)` | Synchronisierungsstatus für %1$s Datei | sync status for %1$s file |
+| 747 | `backup_imported_sync (other)` | Synchronisierungsstatus für %1$s Dateien | sync status for %1$s files |
+| 748 | `backup_skipped_identical` | Übersprungen, weil schon vorhanden (gleiches Ziel und gleiche Quellen): %1$s | Skipped because already present (same target and same sources): %1$s |
+| 749 | `backup_overlapping` | Hinweis: Überschneidet sich mit einem bestehenden Profil (gleiches Ziel, gemeinsame Quellordner): %1$s | Note: overlaps with an existing profile (same target, shared source folders): %1$s |
+| 750 | `backup_skipped_layout_blocked` | Übersprungen, weil das Ziel schon von einem anderen Fotoprofil mit anderer Ordnerstruktur verwendet wird: %1$s | Skipped because the target is already used by another photo profile with a different folder structure: %1$s |
+| 751 | `backup_skipped_layout_unknown` | Nicht importiert, weil die Ordnerstruktur unbekannt ist (Sicherung aus einer neueren Version?): %1$s | Not imported because the folder structure is unknown (backup from a newer version?): %1$s |
+| 752 | `backup_without_password` | Passwort neu eingeben bei: %1$s | Enter the password again for: %1$s |
+| 753 | `backup_need_folder` | Handy-Ordner neu wählen bei: %1$s (Android überträgt die Ordner-Freigabe nicht). | Choose the phone folder again for: %1$s (Android does not transfer the folder permission). |
+| 754 | `backup_import_failed` | Import fehlgeschlagen: %1$s | Import failed: %1$s |
+| 755 | `backup_title` | Sicherung | Backup |
+| 756 | `backup_hint` | Sichert Profile, Einstellungen, Ordner-Zuordnungen und auf Wunsch den Synchronisierungsstatus in eine Datei – z. B. vor einem Handywechsel oder einer Neuinstallation. | Saves profiles, settings, folder assignments and optionally the sync status to a file – e.g. before changing phones or reinstalling. |
+| 757 | `backup_export` | Exportieren… | Export… |
+| 758 | `backup_import` | Importieren… | Import… |
+| 759 | `backup_export_title` | Sicherung exportieren | Export backup |
+| 760 | `backup_include_sync` | Synchronisierungsstatus mitsichern | Include sync status |
+| 761 | `backup_include_sync_sub` | Nach dem Import ist sofort bekannt, welche Dateien schon auf dem PC sind. | After the import it is known right away which files are already on the PC. |
+| 762 | `backup_password_optional` | Export-Passwort (optional) | Export password (optional) |
+| 763 | `backup_password_repeat` | Export-Passwort wiederholen | Repeat export password |
+| 764 | `backup_no_password_hint` | Ohne Export-Passwort enthält die Datei keine SMB-Passwörter; du gibst sie nach dem Import neu ein. | Without an export password the file contains no SMB passwords; you enter them again after the import. |
+| 765 | `backup_password_hint` | Die SMB-Passwörter werden mit diesem Passwort verschlüsselt. Ohne es lassen sie sich nicht wiederherstellen. | The SMB passwords are encrypted with this password. Without it they cannot be restored. |
+| 766 | `backup_choose_file` | Datei wählen… | Choose file… |
+| 767 | `backup_password` | Export-Passwort | Export password |
+| 768 | `backup_ask_password_hint` | Die Sicherung enthält verschlüsselte SMB-Passwörter. Ohne Export-Passwort werden die Profile trotzdem importiert, die Passwörter gibst du dann neu ein. | The backup contains encrypted SMB passwords. Without the export password the profiles are imported anyway, you then enter the passwords again. |
+| 769 | `backup_without_password_button` | Ohne Passwort | Without password |
+| 770 | `backup_import_title` | Sicherung importieren | Import backup |
+| 771 | `backup_created` | Erstellt: %1$s (LeoSync %2$s) | Created: %1$s (LeoSync %2$s) |
+| 772 | `backup_profiles` | Profile: %1$s | Profiles: %1$s |
+| 773 | `backup_sync_status (one)` | Synchronisierungsstatus: %1$s Datei | Sync status: %1$s file |
+| 774 | `backup_sync_status (other)` | Synchronisierungsstatus: %1$s Dateien | Sync status: %1$s files |
+| 775 | `backup_pw_taken` | SMB-Passwörter: werden übernommen | SMB passwords: will be taken over |
+| 776 | `backup_pw_wrong` | SMB-Passwörter: Export-Passwort fehlt oder ist falsch – Passwörter werden nicht übernommen | SMB passwords: export password missing or wrong – passwords are not taken over |
+| 777 | `backup_pw_none` | SMB-Passwörter: nicht enthalten | SMB passwords: not included |
+| 778 | `backup_replace_hint` | „Ersetzen“ löscht alle bisherigen Profile samt Synchronisierungsstatus und übernimmt auch die Einstellungen (nicht die Sprache der App, sie bleibt unverändert). „Hinzufügen“ legt die Profile zusätzlich an. | “Replace” deletes all existing profiles including sync status and also takes over the settings (not the app language, which stays as it is). “Add” creates the profiles in addition. |
+| 779 | `backup_replace` | Ersetzen | Replace |
+| 780 | `backup_import_done` | Import abgeschlossen | Import finished |
+| 781 | `backup_err_replace_rejected` | Ersetzen abgebrochen, nichts wurde gelöscht: Die Sicherung enthält Profile, die nicht importiert werden können (unbekannte Ordnerstruktur, Sicherung aus einer neueren Version?): %1$s | Replace cancelled, nothing was deleted: the backup contains profiles that cannot be imported (unknown folder structure, backup from a newer version?): %1$s |
+| 782 | `log_clear_title` | Gesamten Verlauf löschen? | Delete the whole history? |
+| 783 | `log_clear_text` | %1$d Einträge werden gelöscht und lassen sich danach nicht wiederherstellen. Mit «Verlauf teilen» kannst du sie vorher sichern. | %1$d entries will be deleted and cannot be restored. Use “Share history” first to keep a copy. |
+| 784 | `log_cleared` | Verlauf gelöscht | History deleted |
+| 785 | `log_undo` | Rückgängig | Undo |
+| 786 | `log_advice_missing` | Die Datei existiert auf dem Handy nicht mehr. Synchronisiere erneut; bleibt der Fehler, die Dateiliste im Profil prüfen. | The file no longer exists on the phone. Sync again; if the error stays, check the file list in the profile. |
+| 787 | `log_advice_connection` | Verbindung zum PC prüfen (WLAN, Freigabe), dann erneut synchronisieren. | Check the connection to the PC (Wi-Fi, share), then sync again. |
+| 788 | `log_advice_unknown` | Synchronisiere erneut. Bleibt der Fehler, teile den Verlauf mit dem Entwickler. | Sync again. If the error stays, share the history with the developer. |
 
 ## Ordnerauswahl, Konflikte, Simulation, Statistik, Updates
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 771 | `trigger_folder_choice` | Ordnerauswahl | Folder selection |
-| 772 | `decision_title` | Ordnerauswahl | Folder selection |
-| 773 | `decision_apply_all` | Alle übernehmen | Apply all |
-| 774 | `decision_none` | Keine offenen Entscheidungen. | No open decisions. |
-| 775 | `decision_hint` | Für diese Monate gibt es auf dem PC bereits umbenannte Ordner. Wähle, wohin die Dateien sollen. Die Wahl gilt für alle Dateien der Gruppe und wird gemerkt. | For these months there are already renamed folders on the PC. Choose where the files should go. The choice applies to all files of the group and is remembered. |
-| 776 | `decision_files (one)` | %1$s Datei (%2$s) | %1$s file (%2$s) |
-| 777 | `decision_files (other)` | %1$s Dateien (%2$s) | %1$s files (%2$s) |
-| 778 | `decision_profile` | Profil: %1$s | Profile: %1$s |
-| 779 | `decision_new_folder` | Neuer Ordner: %1$s | New folder: %1$s |
-| 780 | `decision_custom_name` | Eigener Name… | Custom name… |
-| 781 | `decision_folder_name` | Ordnername (muss %1$s enthalten) | Folder name (must contain %1$s) |
-| 782 | `decision_none_hint` | Hier fragt LeoSync, wenn es für einen Monat mehrere umbenannte Ordner auf dem PC gibt. | LeoSync asks here when there are several renamed folders on the PC for one month. |
-| 783 | `decision_choose_first` | Wähle einen Ordner, um zu übernehmen. | Choose a folder to apply. |
-| 784 | `decision_snack_one (one)` | %1$s Datei wird nach %2$s übertragen | %1$s file will be transferred to %2$s |
-| 785 | `decision_snack_one (other)` | %1$s Dateien werden nach %2$s übertragen | %1$s files will be transferred to %2$s |
-| 786 | `decision_snack_all (one)` | %1$s Datei wird übertragen (%2$s) | %1$s file will be transferred (%2$s) |
-| 787 | `decision_snack_all (other)` | %1$s Dateien werden übertragen (%2$s) | %1$s files will be transferred (%2$s) |
-| 788 | `decision_n_groups (one)` | %1$s Gruppe | %1$s group |
-| 789 | `decision_n_groups (other)` | %1$s Gruppen | %1$s groups |
-| 790 | `decision_n_files (one)` | %1$s Datei | %1$s file |
-| 791 | `decision_n_files (other)` | %1$s Dateien | %1$s files |
-| 792 | `decision_all_confirm (one)` | %1$s Gruppe mit %2$s wird übernommen. Gruppen ohne Wahl bleiben offen. | %1$s group with %2$s will be applied. Groups without a choice stay open. |
-| 793 | `decision_all_confirm (other)` | %1$s Gruppen mit %2$s werden übernommen. Gruppen ohne Wahl bleiben offen. | %1$s groups with %2$s will be applied. Groups without a choice stay open. |
-| 794 | `trigger_conflicts` | Konfliktlösung | Conflict resolution |
-| 795 | `conflict_title` | Konflikte | Conflicts |
-| 796 | `conflict_all_newer` | Alle: neuere | All: newer |
-| 797 | `conflict_none` | Keine offenen Konflikte. | No open conflicts. |
-| 798 | `conflict_hint` | Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. Die andere Version wird in den Ordner „%1$s“ verschoben, nicht gelöscht. Die Auswahl wird bei der nächsten Synchronisierung im WLAN angewendet. | These files were changed on the mobile and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi. |
-| 799 | `conflict_newer` | (neuer) | (newer) |
-| 800 | `conflict_same_age` | (gleich alt) | (same age) |
-| 801 | `conflict_keep_phone` | Handy behalten | Keep mobile |
-| 802 | `conflict_keep_pc` | PC behalten | Keep PC |
-| 803 | `conflict_keep_both` | Beide behalten | Keep both |
-| 804 | `conflict_keep_phone_hint` | Handy behalten: Die PC-Version kommt in %1$s. | Keep mobile: the PC version goes to %1$s. |
-| 805 | `conflict_keep_pc_hint` | PC behalten: Die Handy-Version kommt in %1$s. | Keep PC: the mobile version goes to %1$s. |
-| 806 | `conflict_keep_both_hint` | Beide behalten: Beide Dateien bleiben; die Handy-Version erhält den Namenszusatz %1$s. | Keep both: both files stay; the mobile version gets the name suffix %1$s. |
-| 807 | `conflict_snack_phone` | %1$s: Handy-Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s: mobile version kept (applies at the next sync on Wi-Fi) |
-| 808 | `conflict_snack_pc` | %1$s: PC-Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s: PC version kept (applies at the next sync on Wi-Fi) |
-| 809 | `conflict_snack_both` | %1$s: beide Versionen behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s: both versions kept (applies at the next sync on Wi-Fi) |
-| 810 | `conflict_snack_all (one)` | %1$s Konflikt entschieden: neuere Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s conflict decided: newer version kept (applies at the next sync on Wi-Fi) |
-| 811 | `conflict_snack_all (other)` | %1$s Konflikte entschieden: jeweils neuere Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s conflicts decided: newer version kept (applies at the next sync on Wi-Fi) |
-| 812 | `conflict_all_confirm (one)` | %1$s Konflikt: Die neuere Version bleibt, die andere kommt nach %2$s. Fortfahren? | %1$s conflict: the newer version is kept, the other goes to %2$s. Continue? |
-| 813 | `conflict_all_confirm (other)` | %1$s Konflikte: Jeweils die neuere Version bleibt, die andere kommt nach %2$s. Fortfahren? | %1$s conflicts: in each case the newer version is kept, the other goes to %2$s. Continue? |
-| 814 | `conflict_undo_late` | Nicht mehr rückgängig zu machen: Die Auswahl wurde bereits angewendet. | Can no longer be undone: the choice has already been applied. |
-| 815 | `preview_starting` | Starte… | Starting… |
-| 816 | `preview_hint` | Zeigt, was beim Synchronisieren passieren würde (Bildordner: Zielordner; Ordner-Synchronisierung: Aktion je Datei). Es wird nichts kopiert, angelegt oder gelöscht. | Shows what would happen when syncing (photo folders: target folder; folder sync: action per file). Nothing is copied, created or deleted. |
-| 817 | `preview_only_first` | Nur die ersten | Only the first |
-| 818 | `preview_files` | Dateien | files |
-| 819 | `preview_all_files` | Alle Dateien | All files |
-| 820 | `preview_all_hint` | Bei vielen Fotos dauert „Alle“ länger, weil jedes Foto auf Datum und Ort ausgewertet wird. | With many photos “All” takes longer because every photo is analysed for date and location. |
-| 821 | `preview_start` | Simulation starten | Start simulation |
-| 822 | `preview_limit_error` | Bitte eine Zahl von 1 bis 100000 eingeben. | Please enter a number from 1 to 100000. |
-| 823 | `preview_offline_assumption` | Annahme: Der PC ist nicht bekannt, die Liste geht von einem leeren PC aus. Echte Aktionen können abweichen. | Assumption: the PC is not known, the list assumes an empty PC. Real actions can differ. |
-| 824 | `preview_nothing_to_do` | Nichts zu tun – alles aktuell. | Nothing to do – everything is up to date. |
-| 825 | `preview_nothing_new` | Nichts zu übertragen – keine neuen Dateien. | Nothing to transfer – no new files. |
-| 826 | `preview_group_open` | %1$s (Ordner noch offen) | %1$s (folder still open) |
-| 827 | `preview_summary (one)` | %1$s Datei in %2$s | %1$s file in %2$s |
-| 828 | `preview_summary (other)` | %1$s Dateien in %2$s | %1$s files in %2$s |
-| 829 | `preview_needs_decision` | Entscheidung nötig (Ordnerauswahl bzw. Konflikt) | Decision needed (folder selection or conflict) |
-| 830 | `preview_more` | … und %1$s weitere | … and %1$s more |
-| 831 | `stats_unknown` | Unbekannt | Unknown |
-| 832 | `stats_no_location` | Ohne Standortdaten | Without location data |
-| 833 | `stats_no_profile` | Noch kein Profil vorhanden. | No profile yet. |
-| 834 | `stats_no_files` | Noch keine Dateien gesichert. | No files backed up yet. |
-| 835 | `stats_total` | Gesamt | Total |
-| 836 | `stats_photos_videos` | %1$s Fotos · %2$s Videos | %1$s photos · %2$s videos |
-| 837 | `stats_per_year` | Pro Jahr | Per year |
-| 838 | `stats_bar_hint` | Balkenlänge = Anzahl Dateien | Bar length = number of files |
-| 839 | `stats_bucket_value (one)` | %1$s Datei · %2$s | %1$s file · %2$s |
-| 840 | `stats_bucket_value (other)` | %1$s Dateien · %2$s | %1$s files · %2$s |
-| 841 | `stats_per_country` | Pro Land (aus GPS) | Per country (from GPS) |
-| 842 | `first_sync_title` | Erste Synchronisierung | First sync |
-| 843 | `first_sync_text` | Die erste Synchronisierung überträgt alle vorhandenen Dateien. Je nach Menge dauert sie lange und braucht viel Akku. Schliesse das Handy am besten ans Ladegerät an. | The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the mobile to the charger. |
-| 844 | `first_sync_start` | Trotzdem starten | Start anyway |
-| 845 | `dog_waiting` | Wartet | Waiting |
-| 846 | `dog_idle` | Alles gesichert | Everything backed up |
-| 847 | `dog_syncing` | Synchronisiert | Syncing |
-| 848 | `update_checking` | Suche nach Updates… | Checking for updates… |
-| 849 | `update_latest` | Du hast die neueste Version (%1$s). | You have the latest version (%1$s). |
-| 850 | `update_downloading` | Lade Version %1$s… | Downloading version %1$s… |
-| 851 | `update_installing` | Installation wird gestartet… | Starting installation… |
-| 852 | `update_error` | Fehler: %1$s | Error: %1$s |
-| 853 | `update_installed` | Installiert | Installed |
-| 854 | `update_source` | Quelle: github.com/%1$s (Releases) | Source: github.com/%1$s (releases) |
-| 855 | `update_last_check` | Zuletzt geprüft: %1$s | Last checked: %1$s |
-| 856 | `update_daily` | Täglich nach Updates suchen | Check for updates daily |
-| 857 | `update_daily_sub` | Nur im WLAN, Meldung per Benachrichtigung | Only on Wi-Fi, notification when found |
-| 858 | `update_available` | Version %1$s verfügbar | Version %1$s available |
-| 859 | `update_size` | Grösse: %1$s | Size: %1$s |
-| 860 | `update_permission_hint` | Android muss LeoSync einmalig erlauben, Apps zu installieren. Danach mit «Zurück» hierher zurückkehren. | Android has to allow LeoSync once to install apps. Then use Back to return here. |
-| 861 | `update_permission` | Erlaubnis erteilen | Grant permission |
-| 862 | `update_install` | Herunterladen und installieren | Download and install |
-| 863 | `update_install_hint` | Android fragt zur Bestätigung. Nach dem Update LeoSync wieder öffnen. | Android asks for confirmation. After the update, open LeoSync again. |
-| 864 | `run_dangling_log` | Unterbrochen – die App wurde beendet (z. B. durch ein Update). Der Rest folgt bei der nächsten Synchronisierung. | Interrupted – the app was closed (e.g. by an update). The rest follows at the next sync. |
-| 865 | `run_dangling` | Unterbrochen – App wurde beendet (z. B. Update), Rest folgt bei der nächsten Synchronisierung | Interrupted – app was closed (e.g. update), rest follows at the next sync |
-| 866 | `update_offline` | Update-Prüfung nicht möglich. Keine Verbindung zum Internet. Verbinde dich mit dem WLAN und versuche es erneut. | Could not check for updates. No internet connection. Connect to Wi-Fi and try again. |
-| 867 | `update_check_again` | Erneut prüfen | Check again |
-| 868 | `update_check_now` | Jetzt prüfen | Check now |
-| 869 | `update_changes_link` | Änderungen auf GitHub ansehen | View changes on GitHub |
-| 870 | `update_download_cancelled` | Download abgebrochen. | Download cancelled. |
+| 789 | `trigger_folder_choice` | Ordnerauswahl | Folder selection |
+| 790 | `decision_title` | Ordnerauswahl | Folder selection |
+| 791 | `decision_apply_all` | Alle übernehmen | Apply all |
+| 792 | `decision_none` | Keine offenen Entscheidungen. | No open decisions. |
+| 793 | `decision_hint` | Für diese Monate gibt es auf dem PC bereits umbenannte Ordner. Wähle, wohin die Dateien sollen. Die Wahl gilt für alle Dateien der Gruppe und wird gemerkt. | For these months there are already renamed folders on the PC. Choose where the files should go. The choice applies to all files of the group and is remembered. |
+| 794 | `decision_files (one)` | %1$s Datei (%2$s) | %1$s file (%2$s) |
+| 795 | `decision_files (other)` | %1$s Dateien (%2$s) | %1$s files (%2$s) |
+| 796 | `decision_profile` | Profil: %1$s | Profile: %1$s |
+| 797 | `decision_new_folder` | Neuer Ordner: %1$s | New folder: %1$s |
+| 798 | `decision_custom_name` | Eigener Name… | Custom name… |
+| 799 | `decision_folder_name` | Ordnername (muss %1$s enthalten) | Folder name (must contain %1$s) |
+| 800 | `decision_none_hint` | Hier fragt LeoSync, wenn es für einen Monat mehrere umbenannte Ordner auf dem PC gibt. | LeoSync asks here when there are several renamed folders on the PC for one month. |
+| 801 | `decision_choose_first` | Wähle einen Ordner, um zu übernehmen. | Choose a folder to apply. |
+| 802 | `decision_snack_one (one)` | %1$s Datei wird nach %2$s übertragen | %1$s file will be transferred to %2$s |
+| 803 | `decision_snack_one (other)` | %1$s Dateien werden nach %2$s übertragen | %1$s files will be transferred to %2$s |
+| 804 | `decision_snack_all (one)` | %1$s Datei wird übertragen (%2$s) | %1$s file will be transferred (%2$s) |
+| 805 | `decision_snack_all (other)` | %1$s Dateien werden übertragen (%2$s) | %1$s files will be transferred (%2$s) |
+| 806 | `decision_n_groups (one)` | %1$s Gruppe | %1$s group |
+| 807 | `decision_n_groups (other)` | %1$s Gruppen | %1$s groups |
+| 808 | `decision_n_files (one)` | %1$s Datei | %1$s file |
+| 809 | `decision_n_files (other)` | %1$s Dateien | %1$s files |
+| 810 | `decision_all_confirm (one)` | %1$s Gruppe mit %2$s wird übernommen. Gruppen ohne Wahl bleiben offen. | %1$s group with %2$s will be applied. Groups without a choice stay open. |
+| 811 | `decision_all_confirm (other)` | %1$s Gruppen mit %2$s werden übernommen. Gruppen ohne Wahl bleiben offen. | %1$s groups with %2$s will be applied. Groups without a choice stay open. |
+| 812 | `trigger_conflicts` | Konfliktlösung | Conflict resolution |
+| 813 | `conflict_title` | Konflikte | Conflicts |
+| 814 | `conflict_all_newer` | Alle: neuere | All: newer |
+| 815 | `conflict_none` | Keine offenen Konflikte. | No open conflicts. |
+| 816 | `conflict_hint` | Diese Dateien wurden auf dem Handy und auf dem PC geändert. Wähle, welche Version gilt. Die andere Version wird in den Ordner „%1$s“ verschoben, nicht gelöscht. Die Auswahl wird bei der nächsten Synchronisierung im WLAN angewendet. | These files were changed on the phone and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi. |
+| 817 | `conflict_newer` | (neuer) | (newer) |
+| 818 | `conflict_same_age` | (gleich alt) | (same age) |
+| 819 | `conflict_keep_phone` | Handy behalten | Keep phone |
+| 820 | `conflict_keep_pc` | PC behalten | Keep PC |
+| 821 | `conflict_keep_both` | Beide behalten | Keep both |
+| 822 | `conflict_keep_phone_hint` | Handy behalten: Die PC-Version kommt in %1$s. | Keep phone: the PC version goes to %1$s. |
+| 823 | `conflict_keep_pc_hint` | PC behalten: Die Handy-Version kommt in %1$s. | Keep PC: the phone version goes to %1$s. |
+| 824 | `conflict_keep_both_hint` | Beide behalten: Beide Dateien bleiben; die Handy-Version erhält den Namenszusatz %1$s. | Keep both: both files stay; the phone version gets the name suffix %1$s. |
+| 825 | `conflict_snack_phone` | %1$s: Handy-Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s: phone version kept (applies at the next sync on Wi-Fi) |
+| 826 | `conflict_snack_pc` | %1$s: PC-Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s: PC version kept (applies at the next sync on Wi-Fi) |
+| 827 | `conflict_snack_both` | %1$s: beide Versionen behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s: both versions kept (applies at the next sync on Wi-Fi) |
+| 828 | `conflict_snack_all (one)` | %1$s Konflikt entschieden: neuere Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s conflict decided: newer version kept (applies at the next sync on Wi-Fi) |
+| 829 | `conflict_snack_all (other)` | %1$s Konflikte entschieden: jeweils neuere Version behalten (gilt bei der nächsten Synchronisierung im WLAN) | %1$s conflicts decided: newer version kept (applies at the next sync on Wi-Fi) |
+| 830 | `conflict_all_confirm (one)` | %1$s Konflikt: Die neuere Version bleibt, die andere kommt nach %2$s. Fortfahren? | %1$s conflict: the newer version is kept, the other goes to %2$s. Continue? |
+| 831 | `conflict_all_confirm (other)` | %1$s Konflikte: Jeweils die neuere Version bleibt, die andere kommt nach %2$s. Fortfahren? | %1$s conflicts: in each case the newer version is kept, the other goes to %2$s. Continue? |
+| 832 | `conflict_undo_late` | Nicht mehr rückgängig zu machen: Die Auswahl wurde bereits angewendet. | Can no longer be undone: the choice has already been applied. |
+| 833 | `preview_starting` | Starte… | Starting… |
+| 834 | `preview_hint` | Zeigt, was beim Synchronisieren passieren würde (Bildordner: Zielordner; Ordner-Synchronisierung: Aktion je Datei). Es wird nichts kopiert, angelegt oder gelöscht. | Shows what would happen when syncing (photo folders: target folder; folder sync: action per file). Nothing is copied, created or deleted. |
+| 835 | `preview_only_first` | Nur die ersten | Only the first |
+| 836 | `preview_files` | Dateien | files |
+| 837 | `preview_all_files` | Alle Dateien | All files |
+| 838 | `preview_all_hint` | Bei vielen Fotos dauert „Alle“ länger, weil jedes Foto auf Datum und Ort ausgewertet wird. | With many photos “All” takes longer because every photo is analysed for date and location. |
+| 839 | `preview_start` | Simulation starten | Start simulation |
+| 840 | `preview_limit_error` | Bitte eine Zahl von 1 bis 100000 eingeben. | Please enter a number from 1 to 100000. |
+| 841 | `preview_offline_assumption` | Annahme: Der PC ist nicht bekannt, die Liste geht von einem leeren PC aus. Echte Aktionen können abweichen. | Assumption: the PC is not known, the list assumes an empty PC. Real actions can differ. |
+| 842 | `preview_nothing_to_do` | Nichts zu tun – alles aktuell. | Nothing to do – everything is up to date. |
+| 843 | `preview_nothing_new` | Nichts zu übertragen – keine neuen Dateien. | Nothing to transfer – no new files. |
+| 844 | `preview_group_open` | %1$s (Ordner noch offen) | %1$s (folder still open) |
+| 845 | `preview_summary (one)` | %1$s Datei in %2$s | %1$s file in %2$s |
+| 846 | `preview_summary (other)` | %1$s Dateien in %2$s | %1$s files in %2$s |
+| 847 | `preview_needs_decision` | Entscheidung nötig (Ordnerauswahl bzw. Konflikt) | Decision needed (folder selection or conflict) |
+| 848 | `preview_more` | … und %1$s weitere | … and %1$s more |
+| 849 | `stats_unknown` | Unbekannt | Unknown |
+| 850 | `stats_no_location` | Ohne Standortdaten | Without location data |
+| 851 | `stats_no_profile` | Noch kein Profil vorhanden. | No profile yet. |
+| 852 | `stats_no_files` | Noch keine Dateien gesichert. | No files backed up yet. |
+| 853 | `stats_total` | Gesamt | Total |
+| 854 | `stats_photos_videos` | %1$s Fotos · %2$s Videos | %1$s photos · %2$s videos |
+| 855 | `stats_per_year` | Pro Jahr | Per year |
+| 856 | `stats_bar_hint` | Balkenlänge = Anzahl Dateien | Bar length = number of files |
+| 857 | `stats_bucket_value (one)` | %1$s Datei · %2$s | %1$s file · %2$s |
+| 858 | `stats_bucket_value (other)` | %1$s Dateien · %2$s | %1$s files · %2$s |
+| 859 | `stats_per_country` | Pro Land (aus GPS) | Per country (from GPS) |
+| 860 | `first_sync_title` | Erste Synchronisierung | First sync |
+| 861 | `first_sync_text` | Die erste Synchronisierung überträgt alle vorhandenen Dateien. Je nach Menge dauert sie lange und braucht viel Akku. Schliesse das Handy am besten ans Ladegerät an. | The first sync transfers all existing files. Depending on the amount it takes a long time and uses a lot of battery. Best connect the phone to the charger. |
+| 862 | `first_sync_start` | Trotzdem starten | Start anyway |
+| 863 | `dog_waiting` | Wartet | Waiting |
+| 864 | `dog_idle` | Alles gesichert | Everything backed up |
+| 865 | `dog_syncing` | Synchronisiert | Syncing |
+| 866 | `update_checking` | Suche nach Updates… | Checking for updates… |
+| 867 | `update_latest` | Du hast die neueste Version (%1$s). | You have the latest version (%1$s). |
+| 868 | `update_downloading` | Lade Version %1$s… | Downloading version %1$s… |
+| 869 | `update_installing` | Installation wird gestartet… | Starting installation… |
+| 870 | `update_error` | Fehler: %1$s | Error: %1$s |
+| 871 | `update_installed` | Installiert | Installed |
+| 872 | `update_source` | Quelle: github.com/%1$s (Releases) | Source: github.com/%1$s (releases) |
+| 873 | `update_last_check` | Zuletzt geprüft: %1$s | Last checked: %1$s |
+| 874 | `update_daily` | Täglich nach Updates suchen | Check for updates daily |
+| 875 | `update_daily_sub` | Nur im WLAN, Meldung per Benachrichtigung | Only on Wi-Fi, notification when found |
+| 876 | `update_available` | Version %1$s verfügbar | Version %1$s available |
+| 877 | `update_size` | Grösse: %1$s | Size: %1$s |
+| 878 | `update_permission_hint` | Android muss LeoSync einmalig erlauben, Apps zu installieren. Danach mit «Zurück» hierher zurückkehren. | Android has to allow LeoSync once to install apps. Then use Back to return here. |
+| 879 | `update_permission` | Erlaubnis erteilen | Grant permission |
+| 880 | `update_install` | Herunterladen und installieren | Download and install |
+| 881 | `update_install_hint` | Android fragt zur Bestätigung. Nach dem Update LeoSync wieder öffnen. | Android asks for confirmation. After the update, open LeoSync again. |
+| 882 | `run_dangling_log` | Unterbrochen – die App wurde beendet (z. B. durch ein Update). Der Rest folgt bei der nächsten Synchronisierung. | Interrupted – the app was closed (e.g. by an update). The rest follows at the next sync. |
+| 883 | `run_dangling` | Unterbrochen – App wurde beendet (z. B. Update), Rest folgt bei der nächsten Synchronisierung | Interrupted – app was closed (e.g. update), rest follows at the next sync |
+| 884 | `update_offline` | Update-Prüfung nicht möglich. Keine Verbindung zum Internet. Verbinde dich mit dem WLAN und versuche es erneut. | Could not check for updates. No internet connection. Connect to Wi-Fi and try again. |
+| 885 | `update_check_again` | Erneut prüfen | Check again |
+| 886 | `update_check_now` | Jetzt prüfen | Check now |
+| 887 | `update_changes_link` | Änderungen auf GitHub ansehen | View changes on GitHub |
+| 888 | `update_download_cancelled` | Download abgebrochen. | Download cancelled. |
 
 ## Benachrichtigungen
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 871 | `notif_channel_progress` | Synchronisierung | Sync |
-| 872 | `notif_channel_progress_desc` | Fortschritt der Übertragung | Transfer progress |
-| 873 | `notif_channel_alerts_desc` | Ordnerauswahl, Löschbestätigung, Fehler | Folder selection, delete confirmation, errors |
-| 874 | `notif_progress_title` | %1$s: %2$s / %3$s Dateien | %1$s: %2$s / %3$s files |
-| 875 | `notif_progress_text` | %1$s von %2$s (%3$s %%) | %1$s of %2$s (%3$s %%) |
-| 876 | `notif_summary_problem` | LeoSync – Problem | LeoSync – problem |
-| 877 | `notif_summary_done` | LeoSync – fertig | LeoSync – done |
-| 878 | `notif_decision_text (one)` | %1$s Datei in %2$s wartet: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen. | %1$s file in %2$s is waiting: there are renamed month folders. Tap to assign. |
-| 879 | `notif_decision_text (other)` | %1$s Dateien in %2$s warten: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen. | %1$s files in %2$s are waiting: there are renamed month folders. Tap to assign. |
-| 880 | `notif_delete_text (one)` | %1$s Datei ist verifiziert gesichert. Tippen, um sie vom Handy zu entfernen. | %1$s file is verified as backed up. Tap to remove it from the mobile. |
-| 881 | `notif_delete_text (other)` | %1$s Dateien sind verifiziert gesichert. Tippen, um sie vom Handy zu entfernen. | %1$s files are verified as backed up. Tap to remove them from the mobile. |
-| 882 | `notif_wait_wifi` | Wartet auf WLAN | Waiting for Wi-Fi |
-| 883 | `notif_wait_wifi_named` | Wartet auf WLAN „%1$s“ | Waiting for Wi-Fi “%1$s” |
-| 884 | `notif_paused_files` | %1$s / %2$s Dateien | %1$s / %2$s files |
-| 885 | `notif_conflict_text (one)` | %1$s Datei wurde auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt. | %1$s file was changed on mobile and PC. Tap to decide which version wins. |
-| 886 | `notif_conflict_text (other)` | %1$s Dateien wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt. | %1$s files were changed on mobile and PC. Tap to decide which version wins. |
-| 887 | `notif_guard_title` | LeoSync wartet auf dich | LeoSync is waiting for you |
-| 888 | `notif_guard_text` | Die Ordner-Synchronisierung „%1$s“ wurde zur Sicherheit angehalten. Tippen, um zu entscheiden. | The folder sync “%1$s” was stopped for safety. Tap to decide. |
-| 889 | `notif_stale_title (one)` | Seit %1$s Tag nicht gesichert | Not backed up for %1$s day |
-| 890 | `notif_stale_title (other)` | Seit %1$s Tagen nicht gesichert | Not backed up for %1$s days |
-| 891 | `notif_stale_text` | Ist das Heim-WLAN verbunden und der PC eingeschaltet? Tippen zum Öffnen. | Is the home Wi-Fi connected and the PC switched on? Tap to open. |
-| 892 | `notif_update_text` | LeoSync %1$s ist verfügbar. Tippen zum Installieren. | LeoSync %1$s is available. Tap to install. |
-| 893 | `notif_installed_title` | Update installiert | Update installed |
-| 894 | `notif_installed_text` | LeoSync wurde auf Version %1$s aktualisiert. Tippen zum Öffnen. | LeoSync was updated to version %1$s. Tap to open. |
+| 889 | `notif_channel_progress` | Synchronisierung | Sync |
+| 890 | `notif_channel_progress_desc` | Fortschritt der Übertragung | Transfer progress |
+| 891 | `notif_channel_alerts_desc` | Ordnerauswahl, Löschbestätigung, Fehler | Folder selection, delete confirmation, errors |
+| 892 | `notif_progress_title` | %1$s: %2$s / %3$s Dateien | %1$s: %2$s / %3$s files |
+| 893 | `notif_progress_text` | %1$s von %2$s (%3$s %%) | %1$s of %2$s (%3$s %%) |
+| 894 | `notif_summary_problem` | LeoSync – Problem | LeoSync – problem |
+| 895 | `notif_summary_done` | LeoSync – fertig | LeoSync – done |
+| 896 | `notif_decision_text (one)` | %1$s Datei in %2$s wartet: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen. | %1$s file in %2$s is waiting: there are renamed month folders. Tap to assign. |
+| 897 | `notif_decision_text (other)` | %1$s Dateien in %2$s warten: Es gibt umbenannte Monatsordner. Tippen zum Zuordnen. | %1$s files in %2$s are waiting: there are renamed month folders. Tap to assign. |
+| 898 | `notif_delete_text (one)` | %1$s Datei ist verifiziert gesichert. Tippen, um sie vom Handy zu entfernen. | %1$s file is verified as backed up. Tap to remove it from the phone. |
+| 899 | `notif_delete_text (other)` | %1$s Dateien sind verifiziert gesichert. Tippen, um sie vom Handy zu entfernen. | %1$s files are verified as backed up. Tap to remove them from the phone. |
+| 900 | `notif_wait_wifi` | Wartet auf WLAN | Waiting for Wi-Fi |
+| 901 | `notif_wait_wifi_named` | Wartet auf WLAN „%1$s“ | Waiting for Wi-Fi “%1$s” |
+| 902 | `notif_paused_files` | %1$s / %2$s Dateien | %1$s / %2$s files |
+| 903 | `notif_conflict_text (one)` | %1$s Datei wurde auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt. | %1$s file was changed on phone and PC. Tap to decide which version wins. |
+| 904 | `notif_conflict_text (other)` | %1$s Dateien wurden auf Handy und PC geändert. Tippen, um zu entscheiden, welche Version gilt. | %1$s files were changed on phone and PC. Tap to decide which version wins. |
+| 905 | `notif_guard_title` | LeoSync wartet auf dich | LeoSync is waiting for you |
+| 906 | `notif_guard_text` | Die Ordner-Synchronisierung „%1$s“ wurde zur Sicherheit angehalten. Tippen, um zu entscheiden. | The folder sync “%1$s” was stopped for safety. Tap to decide. |
+| 907 | `notif_stale_title (one)` | Seit %1$s Tag nicht gesichert | Not backed up for %1$s day |
+| 908 | `notif_stale_title (other)` | Seit %1$s Tagen nicht gesichert | Not backed up for %1$s days |
+| 909 | `notif_stale_text` | Ist das Heim-WLAN verbunden und der PC eingeschaltet? Tippen zum Öffnen. | Is the home Wi-Fi connected and the PC switched on? Tap to open. |
+| 910 | `notif_update_text` | LeoSync %1$s ist verfügbar. Tippen zum Installieren. | LeoSync %1$s is available. Tap to install. |
+| 911 | `notif_installed_title` | Update installiert | Update installed |
+| 912 | `notif_installed_text` | LeoSync wurde auf Version %1$s aktualisiert. Tippen zum Öffnen. | LeoSync was updated to version %1$s. Tap to open. |
 
 ## Sync-Ablauf, Verlauf-Texte, Fehlermeldungen
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 895 | `trigger_auto` | Automatisch | Automatic |
-| 896 | `trigger_manual` | Manuell | Manual |
-| 897 | `trigger_wifi` | WLAN verbunden | Wi-Fi connected |
-| 898 | `trigger_resume` | Fortsetzen nach WLAN-Unterbruch | Resume after Wi-Fi interruption |
-| 899 | `trigger_resume_wifi` | Fortsetzen nach WLAN-Unterbruch (%1$s) | Resume after Wi-Fi interruption (%1$s) |
-| 900 | `trigger_retry` | Erneute Prüfung (PC war nicht erreichbar) | Check again (PC was not reachable) |
-| 901 | `trigger_poll` | Ordner-Prüfung (Intervall) | Folder check (interval) |
-| 902 | `trigger_safety` | Sicherheitsnetz (%1$s h ohne Synchronisierung) | Safety net (%1$s h without sync) |
-| 903 | `trigger_followup` | Nachholen (Mindestalter) | Catch up (minimum age) |
-| 904 | `trigger_new_media` | Neue Fotos/Videos | New photos/videos |
-| 905 | `trigger_pause_end` | Pause beendet | Pause ended |
-| 906 | `trigger_resumed` | Fortgesetzt | Resumed |
-| 907 | `trigger_deferred` | Nachgeholt (Start während einer laufenden Synchronisierung) | Caught up (start requested during a running sync) |
-| 908 | `trigger_skip_followup` | Nachholen geänderter Dateien | Catching up changed files |
-| 909 | `trigger_generic` | Auslöser | Trigger |
-| 910 | `stop_wifi` | WLAN getrennt | Wi-Fi disconnected |
-| 911 | `stop_charger` | nicht mehr am Ladegerät | no longer on the charger |
-| 912 | `stop_timeout` | Zeitlimit von Android | Android time limit |
-| 913 | `stop_system` | vom System gestoppt (%1$s) | stopped by the system (%1$s) |
-| 914 | `stop_android` | von Android gestoppt (%1$s) | stopped by Android (%1$s) |
-| 915 | `skip_manual_only` | Automatische Synchronisierungen ausgeschaltet (nur manuell) | Automatic syncs turned off (manual only) |
-| 916 | `skip_paused_until` | Pausiert bis %1$s | Paused until %1$s |
-| 917 | `skip_ssid_unreadable` | WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen | Wi-Fi name not readable – check location “Allow all the time” and the location service |
-| 918 | `skip_ssid_unknown` | WLAN „%1$s“ ist in keinem Profil eingetragen | Wi-Fi “%1$s” is not set in any profile |
-| 919 | `skip_pc_unreachable` | PC nicht erreichbar: %1$s | PC not reachable: %1$s |
-| 920 | `skip_pc_not_recognised` | PC nicht erkannt: %1$s | PC not recognised: %1$s |
-| 921 | `skip_pc_failed` | Verbindung zum PC nicht möglich: %1$s | Connection to the PC not possible: %1$s |
-| 922 | `wait_for_pc` | Warte auf PC (%1$s) – Versuch %2$s/%3$s… | Waiting for PC (%1$s) – attempt %2$s/%3$s… |
-| 923 | `summary_failed` | Synchronisierung fehlgeschlagen – %1$s | Sync failed – %1$s |
-| 924 | `summary_transferred (one)` | %1$s Datei übertragen (%2$s) | %1$s file transferred (%2$s) |
-| 925 | `summary_transferred (other)` | %1$s Dateien übertragen (%2$s) | %1$s files transferred (%2$s) |
-| 926 | `summary_errors (one)` | %1$s Fehler – Details im Verlauf | %1$s error – details in the history |
-| 927 | `summary_errors (other)` | %1$s Fehler – Details im Verlauf | %1$s errors – details in the history |
-| 928 | `summary_no_space` | Zu wenig Speicher auf dem Handy – einige Dateien wurden nicht heruntergeladen. | Not enough storage on the mobile – some files were not downloaded. |
-| 929 | `summary_pc_unreachable` | PC nicht erreichbar (%1$s). Ist er eingeschaltet und die Freigabe aktiv? | PC not reachable (%1$s). Is it switched on and the Share active? |
-| 930 | `paused_connection_retry` | Verbindung unterbrochen – neuer Versuch in %1$s Minuten | Connection interrupted – next attempt in %1$s minutes |
-| 931 | `run_nothing` | Nichts zu tun | Nothing to do |
-| 932 | `run_uploaded` | %1$s übertragen | %1$s transferred |
-| 933 | `run_found` | %1$s bereits vorhanden | %1$s already present |
-| 934 | `run_failed (one)` | %1$s Fehler | %1$s error |
-| 935 | `run_failed (other)` | %1$s Fehler | %1$s errors |
-| 936 | `run_waiting (one)` | %1$s wartet auf Ordnerauswahl | %1$s waiting for folder selection |
-| 937 | `run_waiting (other)` | %1$s warten auf Ordnerauswahl | %1$s waiting for folder selection |
-| 938 | `run_up` | ↑ %1$s hochgeladen | ↑ %1$s uploaded |
-| 939 | `run_down` | ↓ %1$s heruntergeladen | ↓ %1$s downloaded |
-| 940 | `run_trashed` | %1$s in Papierkorb | %1$s in trash |
-| 941 | `run_conflicts (one)` | %1$s Konflikt | %1$s conflict |
-| 942 | `run_conflicts (other)` | %1$s Konflikte | %1$s conflicts |
-| 943 | `run_space_full` | Speicher voll | storage full |
-| 944 | `run_deferred` | %1$s folgen später | %1$s follow later |
-| 945 | `guard_title_remote` | PC-Ordner nicht gefunden | PC folder not found |
-| 946 | `guard_title_local` | Handy-Ordner nicht gefunden | Mobile folder not found |
-| 947 | `guard_title_mass` | Viele Dateien würden gelöscht | Many files would be deleted |
-| 948 | `guard_text_remote` | Der PC-Ordner von „%1$s“ fehlt oder ist leer, obwohl schon synchronisiert wurde. Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil. | The PC folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests. |
-| 949 | `guard_text_local` | Der Handy-Ordner von „%1$s“ fehlt oder ist leer, obwohl schon synchronisiert wurde. Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil. | The mobile folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests. |
-| 950 | `guard_text_folder (one)` | In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Datei). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil. | In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s file in total). Was it really deleted? Until you decide, this profile rests. |
-| 951 | `guard_text_folder (other)` | In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Dateien). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil. | In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s files in total). Was it really deleted? Until you decide, this profile rests. |
-| 952 | `guard_text_mass` | In „%1$s“ würden %2$s von %3$s Dateien in den Papierkorb verschoben. Wurde wirklich so viel gelöscht? Bis du entscheidest, ruht dieses Profil. | In “%1$s”, %2$s of %3$s files would be moved to the trash. Was that much really deleted? Until you decide, this profile rests. |
-| 953 | `guard_text_check` | Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Synchronisierungsstand. Bis du entscheidest, ruht dieses Profil. | The chosen folder of “%1$s” does not match the previous sync state. Until you decide, this profile rests. |
-| 954 | `delete_log_done` | Gelöscht: %1$s | Deleted: %1$s |
-| 955 | `delete_log_failed` | Löschen fehlgeschlagen: %1$s – %2$s | Deleting failed: %1$s – %2$s |
-| 956 | `delete_log_pc_missing` | Nicht vom Handy entfernt: Die Kopie auf dem PC fehlt oder weicht ab, die Datei wird erneut gesichert: %1$s | Not removed from the phone: the copy on the PC is missing or differs, the file will be backed up again: %1$s |
-| 957 | `delete_log_phone_unreadable` | Nicht vom Handy entfernt: Die Datei ist für die Prüfung nicht lesbar: %1$s | Not removed from the phone: the file cannot be read for the check: %1$s |
-| 958 | `delete_pc_unreachable` | PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt. | PC not reachable – nothing deleted. The files stay queued. |
-| 959 | `delete_pc_unreachable_retry` | PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt. Prüfe die Verbindung und versuche es erneut. | PC not reachable – nothing deleted. The files stay queued. Check the connection and try again. |
-| 960 | `delete_pc_rejected` | PC nicht erkannt – nichts gelöscht. %1$s | PC not recognised – nothing deleted. %1$s |
-| 961 | `delete_pc_reset` | %1$d Dateien nicht entfernt: Die Kopie auf dem PC fehlt oder weicht ab. Sie werden erneut gesichert. | %1$d files not removed: the copy on the PC is missing or differs. They will be backed up again. |
-| 962 | `update_err_404` | Kein Release gefunden (Repository „%1$s“ privat, falsch geschrieben oder noch ohne Release) | No release found (repository “%1$s” private, misspelled or without a release yet) |
-| 963 | `update_err_403` | GitHub-Abfragelimit erreicht – später erneut versuchen | GitHub request limit reached – try again later |
-| 964 | `update_err_http` | GitHub antwortet mit HTTP %1$s | GitHub responds with HTTP %1$s |
-| 965 | `update_err_no_apk` | Release %1$s enthält keine APK-Datei | Release %1$s contains no APK file |
-| 966 | `update_err_repo` | Kein gültiges GitHub-Repository eingestellt (Format: benutzer/repo) | No valid GitHub repository set (format: user/repo) |
-| 967 | `update_err_invalid_apk` | Die heruntergeladene Datei ist keine gültige APK | The downloaded file is not a valid APK |
-| 968 | `update_err_package` | Die APK gehört zu „%1$s“, nicht zu dieser App | The APK belongs to “%1$s”, not to this app |
-| 969 | `update_err_debug` | (Debug-Builds lassen sich nicht per Update aktualisieren) | (debug builds cannot be updated this way) |
-| 970 | `update_err_not_newer` | Die APK ist nicht neuer als die installierte Version | The APK is not newer than the installed version |
-| 971 | `err_friendly_login` | Benutzer oder Passwort stimmt nicht. Bitte im Profil prüfen (bei einem Microsoft-Konto die E-Mail-Adresse als Benutzer). | User name or password is wrong. Please check the profile (for a Microsoft account use the e-mail address as user). |
-| 972 | `err_friendly_share_missing` | Diese Freigabe gibt es auf dem PC nicht. Prüfe die Schreibweise oder wähle sie mit „Ordner auf dem PC wählen…“. | This Share does not exist on the PC. Check the spelling or pick it with “Choose folder on the PC…”. |
-| 973 | `err_friendly_folder_missing` | Der Ordner wurde auf dem PC nicht gefunden. Wurde er umbenannt oder verschoben? | The folder was not found on the PC. Was it renamed or moved? |
-| 974 | `err_friendly_access` | Kein Zugriff auf diesen Ordner. Erlaube dem Benutzer auf dem PC Lesen und Schreiben (Eigenschaften → Freigabe). | No access to this folder. Allow the user to read and write on the PC (Properties → Sharing). |
-| 975 | `err_friendly_pc_full` | Auf dem PC ist kein Speicherplatz mehr frei. | The PC has no free storage left. |
-| 976 | `err_friendly_phone_full` | Auf dem Handy ist kein Speicherplatz mehr frei. | The mobile has no free storage left. |
-| 977 | `err_friendly_unknown_host` | Der PC-Name wurde nicht gefunden. Trage am besten die IP-Adresse ein, z. B. \\192.168.1.20. | The PC name was not found. Best enter the IP address, e.g. \\192.168.1.20. |
-| 978 | `err_friendly_unreachable` | Der PC ist nicht erreichbar. Ist er eingeschaltet und im selben WLAN? | The PC is not reachable. Is it switched on and on the same Wi-Fi? |
-| 979 | `smb_err_path` | Ungültiger Freigabe-Pfad: „%1$s“ (erwartet \\server\freigabe) | Invalid Share path: “%1$s” (expected \\server\share) |
-| 980 | `smb_err_not_disk` | „%1$s“ ist keine Datei-Freigabe | “%1$s” is not a file Share |
-| 981 | `smb_err_incomplete` | Upload unvollständig: %1$s von %2$s Bytes | Upload incomplete: %1$s of %2$s bytes |
-| 982 | `smb_err_resume` | Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen | Resumed upload does not match the file – will be transferred again |
-| 983 | `smb_err_pc_changed` | Unter %1$s antwortet ein anderer PC als bisher. Es wurden keine Anmeldedaten gesendet. Mit „Verbindung testen“ prüfen und den neuen PC übernehmen. | A different PC answers at %1$s than before. No sign-in data was sent. Use “Test connection” to check it and trust the new PC. |
-| 984 | `smb_err_pc_unknown` | Der PC unter %1$s ist noch nicht erkannt. Es wurden keine Anmeldedaten gesendet. Profil öffnen und „Verbindung testen“ tippen (oder das Profil speichern), damit die App den PC kennenlernt. | The PC at %1$s is not recognised yet. No sign-in data was sent. Open the profile and tap “Test connection” (or save the profile) so the app learns the PC. |
-| 985 | `smb_err_pc_wrong_net` | Der PC unter %1$s ist noch nicht erkannt, und das aktuelle WLAN steht nicht in der Liste des Profils (oder der WLAN-Name ist nicht lesbar). Es wurden keine Anmeldedaten gesendet. Im eingetragenen WLAN „Verbindung testen“ tippen, den Standortzugriff erlauben oder die PC-Kennung auf „Nur PC-Kennung“ stellen. | The PC at %1$s is not recognised yet, and the current Wi-Fi is not in the profile’s list (or the Wi-Fi name cannot be read). No sign-in data was sent. Tap “Test connection” in the listed Wi-Fi, allow location access, or set the PC ID to “PC ID only”. |
-| 986 | `smb_err_pc_no_id` | Der PC unter %1$s liefert keine Kennung und kann nicht erkannt werden. Es wurden keine Anmeldedaten gesendet. Die PC-Kennung auf „Nur WLAN-Name“ stellen. | The PC at %1$s provides no ID, so it cannot be recognised. No sign-in data was sent. Set the PC ID to “Wi-Fi name only”. |
-| 987 | `smb_err_encryption_required` | Für dieses Profil ist die Verschlüsselung erforderlich, aber der PC unter %1$s bietet keine SMB-3-Verschlüsselung an. Es wurden keine Anmeldedaten gesendet. Die Verschlüsselung im Profil ändern oder am PC die SMB-Verschlüsselung aktivieren. | Encryption is required for this profile, but the PC at %1$s does not offer SMB 3 encryption. No sign-in data was sent. Change the encryption setting of the profile or enable SMB encryption on the PC. |
-| 988 | `smb_err_encryption_not_established` | Für dieses Profil ist die Verschlüsselung erforderlich, aber die Verbindung zu %1$s konnte nicht verschlüsselt werden. Die Verbindung wurde getrennt, es wurden keine Daten übertragen. Die Verschlüsselung im Profil ändern oder am PC die SMB-Verschlüsselung prüfen. | Encryption is required for this profile, but the connection to %1$s could not be encrypted. The connection was closed and no data was transferred. Change the encryption setting of the profile or check SMB encryption on the PC. |
-| 989 | `smb_test_missing_folder` | Verbunden, aber Ordner „%1$s“ existiert nicht (wird bei der ersten Synchronisierung angelegt). | Connected, but folder “%1$s” does not exist (will be created at the first sync). |
-| 990 | `smb_test_ok (one)` | Verbindung OK – %1$s (%2$s Eintrag) | Connection OK – %1$s (%2$s entry) |
-| 991 | `smb_test_ok (other)` | Verbindung OK – %1$s (%2$s Einträge) | Connection OK – %1$s (%2$s entries) |
-| 992 | `backup_err_write` | Datei kann nicht geschrieben werden | File cannot be written |
-| 993 | `backup_err_read` | Datei kann nicht gelesen werden | File cannot be read |
-| 994 | `backup_err_version` | Sicherung hat Format-Version %1$s – diese App kennt bis Version %2$s. Bitte LeoSync aktualisieren. | Backup has format version %1$s – this app knows up to version %2$s. Please update LeoSync. |
-| 995 | `backup_err_json` | Die Datei ist keine LeoSync-Sicherung (kein gültiges JSON). | The file is not a LeoSync backup (no valid JSON). |
-| 996 | `backup_err_format` | Die Datei ist keine LeoSync-Sicherung. | The file is not a LeoSync backup. |
-| 997 | `stale_pending (one)` | %1$s: %2$s neue Datei wartet, letzte Sicherung %3$s | %1$s: %2$s new file waiting, last backup %3$s |
-| 998 | `stale_pending (other)` | %1$s: %2$s neue Dateien warten, letzte Sicherung %3$s | %1$s: %2$s new files waiting, last backup %3$s |
-| 999 | `stale_last` | %1$s: letzte Sicherung %2$s | %1$s: last backup %2$s |
-| 1000 | `space_profile_id` | Profil %1$s | Profile %1$s |
-| 1001 | `tree_err_unreadable` | Handy-Ordner nicht lesbar | Mobile folder not readable |
-| 1002 | `tree_err_mkdir` | Ordner „%1$s“ konnte nicht angelegt werden | Folder “%1$s” could not be created |
-| 1003 | `tree_err_read` | Datei nicht lesbar | File not readable |
-| 1004 | `tree_err_write` | Datei nicht beschreibbar | File not writable |
-| 1005 | `tree_err_rename` | Umbenennen von „%1$s“ fehlgeschlagen | Renaming “%1$s” failed |
-| 1006 | `tree_err_size` | Grösse nach Download stimmt nicht (%1$s statt %2$s Bytes) | Size after download does not match (%1$s instead of %2$s bytes) |
-| 1007 | `tree_err_move` | Verschieben nicht unterstützt | Moving not supported |
-| 1008 | `tree_err_changed` | Datei wurde während des Laufs geändert | File was changed during the run |
-| 1009 | `tree_err_create` | Datei „%1$s“ konnte nicht angelegt werden | File “%1$s” could not be created |
-| 1010 | `eng_start_mirror` | Start (%1$s) – Ordner-Synchronisierung „%2$s“ (%3$s) | Start (%1$s) – folder sync “%2$s” (%3$s) |
-| 1011 | `eng_reading_folders` | Lese Ordner… | Reading folders… |
-| 1012 | `eng_local_missing` | Handy-Ordner nicht gefunden – bitte im Profil neu auswählen | Mobile folder not found – please choose it again in the profile |
-| 1013 | `eng_offline_preview` | Offline-Vorschau (Freigabe nicht erreichbar): %1$s | Offline preview (Share not reachable): %1$s |
-| 1014 | `eng_counts` | Handy: %1$s Dateien, PC: %2$s Dateien | Mobile: %1$s files, PC: %2$s files |
-| 1015 | `eng_keep_files` | Löschungen werden in diesem Lauf nicht übernommen (deine Entscheidung) | Deletions are not applied in this run (your decision) |
-| 1016 | `eng_comparing` | Vergleiche… | Comparing… |
-| 1017 | `eng_would_stop` | ⚠ Der Lauf würde anhalten und nachfragen: %1$s | ⚠ The run would stop and ask: %1$s |
-| 1018 | `eng_would_trash_folder` | Der Ordner „%1$s“ käme ganz in den Papierkorb | The folder “%1$s” would go to the trash completely |
-| 1019 | `eng_would_trash_files` | %1$s von %2$s Dateien kämen in den Papierkorb | %1$s of %2$s files would go to the trash |
-| 1020 | `eng_actions_first` | %1$s Aktionen – die ersten %2$s simuliert | %1$s actions – the first %2$s simulated |
-| 1021 | `eng_actions_all` | %1$s Aktionen simuliert | %1$s actions simulated |
-| 1022 | `eng_wifi_lost` | Abgebrochen: WLAN nicht mehr verbunden | Cancelled: Wi-Fi no longer connected |
-| 1023 | `eng_interrupted_log` | Unterbrochen (%1$s) – wird automatisch fortgesetzt | Interrupted (%1$s) – resumes automatically |
-| 1024 | `eng_interrupted_mirror` | Unterbrochen (%1$s) – ↑ %2$s / ↓ %3$s übertragen, Rest folgt automatisch | Interrupted (%1$s) – ↑ %2$s / ↓ %3$s transferred, the rest follows automatically |
-| 1025 | `eng_paused_log` | Pausiert (von dir) – läuft beim nächsten automatischen Start weiter | Paused (by you) – continues at the next automatic start |
-| 1026 | `eng_connection_log_mirror` | Verbindung unterbrochen (%1$s) – wird bei der nächsten Synchronisierung fortgesetzt | Connection interrupted (%1$s) – continues at the next sync |
-| 1027 | `eng_connection_mirror` | Verbindung unterbrochen – ↑ %1$s / ↓ %2$s übertragen, Rest folgt bei der nächsten Synchronisierung | Connection interrupted – ↑ %1$s / ↓ %2$s transferred, the rest follows at the next sync |
-| 1028 | `eng_run_failed` | Lauf fehlgeschlagen: %1$s | Run failed: %1$s |
-| 1029 | `eng_waiting_decision` | Wartet auf deine Entscheidung: %1$s | Waiting for your decision: %1$s |
-| 1030 | `eng_trash_local` | 🗑 Handy: %1$s (auf dem PC gelöscht) | 🗑 Mobile: %1$s (deleted on the PC) |
-| 1031 | `eng_trash_remote` | 🗑 PC: %1$s (auf dem Handy gelöscht) | 🗑 PC: %1$s (deleted on the mobile) |
-| 1032 | `eng_conflict` | ⚠ Konflikt: %1$s wurde auf Handy und PC geändert | ⚠ Conflict: %1$s was changed on mobile and PC |
-| 1033 | `eng_transfer_mirror (one)` | Übertrage %1$s Datei mit %2$s parallelen Verbindungen | Transferring %1$s file with %2$s parallel connections |
-| 1034 | `eng_transfer_mirror (other)` | Übertrage %1$s Dateien mit %2$s parallelen Verbindungen | Transferring %1$s files with %2$s parallel connections |
-| 1035 | `eng_no_space` | Zu wenig Speicher auf dem Handy – übersprungen: %1$s | Not enough storage on the mobile – skipped: %1$s |
-| 1036 | `eng_on_pc` | auf dem PC | on the PC |
-| 1037 | `eng_on_phone` | auf dem Handy | on the mobile |
-| 1038 | `eng_err_renamed_missing` | Umbenannte Datei nicht gefunden | Renamed file not found |
-| 1039 | `eng_conflict_undone` | Auswahl für %1$s wurde rückgängig gemacht – der Konflikt bleibt offen | Choice for %1$s was undone – the conflict stays open |
-| 1040 | `eng_err_conflict_name_exhausted` | Kein freier Name für die Konfliktkopie von %1$s | No free name for the conflict copy of %1$s |
-| 1041 | `eng_err_conflict_name_differs` | Der Speicher-Anbieter hat die Konfliktkopie "%2$s" statt "%1$s" genannt – nicht hochgeladen, die nächste Synchronisierung überträgt sie als neue Datei | The storage app named the conflict copy "%2$s" instead of "%1$s" – not uploaded, the next sync transfers it as a new file |
-| 1042 | `eng_err_after_upload_missing` | Datei nach Upload nicht gefunden | File not found after upload |
-| 1043 | `eng_err_after_upload_size` | Grösse nach Upload stimmt nicht | Size after upload does not match |
-| 1044 | `eng_err_after_download_missing` | Datei nach Download nicht gefunden | File not found after download |
-| 1045 | `eng_err_after_download_size` | Grösse nach Download stimmt nicht | Size after download does not match |
-| 1046 | `eng_resumed_at` | (fortgesetzt ab %1$s) | (resumed from %1$s) |
-| 1047 | `eng_restoring (one)` | Stelle %1$s Datei aus dem Papierkorb wieder her | Restoring %1$s file from the trash |
-| 1048 | `eng_restoring (other)` | Stelle %1$s Dateien aus dem Papierkorb wieder her | Restoring %1$s files from the trash |
-| 1049 | `eng_restore_gone` | ↺ %1$s: Version im Papierkorb nicht mehr vorhanden – übersprungen | ↺ %1$s: version in the trash no longer present – skipped |
-| 1050 | `eng_err_restored_missing` | Wiederhergestellte Datei nicht gefunden | Restored file not found |
-| 1051 | `eng_restored` | ↺ %1$s wiederhergestellt (Version vom %2$s) | ↺ %1$s restored (version from %2$s) |
-| 1052 | `eng_restore_failed_rolled_back` | ✗ Wiederherstellen %1$s: %2$s – zurückgerollt, wird bei der nächsten Synchronisierung erneut versucht | ✗ Restore %1$s: %2$s – rolled back, will be tried again at the next sync |
-| 1053 | `eng_restore_failed_partial` | ✗ Wiederherstellen %1$s: %2$s – nicht vollständig zurückgerollt, siehe Papierkorb | ✗ Restore %1$s: %2$s – not completely rolled back, see trash |
-| 1054 | `eng_restore_gave_up` | ✗ Wiederherstellen %1$s: %2$s – zurückgerollt; nach %3$d Versuchen nicht mehr automatisch wiederholt. Vormerkung und Papierkorb-Version bleiben erhalten; auf der Startseite „Erneut versuchen“ oder „Verwerfen“ wählen | ✗ Restore %1$s: %2$s – rolled back; not tried again automatically after %3$d attempts. The request and the trash version are kept; choose “Try again” or “Discard” on the home screen |
-| 1055 | `eng_purged_pc` | 🗑 PC-Papierkorb geleert (vorgemerkt): %1$s Tagesordner, %2$s einzelne Dateien endgültig gelöscht | 🗑 PC trash emptied (scheduled): %1$s day folders, %2$s single files permanently deleted |
-| 1056 | `eng_purge_pc_failed` | ✗ PC-Papierkorb leeren: %1$s | ✗ Emptying PC trash: %1$s |
-| 1057 | `eng_changed_during_run` | ⏭ %1$s: wurde während des Laufs %2$s geändert – folgt bei der nächsten Synchronisierung | ⏭ %1$s: was changed %2$s during the run – follows at the next sync |
-| 1058 | `eng_syncing` | Synchronisiere… | Syncing… |
-| 1059 | `eng_purge_local_failed` | Papierkorb auf dem Handy nicht geleert: %1$s | Trash on the mobile not emptied: %1$s |
-| 1060 | `eng_purge_remote_failed` | Papierkorb auf dem PC nicht geleert: %1$s | Trash on the PC not emptied: %1$s |
-| 1061 | `eng_purged_expired` | 🗑 Papierkorb: %1$s Ordner älter als %2$s Tage endgültig gelöscht | 🗑 Trash: %1$s folders older than %2$s days permanently deleted |
-| 1062 | `eng_pv_upload_trash` | ↑ Handy → PC (PC-Version in Papierkorb) | ↑ Mobile → PC (PC version to trash) |
-| 1063 | `eng_pv_upload` | ↑ Handy → PC | ↑ Mobile → PC |
-| 1064 | `eng_pv_download_trash` | ↓ PC → Handy (Handy-Version in Papierkorb) | ↓ PC → Mobile (mobile version to trash) |
-| 1065 | `eng_pv_download` | ↓ PC → Handy | ↓ PC → Mobile |
-| 1066 | `eng_pv_trash_local` | 🗑 Auf dem Handy in den Papierkorb | 🗑 To the trash on the mobile |
-| 1067 | `eng_pv_trash_remote` | 🗑 Auf dem PC in den Papierkorb | 🗑 To the trash on the PC |
-| 1068 | `eng_pv_conflict` | ⚠ Konflikt – Entscheidung nötig | ⚠ Conflict – decision needed |
-| 1069 | `eng_pv_keep_both` | ⇄ Beide Versionen behalten | ⇄ Keep both versions |
-| 1070 | `eng_end` | Ende: %1$s | End: %1$s |
-| 1071 | `eng_already_in (one)` | = %1$s Datei bereits in %2$s vorhanden | = %1$s file already present in %2$s |
-| 1072 | `eng_already_in (other)` | = %1$s Dateien bereits in %2$s vorhanden | = %1$s files already present in %2$s |
-| 1073 | `eng_start_photos` | Start (%1$s) – Profil „%2$s“ → %3$s | Start (%1$s) – profile “%2$s” → %3$s |
-| 1074 | `eng_searching` | Suche Dateien… | Searching files… |
-| 1075 | `eng_filtered (one)` | %1$s Datei durch Filter ausgeschlossen | %1$s file excluded by filter |
-| 1076 | `eng_filtered (other)` | %1$s Dateien durch Filter ausgeschlossen | %1$s files excluded by filter |
-| 1077 | `eng_found (one)` | %1$s Datei gefunden, %2$s neu, %3$s bereits gesichert | %1$s file found, %2$s new, %3$s already backed up |
-| 1078 | `eng_found (other)` | %1$s Dateien gefunden, %2$s neu, %3$s bereits gesichert | %1$s files found, %2$s new, %3$s already backed up |
-| 1079 | `eng_too_young` | %1$s noch zu jung (< %2$s min) | %1$s still too young (< %2$s min) |
-| 1080 | `eng_connecting` | Verbinde… | Connecting… |
-| 1081 | `eng_no_geo` | Länderdaten fehlen – Ordner ohne Länderzusatz | Country data missing – folders without country suffix |
-| 1082 | `eng_no_media_location` | Berechtigung „Medien-Standort“ fehlt – GPS wird nicht ausgewertet | Permission “media location” missing – GPS is not evaluated |
-| 1083 | `eng_analysing` | Analysiere… | Analysing… |
-| 1084 | `eng_new_files_first (one)` | %1$s neue Datei – die ersten %2$s simuliert | %1$s new file – the first %2$s simulated |
-| 1085 | `eng_new_files_first (other)` | %1$s neue Dateien – die ersten %2$s simuliert | %1$s new files – the first %2$s simulated |
-| 1086 | `eng_new_files_all (one)` | %1$s neue Datei simuliert | %1$s new file simulated |
-| 1087 | `eng_new_files_all (other)` | %1$s neue Dateien simuliert | %1$s new files simulated |
-| 1088 | `eng_transfer_photos` | Übertrage mit %1$s parallelen Verbindungen | Transferring with %1$s parallel connections |
-| 1089 | `eng_analysis_failed` | ✗ %1$s: Analyse fehlgeschlagen: %2$s | ✗ %1$s: analysis failed: %2$s |
-| 1090 | `eng_waiting_groups (one)` | %1$s Datei wartet auf Ordnerauswahl (%2$s) | %1$s file waiting for folder selection (%2$s) |
-| 1091 | `eng_waiting_groups (other)` | %1$s Dateien warten auf Ordnerauswahl (%2$s) | %1$s files waiting for folder selection (%2$s) |
-| 1092 | `eng_interrupted_photos` | Unterbrochen (%1$s) – %2$s übertragen, Rest folgt automatisch | Interrupted (%1$s) – %2$s transferred, the rest follows automatically |
-| 1093 | `eng_paused_photos` | Pausiert (von dir) – %1$s übertragen, Rest beim nächsten automatischen Start | Paused (by you) – %1$s transferred, the rest at the next automatic start |
-| 1094 | `eng_connection_log_photos` | Verbindung unterbrochen (%1$s) – offene Dateien werden bei der nächsten Synchronisierung übertragen | Connection interrupted (%1$s) – open files are transferred at the next sync |
-| 1095 | `eng_connection_photos` | Verbindung unterbrochen – %1$s übertragen, Rest folgt bei der nächsten Synchronisierung | Connection interrupted – %1$s transferred, the rest follows at the next sync |
-| 1096 | `eng_transferring` | Übertrage… | Transferring… |
-| 1097 | `eng_err_unreadable` | Datei nicht lesbar: %1$s | File not readable: %1$s |
-| 1098 | `eng_err_verify` | Prüfung nach Upload fehlgeschlagen – Datei wird beim nächsten Lauf erneut übertragen | Check after upload failed – the file will be transferred again at the next run |
-| 1099 | `eng_err_verify_cleanup` | Die fehlerhafte Kopie auf dem PC konnte nicht entfernt werden (%1$s): %2$s | The faulty copy on the PC could not be removed (%1$s): %2$s |
-| 1100 | `eng_present_unverified` | Bereits auf dem PC, aber Gleichheit nicht bestätigt – bleibt auf dem Handy: %1$s | Already on the PC, but not confirmed identical – stays on the phone: %1$s |
-| 1101 | `tree_sd_card` | SD-Karte | SD card |
-| 1102 | `tree_err_rename_short` | Umbenennen fehlgeschlagen | Renaming failed |
-| 1103 | `update_err_no_tag` | Release ohne Versions-Tag | Release without version tag |
-| 1104 | `update_err_download` | Download fehlgeschlagen (HTTP %1$s) | Download failed (HTTP %1$s) |
-| 1105 | `decision_folder_path` | Ordnerpfad unter dem Jahr, z. B. %1$s (der letzte Ordner muss %2$s enthalten) | Folder path below the year, e.g. %1$s (the last folder must contain %2$s) |
-| 1106 | `decision_err_one` | Bitte genau einen Ordnernamen angeben, der %1$s enthält, z. B. „%1$s Urlaub“. | Please enter a single folder name that contains %1$s, e.g. “%1$s Holiday”. |
-| 1107 | `decision_err_two` | Bitte <Land>\<MM> angeben, z. B. „%1$s“. Der letzte Ordner muss die Monatszahl enthalten. | Please enter <country>\<MM>, e.g. “%1$s”. The last folder must contain the month number. |
-| 1108 | `decision_err_empty` | Ordnernamen dürfen nicht leer sein, „.“ oder „..“ lauten. | Folder names must not be empty, “.” or “..”. |
-| 1109 | `decision_err_month` | Der letzte Ordner muss die Monatszahl %1$s enthalten. | The last folder must contain the month number %1$s. |
+| 913 | `trigger_auto` | Automatisch | Automatic |
+| 914 | `trigger_manual` | Manuell | Manual |
+| 915 | `trigger_wifi` | WLAN verbunden | Wi-Fi connected |
+| 916 | `trigger_resume` | Fortsetzen nach WLAN-Unterbruch | Resume after Wi-Fi interruption |
+| 917 | `trigger_resume_wifi` | Fortsetzen nach WLAN-Unterbruch (%1$s) | Resume after Wi-Fi interruption (%1$s) |
+| 918 | `trigger_retry` | Erneute Prüfung (PC war nicht erreichbar) | Check again (PC was not reachable) |
+| 919 | `trigger_poll` | Ordner-Prüfung (Intervall) | Folder check (interval) |
+| 920 | `trigger_safety` | Sicherheitsnetz (%1$s h ohne Synchronisierung) | Safety net (%1$s h without sync) |
+| 921 | `trigger_followup` | Nachholen (Mindestalter) | Catch up (minimum age) |
+| 922 | `trigger_new_media` | Neue Fotos/Videos | New photos/videos |
+| 923 | `trigger_pause_end` | Pause beendet | Pause ended |
+| 924 | `trigger_resumed` | Fortgesetzt | Resumed |
+| 925 | `trigger_deferred` | Nachgeholt (Start während einer laufenden Synchronisierung) | Caught up (start requested during a running sync) |
+| 926 | `trigger_skip_followup` | Nachholen geänderter Dateien | Catching up changed files |
+| 927 | `trigger_generic` | Auslöser | Trigger |
+| 928 | `stop_wifi` | WLAN getrennt | Wi-Fi disconnected |
+| 929 | `stop_charger` | nicht mehr am Ladegerät | no longer on the charger |
+| 930 | `stop_timeout` | Zeitlimit von Android | Android time limit |
+| 931 | `stop_system` | vom System gestoppt (%1$s) | stopped by the system (%1$s) |
+| 932 | `stop_android` | von Android gestoppt (%1$s) | stopped by Android (%1$s) |
+| 933 | `skip_manual_only` | Automatische Synchronisierungen ausgeschaltet (nur manuell) | Automatic syncs turned off (manual only) |
+| 934 | `skip_paused_until` | Pausiert bis %1$s | Paused until %1$s |
+| 935 | `skip_ssid_unreadable` | WLAN-Name nicht lesbar – Standort „Immer zulassen“ und Standortdienst prüfen | Wi-Fi name not readable – check location “Allow all the time” and the location service |
+| 936 | `skip_ssid_unknown` | WLAN „%1$s“ ist in keinem Profil eingetragen | Wi-Fi “%1$s” is not set in any profile |
+| 937 | `skip_pc_unreachable` | PC nicht erreichbar: %1$s | PC not reachable: %1$s |
+| 938 | `skip_pc_not_recognised` | PC nicht erkannt: %1$s | PC not recognised: %1$s |
+| 939 | `skip_pc_failed` | Verbindung zum PC nicht möglich: %1$s | Connection to the PC not possible: %1$s |
+| 940 | `wait_for_pc` | Warte auf PC (%1$s) – Versuch %2$s/%3$s… | Waiting for PC (%1$s) – attempt %2$s/%3$s… |
+| 941 | `summary_failed` | Synchronisierung fehlgeschlagen – %1$s | Sync failed – %1$s |
+| 942 | `summary_transferred (one)` | %1$s Datei übertragen (%2$s) | %1$s file transferred (%2$s) |
+| 943 | `summary_transferred (other)` | %1$s Dateien übertragen (%2$s) | %1$s files transferred (%2$s) |
+| 944 | `summary_errors (one)` | %1$s Fehler – Details im Verlauf | %1$s error – details in the history |
+| 945 | `summary_errors (other)` | %1$s Fehler – Details im Verlauf | %1$s errors – details in the history |
+| 946 | `summary_no_space` | Zu wenig Speicher auf dem Handy – einige Dateien wurden nicht heruntergeladen. | Not enough storage on the phone – some files were not downloaded. |
+| 947 | `summary_pc_unreachable` | PC nicht erreichbar (%1$s). Ist er eingeschaltet und die Freigabe aktiv? | PC not reachable (%1$s). Is it switched on and the Share active? |
+| 948 | `paused_connection_retry` | Verbindung unterbrochen – neuer Versuch in %1$s Minuten | Connection interrupted – next attempt in %1$s minutes |
+| 949 | `run_nothing` | Nichts zu tun | Nothing to do |
+| 950 | `run_uploaded` | %1$s übertragen | %1$s transferred |
+| 951 | `run_found` | %1$s bereits vorhanden | %1$s already present |
+| 952 | `run_failed (one)` | %1$s Fehler | %1$s error |
+| 953 | `run_failed (other)` | %1$s Fehler | %1$s errors |
+| 954 | `run_waiting (one)` | %1$s wartet auf Ordnerauswahl | %1$s waiting for folder selection |
+| 955 | `run_waiting (other)` | %1$s warten auf Ordnerauswahl | %1$s waiting for folder selection |
+| 956 | `run_up` | ↑ %1$s hochgeladen | ↑ %1$s uploaded |
+| 957 | `run_down` | ↓ %1$s heruntergeladen | ↓ %1$s downloaded |
+| 958 | `run_trashed` | %1$s in Papierkorb | %1$s in trash |
+| 959 | `run_conflicts (one)` | %1$s Konflikt | %1$s conflict |
+| 960 | `run_conflicts (other)` | %1$s Konflikte | %1$s conflicts |
+| 961 | `run_space_full` | Speicher voll | storage full |
+| 962 | `run_deferred` | %1$s folgen später | %1$s follow later |
+| 963 | `guard_title_remote` | PC-Ordner nicht gefunden | PC folder not found |
+| 964 | `guard_title_local` | Handy-Ordner nicht gefunden | Phone folder not found |
+| 965 | `guard_title_mass` | Viele Dateien würden gelöscht | Many files would be deleted |
+| 966 | `guard_text_remote` | Der PC-Ordner von „%1$s“ fehlt oder ist leer, obwohl schon synchronisiert wurde. Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil. | The PC folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests. |
+| 967 | `guard_text_local` | Der Handy-Ordner von „%1$s“ fehlt oder ist leer, obwohl schon synchronisiert wurde. Wurde er umbenannt oder verschoben? Bis du entscheidest, ruht dieses Profil. | The phone folder of “%1$s” is missing or empty although it was already synced. Was it renamed or moved? Until you decide, this profile rests. |
+| 968 | `guard_text_folder (one)` | In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Datei). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil. | In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s file in total). Was it really deleted? Until you decide, this profile rests. |
+| 969 | `guard_text_folder (other)` | In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Dateien). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil. | In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s files in total). Was it really deleted? Until you decide, this profile rests. |
+| 970 | `guard_text_mass` | In „%1$s“ würden %2$s von %3$s Dateien in den Papierkorb verschoben. Wurde wirklich so viel gelöscht? Bis du entscheidest, ruht dieses Profil. | In “%1$s”, %2$s of %3$s files would be moved to the trash. Was that much really deleted? Until you decide, this profile rests. |
+| 971 | `guard_text_check` | Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Synchronisierungsstand. Bis du entscheidest, ruht dieses Profil. | The chosen folder of “%1$s” does not match the previous sync state. Until you decide, this profile rests. |
+| 972 | `delete_log_done` | Gelöscht: %1$s | Deleted: %1$s |
+| 973 | `delete_log_failed` | Löschen fehlgeschlagen: %1$s – %2$s | Deleting failed: %1$s – %2$s |
+| 974 | `delete_log_pc_missing` | Nicht vom Handy entfernt: Die Kopie auf dem PC fehlt oder weicht ab, die Datei wird erneut gesichert: %1$s | Not removed from the phone: the copy on the PC is missing or differs, the file will be backed up again: %1$s |
+| 975 | `delete_log_phone_unreadable` | Nicht vom Handy entfernt: Die Datei ist für die Prüfung nicht lesbar: %1$s | Not removed from the phone: the file cannot be read for the check: %1$s |
+| 976 | `delete_pc_unreachable` | PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt. | PC not reachable – nothing deleted. The files stay queued. |
+| 977 | `delete_pc_unreachable_retry` | PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt. Prüfe die Verbindung und versuche es erneut. | PC not reachable – nothing deleted. The files stay queued. Check the connection and try again. |
+| 978 | `delete_pc_rejected` | PC nicht erkannt – nichts gelöscht. %1$s | PC not recognised – nothing deleted. %1$s |
+| 979 | `delete_pc_reset` | %1$d Dateien nicht entfernt: Die Kopie auf dem PC fehlt oder weicht ab. Sie werden erneut gesichert. | %1$d files not removed: the copy on the PC is missing or differs. They will be backed up again. |
+| 980 | `update_err_404` | Kein Release gefunden (Repository „%1$s“ privat, falsch geschrieben oder noch ohne Release) | No release found (repository “%1$s” private, misspelled or without a release yet) |
+| 981 | `update_err_403` | GitHub-Abfragelimit erreicht – später erneut versuchen | GitHub request limit reached – try again later |
+| 982 | `update_err_http` | GitHub antwortet mit HTTP %1$s | GitHub responds with HTTP %1$s |
+| 983 | `update_err_no_apk` | Release %1$s enthält keine APK-Datei | Release %1$s contains no APK file |
+| 984 | `update_err_repo` | Kein gültiges GitHub-Repository eingestellt (Format: benutzer/repo) | No valid GitHub repository set (format: user/repo) |
+| 985 | `update_err_invalid_apk` | Die heruntergeladene Datei ist keine gültige APK | The downloaded file is not a valid APK |
+| 986 | `update_err_package` | Die APK gehört zu „%1$s“, nicht zu dieser App | The APK belongs to “%1$s”, not to this app |
+| 987 | `update_err_debug` | (Debug-Builds lassen sich nicht per Update aktualisieren) | (debug builds cannot be updated this way) |
+| 988 | `update_err_not_newer` | Die APK ist nicht neuer als die installierte Version | The APK is not newer than the installed version |
+| 989 | `err_friendly_login` | Benutzer oder Passwort stimmt nicht. Bitte im Profil prüfen (bei einem Microsoft-Konto die E-Mail-Adresse als Benutzer). | User name or password is wrong. Please check the profile (for a Microsoft account use the e-mail address as user). |
+| 990 | `err_friendly_share_missing` | Diese Freigabe gibt es auf dem PC nicht. Prüfe die Schreibweise oder wähle sie mit „Ordner auf dem PC wählen…“. | This Share does not exist on the PC. Check the spelling or pick it with “Choose folder on the PC…”. |
+| 991 | `err_friendly_folder_missing` | Der Ordner wurde auf dem PC nicht gefunden. Wurde er umbenannt oder verschoben? | The folder was not found on the PC. Was it renamed or moved? |
+| 992 | `err_friendly_access` | Kein Zugriff auf diesen Ordner. Erlaube dem Benutzer auf dem PC Lesen und Schreiben (Eigenschaften → Freigabe). | No access to this folder. Allow the user to read and write on the PC (Properties → Sharing). |
+| 993 | `err_friendly_pc_full` | Auf dem PC ist kein Speicherplatz mehr frei. | The PC has no free storage left. |
+| 994 | `err_friendly_phone_full` | Auf dem Handy ist kein Speicherplatz mehr frei. | The phone has no free storage left. |
+| 995 | `err_friendly_unknown_host` | Der PC-Name wurde nicht gefunden. Trage am besten die IP-Adresse ein, z. B. \\192.168.1.20. | The PC name was not found. Best enter the IP address, e.g. \\192.168.1.20. |
+| 996 | `err_friendly_unreachable` | Der PC ist nicht erreichbar. Ist er eingeschaltet und im selben WLAN? | The PC is not reachable. Is it switched on and on the same Wi-Fi? |
+| 997 | `smb_err_path` | Ungültiger Freigabe-Pfad: „%1$s“ (erwartet \\server\freigabe) | Invalid Share path: “%1$s” (expected \\server\share) |
+| 998 | `smb_err_not_disk` | „%1$s“ ist keine Datei-Freigabe | “%1$s” is not a file Share |
+| 999 | `smb_err_incomplete` | Upload unvollständig: %1$s von %2$s Bytes | Upload incomplete: %1$s of %2$s bytes |
+| 1000 | `smb_err_resume` | Fortgesetzter Upload passt nicht zur Datei – wird neu übertragen | Resumed upload does not match the file – will be transferred again |
+| 1001 | `smb_err_pc_changed` | Unter %1$s antwortet ein anderer PC als bisher. Es wurden keine Anmeldedaten gesendet. Mit „Verbindung testen“ prüfen und den neuen PC übernehmen. | A different PC answers at %1$s than before. No sign-in data was sent. Use “Test connection” to check it and trust the new PC. |
+| 1002 | `smb_err_pc_unknown` | Der PC unter %1$s ist noch nicht erkannt. Es wurden keine Anmeldedaten gesendet. Profil öffnen und „Verbindung testen“ tippen (oder das Profil speichern), damit die App den PC kennenlernt. | The PC at %1$s is not recognised yet. No sign-in data was sent. Open the profile and tap “Test connection” (or save the profile) so the app learns the PC. |
+| 1003 | `smb_err_pc_wrong_net` | Der PC unter %1$s ist noch nicht erkannt, und das aktuelle WLAN steht nicht in der Liste des Profils (oder der WLAN-Name ist nicht lesbar). Es wurden keine Anmeldedaten gesendet. Im eingetragenen WLAN „Verbindung testen“ tippen, den Standortzugriff erlauben oder die PC-Kennung auf „Nur PC-Kennung“ stellen. | The PC at %1$s is not recognised yet, and the current Wi-Fi is not in the profile’s list (or the Wi-Fi name cannot be read). No sign-in data was sent. Tap “Test connection” in the listed Wi-Fi, allow location access, or set the PC ID to “PC ID only”. |
+| 1004 | `smb_err_pc_no_id` | Der PC unter %1$s liefert keine Kennung und kann nicht erkannt werden. Es wurden keine Anmeldedaten gesendet. Die PC-Kennung auf „Nur WLAN-Name“ stellen. | The PC at %1$s provides no ID, so it cannot be recognised. No sign-in data was sent. Set the PC ID to “Wi-Fi name only”. |
+| 1005 | `smb_err_encryption_required` | Für dieses Profil ist die Verschlüsselung erforderlich, aber der PC unter %1$s bietet keine SMB-3-Verschlüsselung an. Es wurden keine Anmeldedaten gesendet. Die Verschlüsselung im Profil ändern oder am PC die SMB-Verschlüsselung aktivieren. | Encryption is required for this profile, but the PC at %1$s does not offer SMB 3 encryption. No sign-in data was sent. Change the encryption setting of the profile or enable SMB encryption on the PC. |
+| 1006 | `smb_err_encryption_not_established` | Für dieses Profil ist die Verschlüsselung erforderlich, aber die Verbindung zu %1$s konnte nicht verschlüsselt werden. Die Verbindung wurde getrennt, es wurden keine Daten übertragen. Die Verschlüsselung im Profil ändern oder am PC die SMB-Verschlüsselung prüfen. | Encryption is required for this profile, but the connection to %1$s could not be encrypted. The connection was closed and no data was transferred. Change the encryption setting of the profile or check SMB encryption on the PC. |
+| 1007 | `smb_test_missing_folder` | Verbunden, aber Ordner „%1$s“ existiert nicht (wird bei der ersten Synchronisierung angelegt). | Connected, but folder “%1$s” does not exist (will be created at the first sync). |
+| 1008 | `smb_test_ok (one)` | Verbindung OK – %1$s (%2$s Eintrag) | Connection OK – %1$s (%2$s entry) |
+| 1009 | `smb_test_ok (other)` | Verbindung OK – %1$s (%2$s Einträge) | Connection OK – %1$s (%2$s entries) |
+| 1010 | `backup_err_write` | Datei kann nicht geschrieben werden | File cannot be written |
+| 1011 | `backup_err_read` | Datei kann nicht gelesen werden | File cannot be read |
+| 1012 | `backup_err_version` | Sicherung hat Format-Version %1$s – diese App kennt bis Version %2$s. Bitte LeoSync aktualisieren. | Backup has format version %1$s – this app knows up to version %2$s. Please update LeoSync. |
+| 1013 | `backup_err_json` | Die Datei ist keine LeoSync-Sicherung (kein gültiges JSON). | The file is not a LeoSync backup (no valid JSON). |
+| 1014 | `backup_err_format` | Die Datei ist keine LeoSync-Sicherung. | The file is not a LeoSync backup. |
+| 1015 | `stale_pending (one)` | %1$s: %2$s neue Datei wartet, letzte Sicherung %3$s | %1$s: %2$s new file waiting, last backup %3$s |
+| 1016 | `stale_pending (other)` | %1$s: %2$s neue Dateien warten, letzte Sicherung %3$s | %1$s: %2$s new files waiting, last backup %3$s |
+| 1017 | `stale_last` | %1$s: letzte Sicherung %2$s | %1$s: last backup %2$s |
+| 1018 | `space_profile_id` | Profil %1$s | Profile %1$s |
+| 1019 | `tree_err_unreadable` | Handy-Ordner nicht lesbar | Phone folder not readable |
+| 1020 | `tree_err_mkdir` | Ordner „%1$s“ konnte nicht angelegt werden | Folder “%1$s” could not be created |
+| 1021 | `tree_err_read` | Datei nicht lesbar | File not readable |
+| 1022 | `tree_err_write` | Datei nicht beschreibbar | File not writable |
+| 1023 | `tree_err_rename` | Umbenennen von „%1$s“ fehlgeschlagen | Renaming “%1$s” failed |
+| 1024 | `tree_err_name_taken` | „%1$s“ gibt es auf dem Handy unter diesem Namen schon, sie wird aber nicht aufgelistet (nicht indiziert); die Kopie wurde nicht behalten, um Duplikate zu vermeiden | “%1$s” already exists on the phone under this name but is not listed (not indexed); the copy was not kept to avoid duplicates |
+| 1025 | `tree_err_size` | Grösse nach Download stimmt nicht (%1$s statt %2$s Bytes) | Size after download does not match (%1$s instead of %2$s bytes) |
+| 1026 | `tree_err_move` | Verschieben nicht unterstützt | Moving not supported |
+| 1027 | `tree_err_changed` | Datei wurde während des Laufs geändert | File was changed during the run |
+| 1028 | `tree_err_create` | Datei „%1$s“ konnte nicht angelegt werden | File “%1$s” could not be created |
+| 1029 | `eng_start_mirror` | Start (%1$s) – Ordner-Synchronisierung „%2$s“ (%3$s) | Start (%1$s) – folder sync “%2$s” (%3$s) |
+| 1030 | `eng_reading_folders` | Lese Ordner… | Reading folders… |
+| 1031 | `eng_local_missing` | Handy-Ordner nicht gefunden – bitte im Profil neu auswählen | Phone folder not found – please choose it again in the profile |
+| 1032 | `eng_offline_preview` | Offline-Vorschau (Freigabe nicht erreichbar): %1$s | Offline preview (Share not reachable): %1$s |
+| 1033 | `eng_counts` | Handy: %1$s Dateien, PC: %2$s Dateien | Phone: %1$s files, PC: %2$s files |
+| 1034 | `eng_keep_files` | Löschungen werden in diesem Lauf nicht übernommen (deine Entscheidung) | Deletions are not applied in this run (your decision) |
+| 1035 | `eng_comparing` | Vergleiche… | Comparing… |
+| 1036 | `eng_would_stop` | ⚠ Der Lauf würde anhalten und nachfragen: %1$s | ⚠ The run would stop and ask: %1$s |
+| 1037 | `eng_would_trash_folder` | Der Ordner „%1$s“ käme ganz in den Papierkorb | The folder “%1$s” would go to the trash completely |
+| 1038 | `eng_would_trash_files` | %1$s von %2$s Dateien kämen in den Papierkorb | %1$s of %2$s files would go to the trash |
+| 1039 | `eng_actions_first` | %1$s Aktionen – die ersten %2$s simuliert | %1$s actions – the first %2$s simulated |
+| 1040 | `eng_actions_all` | %1$s Aktionen simuliert | %1$s actions simulated |
+| 1041 | `eng_wifi_lost` | Abgebrochen: WLAN nicht mehr verbunden | Cancelled: Wi-Fi no longer connected |
+| 1042 | `eng_interrupted_log` | Unterbrochen (%1$s) – wird automatisch fortgesetzt | Interrupted (%1$s) – resumes automatically |
+| 1043 | `eng_interrupted_mirror` | Unterbrochen (%1$s) – ↑ %2$s / ↓ %3$s übertragen, Rest folgt automatisch | Interrupted (%1$s) – ↑ %2$s / ↓ %3$s transferred, the rest follows automatically |
+| 1044 | `eng_paused_log` | Pausiert (von dir) – läuft beim nächsten automatischen Start weiter | Paused (by you) – continues at the next automatic start |
+| 1045 | `eng_connection_log_mirror` | Verbindung unterbrochen (%1$s) – wird bei der nächsten Synchronisierung fortgesetzt | Connection interrupted (%1$s) – continues at the next sync |
+| 1046 | `eng_connection_mirror` | Verbindung unterbrochen – ↑ %1$s / ↓ %2$s übertragen, Rest folgt bei der nächsten Synchronisierung | Connection interrupted – ↑ %1$s / ↓ %2$s transferred, the rest follows at the next sync |
+| 1047 | `eng_run_failed` | Lauf fehlgeschlagen: %1$s | Run failed: %1$s |
+| 1048 | `eng_waiting_decision` | Wartet auf deine Entscheidung: %1$s | Waiting for your decision: %1$s |
+| 1049 | `eng_trash_local` | 🗑 Handy: %1$s (auf dem PC gelöscht) | 🗑 Phone: %1$s (deleted on the PC) |
+| 1050 | `eng_trash_remote` | 🗑 PC: %1$s (auf dem Handy gelöscht) | 🗑 PC: %1$s (deleted on the phone) |
+| 1051 | `eng_conflict` | ⚠ Konflikt: %1$s wurde auf Handy und PC geändert | ⚠ Conflict: %1$s was changed on phone and PC |
+| 1052 | `eng_transfer_mirror (one)` | Übertrage %1$s Datei mit %2$s parallelen Verbindungen | Transferring %1$s file with %2$s parallel connections |
+| 1053 | `eng_transfer_mirror (other)` | Übertrage %1$s Dateien mit %2$s parallelen Verbindungen | Transferring %1$s files with %2$s parallel connections |
+| 1054 | `eng_no_space` | Zu wenig Speicher auf dem Handy – übersprungen: %1$s | Not enough storage on the phone – skipped: %1$s |
+| 1055 | `eng_on_pc` | auf dem PC | on the PC |
+| 1056 | `eng_on_phone` | auf dem Handy | on the phone |
+| 1057 | `eng_err_renamed_missing` | Umbenannte Datei nicht gefunden | Renamed file not found |
+| 1058 | `eng_conflict_undone` | Auswahl für %1$s wurde rückgängig gemacht – der Konflikt bleibt offen | Choice for %1$s was undone – the conflict stays open |
+| 1059 | `eng_err_conflict_name_exhausted` | Kein freier Name für die Konfliktkopie von %1$s | No free name for the conflict copy of %1$s |
+| 1060 | `eng_err_conflict_name_differs` | Der Speicher-Anbieter hat die Konfliktkopie "%2$s" statt "%1$s" genannt – nicht hochgeladen, die nächste Synchronisierung überträgt sie als neue Datei | The storage app named the conflict copy "%2$s" instead of "%1$s" – not uploaded, the next sync transfers it as a new file |
+| 1061 | `eng_err_after_upload_missing` | Datei nach Upload nicht gefunden | File not found after upload |
+| 1062 | `eng_err_after_upload_size` | Grösse nach Upload stimmt nicht | Size after upload does not match |
+| 1063 | `eng_err_after_download_missing` | Datei nach Download nicht gefunden | File not found after download |
+| 1064 | `eng_err_after_download_size` | Grösse nach Download stimmt nicht | Size after download does not match |
+| 1065 | `eng_resumed_at` | (fortgesetzt ab %1$s) | (resumed from %1$s) |
+| 1066 | `eng_restoring (one)` | Stelle %1$s Datei aus dem Papierkorb wieder her | Restoring %1$s file from the trash |
+| 1067 | `eng_restoring (other)` | Stelle %1$s Dateien aus dem Papierkorb wieder her | Restoring %1$s files from the trash |
+| 1068 | `eng_restore_gone` | ↺ %1$s: Version im Papierkorb nicht mehr vorhanden – übersprungen | ↺ %1$s: version in the trash no longer present – skipped |
+| 1069 | `eng_err_restored_missing` | Wiederhergestellte Datei nicht gefunden | Restored file not found |
+| 1070 | `eng_restored` | ↺ %1$s wiederhergestellt (Version vom %2$s) | ↺ %1$s restored (version from %2$s) |
+| 1071 | `eng_restore_failed_rolled_back` | ✗ Wiederherstellen %1$s: %2$s – zurückgerollt, wird bei der nächsten Synchronisierung erneut versucht | ✗ Restore %1$s: %2$s – rolled back, will be tried again at the next sync |
+| 1072 | `eng_restore_failed_partial` | ✗ Wiederherstellen %1$s: %2$s – nicht vollständig zurückgerollt, siehe Papierkorb | ✗ Restore %1$s: %2$s – not completely rolled back, see trash |
+| 1073 | `eng_restore_gave_up` | ✗ Wiederherstellen %1$s: %2$s – zurückgerollt; nach %3$d Versuchen nicht mehr automatisch wiederholt. Vormerkung und Papierkorb-Version bleiben erhalten; auf der Startseite „Erneut versuchen“ oder „Verwerfen“ wählen | ✗ Restore %1$s: %2$s – rolled back; not tried again automatically after %3$d attempts. The request and the trash version are kept; choose “Try again” or “Discard” on the home screen |
+| 1074 | `eng_purged_pc` | 🗑 PC-Papierkorb geleert (vorgemerkt): %1$s Tagesordner, %2$s einzelne Dateien endgültig gelöscht | 🗑 PC trash emptied (scheduled): %1$s day folders, %2$s single files permanently deleted |
+| 1075 | `eng_purge_pc_failed` | ✗ PC-Papierkorb leeren: %1$s | ✗ Emptying PC trash: %1$s |
+| 1076 | `eng_changed_during_run` | ⏭ %1$s: wurde während des Laufs %2$s geändert – folgt bei der nächsten Synchronisierung | ⏭ %1$s: was changed %2$s during the run – follows at the next sync |
+| 1077 | `eng_syncing` | Synchronisiere… | Syncing… |
+| 1078 | `eng_purge_local_failed` | Papierkorb auf dem Handy nicht geleert: %1$s | Trash on the phone not emptied: %1$s |
+| 1079 | `eng_purge_remote_failed` | Papierkorb auf dem PC nicht geleert: %1$s | Trash on the PC not emptied: %1$s |
+| 1080 | `eng_purged_expired` | 🗑 Papierkorb: %1$s Ordner älter als %2$s Tage endgültig gelöscht | 🗑 Trash: %1$s folders older than %2$s days permanently deleted |
+| 1081 | `eng_pv_upload_trash` | ↑ Handy → PC (PC-Version in Papierkorb) | ↑ Phone → PC (PC version to trash) |
+| 1082 | `eng_pv_upload` | ↑ Handy → PC | ↑ Phone → PC |
+| 1083 | `eng_pv_download_trash` | ↓ PC → Handy (Handy-Version in Papierkorb) | ↓ PC → Phone (phone version to trash) |
+| 1084 | `eng_pv_download` | ↓ PC → Handy | ↓ PC → Phone |
+| 1085 | `eng_pv_trash_local` | 🗑 Auf dem Handy in den Papierkorb | 🗑 To the trash on the phone |
+| 1086 | `eng_pv_trash_remote` | 🗑 Auf dem PC in den Papierkorb | 🗑 To the trash on the PC |
+| 1087 | `eng_pv_conflict` | ⚠ Konflikt – Entscheidung nötig | ⚠ Conflict – decision needed |
+| 1088 | `eng_pv_keep_both` | ⇄ Beide Versionen behalten | ⇄ Keep both versions |
+| 1089 | `eng_end` | Ende: %1$s | End: %1$s |
+| 1090 | `eng_already_in (one)` | = %1$s Datei bereits in %2$s vorhanden | = %1$s file already present in %2$s |
+| 1091 | `eng_already_in (other)` | = %1$s Dateien bereits in %2$s vorhanden | = %1$s files already present in %2$s |
+| 1092 | `eng_start_photos` | Start (%1$s) – Profil „%2$s“ → %3$s | Start (%1$s) – profile “%2$s” → %3$s |
+| 1093 | `eng_searching` | Suche Dateien… | Searching files… |
+| 1094 | `eng_filtered (one)` | %1$s Datei durch Filter ausgeschlossen | %1$s file excluded by filter |
+| 1095 | `eng_filtered (other)` | %1$s Dateien durch Filter ausgeschlossen | %1$s files excluded by filter |
+| 1096 | `eng_found (one)` | %1$s Datei gefunden, %2$s neu, %3$s bereits gesichert | %1$s file found, %2$s new, %3$s already backed up |
+| 1097 | `eng_found (other)` | %1$s Dateien gefunden, %2$s neu, %3$s bereits gesichert | %1$s files found, %2$s new, %3$s already backed up |
+| 1098 | `eng_too_young` | %1$s noch zu jung (< %2$s min) | %1$s still too young (< %2$s min) |
+| 1099 | `eng_connecting` | Verbinde… | Connecting… |
+| 1100 | `eng_no_geo` | Länderdaten fehlen – Ordner ohne Länderzusatz | Country data missing – folders without country suffix |
+| 1101 | `eng_no_media_location` | Berechtigung „Medien-Standort“ fehlt – GPS wird nicht ausgewertet | Permission “media location” missing – GPS is not evaluated |
+| 1102 | `eng_analysing` | Analysiere… | Analysing… |
+| 1103 | `eng_new_files_first (one)` | %1$s neue Datei – die ersten %2$s simuliert | %1$s new file – the first %2$s simulated |
+| 1104 | `eng_new_files_first (other)` | %1$s neue Dateien – die ersten %2$s simuliert | %1$s new files – the first %2$s simulated |
+| 1105 | `eng_new_files_all (one)` | %1$s neue Datei simuliert | %1$s new file simulated |
+| 1106 | `eng_new_files_all (other)` | %1$s neue Dateien simuliert | %1$s new files simulated |
+| 1107 | `eng_transfer_photos` | Übertrage mit %1$s parallelen Verbindungen | Transferring with %1$s parallel connections |
+| 1108 | `eng_analysis_failed` | ✗ %1$s: Analyse fehlgeschlagen: %2$s | ✗ %1$s: analysis failed: %2$s |
+| 1109 | `eng_waiting_groups (one)` | %1$s Datei wartet auf Ordnerauswahl (%2$s) | %1$s file waiting for folder selection (%2$s) |
+| 1110 | `eng_waiting_groups (other)` | %1$s Dateien warten auf Ordnerauswahl (%2$s) | %1$s files waiting for folder selection (%2$s) |
+| 1111 | `eng_interrupted_photos` | Unterbrochen (%1$s) – %2$s übertragen, Rest folgt automatisch | Interrupted (%1$s) – %2$s transferred, the rest follows automatically |
+| 1112 | `eng_paused_photos` | Pausiert (von dir) – %1$s übertragen, Rest beim nächsten automatischen Start | Paused (by you) – %1$s transferred, the rest at the next automatic start |
+| 1113 | `eng_connection_log_photos` | Verbindung unterbrochen (%1$s) – offene Dateien werden bei der nächsten Synchronisierung übertragen | Connection interrupted (%1$s) – open files are transferred at the next sync |
+| 1114 | `eng_connection_photos` | Verbindung unterbrochen – %1$s übertragen, Rest folgt bei der nächsten Synchronisierung | Connection interrupted – %1$s transferred, the rest follows at the next sync |
+| 1115 | `eng_transferring` | Übertrage… | Transferring… |
+| 1116 | `eng_err_unreadable` | Datei nicht lesbar: %1$s | File not readable: %1$s |
+| 1117 | `eng_err_verify` | Prüfung nach Upload fehlgeschlagen – Datei wird beim nächsten Lauf erneut übertragen | Check after upload failed – the file will be transferred again at the next run |
+| 1118 | `eng_err_verify_cleanup` | Die fehlerhafte Kopie auf dem PC konnte nicht entfernt werden (%1$s): %2$s | The faulty copy on the PC could not be removed (%1$s): %2$s |
+| 1119 | `eng_present_unverified` | Bereits auf dem PC, aber Gleichheit nicht bestätigt – bleibt auf dem Handy: %1$s | Already on the PC, but not confirmed identical – stays on the phone: %1$s |
+| 1120 | `tree_sd_card` | SD-Karte | SD card |
+| 1121 | `tree_err_rename_short` | Umbenennen fehlgeschlagen | Renaming failed |
+| 1122 | `update_err_no_tag` | Release ohne Versions-Tag | Release without version tag |
+| 1123 | `update_err_download` | Download fehlgeschlagen (HTTP %1$s) | Download failed (HTTP %1$s) |
+| 1124 | `decision_folder_path` | Ordnerpfad unter dem Jahr, z. B. %1$s (der letzte Ordner muss %2$s enthalten) | Folder path below the year, e.g. %1$s (the last folder must contain %2$s) |
+| 1125 | `decision_err_one` | Bitte genau einen Ordnernamen angeben, der %1$s enthält, z. B. „%1$s Urlaub“. | Please enter a single folder name that contains %1$s, e.g. “%1$s Holiday”. |
+| 1126 | `decision_err_two` | Bitte <Land>\<MM> angeben, z. B. „%1$s“. Der letzte Ordner muss die Monatszahl enthalten. | Please enter <country>\<MM>, e.g. “%1$s”. The last folder must contain the month number. |
+| 1127 | `decision_err_empty` | Ordnernamen dürfen nicht leer sein, „.“ oder „..“ lauten. | Folder names must not be empty, “.” or “..”. |
+| 1128 | `decision_err_month` | Der letzte Ordner muss die Monatszahl %1$s enthalten. | The last folder must contain the month number %1$s. |
 
 ## Hersteller-Hinweise
 
 | Nr. | Schlüssel | Deutsch | Englisch |
 |---:|---|---|---|
-| 1110 | `vendor_oplus_1` | App-Info → Akkunutzung: „Vordergrundaktivität zulassen“, „Hintergrundaktivität zulassen“ und „Automatischer Start“ einschalten | App info → Battery usage: turn on “Allow foreground activity”, “Allow background activity” and “Auto launch” |
-| 1111 | `vendor_oplus_2` | In der Übersicht der zuletzt genutzten Apps LeoSync sperren (Karte lange drücken → Sperren) | Lock LeoSync in the recent apps overview (long-press the card → Lock) |
-| 1112 | `vendor_samsung_1` | App-Info → Akku: „Nicht eingeschränkt“ wählen | App info → Battery: choose “Unrestricted” |
-| 1113 | `vendor_samsung_2` | Einstellungen → Akku → Hintergrundnutzungslimits: LeoSync zu „Nie ruhende Apps“ hinzufügen | Settings → Battery → Background usage limits: add LeoSync to “Never sleeping apps” |
-| 1114 | `vendor_xiaomi_1` | App-Info → „Autostart“ einschalten | App info → turn on “Autostart” |
-| 1115 | `vendor_xiaomi_2` | App-Info → Energiesparmodus: „Keine Einschränkungen“ wählen | App info → Battery saver: choose “No restrictions” |
-| 1116 | `vendor_xiaomi_3` | In der Übersicht der zuletzt genutzten Apps LeoSync sperren | Lock LeoSync in the recent apps overview |
-| 1117 | `vendor_huawei_1` | Einstellungen → Akku → App-Start: LeoSync auf „Manuell verwalten“ stellen und alle drei Schalter einschalten | Settings → Battery → App launch: set LeoSync to “Manage manually” and turn on all three switches |
+| 1129 | `vendor_oplus_1` | App-Info → Akkunutzung: „Vordergrundaktivität zulassen“, „Hintergrundaktivität zulassen“ und „Automatischer Start“ einschalten | App info → Battery usage: turn on “Allow foreground activity”, “Allow background activity” and “Auto launch” |
+| 1130 | `vendor_oplus_2` | In der Übersicht der zuletzt genutzten Apps LeoSync sperren (Karte lange drücken → Sperren) | Lock LeoSync in the recent apps overview (long-press the card → Lock) |
+| 1131 | `vendor_samsung_1` | App-Info → Akku: „Nicht eingeschränkt“ wählen | App info → Battery: choose “Unrestricted” |
+| 1132 | `vendor_samsung_2` | Einstellungen → Akku → Hintergrundnutzungslimits: LeoSync zu „Nie ruhende Apps“ hinzufügen | Settings → Battery → Background usage limits: add LeoSync to “Never sleeping apps” |
+| 1133 | `vendor_xiaomi_1` | App-Info → „Autostart“ einschalten | App info → turn on “Autostart” |
+| 1134 | `vendor_xiaomi_2` | App-Info → Energiesparmodus: „Keine Einschränkungen“ wählen | App info → Battery saver: choose “No restrictions” |
+| 1135 | `vendor_xiaomi_3` | In der Übersicht der zuletzt genutzten Apps LeoSync sperren | Lock LeoSync in the recent apps overview |
+| 1136 | `vendor_huawei_1` | Einstellungen → Akku → App-Start: LeoSync auf „Manuell verwalten“ stellen und alle drei Schalter einschalten | Settings → Battery → App launch: set LeoSync to “Manage manually” and turn on all three switches |
 

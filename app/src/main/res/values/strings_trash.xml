@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Papierkorb (TrashScreen) -->
-    <string name="side_phone">Mobile</string>
+    <string name="side_phone">Phone</string>
     <string name="side_pc">PC</string>
     <string name="trash_switch_profile">Switch profile</string>
     <string name="trash_choose_profile">Which trash do you want to open?</string>
@@ -13,10 +13,10 @@
     <string name="intervention_already_pending">Another action for this profile is already waiting or running.</string>
     <string name="intervention_failed">Failed: %1$s</string>
     <string name="trash_nothing_deleted">Nothing deleted: the entries are gone, have changed or are reserved for restoring.</string>
-    <string name="trash_reading">Reading the trash on mobile and PC…</string>
+    <string name="trash_reading">Reading the trash on phone and PC…</string>
     <plurals name="trash_phone_summary">
-        <item quantity="one">Mobile: %1$s file, %2$s</item>
-        <item quantity="other">Mobile: %1$s files, %2$s</item>
+        <item quantity="one">Phone: %1$s file, %2$s</item>
+        <item quantity="other">Phone: %1$s files, %2$s</item>
     </plurals>
     <plurals name="trash_pc_summary">
         <item quantity="one">PC: %1$s file, %2$s</item>
@@ -38,7 +38,7 @@
     <string name="trash_selected">%1$s selected · %2$s</string>
     <string name="trash_clear_selection">Clear selection</string>
     <string name="trash_restore">Restore</string>
-    <string name="trash_purged_pc_pending">Mobile emptied – the PC will be emptied at the next sync with the PC</string>
+    <string name="trash_purged_pc_pending">Phone emptied – the PC will be emptied at the next sync with the PC</string>
     <string name="trash_purged">Trash cleaned up</string>
     <plurals name="trash_delete_title">
         <item quantity="one">Delete %1$s file permanently?</item>
@@ -52,7 +52,7 @@
         <item quantity="one">Restore %1$s file?</item>
         <item quantity="other">Restore %1$s files?</item>
     </plurals>
-    <string name="trash_restore_text">The current versions go to the trash first. The chosen versions are written back on mobile and PC.</string>
+    <string name="trash_restore_text">The current versions go to the trash first. The chosen versions are written back on phone and PC.</string>
     <string name="trash_restore_now">This happens right away with a sync.</string>
     <string name="trash_restore_later">The PC is not reachable: this happens at the next sync with the PC.</string>
     <string name="trash_cleanup">Clean up trash</string>
@@ -68,14 +68,14 @@
     </plurals>
     <string name="trash_mode_all">Everything</string>
     <string name="trash_where">Where?</string>
-    <string name="trash_phone_only_hint">“%1$s” frees up space on the mobile; the copies in the PC trash are kept.</string>
+    <string name="trash_phone_only_hint">“%1$s” frees up space on the phone; the copies in the PC trash are kept.</string>
     <string name="trash_choose_what">Please choose what should be emptied.</string>
     <plurals name="trash_affects">
         <item quantity="one">Affects %1$s file (%2$s)</item>
         <item quantity="other">Affects %1$s files (%2$s)</item>
     </plurals>
     <string name="trash_affects_pc_later">– plus the PC trash as soon as the PC is reachable</string>
-    <string name="trash_pc_later_hint">The PC is not reachable. The mobile is emptied right away, the PC at the next sync with the PC.</string>
+    <string name="trash_pc_later_hint">The PC is not reachable. The phone is emptied right away, the PC at the next sync with the PC.</string>
     <plurals name="trash_kept_reserved">
         <item quantity="one">%1$s file is scheduled for restore and stays.</item>
         <item quantity="other">%1$s files are scheduled for restore and stay.</item>

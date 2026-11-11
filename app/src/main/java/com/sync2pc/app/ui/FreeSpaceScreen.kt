@@ -219,6 +219,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 resultText = buildString {
                     append(plural(R.plurals.free_confirmed, v.confirmed.size))
                     if (v.missing > 0) append(" ").append(plural(R.plurals.free_missing, v.missing))
+                    if (v.changed > 0) append(" ").append(plural(R.plurals.free_changed, v.changed))
                     if (v.unreachable.isNotEmpty()) append(" ").append(str(R.string.free_unreachable_hosts, v.unreachable.joinToString(", ")))
                     if (v.rejected.isNotEmpty()) append(" ").append(str(R.string.free_other_pc_hosts, v.rejected.joinToString(", ")))
                 }

@@ -10,7 +10,7 @@ Zuerst `docs/TESTING.md` (gezielt), je nach Prüfung `docs/ARCHITECTURE.md`, `do
 1. Prüfauftrag verstehen, Änderungen (Git-Diff bzw. Dateistand) und betroffene Komponenten bestimmen.
 2. Risikokategorie festlegen, bestehende Tests untersuchen, fehlende Testfälle identifizieren.
 3. Relevante Tests selbst ausführen und bei Bedarf selbst einen Debug-Build erstellen (Auswahl nach `docs/TESTING.md` §9, noch gültige Ergebnisse für denselben Stand wiederverwenden, nur Nötiges; Logs und Screenshots knapp halten; Lösche Screenshots nach Ende der Session. Skills `run-targeted-tests`, `qa-check` mit `testing-qa-specialist`); bei grösseren Änderungen zusätzlich `review-changes`. Review und QA unabhängig bewerten.
-- **Optimierte Vorgehensweise:** Textauszug per uiautomator statt Screenshots; Für Übersichten ein verkleinerter Screenshot, Details nur bei Bedarf. Suche nach Wegbeschreibungen in navigation.md; Navigationsfile nur gezielt per Grep lesen.
+- **Optimierte Vorgehensweise:** Textauszug per uiautomator statt Screenshots; Für Übersichten ein verkleinerter Screenshot, Details nur bei Bedarf. Suche nach Navigationswegen für die App im Emulator in navigation.md. Dort sind die Schritte und Koordinaten festgelegt, um zu bestimmten Punkten zu gelangen.
 4. Bei Bedarf im Emulator prüfen: Emulator selbstständig starten, in der App alle nötigen Einstellungen vornehmen/entfernen. Vor jeder Bearbeitung oder Entfernung eines Profils zuerst exportieren, nach den Tests den ursprünglichen Zustand per Import wiederherstellen. Dateioperationen (erstellen, ändern, verschieben, löschen usw.) nur in `.build\qa-smb-share`, `%LOCALAPPDATA%\LeoSyncTestShare`, `D:\testsync` und `X:\testsync`.
 5. Ergebnisse bewerten, Risiken und Testlücken dokumentieren.
 

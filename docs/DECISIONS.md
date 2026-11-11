@@ -20,7 +20,7 @@
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
 > - Versionen 0.16.0 bis 0.16.3 (2026-11-11): DEC-231 bis DEC-248 (Sync-Sperre und Folgelauf, «Beide behalten», Konflikt-Rückgängig, Verschlüsselungswert, Startseite und Dialoge, Teststruktur); Status Implemented laut Development, DEC-240 Accepted; QA- und UX-Prüfung offen.
-> - Versionen 0.16.8 bis 0.16.14 (2026-11-11): DEC-249 bis DEC-251 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien); Status Implemented laut Development; QA-Prüfung offen.
+> - Versionen 0.16.8 bis 0.16.16 (2026-11-11): DEC-249 bis DEC-252 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien, EN «Phone»); Status Implemented laut Development; QA-Prüfung offen.
 > - Version 0.15.1 (2026-11-11): DEC-226 bis DEC-230 (Verlauf löschen, Papierkorb, Import «Ersetzen», Update-Hinweis, Sprache ausserhalb der Sicherung), Status Implemented laut Development.
 > - Version 0.15.0 (2026-11-11): DEC-221 bis DEC-225 (Nachlauf, SMB-Verschlüsselung, Gleichheit vor Löschen, UX Nachlauf-Hinweis und Karte «Verschlüsselung»), Status Implemented laut Development; Aktualisierungen an DEC-021, DEC-052, DEC-092, DEC-134, DEC-217, DEC-219.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
@@ -264,6 +264,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-249: Wartende Dateien nur lokal gezählt; leere WLAN-Zeile bleibt als Leerzeile
 - DEC-250: Icon-Stil «Variante C Duotone» statt Emojis
 - DEC-251: Geänderte Handy-Datei beim Upload wird zurückgestellt statt als Fehler gezählt
+- DEC-252: Englisch nennt das Gerät «Phone» statt «Mobile»
 
 **11. Lokalisierung und Sprache**
 
@@ -621,6 +622,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-249 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-250 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-251 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-252 | Implemented | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -2740,6 +2742,17 @@ Pausiert angezeigt.
 - **Konsequenzen:** Siehe SYNC-ENGINE 6.7. QA-Prüfung des Folgelaufs offen (SYNC-20261111-214).
 - **Betroffene Komponenten:** `MirrorEngine`, `SmbSession.upload`, `mirror/UploadVerdict.kt`, `SyncWorker`
 - **Abhängigkeiten:** DEC-238
+
+### DEC-252: Englisch nennt das Gerät «Phone» statt «Mobile»
+- **Status:** Implemented (0.16.16 laut Development, SYNC-20261111-215)
+- **Datum:** 2026-11-11 (Benutzerauftrag)
+- **Kategorie:** UI / Lokalisierung
+- **Entscheidung:** In den englischen App-Texten und der englischen Hilfe heisst das Gerät «Phone». «Mobile data» und «mobile plan» (Mobilfunk) bleiben. Das ersetzt die frühere Vorgabe «Mobile».
+- **Begründung:** — (in der Quelle nicht genannt; Benutzerwunsch).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** `CLAUDE.md` §1 und die Memory «LeoSync UI-Begriffe» nennen für EN noch «Mobile»; eine Änderung am Regelwerk braucht den ausdrücklichen Auftrag des Benutzers.
+- **Betroffene Komponenten:** `res/values/strings_*.xml`, `docs/hilfe/help-en.md`
+- **Abhängigkeiten:** DEC-155
 
 ---
 

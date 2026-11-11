@@ -543,7 +543,13 @@ class SmbSession private constructor(
             EnumSet.of(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE),
         ).use { f ->
             onProgress(offset)
-            openInput(offset).use { input ->
+            // Quelle auf dem Handy nicht lesbar (z. B. Phantomzeile im MediaStore, ENOENT): angelegte Temp-Datei entfernen,
+            // sie wäre eine 0-Byte-Rest-Datei auf dem PC (SYNC-20261111-203). Netzwerkfehler betreffen nur das Schreiben (unten).
+            val source = try { openInput(offset) } catch (e: java.io.IOException) {
+                if (resumedAt == 0L) try { f.deleteOnClose() } catch (ignored: Exception) {}
+                throw e
+            }
+            source.use { input ->
                 val buf = ByteArray(BUFFER)
                 while (true) {
                     checkCancel()

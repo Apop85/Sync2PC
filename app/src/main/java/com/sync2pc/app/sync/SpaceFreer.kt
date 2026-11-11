@@ -42,6 +42,8 @@ object SpaceFreer {
         val group: String,
         /** Teil-Hash beim Sichern (null = nicht gespeichert -> wird bei Bedarf neu berechnet) */
         val hash: String? = null,
+        /** Änderungsdatum (Sekunden) beim Auflisten: Vergleichswert für die Neuprüfung direkt vor dem Löschen (SYNC-20261111-205) */
+        val modifiedSec: Long = 0,
     )
 
     /** Fotos eines Profils als Auswahl-Einträge (0.7.0) + die nötigen Daten für Prüfung und Papierkorb */
@@ -55,6 +57,8 @@ object SpaceFreer {
         val unreachable: List<String>,
         /** Profile, bei denen unter der Adresse ein anderer/noch nicht erkannter PC antwortet (keine Anmeldung erfolgt) */
         val rejected: List<String> = emptyList(),
+        /** Seit dem Auflisten auf dem Handy geändert (Grösse/Datum) – bleiben auf dem Handy (SYNC-20261111-205) */
+        val changed: Int = 0,
     )
 
     private data class Media(
@@ -82,6 +86,32 @@ object SpaceFreer {
     internal fun rowMatches(row: SyncedFile, size: Long, modifiedSec: Long): Boolean =
         row.size == size && row.dateModified == modifiedSec
 
+    /** Ist die Handy-Datei noch so wie beim Auflisten? (Grösse UND Änderungsdatum; SYNC-20261111-205) */
+    internal fun unchanged(listedSize: Long, listedModifiedSec: Long, size: Long?, modifiedSec: Long?): Boolean =
+        size != null && modifiedSec != null && listedSize == size && listedModifiedSec == modifiedSec
+
+    /** Aktuelle (Grösse, Änderungsdatum) hinter der URI aus dem MediaStore; null = nicht lesbar/nicht mehr vorhanden */
+    private fun currentState(context: Context, uri: Uri): Pair<Long, Long>? = try {
+        context.contentResolver.query(
+            uri, arrayOf(MediaStore.MediaColumns.SIZE, MediaStore.MediaColumns.DATE_MODIFIED), null, null, null
+        )?.use { c -> if (c.moveToFirst()) c.getLong(0) to c.getLong(1) else null }
+    } catch (e: Exception) { null }
+
+    /**
+     * Neuprüfung unmittelbar vor dem Löschen: Dateien, deren Grösse oder Änderungsdatum vom Stand beim Auflisten
+     * abweicht (z. B. nach dem Öffnen der Seite bearbeitet), bleiben auf dem Handy. Nicht lesbar = geändert.
+     * Live-Foto-Paare bleiben ganz, sobald ein Partner abweicht. Liefert (unverändert, Anzahl bleibt).
+     */
+    fun recheckUnchanged(context: Context, list: List<Candidate>): Pair<List<Candidate>, Int> {
+        val ok = HashSet<String>()
+        for (c in list) {
+            val st = currentState(context, c.uri)
+            if (unchanged(c.size, c.modifiedSec, st?.first, st?.second)) ok += c.sourceKey
+        }
+        val keep = wholeGroups(list, { it.group }) { it.sourceKey in ok }
+        return keep to (list.size - keep.size)
+    }
+
     /**
      * Alle Fotos/Videos eines Fotos-Profils (0.7.0). Gesichert = in der Datenbank mit gleicher Grösse und gleichem
      * Änderungsdatum (geprüft wird vor dem Löschen auf dem PC). Live-Foto-Paare haben dieselbe Gruppe; FreeRules
@@ -100,7 +130,7 @@ object SpaceFreer {
                 backedUp = s != null, favorite = m.favorite, group = m.group,
             )
             if (s != null) candidates[m.sourceKey] =
-                Candidate(m.uri, m.sourceKey, m.name, m.size, s.profileId, s.remotePath, m.group, s.partialHash)
+                Candidate(m.uri, m.sourceKey, m.name, m.size, s.profileId, s.remotePath, m.group, s.partialHash, m.modifiedSec)
         }
         PhotoItems(items, candidates)
     }
@@ -147,8 +177,10 @@ object SpaceFreer {
             }
         }
         // Fehlt ein Partner eines Live-Fotos auf dem PC, bleiben beide auf dem Handy
-        val confirmed = wholeGroups(candidates, { it.group }) { it.sourceKey in ok }
-        VerifyResult(confirmed, candidates.size - confirmed.size, unreachable, rejected)
+        val onPc = wholeGroups(candidates, { it.group }) { it.sourceKey in ok }
+        // Direkt vor dem Papierkorb-Antrag: seit dem Auflisten bearbeitete Fotos bleiben (SYNC-20261111-205)
+        val (confirmed, changed) = recheckUnchanged(context, onPc)
+        VerifyResult(confirmed, candidates.size - onPc.size, unreachable, rejected, changed)
     }
 
     /** Systemdialog-Anfragen "In den Papierkorb" (Android 11+), höchstens 500 Dateien je Anfrage */
@@ -162,7 +194,9 @@ object SpaceFreer {
     /** Android 10 kennt keinen Papierkorb: direkt löschen (nach ausdrücklicher Bestätigung in der App) */
     suspend fun deleteDirectly(context: Context, list: List<Candidate>): Int = withContext(Dispatchers.IO) {
         var n = 0
-        for (c in list) try { if (context.contentResolver.delete(c.uri, null, null) > 0) n++ } catch (ignored: Exception) {}
+        // Zwischen Prüfung und Bestätigung kann das Foto bearbeitet worden sein: erneut prüfen (SYNC-20261111-205)
+        val (safe, _) = recheckUnchanged(context, list)
+        for (c in safe) try { if (context.contentResolver.delete(c.uri, null, null) > 0) n++ } catch (ignored: Exception) {}
         n
     }
 

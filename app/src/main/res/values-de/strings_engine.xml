@@ -136,6 +136,7 @@
     <string name="tree_err_read">Datei nicht lesbar</string>
     <string name="tree_err_write">Datei nicht beschreibbar</string>
     <string name="tree_err_rename">Umbenennen von „%1$s“ fehlgeschlagen</string>
+    <string name="tree_err_name_taken">„%1$s“ gibt es auf dem Handy unter diesem Namen schon, sie wird aber nicht aufgelistet (nicht indiziert); die Kopie wurde nicht behalten, um Duplikate zu vermeiden</string>
     <string name="tree_err_size">Grösse nach Download stimmt nicht (%1$s statt %2$s Bytes)</string>
     <string name="tree_err_move">Verschieben nicht unterstützt</string>
     <string name="tree_err_changed">Datei wurde während des Laufs geändert</string>

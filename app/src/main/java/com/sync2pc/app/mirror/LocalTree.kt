@@ -363,6 +363,18 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
             backupId?.let { try { rename(it, name) } catch (ignored: Exception) {} }
             throw e
         }
+        // Der Anbieter darf den Namen eigenmächtig ändern («name (1).ext»), wenn es ihn auf dem Datenträger schon gibt, er
+        // aber nicht aufgelistet wurde (z. B. nicht im MediaStore indiziert). Dieses Duplikat würde beim nächsten Lauf
+        // hochgeladen: eigene frische Kopie entfernen, alte Version zurück, Fehler melden (SYNC-20261111-203).
+        val actual = try {
+            resolver.query(finalUri, arrayOf(Document.COLUMN_DISPLAY_NAME), null, null, null)
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+        } catch (e: Exception) { null }
+        if (actual != null && !actual.equals(name, ignoreCase = true)) {
+            try { DocumentsContract.deleteDocument(resolver, finalUri) } catch (ignored: Exception) {}
+            backupId?.let { try { rename(it, name) } catch (ignored: Exception) {} }
+            throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_name_taken, relPath))
+        }
         backupId?.let { try { delete(it) } catch (ignored: Exception) {} }
         return DocumentsContract.getDocumentId(finalUri)
     }
