@@ -77,7 +77,11 @@ class ContentTriggerArmTest {
         SyncScheduler.armContentTrigger(ctx, replace = true) // Einstellungsänderung
         val now = waiting().single()
         assertNotEquals(id, now.id)
-        assertTrue(contentWork().any { it.id == id && it.state == WorkInfo.State.CANCELLED })
+        // REPLACE bricht die alte Arbeit ab und entfernt sie aus der WorkManager-Datenbank (SYNC-20261111-227): sie ist
+        // nicht mehr abfragbar (null) oder höchstens CANCELLED, auf keinen Fall noch wartend oder in Arbeit
+        val old = wm.getWorkInfoById(id).get()
+        assertTrue(old == null || old.state == WorkInfo.State.CANCELLED)
+        assertEquals(1, contentWork().count { it.state == WorkInfo.State.ENQUEUED })
     }
 
     @Test

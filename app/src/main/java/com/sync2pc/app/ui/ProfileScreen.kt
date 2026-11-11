@@ -106,7 +106,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     val scope = rememberCoroutineScope()
 
     var loaded by remember { mutableStateOf(profileId == 0L) }
-    val pState = remember { mutableStateOf(Profile(name = str(R.string.profile_default_photos))) }
+    // SYNC-20261111-218 B6: Profil, Typwahl, Zahlenfelder und Vergleichsstand überstehen eine Konfigurationsänderung
+    val pState = rememberSaveable(stateSaver = ProfileSaver.saver) { mutableStateOf(Profile(name = str(R.string.profile_default_photos))) }
     var p by pState
     var password by remember { mutableStateOf("") }
     var newSsid by remember { mutableStateOf("") }
@@ -119,7 +120,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var encHelp by remember { mutableStateOf(false) }
     var encOpenSignal by remember { mutableStateOf(0) }
     // PC-Erkennung (0.13.0): Modus vom Benutzer gewählt? Zuletzt "anderer PC" gemeldet? Rückfrage zum Neuvertrauen
-    var pcTouched by remember { mutableStateOf(false) }
+    var pcTouched by rememberSaveable { mutableStateOf(false) }
     var pcChanged by remember { mutableStateOf(false) }
     var trustAsk by remember { mutableStateOf<TrustAsk?>(null) }
     var hostAsk by remember { mutableStateOf<HostAsk?>(null) }
@@ -156,13 +157,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         }
     }
     /** Neues Profil: zuerst Typ wählen (Assistent) */
-    var typeChosen by remember { mutableStateOf(profileId != 0L) }
+    var typeChosen by rememberSaveable { mutableStateOf(profileId != 0L) }
     var showRemotePicker by remember { mutableStateOf(false) }
-    val pollState = remember { mutableStateOf("") }
+    val pollState = rememberSaveable { mutableStateOf("") }
     var pollText by pollState
-    val trashState = remember { mutableStateOf("") }
+    val trashState = rememberSaveable { mutableStateOf("") }
     var trashText by trashState
-    var guardText by remember { mutableStateOf("") }
+    var guardText by rememberSaveable { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     var confirmFullVerify by remember { mutableStateOf(false) }
@@ -172,7 +173,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var checkingFolder by remember { mutableStateOf(false) }
     var folderWarning by remember { mutableStateOf<FolderWarning?>(null) }
     // Stand beim Öffnen -> ungespeicherte Änderungen erkennen (0.3.1)
-    var baseline by remember { mutableStateOf<Profile?>(null) }
+    var baseline by rememberSaveable(stateSaver = ProfileSaver.nullableSaver) { mutableStateOf<Profile?>(null) }
     var basePassword by remember { mutableStateOf("") }
     var askLeave by remember { mutableStateOf(false) }
     /** Gerade neu angelegtes Profil -> Dialog "Wie weiter?" */
@@ -385,6 +386,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
      * Ordner?" (null = Stichprobe noch nicht gemacht).
      */
     fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
+        // SYNC-20261111-218 B7: nie mit fehlender Pflichtangabe eines früheren Schritts speichern (z. B. «kein Handy-Ordner»);
+        // der Assistent springt zum ersten unvollständigen Schritt und zeigt den Hinweis
+        if (profileId == 0L) ProfileWizard.steps(p).firstOrNull { ProfileWizard.missing(p, it) != null }?.let { bad ->
+            step = bad; showMissing = true
+            return
+        }
         // P7/P8: nie mit leerem oder ungültigem Zahlenfeld speichern (sonst stiller Zwischenwert)
         val badStep = ProfileWizard.firstInvalidNumberStep(p, trashText, pollText, guardText)
         if (badStep != null) {
@@ -798,7 +805,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                                     showMissing = false
                                     Toast.makeText(ctx, str(R.string.profile_number_step_blocked), Toast.LENGTH_LONG).show()
                                 }
-                                else { showMissing = false; step = steps[stepIndex + 1] }
+                                else {
+                                    // B7: ein früherer Schritt darf nicht unvollständig sein (z. B. nach einem Neuaufbau der Activity)
+                                    val bad = steps.take(stepIndex).firstOrNull { ProfileWizard.missing(p, it) != null }
+                                    showMissing = bad != null
+                                    step = bad ?: steps[stepIndex + 1]
+                                }
                             }
                             if (step.optional) OutlinedButton(onClick = next) { Text(str(R.string.profile_next)) }
                             else Button(onClick = next) { Text(str(R.string.profile_next)) }

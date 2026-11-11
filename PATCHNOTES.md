@@ -2,6 +2,16 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.17 (2026-11-11)
+
+### Geändert
+- **Deutscher Begriff:** «Synchronisierungsstatus» heisst jetzt «Abgleichstand» (Profil-Wartung, Profil löschen, Sicherung/Import). Englisch unverändert («sync status»).
+- **Konfigurationsänderung:** Die App bleibt bei Änderung von Schriftgrösse oder Hell/Dunkel auf dem aktuellen Bildschirm. Der Assistent «Neues Profil» behält seine Eingaben, ausser dem Passwort (wird nicht gespeichert, neu eingeben); bestehende Profile werden neu aus der Datenbank geladen.
+- **Profilkarte:** Der Zähler «offen» wird beim Zurückkehren in die App neu berechnet.
+- **Meldung mit «Rückgängig»:** Die Aktion steht unter dem Text.
+
+### Behoben
+- Der Assistent speichert nie mit fehlender Pflichtangabe eines früheren Schritts.
 ## 0.16.16 (2026-11-11)
 
 ### Geändert

@@ -171,6 +171,33 @@ fun SwitchRow(
 }
 
 /**
+ * Snackbar-Host mit der Aktion («Rückgängig») unter dem Text (SYNC-20261111-218 B4): bei grosser Schrift nimmt die Aktion sonst
+ * Breite weg und der Text bricht mitten im Wort um.
+ */
+@Composable
+fun LeoSnackbarHost(state: androidx.compose.material3.SnackbarHostState) {
+    androidx.compose.material3.SnackbarHost(state) { data ->
+        androidx.compose.material3.Snackbar(data, actionOnNewLine = true)
+    }
+}
+
+/**
+ * UNC-Pfad ohne Zeilenumbruch direkt nach dem Präfix «\\» (SYNC-20261111-218 B2): Wortverbinder (U+2060) hinter jedem
+ * Backslash des Präfixes, damit bei grosser Schrift nicht ein einzelnes «\» in eigener Zeile steht. Nur zur Anzeige.
+ */
+fun uncNoBreak(path: String): String =
+    if (path.startsWith("\\\\")) "\\⁠\\⁠" + path.substring(2) else path
+
+/**
+ * SYNC-20261111-222 B2b: Pfad mit Umbruchmöglichkeit nur nach "\" (Zero-Width-Space). Der erste Pfadteil (bis zum ersten
+ * "\" nach dem Anfang) bleibt zusammen, damit ein vorangestelltes Icon nicht allein in einer Zeile steht.
+ */
+fun pathBreakAfterBackslash(path: String): String {
+    val h = path.indexOf('\\', path.lastIndexOf('\u2060') + 1)
+    return if (h < 0) path else path.substring(0, h + 1) + path.substring(h + 1).replace("\\", "\\\u200B")
+}
+
+/**
  * Dialogtext vertikal scrollbar (-122 Punkt 1): Titel und Schaltflächen bleiben stehen, der Text ist bei jeder
  * Systemschrift bis zum letzten Wort erreichbar (der Material3-AlertDialog scrollt seinen Textbereich nicht selbst).
  * SYNC-20261111-176 R2: Solange Text überläuft, zeigt ein Scrollbalken am Rand und ein Verlauf am unteren Rand,
@@ -218,7 +245,10 @@ fun DialogButtonColumn(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 fun ColumnScope.StackedButton(text: String, color: Color = Color.Unspecified, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(text, color = color) }
+    // SYNC-20261111-221 B9: Text zentriert, auch wenn er bei grosser Schrift auf mehrere Zeilen umbricht
+    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Text(text, color = color, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
 }
 
 @Composable

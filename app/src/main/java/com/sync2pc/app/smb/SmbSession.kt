@@ -251,6 +251,7 @@ class SmbSession private constructor(
                 val share = session.connectShare(target.share) as? DiskShare
                     ?: throw IllegalStateException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_not_disk, target.share))
                 PcLogin.commit(c, pcStore)
+                EncryptionStatus.record(profile, smbSessionEncrypted(session))
                 return SmbSession(link.rawClient, link.rawConnection, session, share, target)
             } catch (e: Exception) {
                 c.close()

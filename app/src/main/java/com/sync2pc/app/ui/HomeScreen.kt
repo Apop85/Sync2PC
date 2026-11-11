@@ -368,7 +368,7 @@ fun HomeScreen(
     ScreenScaffold(
         title = "LeoSync",
         onBack = null,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { LeoSnackbarHost(snackbar) },
         actions = {
             // Symbol = Aktion (0.9.0): Automatik läuft -> ⏸ (tippen = pausieren), pausiert -> ▶ (tippen = fortsetzen)
             if (userPausedUntil > 0) IconButton(onClick = { SyncScheduler.resume(ctx); pauseVersion++ }) {

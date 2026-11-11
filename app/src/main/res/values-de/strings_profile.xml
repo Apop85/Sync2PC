@@ -101,12 +101,12 @@
     <string name="profile_simulation_save_first">Zuerst speichern – simuliert wird der gespeicherte Stand.</string>
     <string name="profile_maintenance">Wartung</string>
     <string name="profile_maintenance_hint">Vergisst, welche Dateien bereits übertragen wurden. Bei der nächsten Synchronisierung wird alles mit der Freigabe abgeglichen (identische Dateien werden nicht erneut übertragen).</string>
-    <string name="profile_reset">Synchronisierungsstatus zurücksetzen</string>
+    <string name="profile_reset">Abgleichstand zurücksetzen</string>
     <string name="profile_delete_button">Profil löschen</string>
-    <string name="profile_maintenance_closed">Synchronisierungsstatus zurücksetzen, Profil löschen – antippen zum Öffnen</string>
-    <string name="profile_delete_section_hint">Löscht Einstellungen und Synchronisierungsstatus dieses Profils. Dateien auf Handy und PC bleiben erhalten.</string>
+    <string name="profile_maintenance_closed">Abgleichstand zurücksetzen, Profil löschen – antippen zum Öffnen</string>
+    <string name="profile_delete_section_hint">Löscht Einstellungen und Abgleichstand dieses Profils. Dateien auf Handy und PC bleiben erhalten.</string>
     <string name="profile_delete_title">Profil löschen?</string>
-    <string name="profile_delete_text">Einstellungen und Synchronisierungsstatus dieses Profils werden gelöscht. Dateien auf Handy und PC bleiben erhalten.</string>
+    <string name="profile_delete_text">Einstellungen und Abgleichstand dieses Profils werden gelöscht. Dateien auf Handy und PC bleiben erhalten.</string>
     <string name="profile_created_title">Profil gespeichert</string>
     <string name="profile_created_text">Wie weiter? Bis du dieses Profil einmal synchronisierst, startet es nicht automatisch. So kannst du zuerst in Ruhe simulieren.</string>
     <string name="profile_later">Später</string>
@@ -130,10 +130,10 @@
     <string name="profile_layout_running">Die Struktur kann nicht geändert werden, solange eine Synchronisierung läuft. Versuche es nach deren Ende erneut.</string>
     <string name="profile_save_anyway">Trotzdem speichern</string>
     <string name="profile_checking_folder">Prüfe Ordner…</string>
-    <string name="profile_checking_folder_text">Passt der neue Ordner zum bisherigen Synchronisierungsstand?</string>
+    <string name="profile_checking_folder_text">Passt der neue Ordner zum bisherigen Abgleichstand?</string>
     <string name="profile_folder_warning_title">Ist das wirklich der richtige Ordner?</string>
-    <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Synchronisierungsstand dieses Profils. Nach einer Neuinstallation oder einem Import ist das normal: Wähle dann „Trotzdem übernehmen“.</string>
-    <string name="profile_reset_title">Synchronisierungsstatus zurücksetzen?</string>
+    <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Abgleichstand dieses Profils. Nach einer Neuinstallation oder einem Import ist das normal: Wähle dann „Trotzdem übernehmen“.</string>
+    <string name="profile_reset_title">Abgleichstand zurücksetzen?</string>
     <string name="profile_reset_text">Die nächste Synchronisierung gleicht alle Dateien erneut mit der Freigabe ab. Das kann bei vielen Dateien länger dauern.</string>
     <string name="profile_reset_done">Zurückgesetzt</string>
     <string name="profile_reset_button">Zurücksetzen</string>
@@ -189,7 +189,7 @@
     <string name="profile_filter_bad">Ungültiges Muster „%1$s“: Eine Klammer fehlt oder ist zu viel.</string>
     <string name="profile_filter_summary_include">Nur: %1$s</string>
     <string name="profile_filter_summary_exclude">Ausgeschlossen: %1$d Muster</string>
-    <string name="profile_folder_warning_options">Trotzdem übernehmen: der bisherige Synchronisierungsstand bleibt.\nAls neuen Ordner behandeln: der Stand wird zurückgesetzt, alle Dateien werden neu abgeglichen.</string>
+    <string name="profile_folder_warning_options">Trotzdem übernehmen: der bisherige Abgleichstand bleibt.\nAls neuen Ordner behandeln: der Stand wird zurückgesetzt, alle Dateien werden neu abgeglichen.</string>
     <string name="overlap_nested_remote">Der Zielordner auf dem PC liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen.</string>
     <string name="overlap_cross_pc_from_photos">Der Zielordner dieser Fotosicherung liegt im PC-Ordner von Profil „%1$s“ (oder umgekehrt). Das Ordner-Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können wieder aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden.</string>
     <string name="overlap_cross_phone_from_photos">Ein Quellordner dieser Fotosicherung liegt im Handy-Ordner von Profil „%1$s“, das Dateien aufs Handy lädt (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden.</string>
@@ -215,4 +215,5 @@
     <string name="enc_test_off">Nicht verschlüsselt (%1$s), wie eingestellt.</string>
     <string name="enc_help">Hilfe: Verschlüsselung einschalten</string>
     <string name="enc_test_required_fail">✗ Verbindung nicht möglich: Dein PC oder NAS kann keine verschlüsselte Verbindung herstellen. Es wurden keine Anmeldedaten gesendet. Schalte die Verschlüsselung am PC oder NAS ein (siehe Hilfe) oder wähle «Wenn möglich».</string>
+    <string name="icon_encrypted">Verschlüsselt</string>
 </resources>

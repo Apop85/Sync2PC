@@ -133,7 +133,7 @@ fun TrashScreen(onBack: () -> Unit) {
                     Card(Modifier.fillMaxWidth().clickable { chosen = p.id }) {
                         Column(Modifier.padding(16.dp)) {
                             Text(p.name, style = MaterialTheme.typography.titleMedium)
-                            Hint("📁 " + p.smbPath + (if (p.remoteSubfolder.isNotBlank()) "\\" + p.remoteSubfolder else ""))
+                            Hint("📁 " + uncNoBreak(p.smbPath) + (if (p.remoteSubfolder.isNotBlank()) "\\" + p.remoteSubfolder else ""))
                         }
                     }
                 }

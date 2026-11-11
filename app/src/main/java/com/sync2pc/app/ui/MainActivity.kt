@@ -69,6 +69,42 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Einstellungsseite, auf die nach dem nächsten Neuaufbau der Activity (Sprachwechsel) zurückgekehrt wird */
         @Volatile var returnToSection: SettingsSection? = null
+
+        private const val STATE_SCREEN = "screen"
+
+        /** Bildschirm als Text für den Instanzzustand (SYNC-20261111-218 B6) */
+        internal fun encodeScreen(s: Screen): String = when (s) {
+            Screen.Home -> "home"
+            is Screen.Settings -> "settings:${s.section.name}"
+            is Screen.ProfileEdit -> "profile:${s.id}"
+            Screen.Decisions -> "decisions"
+            is Screen.Preview -> "preview:${s.profileId}"
+            Screen.Log -> "log"
+            Screen.Stats -> "stats"
+            Screen.Update -> "update"
+            Screen.Conflicts -> "conflicts"
+            Screen.FreeSpace -> "free"
+            Screen.Trash -> "trash"
+        }
+
+        /** Gegenstück zu [encodeScreen]; unbekannt oder defekt = null (dann bleibt die Startseite) */
+        internal fun decodeScreen(code: String): Screen? {
+            val arg = code.substringAfter(':', "")
+            return when (code.substringBefore(':')) {
+                "home" -> Screen.Home
+                "settings" -> SettingsSection.entries.firstOrNull { it.name == arg }?.let { Screen.Settings(it) }
+                "profile" -> arg.toLongOrNull()?.let { Screen.ProfileEdit(it) }
+                "decisions" -> Screen.Decisions
+                "preview" -> arg.toLongOrNull()?.let { Screen.Preview(it) }
+                "log" -> Screen.Log
+                "stats" -> Screen.Stats
+                "update" -> Screen.Update
+                "conflicts" -> Screen.Conflicts
+                "free" -> Screen.FreeSpace
+                "trash" -> Screen.Trash
+                else -> null
+            }
+        }
     }
 
     /** Android 10–12: gewählte App-Sprache auch für System- und Material-Texte (ab 13 erledigt das Android) */
@@ -79,6 +115,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // SYNC-20261111-218 B6: nach einer Konfigurationsänderung (Schriftgrösse, Hell/Dunkel) auf dem Bildschirm bleiben
+        savedInstanceState?.getString(STATE_SCREEN)?.let { decodeScreen(it) }?.let { screen = it }
         handleIntent(intent)
         // Startbildschirm nur beim echten Start (nicht nach Drehen des Bildschirms o. Ä.)
         val showSplashInitially = savedInstanceState == null
@@ -99,6 +137,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_SCREEN, encodeScreen(screen))
     }
 
     override fun onNewIntent(intent: Intent) {

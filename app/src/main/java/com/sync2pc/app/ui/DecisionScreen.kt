@@ -170,7 +170,7 @@ fun DecisionScreen(onBack: () -> Unit) {
     ScreenScaffold(
         title = str(R.string.decision_title),
         onBack = onBack,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { LeoSnackbarHost(snackbar) },
         actions = {
             if (decisions.isNotEmpty()) TextButton(
                 modifier = Modifier.heightIn(min = 48.dp),

@@ -130,9 +130,9 @@
     <string name="profile_layout_running">The structure cannot be changed while a synchronisation is running. Try again when it has finished.</string>
     <string name="profile_save_anyway">Save anyway</string>
     <string name="profile_checking_folder">Checking folder…</string>
-    <string name="profile_checking_folder_text">Does the new folder match the previous sync state?</string>
+    <string name="profile_checking_folder_text">Does the new folder match the previous sync status?</string>
     <string name="profile_folder_warning_title">Is this really the right folder?</string>
-    <string name="profile_folder_warning_text">The chosen folder does not match the previous sync state of this profile. After a reinstall or an import this is expected: choose “Accept anyway”.</string>
+    <string name="profile_folder_warning_text">The chosen folder does not match the previous sync status of this profile. After a reinstall or an import this is expected: choose “Accept anyway”.</string>
     <string name="profile_reset_title">Reset sync status?</string>
     <string name="profile_reset_text">The next sync compares all files with the Share again. With many files this can take a while.</string>
     <string name="profile_reset_done">Reset</string>
@@ -189,7 +189,7 @@
     <string name="profile_filter_bad">Invalid pattern “%1$s”: a bracket is missing or extra.</string>
     <string name="profile_filter_summary_include">Only: %1$s</string>
     <string name="profile_filter_summary_exclude">Excluded: %1$d patterns</string>
-    <string name="profile_folder_warning_options">Accept anyway: the previous sync state is kept.\nTreat as new folder: the state is reset and all files are compared again.</string>
+    <string name="profile_folder_warning_options">Accept anyway: the previous sync status is kept.\nTreat as new folder: the state is reset and all files are compared again.</string>
     <string name="overlap_nested_remote">The target folder on the PC lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
     <string name="overlap_cross_pc_from_photos">The target folder of this photo backup lies inside the PC folder of profile “%1$s” (or vice versa). The folder profile treats the backed-up photos like its own files: they can be downloaded to the phone again or moved to the recycle bin when deletions are applied.</string>
     <string name="overlap_cross_pc_from_mirror">The PC folder of this profile lies inside the target folder of photo backup “%1$s” (or vice versa). This profile treats the backed-up photos like its own files: they can be downloaded to the phone or moved to the recycle bin when deletions are applied.</string>
@@ -215,4 +215,5 @@
     <string name="enc_test_off">Not encrypted (%1$s), as set.</string>
     <string name="enc_help">Help: turn on encryption</string>
     <string name="enc_test_required_fail">✗ Connection not possible: Your PC or NAS cannot make an encrypted connection. No sign-in data was sent. Turn on encryption on the PC or NAS (see help) or choose «If possible».</string>
+    <string name="icon_encrypted">Encrypted</string>
 </resources>

@@ -108,7 +108,7 @@ fun LogScreen(onBack: () -> Unit) {
     ScreenScaffold(
         title = str(R.string.home_cd_log),
         onBack = onBack,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { LeoSnackbarHost(snackbar) },
         actions = {
             IconButton(onClick = {
                 scope.launch {

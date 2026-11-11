@@ -81,6 +81,7 @@ import com.sync2pc.app.l10n.str
 import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.data.Profile
+import androidx.compose.foundation.layout.offset
 import com.sync2pc.app.data.ProfileType
 import com.sync2pc.app.data.SyncRun
 import com.sync2pc.app.data.messageText
@@ -163,7 +164,8 @@ internal fun PauseDialog(onDismiss: () -> Unit, onPause: (Int) -> Unit, onForeve
         onDismissRequest = onDismiss,
         title = { Text(str(R.string.home_pause_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // SYNC-20261111-218 B1: scrollbar und geclippt, damit Hinweis und eingebettetes Icon bei Schrift 2,0 erreichbar bleiben
+            DialogScroll(Arrangement.spacedBy(8.dp)) {
                 Hint(str(R.string.home_pause_hint))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(1, 4, 24).forEach { h ->
@@ -511,7 +513,15 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
     val openConflicts by remember(p.id) { AppDatabase.get(ctx).dao().openConflictCountFlow(p.id) }.collectAsState(initial = 0)
     var open by remember(p.id) { mutableStateOf<Int?>(null) }
     // SYNC-20261111-199: auch bei Ordner-Profilen die lokal wartenden Dateien (neu/geändert seit dem letzten Abgleich)
-    LaunchedEffect(p, synced) {
+    // SYNC-20261111-218 B3: auch beim Zurückkehren in die App neu zählen (Dateien ändern sich ausserhalb der App)
+    var resumeTick by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val obs = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) resumeTick++ }
+        lifecycleOwner.lifecycle.addObserver(obs)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
+    }
+    LaunchedEffect(p, synced, resumeTick) {
         delay(800) // während eines Laufs ändert sich der Zähler laufend: nicht bei jeder Datei neu scannen
         open = try {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -521,6 +531,9 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
         } catch (e: kotlin.coroutines.cancellation.CancellationException) { throw e }
         catch (e: Exception) { null } // z. B. Medienzugriff fehlt -> Zeile ausblenden
     }
+    // SYNC-20261111-225: tatsächlicher Zustand der letzten Anmeldung, nicht die Einstellung (siehe EncryptionStatus)
+    val encTick by com.sync2pc.app.smb.EncryptionStatus.changes.collectAsState()
+    val encrypted = remember(p, encTick, resumeTick) { com.sync2pc.app.smb.EncryptionStatus.lastKnown(p) == true }
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -530,6 +543,16 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                     style = MaterialTheme.typography.labelLarge)
                 else if (ssid != null && p.ssids().contains(ssid)) Text(str(R.string.home_profile_on_wifi),
                     color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+                // SYNC-20261111-225: Icon «Verschlüsselt» (22 dp fest, optisch 12 dp vom Rand) als letztes Element der Kopfzeile:
+                // Der Text endet davor (weight(1f)), so ragt er nie über das Icon.
+                if (encrypted) {
+                    Spacer(Modifier.width(8.dp))
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_encrypted),
+                        contentDescription = str(R.string.icon_encrypted),
+                        modifier = Modifier.size(22.dp).offset(x = 4.dp, y = (-4).dp).align(Alignment.Top),
+                    )
+                }
             }
             val target = p.smbPath.ifBlank { str(R.string.home_profile_no_target) } +
                 (if (p.remoteSubfolder.isNotBlank()) "\\" + p.remoteSubfolder.trim('\\', '/') else "")
@@ -539,10 +562,11 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 // Handy- und PC-Ordner je auf einer eigenen Zeile (0.9.0), sonst bricht der Pfad mitten im "\\" um
                 Text("📁 $localLabel")
                 // Pfeil für den Screenreader als Wort (0.11.0): "Beidseitig: \\PC\Freigabe"
-                Text("${p.dir().short}  $target", modifier = Modifier.semantics { contentDescription = "${p.dir().label}: $target" })
+                // SYNC-20261111-222 B2b: Icon (NBSP) und erster Pfadteil bleiben zusammen, Umbruch nur nach "\" (ZWSP)
+                Text("${p.dir().short}\u00A0\u00A0${pathBreakAfterBackslash(uncNoBreak(target))}", modifier = Modifier.semantics { contentDescription = "${p.dir().label}: $target" })
                 Hint(p.dir().label + if (p.propagateDeletes) " · " + str(R.string.home_profile_propagate) else "")
             } else {
-                Text("📷 $target")
+                Text("📷 ${uncNoBreak(target)}")
                 Hint(str(R.string.home_profile_sources, p.folders().joinToString(", ").ifBlank { str(R.string.home_profile_none) }))
             }
             // R5: Fehlender Handy-Ordner-Zugriff (z. B. nach Import) sofort auf der Karte sichtbar, tippen öffnet das Profil

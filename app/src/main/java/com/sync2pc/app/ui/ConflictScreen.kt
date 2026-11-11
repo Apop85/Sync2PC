@@ -126,7 +126,7 @@ fun ConflictScreen(onBack: () -> Unit) {
     ScreenScaffold(
         title = str(R.string.conflict_title),
         onBack = onBack,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { LeoSnackbarHost(snackbar) },
         actions = {
             if (conflicts.isNotEmpty()) TextButton(
                 modifier = Modifier.heightIn(min = 48.dp),
@@ -147,7 +147,8 @@ fun ConflictScreen(onBack: () -> Unit) {
                 val sameAge = c.localModified / 1000 == c.remoteModified / 1000
                 val localNewer = c.localModified > c.remoteModified
                 val newer = "  " + str(R.string.conflict_newer)
-                val same = "  " + str(R.string.conflict_same_age)
+                // B5: nicht trennbare Einheit (geschütztes Leerzeichen), sonst bricht «(gleich alt)» innerhalb der Klammer um
+                val same = "  " + str(R.string.conflict_same_age).replace(' ', ' ')
                 SectionCard {
                     Text(c.relPath, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     if (profiles.size > 1) Hint(str(R.string.decision_profile, profileName))

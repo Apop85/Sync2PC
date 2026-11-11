@@ -77,7 +77,7 @@
         <item quantity="other">In “%1$s” the whole folder “%2$s” would be moved to the trash (%3$s files in total). Was it really deleted? Until you decide, this profile rests.</item>
     </plurals>
     <string name="guard_text_mass">In “%1$s”, %2$s of %3$s files would be moved to the trash. Was that much really deleted? Until you decide, this profile rests.</string>
-    <string name="guard_text_check">The chosen folder of “%1$s” does not match the previous sync state. Until you decide, this profile rests.</string>
+    <string name="guard_text_check">The chosen folder of “%1$s” does not match the previous sync status. Until you decide, this profile rests.</string>
 
     <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
     <string name="delete_log_done">Deleted: %1$s</string>

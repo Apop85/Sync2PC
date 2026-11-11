@@ -77,7 +77,7 @@
         <item quantity="other">In „%1$s“ würde der ganze Ordner „%2$s“ in den Papierkorb verschoben (insgesamt %3$s Dateien). Wurde er wirklich gelöscht? Bis du entscheidest, ruht dieses Profil.</item>
     </plurals>
     <string name="guard_text_mass">In „%1$s“ würden %2$s von %3$s Dateien in den Papierkorb verschoben. Wurde wirklich so viel gelöscht? Bis du entscheidest, ruht dieses Profil.</string>
-    <string name="guard_text_check">Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Synchronisierungsstand. Bis du entscheidest, ruht dieses Profil.</string>
+    <string name="guard_text_check">Der gewählte Ordner von „%1$s“ passt nicht zum bisherigen Abgleichstand. Bis du entscheidest, ruht dieses Profil.</string>
 
     <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
     <string name="delete_log_done">Gelöscht: %1$s</string>
