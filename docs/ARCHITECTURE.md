@@ -263,7 +263,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 
 ### 4.7 Tests und Konfiguration
 
-- `app/src/test/java/com/sync2pc/app/` – 25 Testklassen (QA-Lauf 2026-11-09 nach 0.12.1: 143 Tests; `MigrationTest` 3 auf Emulator bestanden) plus `TestTexts` als Hilfsklasse. Abgedeckt sind die reinen Logikklassen (`MirrorGuard`, `RemoteFolderName`, `FreeRules`, `TrashIndex/Policy/Purge`, `BackupCodec`, `Diagnostics`, `FileFilter`, `FolderNames`, `FilenameDateParser`, `ProfileOverlap/Wizard`, `CredentialGroups`, `RunSummary`, `TransferPlan`, `VerifyLevel`, `LocalTree`-Label) sowie `StringsParityTest` (DE/EN-Textparität). Details: `docs/TESTING.md`.
+- `app/src/test/java/com/sync2pc/app/` – 45 Testklassen mit `@Test` (Quelltext-Zählung 0.15.5: 442 Tests; letzter QA-Lauf 2026-11-11, 0.15.2: 40 Klassen/377 Tests grün; Einzelheiten `docs/TESTING.md` §1) plus `TestTexts` als Hilfsklasse. Abgedeckt sind die reinen Logikklassen (`MirrorGuard`, `RemoteFolderName`, `FreeRules`, `TrashIndex/Policy/Purge`, `BackupCodec`, `Diagnostics`, `FileFilter`, `FolderNames`, `FilenameDateParser`, `ProfileOverlap/Wizard`, `CredentialGroups`, `RunSummary`, `TransferPlan`, `VerifyLevel`, `LocalTree`-Label) sowie `StringsParityTest` (DE/EN-Textparität). Details: `docs/TESTING.md`.
 - `app/src/androidTest/java/com/sync2pc/app/MigrationTest.kt` – Room-Migrationen auf Gerät/Emulator (Schemas aus `app/schemas`).
 - `app/build.gradle.kts`, `proguard-rules.pro`, `AndroidManifest.xml`, `res/xml/*` – siehe Abschnitte 8 und 9.
 

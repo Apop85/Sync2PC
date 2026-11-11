@@ -681,6 +681,24 @@ Weicht Grösse oder Hash ab, wird die eben hochgeladene Zieldatei gelöscht (`sm
 
 **Sicherheitsmechanismen gegen Datenverlust (Zusammenfassung, Details Abschnitt 14):** Temp-Datei + Umbenennen, `.s2pold`, Papierkorb vor Überschreiben, Stand zuerst löschen, Prüfung auf Änderung während des Laufs, Schutzbremse, Stichprobe, Hash-Pflicht beim Fortsetzen von Uploads.
 
+### 6.6 Wiederholung einer Übertragung nach Verbindungsabbruch (seit 0.15.5, SYNC-20261111-166) **[IMPL]**
+
+Bei einem Netzwerkfehler während einer Übertragung (`UPLOAD`/`DOWNLOAD`, Phase B) schliesst der Transfer-Worker die Verbindung und versucht es **einmal** nach 2 s mit einer neuen Verbindung erneut (Abschnitt 10); `.s2ptmp` wird dabei fortgesetzt (6.1, 6.2). Die Entscheidung vor jedem Versuch trifft die reine Funktion `TransferResume.step` (`mirror/TransferResume.kt`):
+
+| Lage | Schritt |
+|---|---|
+| Der Lauf hat das Ziel (Handy- oder PC-Datei) schon selbst in den Papierkorb verschoben (`trashedByRun`) und am Ziel liegt keine Datei | `TRANSFER`: nicht erneut verschieben, an der angefangenen `.s2ptmp` fortsetzen |
+| Der Lauf hat das Ziel selbst in den Papierkorb verschoben, aber am Ziel ist inzwischen wieder eine Datei entstanden | `SKIP_CHANGED`: wird **nie überschrieben**, Log «folgt beim nächsten Sync» |
+| Erster Versuch, Ziel seit dem Einlesen geändert | `SKIP_CHANGED` (wie bisher) |
+| Erster Versuch, Versionsschutz (`trashOther`) und Zieldatei vorhanden | `TRASH_THEN_TRANSFER`: Sync-Stand vergessen, Ziel in den Papierkorb, Merken in `trashedByRun`, dann übertragen |
+| Sonst | `TRANSFER` |
+
+`trashedByRun` gilt nur für den laufenden Lauf (Menge der Dateischlüssel in der Engine-Instanz, nicht persistent).
+
+**Behobener Fehler (-166):** Der erste Versuch verschob die alte Version am Ziel in den Papierkorb und brach dann ab. Beim zweiten Versuch fehlte das Ziel, die Prüfung «Ziel unverändert» schlug an, und die Übertragung wurde ohne Fehler übersprungen. Folge: Die Datei fehlte nach einem «erfolgreichen» Lauf, der Status lautete «alles aktuell».
+
+**Nicht gelöst / offen:** Anzeige übersprungener Dateien im Status (SYNC-20261111-167); Wiederholung von `KEEP_BOTH` (SYNC-20261111-168); QA-Prüfung (SYNC-20261111-169). Getestet ist nur die Entscheidungsfunktion (`TransferResumeTest`, 8 Tests), nicht die Verdrahtung in `MirrorEngine` und kein Verbindungsabbruch im Gerätetest.
+
 ---
 
 ## 7. Löschlogik und Wiederherstellung
@@ -924,7 +942,7 @@ bauen Pfade über `SmbSession.path(...)` (Basisordner des Profils + Teile). Ordn
 - **Klassifikation:** `isNetworkError(e)` (`sync/Errors.kt`) – `SocketException`, `SocketTimeoutException`, `UnknownHostException`, `EOFException`, Klassennamen mit `TransportException`, Meldungen „already been closed“ / „not connected“, bis Tiefe 8. Alles andere ist ein Datei-/Logikfehler (`failed`).
 - **Wiederverbindung:** `SmbSession` verbindet **nie** selbst neu. Die Aufrufer tun es:
   - Foto-Produzent (`producerSmb`) und alle Worker prüfen vor Gebrauch `isAlive()` und öffnen bei Bedarf neu (Windows trennt unbenutzte Verbindungen nach ca. 15 min).
-  - Bei einem Netzwerkfehler in einer Datei: Verbindung schliessen, **ein** Wiederholungsversuch nach 2 s mit neuer Verbindung (Upload/Download setzt an der Abbruchstelle fort); beim zweiten Fehler wird der **ganze Lauf** unterbrochen (`INTERRUPTED`).
+  - Bei einem Netzwerkfehler in einer Datei: Verbindung schliessen, **ein** Wiederholungsversuch nach 2 s mit neuer Verbindung (Upload/Download setzt an der Abbruchstelle fort); beim zweiten Fehler wird der **ganze Lauf** unterbrochen (`INTERRUPTED`). Wiederholungsentscheidung bei bereits verschobenem Ziel: Abschnitt 6.6.
   - Phase A der Ordner-Engine und `purgeTrash` nutzen die **Hauptverbindung** ohne `isAlive()`-Prüfung; ein Netzwerkfehler dort unterbricht den Lauf sofort ohne Wiederholungsversuch.
 - **Berechtigungs-/Anmeldefehler** (`STATUS_LOGON_FAILURE`, `STATUS_ACCESS_DENIED` …) sind keine Netzwerkfehler: Lauf endet als `FAILED` mit verständlicher Meldung (`friendlyError`), bzw. bei Dateien als Dateifehler.
 - **Ressourcenfreigabe:** siehe `close()`-Aufrufe; Worker schliessen ihre Sitzung im `finally`; der Hauptlauf `smb?.close()` im `finally` von `run`/`runInner`.

@@ -1,6 +1,6 @@
 # Tests, Build und Qualitätssicherung – LeoSync (Sync2PC)
 
-Stand: Grundstand Version 0.11.0, fortlaufend nachgeführt bis 0.14.7 (DB-Version 9). Grundlage: `build.gradle.kts`, `app/build.gradle.kts`, `gradle/wrapper/gradle-wrapper.properties`, `build.md` und alle Dateien unter `app/src/test` und `app/src/androidTest` (inhaltlich gelesen).
+Stand: Grundstand Version 0.11.0, fortlaufend nachgeführt bis 0.15.5 (DB-Version 10). Grundlage: `build.gradle.kts`, `app/build.gradle.kts`, `gradle/wrapper/gradle-wrapper.properties`, `build.md` und alle Dateien unter `app/src/test` und `app/src/androidTest` (inhaltlich gelesen).
 
 Diese Datei beschreibt **nur** Tests, Build und Qualitätssicherung. Fachliche Abläufe stehen in `docs/SYNC-ENGINE.md`, `docs/DATA-MODEL.md`, `docs/ARCHITECTURE.md`, Entscheidungen in `docs/DECISIONS.md`.
 Kennzeichnung: **[vorhanden]** = im Repository nachweisbar, **[fehlt]** = nachweislich nicht vorhanden, **[manuell]** = nur per Checkliste prüfbar, **[Empfehlung]** = nicht umgesetzt.
@@ -11,17 +11,9 @@ Kennzeichnung: **[vorhanden]** = im Repository nachweisbar, **[fehlt]** = nachwe
 
 | Testart | Status | Framework | Ort | Läuft auf |
 |---|---|---|---|---|
-| JVM-Unit-Tests (reine Logik) | vorhanden: 40 Klassen mit `@Test`, 377 `@Test` laut Quelltext (Stand 0.15.1, Documentation 2026-11-11 per Zählung; neu `ReleaseNotesTest`; Development meldet 377 Tests, 0 Fehler (SYNC-20261111-162), nicht nachgeprüft; zu 0.15.0 waren es 39 Klassen/373 Tests; stimmt mit der Angabe von Development «373 Tests, 0 Fehler» zu 0.15.0 überein, SYNC-20261111-142 bis -146, -152; nicht von QA oder Documentation ausgeführt). Zuvor ausgeführt: (Gesamtlauf `testDebugUnitTest` 2026-11-10 nach 0.14.7 unter JDK 17, 0 Fehler, Angabe Development SYNC-20261110-119; neu seit 0.14.7 `NumberInputTest`, `ChangeConfirmTest`, `FileFilterTest.unbalancedBracketsAreReported`; Stand davor: 32 Klassen, 272 Tests, QA-Lauf -088 2026-11-09 nach 0.14.3, `testDebugUnitTest`, grün; davon neu seit 0.14.3 `TargetResolverTest`, `RemoteFinderTest`, `FolderLayoutGuardTest`, Erweiterungen in `ProfileOverlapTest`, `BackupCodecTest`, `ProfileWizardTest`; frühere Zählung 25 Klassen, 143 Tests nach 0.12.1: 0 Fehler, 0 Fehlschläge, 0 übersprungen) | JUnit 4.13.2, `org.json:json:20240303` | `app/src/test/java/com/sync2pc/app/` | PC (JVM), kein Gerät |
-| Instrumentierte Tests | vorhanden: 3 Klassen, 18 `@Test` laut Quelltext (`MigrationTest` 6, `MsgInstrumentedTest` 6, `PcGuidDaoTest` 6; Documentation 2026-11-11 per Zählung). Letzter dokumentierter Lauf: QA 2026-11-09 auf Emulator `LeoSync_API29(AVD)` (Android 10), damals nur `MigrationTest` mit 3 Tests: 3/3 bestanden. QA 2026-11-09 (Stand 0.13.2, SYNC-20261109-053): `connectedDebugAndroidTest` 16/16 grün (`MigrationTest` 4, `MsgInstrumentedTest` 6, `PcGuidDaoTest` 6). **Nicht ausgeführt:** der aktuelle Stand mit 18 Tests, insbesondere `MigrationTest.folderLayoutFromVersion8` (8→9 am Emulator mit echten Daten geprüft, QA -088) und die Migration 9→10 (0.15.0, laut Development nicht ausgeführt) | AndroidJUnit4, `room-testing` (`MigrationTestHelper`) | `app/src/androidTest/java/com/sync2pc/app/` | Gerät/Emulator |
-| Textparität DE/EN | vorhanden (als Unit-Test) | JUnit 4 | `PcLoginTest.kt` | `smb/PcLogin` (Fake-Verbindung, DEC-204/-205) | siehe §7 «PC-Erkennung»: kein `authenticate` bei UNKNOWN/CHANGED/NO_ID/WRONG_NET, Reihenfolge connect → Kennung → Entscheidung → authenticate, Lernen/Neuvertrauen nur nach Commit; seit 0.15.0 zusätzlich Verschlüsselungs-Pflichtprüfung vor/nach `authenticate()` (DEC-222) | 31 (laut Quelltext; vorher 19) |
-| `EtaTest.kt` | `ui/etaSeconds` (Restzeitschätzung) | keine Schätzung vor Mindestdauer/ohne Mindestmenge/bei Fertig oder Überschreitung/über Obergrenze; Schätzung bei belastbarer Rate; Obergrenze genau | 6 (laut Quelltext; im Gesamtlauf grün) |
-| `PendingTrashedErrorTest.kt` | `isPendingOrTrashed`, `LocalItemNotReadyException` | siehe §7 «Android-spezifisch» | 4 (Development -050 gezielt grün; im Gesamtlauf enthalten) |
-| `DataIntegrityTest.kt` | `ContentCompare`/`PartialHash.comparison`, `PresenceCheck`, Löschfreigabe und PC-Prüfung (DEC-223, R-I1 bis R-I4) | Vollhash über 32 MB, Lesefehler = nicht gleich, Stufe ≥ «Mittel» bei «bereits vorhanden», PC-Kopie vor dem Löschen (laut Auftrag SYNC-20261111-142; Einzelfälle nicht im Quelltext geprüft) | 25 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `SyncGateTest.kt` | `sync/SyncGate` (DEC-221) | Sperre, Nachlauf-Merker, Nachlaufart (manuell/automatisch), kein Verlust zwischen Prüfung und Freigabe (laut Auftrag SYNC-20261111-143) | 15 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `SmbConfigTest.kt` | `smbConfigFor` (DEC-222; Testfall S1 aus SYNC-20261110-129) | Abbildung der Verschlüsselungsstufe auf die smbj-Konfiguration, reine Funktion ohne Verbindung | 6 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `HomeStatusTest.kt` | Statuskarte (SYNC-20261110-113 A1/A2/A9) | gut = «alle aktuell»; offener Konflikt, keine Verbindung, Fehler im letzten Lauf nie «aktuell»; ohne/deaktivierte Profile nie «gesichert»; Vorrang «läuft»; Pause; Verbindungsermittlung | 11 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `ScreenLogicTest.kt` | reine Logik von Vorschau, Ordnerauswahl und Konflikten (SYNC-20261110-135 V4/O1, -136 K1) | laut Kopfkommentar der Testklasse; Einzelfälle nicht im Quelltext geprüft | 8 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `StringsParityTest.kt` | PC |
+| JVM-Unit-Tests (reine Logik) | vorhanden: 45 Klassen mit `@Test`, 442 `@Test` laut Quelltext (Stand 0.15.5, Documentation 2026-11-11 per Zählung; neu seit 0.15.1 u. a. `TransferResumeTest` mit 8 Tests, SYNC-20261111-166/-170). Development meldet für 0.15.5 442 Tests; nicht von QA oder Documentation ausgeführt. **Letzter von QA ausgeführter Lauf:** 2026-11-11 01:07, JDK 17, Version 0.15.2, `gradlew.bat :app:testDebugUnitTest --rerun --no-build-cache`: 40 Klassen, 377 Tests, 0 Fehlschläge, 0 Fehler, 0 übersprungen (QA, SYNC-20261111-164). Frühere Stände: 0.15.0 373 Tests (Angabe Development, SYNC-20261111-142 bis -146, -152); 0.14.7 287 Tests (Gesamtlauf Development SYNC-20261110-119, 2026-11-10, JDK 17); QA -088 2026-11-09 nach 0.14.3: 32 Klassen, 272 Tests grün; 0.12.1: 25 Klassen, 143 Tests grün | JUnit 4.13.2, `org.json:json:20240303` | `app/src/test/java/com/sync2pc/app/` | PC (JVM), kein Gerät |
+| Instrumentierte Tests | vorhanden: 3 Klassen, 18 `@Test` laut Quelltext (`MigrationTest` 6, `MsgInstrumentedTest` 6, `PcGuidDaoTest` 6; Documentation 2026-11-11 per Zählung). Letzter dokumentierter Lauf: QA 2026-11-09 auf Emulator `LeoSync_API29(AVD)` (Android 10), damals nur `MigrationTest` mit 3 Tests: 3/3 bestanden. QA 2026-11-09 (Stand 0.13.2, SYNC-20261109-053): `connectedDebugAndroidTest` 16/16 grün (`MigrationTest` 4, `MsgInstrumentedTest` 6, `PcGuidDaoTest` 6). **Nicht ausgeführt:** der aktuelle Stand mit 18 Tests, insbesondere `MigrationTest.folderLayoutFromVersion8` (8→9 am Emulator mit echten Daten geprüft, QA -088) `MigrationTest.smbEncryptionFromVersion9` (Migration 9→10, 0.15.0; laut Development nicht ausgeführt); `connectedDebugAndroidTest` wurde für 0.15.x insgesamt nicht ausgeführt (der QA-Lauf 2026-11-11 umfasste nur `testDebugUnitTest`) | AndroidJUnit4, `room-testing` (`MigrationTestHelper`) | `app/src/androidTest/java/com/sync2pc/app/` | Gerät/Emulator |
+| Textparität DE/EN | vorhanden (als Unit-Test) | JUnit 4 | `StringsParityTest.kt` | PC (JVM) |
 | Manuelle Release-Checkliste | vorhanden, dokumentiert | – | `build.md` (Abschnitte „Release-Checkliste“, „Test …“) | echtes Handy + PC/NAS |
 | UI-/Compose-Tests | **[fehlt]** | – | – | – |
 | SMB-/Netzwerk-Tests (echt oder Fake) | automatisiert **[fehlt]**; lokale SMB-Testfreigabe für Emulator-Prüfungen **[vorhanden]** (`tools\qa-smb-testshare.ps1`, siehe §14.3) | – | `tools/` | Emulator + PC |
@@ -29,7 +21,7 @@ Kennzeichnung: **[vorhanden]** = im Repository nachweisbar, **[fehlt]** = nachwe
 | CI/CD (z. B. `.github/`) | **[fehlt]**, kein Workflow vorhanden | – | – | – |
 | Statische Analyse (detekt, ktlint, eigene Lint-Konfiguration) | **[fehlt]**, nichts konfiguriert | – | – | – |
 
-Mocking-Bibliotheken (Mockito, MockK, Robolectric, Turbine …) sind **nicht** eingebunden. Es gibt keine Fakes für SMB oder Dateisysteme. Die vorhandenen Tests prüfen ausschliesslich Klassen, die ohne Android-Abhängigkeit und ohne Netzwerk auskommen (im Quellcode als „rein“ gebaut, siehe `docs/ARCHITECTURE.md` 4.7).
+Mocking-Bibliotheken (Mockito, MockK, Robolectric, Turbine …) sind **nicht** eingebunden. Fakes gibt es nur für Verzeichnis- und Dateiabfragen (`RemoteDirs`/`RemoteFiles` in `TargetResolverTest`, `RemoteFinderTest`) und für Verbindung und PC-Kennung (`PcTransport`/`PcLink` in `PcLoginTest`); es gibt keinen Fake für Schreib- und Übertragungsoperationen (Upload, Download, Löschen, Umbenennen). Die vorhandenen Tests prüfen ausschliesslich Klassen, die ohne Android-Abhängigkeit und ohne Netzwerk auskommen (im Quellcode als „rein“ gebaut, siehe `docs/ARCHITECTURE.md` 4.7).
 
 ### Qualitätssicherungsmechanismen im Überblick
 
@@ -37,16 +29,8 @@ Mocking-Bibliotheken (Mockito, MockK, Robolectric, Turbine …) sind **nicht** e
 |---|---|---|
 | Unit-Tests beim Standard-Build | `build.bat` ruft `gradlew testDebugUnitTest assembleRelease` auf; ein Testfehler bricht den Build ab (ausser `-SkipTests`) | `build.md` |
 | Kompilierung mit R8 im Release | `isMinifyEnabled`/`isShrinkResources` = true; deckt fehlende Keep-Regeln erst zur Laufzeit auf, nicht im Test | `app/build.gradle.kts` |
-| Room-Schema-Export | `exportSchema = true`, Schemas `1.json`–`9.json` in `app/schemas/…/`; Grundlage für `MigrationTest` | `AppDatabase.kt`, `app/build.gradle.kts` |
-| Strings-Parität | schlägt fehl, wenn DE/EN-Schlüssel, Platzhalter oder Plural-Formen abweichen | `PcLoginTest.kt` | `smb/PcLogin` (Fake-Verbindung, DEC-204/-205) | siehe §7 «PC-Erkennung»: kein `authenticate` bei UNKNOWN/CHANGED/NO_ID/WRONG_NET, Reihenfolge connect → Kennung → Entscheidung → authenticate, Lernen/Neuvertrauen nur nach Commit; seit 0.15.0 zusätzlich Verschlüsselungs-Pflichtprüfung vor/nach `authenticate()` (DEC-222) | 31 (laut Quelltext; vorher 19) |
-| `EtaTest.kt` | `ui/etaSeconds` (Restzeitschätzung) | keine Schätzung vor Mindestdauer/ohne Mindestmenge/bei Fertig oder Überschreitung/über Obergrenze; Schätzung bei belastbarer Rate; Obergrenze genau | 6 (laut Quelltext; im Gesamtlauf grün) |
-| `PendingTrashedErrorTest.kt` | `isPendingOrTrashed`, `LocalItemNotReadyException` | siehe §7 «Android-spezifisch» | 4 (Development -050 gezielt grün; im Gesamtlauf enthalten) |
-| `DataIntegrityTest.kt` | `ContentCompare`/`PartialHash.comparison`, `PresenceCheck`, Löschfreigabe und PC-Prüfung (DEC-223, R-I1 bis R-I4) | Vollhash über 32 MB, Lesefehler = nicht gleich, Stufe ≥ «Mittel» bei «bereits vorhanden», PC-Kopie vor dem Löschen (laut Auftrag SYNC-20261111-142; Einzelfälle nicht im Quelltext geprüft) | 25 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `SyncGateTest.kt` | `sync/SyncGate` (DEC-221) | Sperre, Nachlauf-Merker, Nachlaufart (manuell/automatisch), kein Verlust zwischen Prüfung und Freigabe (laut Auftrag SYNC-20261111-143) | 15 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `SmbConfigTest.kt` | `smbConfigFor` (DEC-222; Testfall S1 aus SYNC-20261110-129) | Abbildung der Verschlüsselungsstufe auf die smbj-Konfiguration, reine Funktion ohne Verbindung | 6 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `HomeStatusTest.kt` | Statuskarte (SYNC-20261110-113 A1/A2/A9) | gut = «alle aktuell»; offener Konflikt, keine Verbindung, Fehler im letzten Lauf nie «aktuell»; ohne/deaktivierte Profile nie «gesichert»; Vorrang «läuft»; Pause; Verbindungsermittlung | 11 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `ScreenLogicTest.kt` | reine Logik von Vorschau, Ordnerauswahl und Konflikten (SYNC-20261110-135 V4/O1, -136 K1) | laut Kopfkommentar der Testklasse; Einzelfälle nicht im Quelltext geprüft | 8 (laut Quelltext; seit 0.15.0, Development: grün) |
-| `StringsParityTest.kt` |
+| Room-Schema-Export | `exportSchema = true`, Schemas `1.json`–`10.json` in `app/schemas/…/`; Grundlage für `MigrationTest` | `AppDatabase.kt`, `app/build.gradle.kts` |
+| Strings-Parität | schlägt fehl, wenn DE/EN-Schlüssel, Platzhalter oder Plural-Formen abweichen | `StringsParityTest.kt` |
 | Schutzbremse etc. zur Laufzeit | Fachliche Sicherungen der App (Löschschutz, Prüfstufen), keine Testmechanismen; Logik teilweise per Unit-Test abgesichert | `MirrorGuardTest`, `VerifyLevelTest` |
 | Manuelle Release-Checkliste | Deckt Engine, SMB, Hintergrund, Migration auf echtem Gerät ab | `build.md` |
 
@@ -91,14 +75,14 @@ Alle Befehle aus dem Projektwurzelordner (Windows: `gradlew.bat`). Die Tasks sin
 |---|---|---|---|
 | `build.bat` | Standard-Build des Projekts: Hash-Prüfung, Versionserhöhung, Unit-Tests, Release-APK nach `releases\` | Debug-Unit-Tests + `assembleRelease` | **Nur Projektinhaber** (Release; ändert `version.properties`). Auch QA verwendet es nicht |
 | `build.bat -SkipTests` / `-Force` / `-Debug` / `-NoPause` | Tests überspringen / immer bauen / Debug-APK / ohne Tastendruck am Ende | wie oben | Nur Inhaber, nach Absprache |
-| `gradlew.bat testDebugUnitTest` | Alle JVM-Unit-Tests (Debug) | 34 Testklassen, kein Gerät; Gradle braucht JDK 17+ (die Shell-Standard-`JAVA_HOME` zeigt auf Java 8; z. B. `C:\Program Files\Android\Android Studio\jbr` verwenden) | Nach jeder Änderung an Logikklassen, Texten (`strings_*.xml`) oder Datenmodell-Klassen |
+| `gradlew.bat testDebugUnitTest` | Alle JVM-Unit-Tests (Debug) | 45 Testklassen, kein Gerät; Gradle braucht JDK 17+ (die Shell-Standard-`JAVA_HOME` zeigt auf Java 8; z. B. `C:\Program Files\Android\Android Studio\jbr` verwenden) | Nach jeder Änderung an Logikklassen, Texten (`strings_*.xml`) oder Datenmodell-Klassen |
 | `gradlew.bat testDebugUnitTest --tests "com.sync2pc.app.MirrorGuardTest"` | Eine Testklasse | 1 Klasse | gezielte Prüfung nach kleinem Eingriff |
 | `gradlew.bat testDebugUnitTest --tests "com.sync2pc.app.MirrorGuardTest.massDeleteAbove20Percent"` | Eine Testmethode | 1 Test | Fehlersuche |
 | `gradlew.bat testReleaseUnitTest` | Unit-Tests gegen die Release-Variante | wie oben | selten; nur bei Verdacht auf Varianten-Unterschiede |
 | `gradlew.bat assembleDebug` | Debug-APK (kompiliert alles inkl. Compose/KSP), Ausgabe unter `app\build\outputs\apk\debug\` | kein Test | **QA darf selbstständig bauen** (`CLAUDE.md` §1); schneller Kompilier-Check, Emulator-Installation |
 | `gradlew.bat assembleRelease` | Release-APK mit R8 | kein Test | **nur Inhaber**; nach Änderungen an Abhängigkeiten, Reflection, Room, smbj/dcerpc (R8-Keep-Regeln) |
 | `gradlew.bat testDebugUnitTest assembleRelease` | Befehl, den `build.bat` ausführt; auch „Manuell bauen“ in `build.md` | Tests + Release | Vollprüfung vor Release |
-| `gradlew.bat connectedDebugAndroidTest` | Instrumentierte Tests (`MigrationTest`, `MsgInstrumentedTest`, `PcGuidDaoTest`) | 17 `@Test` laut Quelltext, braucht Gerät/Emulator (API ≥ 29); QA darf ausführen | Bei jeder Änderung an `Entities.kt`, `AppDatabase.kt`, Schemas |
+| `gradlew.bat connectedDebugAndroidTest` | Instrumentierte Tests (`MigrationTest`, `MsgInstrumentedTest`, `PcGuidDaoTest`) | 18 `@Test` laut Quelltext, braucht Gerät/Emulator (API ≥ 29); QA darf ausführen | Bei jeder Änderung an `Entities.kt`, `AppDatabase.kt`, Schemas |
 | `gradlew.bat lintDebug` | Android-Lint (AGP-Standardtask) | keine projektspezifische Lint-Konfiguration vorhanden | optional; QA darf ausführen; Ergebnis bisher nicht dokumentiert |
 
 Reports: JUnit-HTML unter `app/build/reports/tests/testDebugUnitTest/`; Build-Log von `build.bat` unter `.build/last-build.log`.
@@ -109,9 +93,9 @@ Reports: JUnit-HTML unter `app/build/reports/tests/testDebugUnitTest/`; Build-Lo
 
 ```
 app/
-  schemas/com.sync2pc.app.data.AppDatabase/1.json … 9.json   (Room-Schemas, Testgrundlage)
+  schemas/com.sync2pc.app.data.AppDatabase/1.json … 10.json   (Room-Schemas, Testgrundlage)
   src/
-    test/java/com/sync2pc/app/          JVM-Unit-Tests (34 Klassen laut Quelltext, inkl. Hilfsklasse TestTexts)
+    test/java/com/sync2pc/app/          JVM-Unit-Tests (45 Klassen mit `@Test` laut Quelltext, zuzüglich Hilfsklasse TestTexts)
     androidTest/java/com/sync2pc/app/   MigrationTest.kt, MsgInstrumentedTest.kt, PcGuidDaoTest.kt
 ```
 
@@ -138,6 +122,7 @@ Pfade relativ zu `app/src/test/java/com/sync2pc/app/` (Ausnahme: `MigrationTest`
 |---|---|---|---|
 | `MirrorGuardTest.kt` | `mirror/GuardPolicy`, `mirror/MirrorGuard` (Schutzbremse und Inhaltsvergleich) | Massenlöschung > 20 % (genau 20 % noch erlaubt); kleine Ordner ≤ 5 Dateien nur bei „alles weg“; ab 100 Löschungen immer Rückfrage; Prozentgrenze pro Profil, 100 % = nur feste Regeln; verschwundener Unterordner; Stichprobe begrenzt; oberste Verzeichnisse aus Schlüsseln; Abgleich Soll/Ist (alles da, fehlende Datei/Ordner = Abweichung, einzelne Grössenabweichungen toleriert, Grösse der geprüften Seite); gründlicher Vergleich (kleine Dateien komplett gehasht, grosse per Stichprobe, Änderung in der Mitte erkannt) | 14 |
 | `TransferPlanTest.kt` | `mirror/TransferPlan` | kleine Dateien zuerst; Fortsetzen einer abgebrochenen Übertragung, wenn PC-Datei unverändert; Neustart, wenn PC-Datei nach Abbruch geändert, angefangene Datei leer/zu gross oder Zeitstempel unbekannt | 3 |
+| `TransferResumeTest.kt` | `mirror/TransferResume` (Entscheidung vor einer Übertragung, auch bei Wiederholung nach Verbindungsabbruch; SYNC-20261111-166, seit 0.15.5) | erster Versuch wie bisher (mit Versionsschutz erst Papierkorb, dann übertragen; ohne Versionsschutz oder ohne Zieldatei direkt übertragen; geändertes Ziel wird übersprungen); Wiederholung nach eigenem Papierkorb-Verschieben setzt fort statt zu überspringen und verschiebt nie erneut; neu entstandene Zieldatei wird nie überschrieben; Invariante: nie «überspringen» bei fehlendem Ziel nach eigenem Papierkorb. Nur die Entscheidungsfunktion, nicht die Verdrahtung in `MirrorEngine` | 8 (laut Quelltext; Development meldet grün, nicht von QA oder Documentation ausgeführt) |
 | `VerifyLevelTest.kt` | `VerifyLevel`/`Profile.verify()`, `PartialHash`, `BackupCodec` (Stufen) | Stufen Wenig/Mittel erzeugen dieselbe Prüfsumme wie früher; „Aus“ liest nichts; „Viel“ komplett bis 256 MB, dann Stichprobe; „Komplett“ deckt jedes Byte lückenlos ab; „Aus“ wird angehoben, wenn Dateien entfernt werden; unbekannter Code → Standard; Sicherung behält Stufe und trimmt Namen; alte Sicherung ohne Stufe nutzt `verifyUpload` | 7 |
 | `FileFilterTest.kt` | `mirror/FileFilter` | leerer Filter akzeptiert alles ausser Temp-Dateien; Positivliste; Negativliste gewinnt; Namensmuster gilt in Unterordnern; seit 0.14.7 meldet `unbalancedPattern` Muster mit nicht geschlossener Klammer | 5 (laut Quelltext, vorher 4) |
 | `TrashIndexTest.kt` | `mirror/TrashIndex` (Papierkorb-Index, Wiederherstellen) | Eintrag aus Papierkorb-Pfad (Datumsordner nötig); Versionsnamen mit Uhrzeit, Rückführung auf Originalnamen, Altformat `_2`, nummerierte Namen nur bei vorhandenem Basisnamen; neueste Version pro Datei; alles eines Tages; ganzer Ordner inkl. Unterordner; nur eine Version pro Datei auswählbar; Datums-Sortierung | 8 |
@@ -185,11 +170,12 @@ Pfade relativ zu `app/src/test/java/com/sync2pc/app/` (Ausnahme: `MigrationTest`
 
 `app/src/androidTest/java/com/sync2pc/app/MigrationTest.kt` (`@RunWith(AndroidJUnit4)`, `MigrationTestHelper`, braucht Gerät/Emulator):
 
-- `fromVersion1ToLatest`: Profil der DB-Version 1 durchläuft `MIGRATION_1_2` … `MIGRATION_7_8` und `runMigrationsAndValidate(..., 8, true, …)` (seit 0.13.0; vorher bis 7); prüft Schema und eine übernommene Spalte (Prüfung an → „Wenig“).
+- `fromVersion1ToLatest`: Profil der DB-Version 1 durchläuft alle Migrationen (`MIGRATION_1_2` … `MIGRATION_9_10`) und `runMigrationsAndValidate(..., 10, true, …)` (seit 0.15.0; zuvor 9 seit 0.14.3, 8 seit 0.13.0); prüft Schema und eine übernommene Spalte (Prüfung an → „Wenig“).
 - `verifyLevelFromVersion5`: `MIGRATION_5_6` mit Datenzeilen (KEEP/Prüfung aus → „Aus“; TRASH/Prüfung aus → „Wenig“; Prüfung an → „Wenig“).
 - `runCodesFromVersion6` (seit 0.12.0): `MIGRATION_6_7`; bestehender Lauf und bestehende Log-Zeile behalten ihren Text, die neuen Spalten `messageCode`, `triggerCode`, `code` sind `NULL`; eine Kennung lässt sich danach schreiben. Ausgeführt durch QA 2026-11-09 (Emulator API 29): bestanden.
 - `pcCheckFromVersion7` (seit 0.13.0, DEC-204): `MIGRATION_7_8`; ein bestehendes Profil behält Name, Pfad, verschlüsseltes Passwort und WLAN-Liste, die neuen Spalten stehen auf `pcCheck = 'WIFI'`, `pcGuid = ''`, `pcGuidHost = ''`. **Nicht ausgeführt.**
-- `folderLayoutFromVersion8` (seit 0.14.3, DEC-209): `MIGRATION_8_9`; bestehende Profile erhalten `folderLayout = 'MONTH_SUFFIX'`. **Nicht ausgeführt** (QA -088); die Migration wurde stattdessen am Emulator mit echten Daten (0.13.14 → 0.14.3) erfolgreich geprüft. Der Quelltext hat jetzt 4 `@Test`; die Zahl „3“ in Abschnitt 1 gilt nur für den ausgeführten Stand 0.12.1.
+- `folderLayoutFromVersion8` (seit 0.14.3, DEC-209): `MIGRATION_8_9`; bestehende Profile erhalten `folderLayout = 'MONTH_SUFFIX'`. **Nicht ausgeführt** (QA -088); die Migration wurde stattdessen am Emulator mit echten Daten (0.13.14 → 0.14.3) erfolgreich geprüft. Die Zahl „3“ in der Zählung älterer Läufe gilt nur für den ausgeführten Stand 0.12.1.
+- `smbEncryptionFromVersion9` (seit 0.15.0, DEC-222): `MIGRATION_9_10`; liest nach der Migration Name, `smbPath`, `smbPasswordEnc`, `wifiSsids`, `folderLayout` und `smbEncryption` eines bestehenden Profils (Schema gegen `10.json`). **Nicht ausgeführt.**
 
 `app/src/androidTest/java/com/sync2pc/app/MsgInstrumentedTest.kt` (seit 0.12.2, 6 Tests laut Development -043/-039): Namen-Round-Trip mit echtem `AndroidResolver`, Plural/verschachtelt, Rückfall, DE/EN, `triggerData/triggerOf`; Sprachwechsel nur bis Android 12. **Ausgeführt:** 6/6 grün (QA 2026-11-09, Emulator API 29, Stand 0.13.2, SYNC-20261109-053); seither nicht wiederholt. Zusätzlicher Gerätetest beim Inhaber (nicht ausgeführt): Hinweise für LeoSync aus → Eingriff → Ansicht öffnen (Ergebnis bleibt stehen).
 
@@ -201,8 +187,9 @@ Einzelne Migrationen 1→2, 2→3, 3→4, 4→5 werden **nur als Teil der Kette*
 
 | Aspekt | Stand |
 |---|---|
-| Migrationskette 1→9 | **[vorhanden]** `MigrationTest.fromVersion1ToLatest` (Gerät/Emulator); bis Version 8 am 2026-11-09 auf Emulator bestanden (QA -053, Stand 0.13.2); die Erweiterung auf 9 ist als Test **nicht ausgeführt** (Migration 8→9 am Emulator mit echten Daten geprüft, QA -088) |
+| Migrationskette 1→10 | **[vorhanden]** `MigrationTest.fromVersion1ToLatest` (Gerät/Emulator, validiert gegen Version 10); bis Version 8 am 2026-11-09 auf Emulator bestanden (QA -053, Stand 0.13.2); die Erweiterung auf 9 und 10 ist als Test **nicht ausgeführt** (Migration 8→9 am Emulator mit echten Daten geprüft, QA -088) |
 | Datenerhalt bei 7→8 (`pcCheck`, `pcGuid`, `pcGuidHost`) | **[vorhanden]** `MigrationTest.pcCheckFromVersion7` (QA 2026-11-09, Emulator API 29: bestanden, Schema gegen `8.json` validiert) |
+| Datenerhalt bei 9→10 (`smbEncryption`, 0.15.0) | **[vorhanden]** `MigrationTest.smbEncryptionFromVersion9` (**nicht ausgeführt**) |
 | Datenerhalt bei 5→6 (`verifyLevel`) | **[vorhanden]** `MigrationTest.verifyLevelFromVersion5` |
 | Datenerhalt bei 6→7 (Kennungsspalten) | **[vorhanden]** `MigrationTest.runCodesFromVersion6` (QA 2026-11-09 bestanden) |
 | Datenerhalt bei 1→2, 2→3, 3→4, 4→5 mit eigenen Daten | **[fehlt]** (nur Schema-Validierung innerhalb der Kette) |
@@ -212,7 +199,7 @@ Einzelne Migrationen 1→2, 2→3, 3→4, 4→5 werden **nur als Teil der Kette*
 | Persistierung von Sync-Ständen (`MirrorState`, `SyncedFile`) | **[fehlt]** als Datenbanktest; `MirrorState` wird nur als Datenobjekt in `MirrorGuardTest`/`BackupCodecTest` verwendet |
 | Duplikaterkennung über Datenbank | **[fehlt]** |
 | Backup/Restore der Profil-Daten (JSON, kein Room) | **[vorhanden]** `BackupCodecTest`, `VerifyLevelTest` |
-| Schema-Datei zur aktuellen DB-Version vorhanden | `1.json`–`9.json` vorhanden (DB-Version 9); der Test prüft die Schemas nur, wenn `connectedDebugAndroidTest` läuft |
+| Schema-Datei zur aktuellen DB-Version vorhanden | `1.json`–`10.json` vorhanden (DB-Version 10); der Test prüft die Schemas nur, wenn `connectedDebugAndroidTest` läuft |
 
 Wichtig: Das Gradle-Setup führt `MigrationTest` **nicht** beim Standard-Build (`build.bat`) aus. Ohne manuellen Lauf mit Gerät/Emulator ist eine Datenbankänderung beim Build ungeprüft. `build.md` verlangt zusätzlich einen Update-Test über die bestehende Installation.
 
@@ -220,7 +207,7 @@ Wichtig: Das Gradle-Setup führt `MigrationTest` **nicht** beim Standard-Build (
 
 ## 6. Synchronisationsengine (Details: `docs/SYNC-ENGINE.md`)
 
-`SyncEngine` (Bildordner), `MirrorEngine` (Ordner, 3-Wege-Abgleich, `plan()`), `SyncWorker`, `SyncRunner`, `DeletionManager`, `RestoreManager`, `TrashCleaner`, `FolderFreer` haben **keine direkten Tests** (`FolderFreerTest` prüft nur die Hilfsfunktionen `isProtectedDir`/`emptyDirCandidates`; `verifyAndDelete` ist ungetestet). Getestet sind nur ausgelagerte reine Hilfsklassen, seit 0.15.0 zusätzlich `SyncGate` (Sperre und Nachlauf-Entscheidung), `ContentCompare`/`PresenceCheck` und `smbConfigFor`.
+`SyncEngine` (Bildordner), `MirrorEngine` (Ordner, 3-Wege-Abgleich, `plan()`), `SyncWorker`, `SyncRunner`, `DeletionManager`, `RestoreManager`, `TrashCleaner`, `FolderFreer` haben **keine direkten Tests** (`FolderFreerTest` prüft nur die Hilfsfunktionen `isProtectedDir`/`emptyDirCandidates`; `verifyAndDelete` ist ungetestet). Getestet sind nur ausgelagerte reine Hilfsklassen, seit 0.15.0 zusätzlich `SyncGate` (Sperre und Nachlauf-Entscheidung), `ContentCompare`/`PresenceCheck` und `smbConfigFor`, seit 0.15.5 `TransferResume` (Entscheidung vor/bei Wiederholung einer Übertragung).
 
 | Szenario | Vorhandener Test | Testdatei | Bewertung |
 |---|---|---|---|
@@ -235,6 +222,7 @@ Wichtig: Das Gradle-Setup führt `MigrationTest` **nicht** beim Standard-Build (
 | Gründliche Inhaltsprüfung (Hash/Stichprobe) | `thorough*`, `fullCoversEveryByteWithoutGaps` | `MirrorGuardTest.kt`, `VerifyLevelTest.kt` | getestet |
 | Reihenfolge der Übertragung | `smallFilesFirst` | `TransferPlanTest.kt` | getestet |
 | Abgebrochene Übertragung fortsetzen / neu starten | `resumeWhenPcFileUnchanged`, `restartWhenPcFileChangedOrUnclear` | `TransferPlanTest.kt` | Entscheidungslogik getestet; die tatsächliche Dateiübertragung (`writeFileResumable`, `SmbSession.upload/download`) **fehlt** |
+| Wiederholung nach Verbindungsabbruch: kein stilles Überspringen nach eigenem Papierkorb-Verschieben (-166, 0.15.5) | `retryAfterOwnTrashContinuesInsteadOfSkipping`, `retryNeverTrashesAgain`, `retryWithNewFileAtTargetIsNeverOverwritten`, `skipNeverHappensForAbsentTargetAfterOwnTrash` | `TransferResumeTest.kt` | Entscheidungsfunktion getestet; Verdrahtung in `MirrorEngine.executeTransfer`/`transferWorker` (`trashedByRun`, Wiederholung mit neuer Verbindung) und das Fortsetzen an der `.s2ptmp` **fehlen** (QA-Prüfung SYNC-20261111-169 offen) |
 | Wiederholungsversuche, Fehlerbehandlung (`Errors.kt`) | – | – | **fehlt** |
 | Wiederanlauf nach App-Abbruch / Neustart | – | – | **fehlt** (nur manuell, siehe Abschnitt 8) |
 | Sichere Dateiersetzung (`replaceWith`, Temp-Datei `.s2ptmp`) | – | – | **fehlt** |
@@ -322,7 +310,7 @@ Die Quelle ist `build.md`; sie wird hier nicht kopiert. Ergänzend die Einordnun
 |---|---|---|
 | `GuardPolicy`/`MirrorGuard`, Schutzbremse | `testDebugUnitTest --tests "*MirrorGuardTest"` | „Test Schutzbremse“ |
 | Prüfstufen, `PartialHash`, Hashing | `*VerifyLevelTest`, `*MirrorGuardTest`, `*FolderNamesTest` | Sync mit Prüfstufe „Viel“/„Komplett“ |
-| Übertragung (Reihenfolge, Fortsetzen) | `*TransferPlanTest` | Test Ordner-Sync inkl. WLAN-Trennung; Engine-Verhalten ist nicht automatisiert abgesichert |
+| Übertragung (Reihenfolge, Fortsetzen, Wiederholung) | `*TransferPlanTest`, `*TransferResumeTest` | Test Ordner-Sync inkl. WLAN-Trennung; Engine-Verhalten ist nicht automatisiert abgesichert |
 | `MirrorEngine.plan()`, 3-Wege-Abgleich, Konflikte | **keine automatisierten Tests vorhanden**; sicherheitshalber komplette Unit-Tests | Test Ordner-Sync und Schutzbremse, Konflikt-Szenario mit gleichzeitiger Änderung |
 | Löschen, Papierkorb, Wiederherstellen | `*TrashIndexTest`, `*TrashPolicyTest`, `*TrashPurgeTest` | „Test Versionsschutz“, „Test Papierkorb aufräumen“ |
 | Speicher freigeben | `*FreeRulesTest`, `*BackupCodecTest` (`livePhotoPairs…`) | „Test Speicher freigeben“ |
@@ -363,7 +351,7 @@ flowchart TD
 | Papierkorb, Versionen, Wiederherstellen | Index-/Regel-Logik | ja | Ausführung (`TrashCleaner`, `RestoreManager`, `DeletionManager`) ungetestet |
 | Speicher freigeben | Auswahlregeln | ja | Ausführung ungetestet |
 | Prüfstufen/Hashing | ja | ja | Vergleich mit echter SMB-Datei ungetestet |
-| Übertragungsplanung | ja | ja | Echte Übertragung, Abbruch, Wiederholung ungetestet |
+| Übertragungsplanung | ja | ja | Echte Übertragung und Abbruch ungetestet; Wiederholungs-Entscheidung (`TransferResume`) getestet, ihre Verdrahtung in `MirrorEngine` nicht |
 | Sync-Engine Ordner (`MirrorEngine`, 3-Wege) | **keine** | ja | **Kritisch:** `plan()`, Konflikte, Zustandsfortschreibung (S) ohne Test |
 | Sync-Engine Bilder (`SyncEngine`) | **keine** (nur Hilfsklassen) | ja | **Kritisch:** Zielzuordnung, Duplikate, Live-Photo-Ablauf |
 | SMB (`SmbSession`) | **keine** | ja | **Kritisch:** kein Fake, kein Integrationstest |
@@ -376,6 +364,8 @@ flowchart TD
 | Sicherung/Import | ja | ja | – |
 | Texte DE/EN | ja | ja | – |
 | CI / statische Analyse | **keine** | – | Kein automatischer Lauf ausserhalb von `build.bat` |
+
+**Testkonzepte:** Die Lückenmatrix und die priorisierten Testfälle (B/P/N) stehen in den Berichten SYNC-20261110-127, -128 und -129 (`coordination/tasks/COMPLETED/`) und werden hier nicht kopiert. Die Zeilen zu R-N1/R-BG4 (Testfälle T1/T5) sind seit 0.15.0 als Logik durch `SyncGateTest` getestet; die Verdrahtung im Worker (`SyncWorker`, `SyncScheduler`) ist es nicht.
 
 **Nicht eindeutig feststellbar** (Quellcode der betreffenden Klassen wurde für diese Datei nicht auf versteckte Testbarkeit geprüft): ob `livePhotoPairsStayTogether` produktiven Code oder nur lokale Testlogik prüft; ob weitere Funktionen von `Diagnostics`/`LocalTree` getestet sind, als die in 4.1/4.2 genannten. Es wurde keine Coverage-Messung (JaCoCo) durchgeführt; Zahlen zur Zeilenabdeckung sind unbekannt.
 
@@ -419,7 +409,7 @@ Testlücken mit höchster Priorität (ableitbar, [Empfehlung], nicht umgesetzt):
 
 ## 13. Pflege dieser Datei
 
-Bei neuen Testklassen: Abschnitt 4 und die Tabellen in 6, 9, 10 aktualisieren. Anzahl und Pfade der Tests sind in `docs/ARCHITECTURE.md` 4.7 ebenfalls erwähnt; bei Änderungen dort mitführen. Die Testanzahl (Quelltext-Zählung Documentation 2026-11-10: 34 Klassen/287 `@Test` JVM, 3 Klassen/17 `@Test` instrumentiert; zuletzt ausgeführter Gesamtlauf Development -119: 287 grün) ist bei jeder Änderung neu zu prüfen. Aussagen zu Zahlen in den Abschnitten 4 und 10 stammen teils aus älteren Läufen; massgeblich ist der jeweils jüngste QA-Lauf.
+Bei neuen Testklassen: Abschnitt 4 und die Tabellen in 6, 9, 10 aktualisieren. Anzahl und Pfade der Tests sind in `docs/ARCHITECTURE.md` 4.7 ebenfalls erwähnt; bei Änderungen dort mitführen. Die Testanzahl (Quelltext-Zählung Documentation 2026-11-11, Stand 0.15.5: 45 Klassen/442 `@Test` JVM, 3 Klassen/18 `@Test` instrumentiert; zuletzt von QA ausgeführter Gesamtlauf: 2026-11-11, Version 0.15.2, 40 Klassen/377 Tests grün) ist bei jeder Änderung neu zu prüfen. Aussagen zu Zahlen in den Abschnitten 4 und 10 stammen teils aus älteren Läufen; massgeblich ist der jeweils jüngste QA-Lauf.
 
 ---
 

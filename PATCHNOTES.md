@@ -2,6 +2,14 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.15.5 (2026-11-11)
+
+### Behoben
+- **Ordner-Sync: Wiederholung nach Verbindungsabbruch** (SYNC-20261111-166): Bricht die Verbindung bei einer Übertragung mit Versionsschutz ab, nachdem der Lauf das Ziel (Handy- oder PC-Datei) schon in den Papierkorb verschoben hat, wird die Übertragung beim zweiten Versuch nicht mehr stillschweigend übersprungen. Vorher fehlte die Datei nach einem «erfolgreichen» Lauf, und der Status lautete «alles aktuell». Der Lauf merkt sich die selbst verschobenen Dateien, verschiebt sie nicht erneut und setzt an der angefangenen `.s2ptmp` fort. Ist am Ziel inzwischen wieder eine Datei entstanden, wird sie nie überschrieben (übersprungen, «folgt beim nächsten Sync»).
+
+### Intern
+- Neue Datei `mirror/TransferResume.kt`, Anpassung in `MirrorEngine.kt`. Neuer Test `TransferResumeTest` (8 Tests). Stand 45 Klassen, 442 Tests (Quelltext-Zählung; Angabe Development, nicht von Documentation oder QA ausgeführt).
+- Offen: Statusanzeige bei übersprungenen Dateien (SYNC-20261111-167), Wiederholung bei «Beide behalten» (SYNC-20261111-168), QA-Prüfung (SYNC-20261111-169). UX-Prüfung nicht erfolgt.
 ## 0.15.1 (2026-11-11)
 
 ### Geändert

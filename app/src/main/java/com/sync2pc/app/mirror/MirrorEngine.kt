@@ -496,6 +496,9 @@ class MirrorEngine(
         }
     }
 
+    /** Schlüssel der Dateien, die dieser Lauf selbst schon in den Papierkorb verschoben hat (für die Wiederholung, -166) */
+    private val trashedByRun: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
     private suspend fun transferWorker(queue: ConcurrentLinkedQueue<Action>, sh: Shared) {
         var session: SmbSession? = null
         try {
@@ -557,29 +560,42 @@ class MirrorEngine(
         when (a.kind) {
             Kind.UPLOAD -> {
                 l ?: return
-                // Während des Laufs auf dem PC geändert? Dann nicht überschreiben – der nächste Lauf entscheidet
-                if (!unchanged(s.stat(remotePath(s, a.rel)), r)) return skipChanged(a.rel, Msg.of(R.string.eng_on_pc))
-                if (a.trashOther && r != null) {
-                    // Zuerst den Sync-Stand vergessen: Scheitert der Upload, gilt die Datei beim nächsten Lauf
-                    // als neu (wird übertragen) statt als "auf dem PC gelöscht" (würde sonst auch das Handy löschen)
-                    dao.deleteMirrorState(profile.id, a.key)
-                    trashRemote(s, a.rel)
+                // Während des Laufs auf dem PC geändert? Dann nicht überschreiben – der nächste Lauf entscheidet.
+                // Wiederholung nach Verbindungsabbruch: Hat dieser Lauf die PC-Datei schon in den Papierkorb verschoben,
+                // fehlt sie erwartungsgemäss (SYNC-20261111-166, siehe TransferResume)
+                val before = a.key in trashedByRun
+                val nowRemote = s.stat(remotePath(s, a.rel))
+                when (TransferResume.step(a.trashOther, r != null, before, unchanged(nowRemote, r), nowRemote == null)) {
+                    TransferStep.SKIP_CHANGED -> return skipChanged(a.rel, Msg.of(R.string.eng_on_pc))
+                    TransferStep.TRASH_THEN_TRANSFER -> {
+                        // Zuerst den Sync-Stand vergessen: Scheitert der Upload, gilt die Datei beim nächsten Lauf
+                        // als neu (wird übertragen) statt als "auf dem PC gelöscht" (würde sonst auch das Handy löschen)
+                        dao.deleteMirrorState(profile.id, a.key)
+                        trashRemote(s, a.rel)
+                        trashedByRun.add(a.key)
+                    }
+                    TransferStep.TRANSFER -> {}
                 }
                 upload(s, a.key, a.rel, l, onBytes)
             }
             Kind.DOWNLOAD -> {
                 r ?: return
                 // Vorhandene Handy-Datei seit dem Einlesen geändert? (Neu entstandene prüft writeFileResumable)
-                if (l != null) {
-                    // Per Ordnerliste lesen wie beim Einlesen (stat() liefert bei manchen Speicherorten andere Werte)
-                    val nowLocal = try { tree.find(a.rel) } catch (e: Exception) { null }
-                    if (!unchanged(nowLocal, l)) return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
+                // Wiederholung nach Verbindungsabbruch: Hat dieser Lauf die Handy-Datei schon in den Papierkorb verschoben,
+                // fehlt sie erwartungsgemäss (SYNC-20261111-166, siehe TransferResume)
+                val before = a.key in trashedByRun
+                // Per Ordnerliste lesen wie beim Einlesen (stat() liefert bei manchen Speicherorten andere Werte)
+                val nowLocal = if (l != null || before) try { tree.find(a.rel) } catch (e: Exception) { null } else null
+                when (TransferResume.step(a.trashOther, l != null, before, l == null || unchanged(nowLocal, l), nowLocal == null)) {
+                    TransferStep.SKIP_CHANGED -> return skipChanged(a.rel, Msg.of(R.string.eng_on_phone))
+                    TransferStep.TRASH_THEN_TRANSFER -> {
+                        dao.deleteMirrorState(profile.id, a.key)
+                        tree.moveToTrash(a.rel, l!!, today); trashed.incrementAndGet()
+                        trashedByRun.add(a.key)
+                    }
+                    TransferStep.TRANSFER -> {}
                 }
-                if (a.trashOther && l != null) {
-                    dao.deleteMirrorState(profile.id, a.key)
-                    tree.moveToTrash(a.rel, l, today); trashed.incrementAndGet()
-                }
-                download(s, a.key, a.rel, r, onBytes)
+                download(s, a.key, a.rel, r, expectNewAfterOwnTrash = before, onBytes = onBytes)
             }
             Kind.KEEP_BOTH -> {
                 if (l == null || r == null) return
@@ -619,11 +635,14 @@ class MirrorEngine(
         log("I", "↑ $rel")
     }
 
-    private suspend fun download(s: SmbSession, key: String, rel: String, r: RemoteEntry, onBytes: (Long) -> Unit) {
+    private suspend fun download(
+        s: SmbSession, key: String, rel: String, r: RemoteEntry, expectNewAfterOwnTrash: Boolean = false, onBytes: (Long) -> Unit,
+    ) {
         val ctx = currentCoroutineContext()
         // Abgebrochene Downloads setzen an der Abbruchstelle fort (angefangene .s2ptmp auf dem Handy)
         // Gab es die Datei beim Einlesen nicht, ist sie inzwischen aber auf dem Handy entstanden -> nicht überschreiben
-        val expectNew = local[key] == null
+        // (Wiederholung nach eigenem Verschieben in den Papierkorb: die Datei fehlt jetzt, es darf nichts Neues dort liegen)
+        val expectNew = local[key] == null || expectNewAfterOwnTrash
         val (docId, resumedAt) = try {
             tree.writeFileResumable(rel, r.size, r.modified, expectNew = expectNew) { out, offset ->
                 s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
