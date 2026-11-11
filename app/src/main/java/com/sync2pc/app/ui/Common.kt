@@ -110,13 +110,19 @@ fun CollapsibleCard(
     title: String,
     startOpen: Boolean,
     closedHint: String,
+    /** Wert, der zugeklappt hinter dem Titel steht («Verschlüsselung · Wenn möglich»), SYNC-20261111-146 */
+    titleSuffix: String? = null,
+    /** Zählt hoch, wenn die Karte von aussen aufklappen soll (z. B. nach einem Fehler) */
+    openSignal: Int = 0,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var open by rememberSaveable(title) { mutableStateOf(startOpen) }
+    androidx.compose.runtime.LaunchedEffect(openSignal) { if (openSignal > 0) open = true }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                Text(if (!open && titleSuffix != null) "$title · $titleSuffix" else title,
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f))
                 Icon(
                     if (open) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,

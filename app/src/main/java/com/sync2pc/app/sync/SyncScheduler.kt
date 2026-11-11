@@ -7,6 +7,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -15,6 +16,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.sync2pc.app.data.GlobalSettings
 import com.sync2pc.app.l10n.Msg
+import kotlinx.coroutines.flow.StateFlow
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -36,7 +38,12 @@ object SyncScheduler {
     const val WORK_RETRY = "sync-share-retry"
     const val WORK_REMOTE_POLL = "trigger-remote-poll"
     const val WORK_RESUME = "sync-resume"
-    val ALL_SYNC_WORK = listOf(WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY, WORK_RESUME)
+    /** Nachlauf nach einem während eines Laufs verworfenen Start (R-N1): automatisch bzw. manuell */
+    const val WORK_DEFERRED_AUTO = "sync-deferred"
+    const val WORK_DEFERRED_MANUAL = "sync-deferred-manual"
+    val ALL_SYNC_WORK = listOf(
+        WORK_AUTO, WORK_MANUAL, WORK_FOLLOWUP, WORK_RETRY, WORK_RESUME, WORK_DEFERRED_AUTO, WORK_DEFERRED_MANUAL
+    )
     const val KEY_RESUME = "resume"
 
     /**
@@ -101,34 +108,108 @@ object SyncScheduler {
     }
 
     private fun autoConstraints(context: Context): Constraints =
-        Constraints.Builder()
-            // 0.11.5 (DEC-126): mit dem Schalter "auch mobile Daten/VPN" genügt irgendeine Verbindung
-            .setRequiredNetworkType(if (GlobalSettings(context).syncOffWifi) NetworkType.CONNECTED else NetworkType.UNMETERED)
-            .setRequiresCharging(GlobalSettings(context).onlyWhileCharging)
-            .build()
+        autoSpec(context).let { spec ->
+            Constraints.Builder()
+                // 0.11.5 (DEC-126): mit dem Schalter "auch mobile Daten/VPN" genügt irgendeine Verbindung
+                .setRequiredNetworkType(spec.network)
+                .setRequiresCharging(spec.requiresCharging)
+                .build()
+        }
 
-    fun enqueueAuto(context: Context, trigger: Msg) {
-        val charging = GlobalSettings(context).onlyWhileCharging
+    private fun autoSpec(context: Context): SyncDecisions.AutoSpec {
+        val s = GlobalSettings(context)
+        return SyncDecisions.autoSpec(s.syncOffWifi, s.onlyWhileCharging)
+    }
+
+    /**
+     * Automatischer Start. Läuft gerade ein Sync, wird der Start nicht mehr stumm verworfen (R-N1), sondern vorgemerkt und
+     * nach dessen Ende einmal nachgeholt: Rückgabe [StartResult.DEFERRED] (die Oberfläche kann das melden).
+     */
+    fun enqueueAuto(context: Context, trigger: Msg): StartResult {
+        if (gate(context).requestStart(manual = false)) return StartResult.DEFERRED
+        // Läuft noch nichts, bleibt ein bereits eingereihter Auftrag bestehen (KEEP). Fotos, die während des Laufs entstehen,
+        // erkennt SyncWorker am Ende und plant einen Nachhol-Sync.
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_AUTO, ExistingWorkPolicy.KEEP, autoRequest(context, trigger))
+        return StartResult.STARTED
+    }
+
+    private fun autoRequest(context: Context, trigger: Msg): OneTimeWorkRequest {
+        val spec = autoSpec(context)
         val b = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(triggerData(trigger, KEY_MANUAL to false))
             .setConstraints(autoConstraints(context))
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 2, TimeUnit.MINUTES)
         // Expedited erlaubt nur Netzwerk-Constraints
-        if (!charging) b.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-        // Läuft schon ein Sync, bleibt er bestehen. Fotos, die während des Laufs entstehen,
-        // erkennt SyncWorker am Ende und plant einen Nachhol-Sync.
-        WorkManager.getInstance(context).enqueueUniqueWork(WORK_AUTO, ExistingWorkPolicy.KEEP, b.build())
+        if (spec.expedited) b.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        return b.build()
     }
 
-    /** Manueller Start ("Synchronisieren") – hebt eine Pause auf, wer von Hand startet, will synchronisieren */
-    fun enqueueManual(context: Context) {
+    /**
+     * Manueller Start ("Synchronisieren") – hebt eine Pause auf, wer von Hand startet, will synchronisieren.
+     * Läuft gerade ein Sync, wird der Start als manueller vorgemerkt und danach nachgeholt (R-N1): [StartResult.DEFERRED].
+     */
+    fun enqueueManual(context: Context): StartResult {
         clearPause(context)
-        val req = OneTimeWorkRequestBuilder<SyncWorker>()
+        if (gate(context).requestStart(manual = true)) return StartResult.DEFERRED
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_MANUAL, ExistingWorkPolicy.KEEP, manualRequest())
+        return StartResult.STARTED
+    }
+
+    private fun manualRequest(): OneTimeWorkRequest =
+        OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(triggerData(Msg.of(com.sync2pc.app.R.string.trigger_manual), KEY_MANUAL to true))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(WORK_MANUAL, ExistingWorkPolicy.KEEP, req)
+
+    // ---- Sperre und Nachlauf (SYNC-20261111-143, R-N1/R-BG4/R-BG5) -----------------------------------------------------
+
+    /** Ausgabedaten eines Auftrags, der die Sperre nicht bekam: sein Start wurde vorgemerkt (nicht verworfen) */
+    const val KEY_DEFERRED = "deferred"
+
+    @Volatile private var gateInstance: SyncGate? = null
+
+    /** Sperre samt Nachlauf-Merker des Prozesses (Merker persistent in GlobalSettings) */
+    internal fun gate(context: Context): SyncGate = gateInstance ?: synchronized(this) {
+        gateInstance ?: SyncGate(object : DeferredStore {
+            private val settings = GlobalSettings(context.applicationContext)
+            override fun read(): DeferredKind? = DeferredKind.fromStore(settings.deferredStart)
+            override fun write(kind: DeferredKind?) { settings.deferredStart = kind?.toStore() ?: "" }
+        }).also { gateInstance = it }
+    }
+
+    /**
+     * Für die Oberfläche: ist ein Nachlauf vorgemerkt ([DeferredState.requested]) und war ein manueller Start dabei
+     * ([DeferredState.manual])? Ein StateFlow; wird mit «Pausieren»/«Abbrechen» ([cancelAll]) und nach dem Einreihen
+     * des Nachlaufs wieder leer.
+     */
+    fun deferredState(context: Context): StateFlow<DeferredState> = gate(context).state
+
+    /**
+     * Reiht den vorgemerkten Nachlauf genau einmal ein: manuell, wenn ein manueller Start angefordert war, sonst automatisch
+     * mit dem Auslöser «nachgeholt». Eigene Auftragsnamen (REPLACE): der laufende Auftrag trägt selbst einen der Namen
+     * WORK_AUTO/WORK_MANUAL, ein KEEP dort würde den Nachlauf verwerfen. APPEND_OR_REPLACE statt REPLACE (Review -143): ein Nachlauf, der selbst unter diesem Namen läuft, darf sich beim Einreihen des nächsten nicht selbst abbrechen; er hängt sich hinten an (bei gescheitertem oder abgebrochenem Vorgänger ersetzt er ihn). Ein Nachlauf ersetzt einen noch wartenden
+     * gleichartigen (nie zwei).
+     */
+    internal fun enqueueDeferred(context: Context, kind: DeferredKind) {
+        val wm = WorkManager.getInstance(context)
+        when (kind) {
+            DeferredKind.MANUAL -> wm.enqueueUniqueWork(WORK_DEFERRED_MANUAL, ExistingWorkPolicy.APPEND_OR_REPLACE, manualRequest())
+            DeferredKind.AUTO -> wm.enqueueUniqueWork(
+                WORK_DEFERRED_AUTO, ExistingWorkPolicy.APPEND_OR_REPLACE,
+                autoRequest(context, Msg.of(com.sync2pc.app.R.string.trigger_deferred))
+            )
+        }
+    }
+
+    /**
+     * Prozessstart (z. B. nach Prozess-Kill): ein persistenter Merker ohne laufenden Sync wird jetzt abgearbeitet.
+     * Scheitert das Einreihen, bleibt der Merker erhalten.
+     */
+    private fun resumeDeferred(context: Context) {
+        val g = gate(context)
+        val kind = g.claimIfIdle() ?: return
+        try { enqueueDeferred(context, kind) } catch (t: Throwable) { g.restore(kind) }
     }
 
     /** Nachhol-Sync, wenn zu junge Dateien übersprungen wurden */
@@ -226,6 +307,8 @@ object SyncScheduler {
         scheduleRemotePoll(context)
         com.sync2pc.app.update.UpdateWorker.schedule(context)
         StaleCheck.schedule(context)
+        // R-N1: ein nach Prozess-Kill noch vorgemerkter Nachlauf (ohne laufenden Sync) wird jetzt nachgeholt
+        resumeDeferred(context)
     }
 
     const val WORK_PAUSE_END = "pause-end"
@@ -276,6 +359,9 @@ object SyncScheduler {
 
     fun cancelAll(context: Context) {
         val wm = WorkManager.getInstance(context)
+        // Zuerst den vorgemerkten Nachlauf verwerfen: der abgebrochene Lauf soll nach seinem Ende nichts mehr einreihen
+        // («Pausieren», «Für immer pausieren» und «Abbrechen» durch den Benutzer, R-N1)
+        gate(context).discardDeferred()
         ALL_SYNC_WORK.forEach { wm.cancelUniqueWork(it) }
         // Abbrechen durch den Benutzer: kein automatisches Fortsetzen
         GlobalSettings(context).resumeOnWifi = false

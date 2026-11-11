@@ -71,4 +71,8 @@
     <string name="report_chooser">Problem melden</string>
     <string name="settings_diag_copy">Diagnosedaten kopieren</string>
     <string name="settings_about">LeoSync %1$s – Open Source (MIT)</string>
+    <string name="settings_diag_copied">Diagnosedaten in die Zwischenablage kopiert</string>
+    <string name="settings_err_days">Bitte eine Zahl von 1 bis 365 eingeben.</string>
+    <string name="settings_err_minutes">Bitte eine Zahl von 0 bis 1440 eingeben.</string>
+    <string name="settings_err_country">Bitte einen gültigen Ländercode aus zwei Buchstaben eingeben (z. B. CH).</string>
 </resources>

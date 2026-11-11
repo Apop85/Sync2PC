@@ -119,16 +119,9 @@ private fun LazyListScope.notificationsPage() {
                 subtitle = str(R.string.settings_stale_sub, StaleCheck.REPEAT_DAYS)) {
                 staleOn = it; s.staleWarnEnabled = it; SyncScheduler.setupAll(ctx)
             }
-            if (staleOn) OutlinedTextField(
-                staleDays,
-                { v ->
-                    staleDays = v.filter { it.isDigit() }.take(3)
-                    staleDays.toIntOrNull()?.takeIf { it > 0 }?.let { s.staleWarnDays = it }
-                },
-                label = { Text(str(R.string.settings_stale_days)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true, modifier = Modifier.fillMaxWidth(),
-            )
+            if (staleOn) RangeNumberField(
+                staleDays, { staleDays = it }, str(R.string.settings_stale_days), 1..365, R.string.settings_err_days, maxDigits = 3,
+            ) { s.staleWarnDays = it }
         }
     }
 }
@@ -159,16 +152,9 @@ private fun LazyListScope.transferPage() {
                 // Geplante Aufträge und Wartezeit "PC nicht erreichbar" gehören zur alten Netzwerkregel
                 SyncScheduler.onOffWifiChanged(ctx)
             }
-            OutlinedTextField(
-                minAge,
-                { v ->
-                    minAge = v.filter { it.isDigit() }.take(4)
-                    minAge.toIntOrNull()?.let { s.minFileAgeMinutes = it; apply() }
-                },
-                label = { Text(str(R.string.settings_min_age)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true, modifier = Modifier.fillMaxWidth(),
-            )
+            RangeNumberField(
+                minAge, { minAge = it }, str(R.string.settings_min_age), 0..24 * 60, R.string.settings_err_minutes, maxDigits = 4,
+            ) { s.minFileAgeMinutes = it; apply() }
             HintMore(str(R.string.settings_min_age_hint))
         }
     }
@@ -232,18 +218,26 @@ private fun LazyListScope.appPage() {
         val s = remember { GlobalSettings(ctx) }
         var home by remember { mutableStateOf(s.homeCountryIso) }
         var geoInfo by remember { mutableStateOf(str(R.string.settings_geo_loading)) }
+        var lookup by remember { mutableStateOf<CountryLookup?>(null) }
         LaunchedEffect(Unit) {
             geoInfo = withContext(Dispatchers.IO) {
                 val c = CountryLookup.get(ctx)
+                lookup = c
                 if (c.isAvailable) str(R.string.settings_geo_loaded, c.countryCount)
                 else str(R.string.settings_geo_missing)
             }
         }
+        // Gültig: zwei Buchstaben und (sobald die Länderliste geladen ist) ein Code daraus
+        fun validIso(v: String): Boolean = v.length == 2 &&
+            (lookup?.takeIf { it.isAvailable }?.let { it.namesOf(v).isNotEmpty() } ?: true)
+        val homeInvalid = home.isNotEmpty() && !validIso(home) || home.isEmpty()
         SectionCard(str(R.string.settings_country_folders)) {
             OutlinedTextField(
                 home,
-                { v -> home = v.filter { it.isLetter() }.take(2).uppercase(); if (home.length == 2) s.homeCountryIso = home },
+                { v -> home = v.filter { it.isLetter() }.take(2).uppercase(); if (validIso(home)) s.homeCountryIso = home },
                 label = { Text(str(R.string.settings_home_country)) },
+                isError = homeInvalid,
+                supportingText = if (homeInvalid) ({ Text(str(R.string.settings_err_country)) }) else null,
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
             HintMore(str(R.string.settings_home_country_hint))
@@ -252,6 +246,31 @@ private fun LazyListScope.appPage() {
     }
     // Sicherung (Export/Import) seit 0.9.0 hier statt unter "Diagnose"
     item { BackupSection() }
+}
+
+/**
+ * Zahlenfeld mit Bereichsprüfung (E1, SYNC-20261110-133): ungültige Eingabe zeigt am Feld einen Fehlertext;
+ * [onValid] wird nur für gültige Werte aufgerufen. Beim Wiedereintritt zeigt das Feld wieder den gespeicherten Wert.
+ */
+@Composable
+private fun RangeNumberField(
+    text: String, onText: (String) -> Unit, label: String, range: IntRange, @StringRes errorRes: Int,
+    maxDigits: Int, onValid: (Int) -> Unit,
+) {
+    val value = text.toIntOrNull()?.takeIf { it in range }
+    OutlinedTextField(
+        text,
+        { v ->
+            val digits = v.filter { it.isDigit() }.take(maxDigits)
+            onText(digits)
+            digits.toIntOrNull()?.takeIf { it in range }?.let(onValid)
+        },
+        label = { Text(label) },
+        isError = value == null,
+        supportingText = if (value == null) ({ Text(str(errorRes)) }) else null,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true, modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /** Sprachwahl (0.8.0): Systemsprache / Deutsch / English. Die Sprachnamen stehen bewusst in der eigenen Sprache. */
@@ -268,7 +287,10 @@ private fun LanguageCard() {
         options.forEach { (tag, label) ->
             Row(
                 Modifier.fillMaxWidth().clickable {
-                    if (tag != current) (ctx as? Activity)?.let { AppLanguage.set(it, tag) }
+                    if (tag != current) (ctx as? Activity)?.let {
+                        MainActivity.returnToSection = SettingsSection.APP
+                        AppLanguage.set(it, tag)
+                    }
                 },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -294,6 +316,7 @@ private fun LazyListScope.diagnosePage() {
                 scope.launch {
                     try {
                         Diagnostics.copyToClipboard(ctx, Diagnostics.build(ctx))
+                        android.widget.Toast.makeText(ctx, str(R.string.settings_diag_copied), android.widget.Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
                         android.widget.Toast.makeText(ctx, str(R.string.settings_diag_failed, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
                     } finally {

@@ -32,7 +32,19 @@ For photo profiles you choose the **folder structure**: `Year\Month - Country` (
 
 Under **PC ID** you decide per profile how LeoSync recognises your PC: **Wi-Fi name only** (default for existing profiles), **PC ID only** or **Both**. The ID is checked before the user name and password are sent. After a change, confirm it with **Test connection**. The ID changes after a fresh Windows installation; then open the profile and tap **Test connection** again. On some NAS devices (Samba) the ID may not be stable; use **Wi-Fi name only** there.
 
-Number fields in a profile only accept values in the allowed range: **Empty trash after … days** 0 to 3650 (0 = never), **Check for changes every … minutes** 15 to 1440, **Safety brake** 1 to 100 %. An invalid value is reported below the field and **Save** is blocked. For **filters**, a pattern with an unclosed bracket is rejected. The filter card shows a short summary, and the profile card says **Filter active**.
+Number fields in a profile only accept values in the allowed range: **Empty trash after … days** 0 to 3650 (0 = never), **Check for changes every … minutes** 15 to 1440, **Safety brake** 1 to 100 %. An invalid value is reported below the field and **Save** is blocked. In the wizard, **Next** does not let you leave a step with an empty or invalid number field; **Save** jumps to the first step with an error. For **filters**, a pattern with an unclosed bracket is rejected. The filter card shows a short summary, and the profile card says **Filter active**.
+
+When saving, LeoSync warns if profiles overlap, also between a photo profile and a folder profile: when the photo profile's target folder is the same as, lies inside, or contains the folder profile's PC folder, and when a photo source folder and the mobile folder lie inside each other while the folder profile writes files to the mobile. Continue with **Save anyway**.
+
+### Turning on encryption
+
+On the **Encryption** card in the profile (collapsed by default) you decide per profile whether the transfer to the PC is encrypted, so that nobody on the network can read along:
+
+- **Off:** no encryption, as before. Only recommended on a network you trust.
+- **If possible (recommended):** encrypted as soon as the PC supports it. Otherwise the connection stays unencrypted. This is the default, also for existing profiles.
+- **Required:** connects only if encrypted. If the PC cannot do that, no connection is made and no password is sent. Most secure.
+
+**Test connection** shows whether the connection is encrypted and which SMB version is used. Encryption exists only from SMB 3; Windows 10 and 11 support it, on a NAS (Samba) it depends on the device's settings. If **Required** is selected and the PC cannot encrypt, a message says so.
 
 New profiles only start after you tap **Sync** once. You can **simulate** first what would happen.
 
@@ -41,13 +53,13 @@ New profiles only start after you tap **Sync** once. You can **simulate** first 
 - **Automatic:** As soon as the mobile is connected to one of the entered Wi-Fi networks, LeoSync syncs in the background. Without a Wi-Fi name, it syncs only when you trigger it.
 - **Mobile data/VPN:** Under **Settings → Transfer** you can allow automatic sync outside Wi-Fi as well (off by default). This can use data and, with some mobile plans, cost money, for example abroad. If the PC is not reachable, LeoSync only retries every 2 hours outside Wi-Fi.
 - **Only while charging:** If you wish, LeoSync only syncs while the mobile is charging (Settings).
-- **Manual:** Tap **Sync** or pull down at the very top of the home screen.
+- **Manual:** Tap **Sync** or pull down at the very top of the home screen. If a sync is already running, your start is not discarded but run once afterwards: LeoSync says "Will start after the current sync.", and the status card shows "Next: all profiles" (for an automatic start "Another sync follows."). **Pause** or cancelling discards the queued start.
 - **Pause:** ⏸ at the top right – for a while or "forever" (manual only). ▶ resumes.
-- **The dog** shows the state: sleeping = everything backed up, running = sync in progress, standing = waiting for your decision, sitting = waiting (e.g. for Wi-Fi or the first sync).
+- **The dog** shows the state: sleeping = everything backed up, running = sync in progress, standing = waiting for your decision, sitting = waiting (e.g. for Wi-Fi or the first sync). The status card never says "all up to date" with an open conflict, no connection, or an error in the last run.
 
-- **Free up space:** In the tools on the home screen, LeoSync removes old files from the mobile that are verifiably on the PC. Each file is checked on the PC first; you choose by age, folder, file type and size and see a preview. Photos and videos go to the gallery trash.
-- **Backup of your settings:** Profiles, settings and sync state can be exported to a file and imported again. Passwords are only included, encrypted, with an export password.
-- **Language:** LeoSync follows the mobile's language (German, otherwise English). Under Settings → Language you can set it permanently.
+- **Free up space:** In the tools on the home screen, LeoSync removes old files from the mobile that are verifiably on the PC. Each file is checked on the PC first; you choose by age, folder, file type and size and see a preview. Photos and videos go to the gallery trash (Android 10 has none; a note says so). The result states how many files were deleted and skipped and how much space was freed.
+- **Backup of your settings:** Profiles, settings and sync state can be exported to a file and imported again. Passwords are only included, encrypted, with an export password. The app language is not part of the backup. On import, **Replace** is highlighted in a warning colour because it replaces the existing profiles.
+- **History:** With **Delete history** you remove the entries. LeoSync asks first and then offers **Undo** while the message at the bottom is visible. Error entries show a recommended action. The history filter resets when you leave the page.'s language (German, otherwise English). Under Settings → Language you can set it permanently.
 
 ## 4. Keeping your files safe
 
@@ -55,8 +67,8 @@ New profiles only start after you tap **Sync** once. You can **simulate** first 
 - **Trash:** For folder profiles, deleted and overwritten files go to the `.LeoSync-Bin` folder (on mobile and PC) and can be restored via **Tools → Trash**: choose the profile, select entries and tap **Restore** (or **Delete permanently**). It is emptied after 30 days (adjustable). Photo profiles have no trash of their own: removed photos are in the gallery trash.
 - **Safety brake:** If many files would be deleted at once (default: more than 20 %) or a whole folder is missing, LeoSync stops and asks you first. You then choose between **Don't delete** and **Move to trash anyway**; until then the profile rests.
 - **Confirm change:** If you change the direction of an existing folder profile or switch on **Apply deletions**, LeoSync shows what changes before saving, and you confirm with **Save** or cancel with **Cancel**. With a one-way direction, differing files on the target side are replaced; the replaced version may go to the trash.
-- **Conflicts:** If the same file was changed on mobile and PC, you decide which version wins. The other one goes to the trash.
-- **PC ID:** When enabled, LeoSync sends the user name and password only to a recognised PC. With an unknown PC, the app does not sign in and skips the profile. The ID is not secret: it protects against an unknown server on a foreign network, not against a targeted attack.
+- **Removing after backup:** Before LeoSync removes a backed-up photo from the mobile, it checks the copy on the PC again. If the PC is not reachable, nothing is deleted ("PC not reachable – nothing deleted"). If the copy is missing or differs, the original stays on the mobile and is backed up again on the next run. **Free up space** additionally checks size, partial checksum and modification date. was changed on mobile and PC, you decide which version wins. The other one goes to the trash.
+- **Encryption:** With the **Required** level, LeoSync sends the user name and password only if the connection can be encrypted (see **Turning on encryption**). LeoSync sends the user name and password only to a recognised PC. With an unknown PC, the app does not sign in and skips the profile. The ID is not secret: it protects against an unknown server on a foreign network, not against a targeted attack.
 
 ## 5. Common messages
 

@@ -121,6 +121,31 @@
     <string name="home_resume">Fortsetzen</string>
     <string name="home_sync">Synchronisieren</string>
     <string name="home_sync_needs_profile">Lege zuerst ein Profil an.</string>
+    <!-- Statuskarte folgt dem Gesamtzustand (SYNC-20261110-113) -->
+    <plurals name="home_status_attention">
+        <item quantity="one">Entscheidung erforderlich</item>
+        <item quantity="other">%1$s Entscheidungen erforderlich</item>
+    </plurals>
+    <plurals name="home_status_conflict_detail">
+        <item quantity="one">%1$s Konflikt wartet auf deine Entscheidung.</item>
+        <item quantity="other">%1$s Konflikte warten auf deine Entscheidung.</item>
+    </plurals>
+    <string name="home_status_attention_detail">Etwas wartet auf deine Entscheidung – siehe die Karten auf dieser Seite.</string>
+    <string name="home_status_no_connection">Keine Verbindung</string>
+    <string name="home_no_connection_wifi">Kein passendes WLAN – Synchronisierung wartet</string>
+    <string name="home_no_connection_hint">Verbinde dich mit dem WLAN des Profils. „Synchronisieren“ versucht es trotzdem sofort.</string>
+    <plurals name="home_status_errors">
+        <item quantity="one">Letzte Synchronisierung: %1$s Fehler</item>
+        <item quantity="other">Letzte Synchronisierung: %1$s Fehler</item>
+    </plurals>
+    <string name="home_status_failed">Letzte Synchronisierung fehlgeschlagen</string>
+    <string name="home_status_errors_hint">Tippen öffnet den Verlauf.</string>
+    <string name="home_status_not_configured">Noch nichts eingerichtet</string>
+    <string name="home_status_no_active">Kein aktives Profil</string>
+    <string name="home_no_active_detail">Aktiviere ein Profil oder schliesse seine Einrichtung ab.</string>
+    <string name="home_status_idle">Bereit</string>
+    <string name="home_sync_feedback_wifi">Kein passendes WLAN – versuche es trotzdem</string>
+    <string name="home_sync_feedback_pc">PC nicht erreichbar – prüfe erneut</string>
     <string name="home_profile_disabled">deaktiviert</string>
     <string name="home_profile_on_wifi">im WLAN ✓</string>
     <string name="home_profile_no_target">Kein Ziel festgelegt</string>
@@ -166,4 +191,10 @@
     <string name="perm_location_off">Standortdienst ist ausgeschaltet</string>
     <string name="perm_location_service">Standortdienst eingeschaltet</string>
     <string name="perm_battery">Akku-Optimierung deaktivieren (zuverlässige Hintergrund-Synchronisierung)</string>
+    <!-- Nachlauf (SYNC-20261111-146 Teil A) -->
+    <string name="home_sync_deferred_snack">Wird nach der laufenden Synchronisierung gestartet.</string>
+    <string name="home_next_all">Danach: alle Profile</string>
+    <string name="home_next_auto">Danach folgt eine weitere Synchronisierung.</string>
+    <string name="perm_blocked_title">Berechtigung gesperrt</string>
+    <string name="perm_blocked_text">Android fragt nicht mehr. Öffne App-Info → Berechtigungen und erlaube den Zugriff.</string>
 </resources>

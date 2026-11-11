@@ -13,6 +13,7 @@
     <string name="trigger_new_media">Neue Fotos/Videos</string>
     <string name="trigger_pause_end">Pause beendet</string>
     <string name="trigger_resumed">Fortgesetzt</string>
+    <string name="trigger_deferred">Nachgeholt (Start während einer laufenden Synchronisierung)</string>
     <string name="trigger_generic">Auslöser</string>
 
     <!-- Hintergrund-Lauf (SyncWorker) -->
@@ -27,6 +28,7 @@
     <string name="skip_ssid_unknown">WLAN „%1$s“ ist in keinem Profil eingetragen</string>
     <string name="skip_pc_unreachable">PC nicht erreichbar: %1$s</string>
     <string name="skip_pc_not_recognised">PC nicht erkannt: %1$s</string>
+    <string name="skip_pc_failed">Verbindung zum PC nicht möglich: %1$s</string>
     <string name="wait_for_pc">Warte auf PC (%1$s) – Versuch %2$s/%3$s…</string>
     <string name="summary_failed">Synchronisierung fehlgeschlagen – %1$s</string>
     <plurals name="summary_transferred">
@@ -78,6 +80,11 @@
     <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
     <string name="delete_log_done">Gelöscht: %1$s</string>
     <string name="delete_log_failed">Löschen fehlgeschlagen: %1$s – %2$s</string>
+    <string name="delete_log_pc_missing">Nicht vom Handy entfernt: Die Kopie auf dem PC fehlt oder weicht ab, die Datei wird erneut gesichert: %1$s</string>
+    <string name="delete_log_phone_unreadable">Nicht vom Handy entfernt: Die Datei ist für die Prüfung nicht lesbar: %1$s</string>
+    <string name="delete_pc_unreachable">PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt.</string>
+    <string name="delete_pc_rejected">PC nicht erkannt – nichts gelöscht. %1$s</string>
+    <string name="delete_pc_reset">%1$d Dateien nicht entfernt: Die Kopie auf dem PC fehlt oder weicht ab. Sie werden erneut gesichert.</string>
     <string name="update_err_404">Kein Release gefunden (Repository „%1$s“ privat, falsch geschrieben oder noch ohne Release)</string>
     <string name="update_err_403">GitHub-Abfragelimit erreicht – später erneut versuchen</string>
     <string name="update_err_http">GitHub antwortet mit HTTP %1$s</string>
@@ -103,6 +110,8 @@
     <string name="smb_err_pc_unknown">Der PC unter %1$s ist noch nicht erkannt. Es wurden keine Anmeldedaten gesendet. Profil öffnen und „Verbindung testen“ tippen (oder das Profil speichern), damit die App den PC kennenlernt.</string>
     <string name="smb_err_pc_wrong_net">Der PC unter %1$s ist noch nicht erkannt, und das aktuelle WLAN steht nicht in der Liste des Profils (oder der WLAN-Name ist nicht lesbar). Es wurden keine Anmeldedaten gesendet. Im eingetragenen WLAN „Verbindung testen“ tippen, den Standortzugriff erlauben oder die PC-Kennung auf „Nur PC-Kennung“ stellen.</string>
     <string name="smb_err_pc_no_id">Der PC unter %1$s liefert keine Kennung und kann nicht erkannt werden. Es wurden keine Anmeldedaten gesendet. Die PC-Kennung auf „Nur WLAN-Name“ stellen.</string>
+    <string name="smb_err_encryption_required">Für dieses Profil ist die Verschlüsselung erforderlich, aber der PC unter %1$s bietet keine SMB-3-Verschlüsselung an. Es wurden keine Anmeldedaten gesendet. Die Verschlüsselung im Profil ändern oder am PC die SMB-Verschlüsselung aktivieren.</string>
+    <string name="smb_err_encryption_not_established">Für dieses Profil ist die Verschlüsselung erforderlich, aber die Verbindung zu %1$s konnte nicht verschlüsselt werden. Die Verbindung wurde getrennt, es wurden keine Daten übertragen. Die Verschlüsselung im Profil ändern oder am PC die SMB-Verschlüsselung prüfen.</string>
     <string name="smb_test_missing_folder">Verbunden, aber Ordner „%1$s“ existiert nicht (wird bei der ersten Synchronisierung angelegt).</string>
     <plurals name="smb_test_ok">
         <item quantity="one">Verbindung OK – %1$s (%2$s Eintrag)</item>
@@ -234,6 +243,8 @@
     <string name="eng_transferring">Übertrage…</string>
     <string name="eng_err_unreadable">Datei nicht lesbar: %1$s</string>
     <string name="eng_err_verify">Prüfung nach Upload fehlgeschlagen – Datei wird beim nächsten Lauf erneut übertragen</string>
+    <string name="eng_err_verify_cleanup">Die fehlerhafte Kopie auf dem PC konnte nicht entfernt werden (%1$s): %2$s</string>
+    <string name="eng_present_unverified">Bereits auf dem PC, aber Gleichheit nicht bestätigt – bleibt auf dem Handy: %1$s</string>
     <string name="tree_sd_card">SD-Karte</string>
     <string name="tree_err_rename_short">Umbenennen fehlgeschlagen</string>
     <string name="update_err_no_tag">Release ohne Versions-Tag</string>

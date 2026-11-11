@@ -5,5 +5,5 @@ set RC=%ERRORLEVEL%
 echo.
 rem -NoPause: ohne "Taste druecken" beenden (fuer automatische Aufrufe)
 echo %* | find /i "-NoPause" >nul && exit /b %RC%
-REM pause
+pause
 exit /b %RC%

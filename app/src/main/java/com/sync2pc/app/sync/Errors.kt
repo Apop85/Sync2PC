@@ -7,7 +7,9 @@ package com.sync2pc.app.sync
 fun isNetworkError(e: Throwable): Boolean {
     // PC nicht sicher erkannt (SYNC-20261109-047): nie ein Netzwerkfehler, auch nicht als Ursache in der Kette.
     // Zuerst prüfen, damit eine umhüllende Netzwerk-Exception sie nicht überdeckt.
-    if (generateSequence(e) { x -> x.cause?.takeIf { it !== x } }.take(9).any { it is PcIdentityException }) return false
+    // Ebenso "Verschlüsselung erforderlich, aber nicht verfügbar" (SYNC-20261111-144): Wiederholen ändert nichts
+    if (generateSequence(e) { x -> x.cause?.takeIf { it !== x } }.take(9)
+            .any { it is PcIdentityException || it is com.sync2pc.app.smb.SmbEncryptionUnavailableException }) return false
     var t: Throwable? = e
     var depth = 0
     while (t != null && depth < 8) {
@@ -38,18 +40,24 @@ fun isPendingOrTrashed(e: Throwable): Boolean =
  * Der technische Text ([shortError]) bleibt im Verlauf (aufklappen) und in der Diagnose.
  */
 fun friendlyError(e: Throwable): String? =
-    pcIdentityOf(e)?.message ?: friendlyErrorId(e)?.let { com.sync2pc.app.l10n.str(it) }
+    pcIdentityOf(e)?.message ?: encryptionOf(e)?.message ?: friendlyErrorId(e)?.let { com.sync2pc.app.l10n.str(it) }
 
 /** Als Kennung (Verlauf, 0.12.0): verständlicher Text in der aktiven Sprache, sonst der technische Text wörtlich */
 fun userErrorMsg(e: Throwable): com.sync2pc.app.l10n.Msg =
     pcIdentityOf(e)?.toMsg()
+        ?: encryptionOf(e)?.toMsg()
         ?: friendlyErrorId(e)?.let { com.sync2pc.app.l10n.Msg.of(it) } ?: com.sync2pc.app.l10n.Msg.lit(shortError(e))
 
 /** "PC nicht sicher erkannt" (Text mit Host als Argument, deshalb ausserhalb von [friendlyErrorId]) */
 private fun pcIdentityOf(e: Throwable): PcIdentityException? =
     generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).firstOrNull { it is PcIdentityException } as? PcIdentityException
 
-private fun friendlyErrorId(e: Throwable): Int? {
+/** "Verschlüsselung erforderlich, aber nicht verfügbar" (Text mit Host als Argument, SYNC-20261111-144) */
+private fun encryptionOf(e: Throwable): com.sync2pc.app.smb.SmbEncryptionUnavailableException? =
+    generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9)
+        .firstOrNull { it is com.sync2pc.app.smb.SmbEncryptionUnavailableException } as? com.sync2pc.app.smb.SmbEncryptionUnavailableException
+
+internal fun friendlyErrorId(e: Throwable): Int? {
     val chain = generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9).toList()
     val text = chain.joinToString(" | ") { "${it.javaClass.name} ${it.message.orEmpty()}" }
     fun has(vararg keys: String) = keys.any { text.contains(it, ignoreCase = true) }
@@ -76,6 +84,8 @@ fun userError(e: Throwable): String = friendlyError(e) ?: shortError(e)
 
 /** Kurze, lesbare Fehlermeldung: innerste Ursache statt der ganzen Kette */
 fun shortError(e: Throwable): String {
+    // Nie als rohe Ausnahme anzeigen (SYNC-20261111-144): auch die technische Kurzform ist der verständliche Text
+    encryptionOf(e)?.let { return it.message }
     var root: Throwable = e
     var depth = 0
     while (root.cause != null && root.cause !== root && depth < 8) { root = root.cause!!; depth++ }

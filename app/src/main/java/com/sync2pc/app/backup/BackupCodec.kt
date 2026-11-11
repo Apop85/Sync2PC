@@ -4,6 +4,7 @@ import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.FolderMapping
 import com.sync2pc.app.data.MirrorState
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.SmbEncryption
 import com.sync2pc.app.data.SyncedFile
 import com.sync2pc.app.sync.PcCheckMode
 import com.sync2pc.app.sync.PcIdentity
@@ -210,6 +211,7 @@ object BackupCodec {
         put("verifyLevel", p.verifyLevel)
         put("pcCheck", p.pcCheck); put("pcGuid", p.pcGuid); put("pcGuidHost", p.pcGuidHost)
         put("folderLayout", p.layout().code)
+        put("smbEncryption", p.encryption().name)
     }
 
     /** Prüfstufe (0.9.0); ältere Sicherungen kennen nur verifyUpload: an = "Wenig" (wie bisher), aus = "Aus" */
@@ -246,6 +248,8 @@ object BackupCodec {
             pcGuidHost = PcIdentity.normalizeHost(o.optString("pcGuidHost", "")),
             // Ordnerstruktur (SYNC-20261109-083): fehlend = V1; unbekannte Codes wurden in parse() schon aussortiert
             folderLayout = FolderLayout.parse(if (o.has("folderLayout")) o.optString("folderLayout") else null)?.code ?: FolderLayout.MONTH_SUFFIX.code,
+            // SMB3-Verschlüsselung (SYNC-20261111-144): fehlend oder unbekannt = PREFERRED
+            smbEncryption = SmbEncryption.parse(o.optString("smbEncryption", "")).name,
         )
     }
 

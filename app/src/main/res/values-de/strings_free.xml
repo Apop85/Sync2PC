@@ -145,4 +145,16 @@
         <item quantity="one">%1$s Jahr</item>
         <item quantity="other">%1$s Jahre</item>
     </plurals>
+    <string name="free_enter_one_or_more">Bitte 1 oder mehr eingeben.</string>
+    <string name="free_none_match">Keine Datei erfüllt die Auswahl oder ist bereits auf dem PC gesichert. Auswahl lockern oder zuerst synchronisieren.</string>
+    <string name="free_no_trash_android10">Android 10 hat keinen Papierkorb: Dateien werden endgültig vom Handy gelöscht.</string>
+    <plurals name="free_deleted_from_mobile">
+        <item quantity="one">%1$s Datei auf dem PC bestätigt und vom Handy gelöscht (%2$s frei).</item>
+        <item quantity="other">%1$s Dateien auf dem PC bestätigt und vom Handy gelöscht (%2$s frei).</item>
+    </plurals>
+    <string name="free_partial_result">%1$d gelöscht, %2$d übersprungen.</string>
+    <plurals name="free_skipped_note">
+        <item quantity="one">%1$s Datei übersprungen (nicht auf dem PC bestätigt) und bleibt auf dem Handy.</item>
+        <item quantity="other">%1$s Dateien übersprungen (nicht auf dem PC bestätigt) und bleiben auf dem Handy.</item>
+    </plurals>
 </resources>

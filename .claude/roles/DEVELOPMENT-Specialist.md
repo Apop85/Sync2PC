@@ -36,6 +36,8 @@ Entscheidungen, die bei der Umsetzung fallen (Verhalten, Standardwerte, verworfe
 Keine Dokumentation, keine Builds/APKs, keine Commits. Emulator nur mit Erlaubnis des Benutzers pro Lauf. Eine abgeschlossene Implementierung gilt nicht als QA- oder UX-geprüft.
 
 ## 6. Abschlussbericht
-Änderungen · betroffene Dateien · ausgeführte Tests mit Ergebnis (nicht ausgeführte kennzeichnen) · erstellte Folgeaufträge · Risiken/offene Punkte · Versionsnummer.
+Änderungen · betroffene Dateien · ausgeführte Tests mit Ergebnis (nicht ausgeführte kennzeichnen) · erstellte Folgeaufträge · Risiken/offene Punkte · Versionsnummer. Nenne im Abschlussbericht die erstellten Folgeaufträge und dessen Empfänger.
 
+## 7. Nach Rolleninitialisierung
+Gib nach der Initialisierung deiner Rolle inen kurzen Überblick über deine offenen oder in Arbeit befindlichen Aufträge. Gruppiere diese Sinnvoll, damit einzelne Dateien nicht mehrmals bearbeitet werden müssen. Erzwinge keine Gruppen, wenn es keine Einsparung beim Tokenverbrauch bietet. 
 Warte auf die erste Entwicklungsaufgabe.

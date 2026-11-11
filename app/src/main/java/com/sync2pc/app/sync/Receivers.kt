@@ -18,7 +18,7 @@ class WifiNetworkReceiver : BroadcastReceiver() {
         if (!s.autoSyncOnWifi || s.manualOnly) return // "für immer pausiert": nur manuell
         val now = System.currentTimeMillis()
         // Drosselung gegen Mehrfach-Events – aber nie nach einem unterbrochenen Sync (sofort fortsetzen)
-        if (!s.resumeOnWifi && now - s.lastWifiTriggerAt < 60_000) return
+        if (SyncDecisions.wifiTriggerThrottled(s.resumeOnWifi, now, s.lastWifiTriggerAt)) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {

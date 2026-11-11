@@ -14,6 +14,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,35 +50,51 @@ fun UpdateScreen(onBack: () -> Unit) {
     var status by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf<Float?>(null) }
+    var progressText by remember { mutableStateOf("") }
+    var offline by remember { mutableStateOf(false) }
+    var cancelRequested by remember { mutableStateOf(false) }
     val canInstall = remember(tick) { UpdateInstaller.canInstall(ctx) }
     var autoUpdate by remember { mutableStateOf(s.autoUpdateCheck) }
 
     fun check() {
-        busy = true; status = str(R.string.update_checking)
+        busy = true; offline = false; status = str(R.string.update_checking)
         scope.launch {
             status = try {
                 val r = withContext(Dispatchers.IO) { UpdateChecker.checkAndStore(ctx) }
                 info = r
                 if (r == null) str(R.string.update_latest, UpdateChecker.currentVersion()) else null
             } catch (e: Exception) {
-                e.message ?: e.javaClass.simpleName
+                // Kein Netz: verständlicher Text statt Ausnahmetext (Rohtext klein darunter)
+                if (e is java.net.UnknownHostException || e is java.net.ConnectException ||
+                    e is java.net.SocketTimeoutException || e is java.net.NoRouteToHostException) {
+                    offline = true
+                    e.message ?: e.javaClass.simpleName
+                } else e.message ?: e.javaClass.simpleName
             }
             busy = false
         }
     }
 
     fun install(u: UpdateInfo) {
-        busy = true; progress = 0f; status = str(R.string.update_downloading, u.version)
+        busy = true; progress = 0f; progressText = ""; cancelRequested = false
+        status = str(R.string.update_downloading, u.version)
         scope.launch {
             try {
                 val file = withContext(Dispatchers.IO) {
                     UpdateInstaller.download(ctx, u) { done, total ->
-                        if (total > 0) progress = done.toFloat() / total
+                        if (cancelRequested) throw kotlinx.coroutines.CancellationException("cancelled")
+                        if (total > 0) {
+                            progress = done.toFloat() / total
+                            progressText = "${(done * 100 / total).toInt()} % · " +
+                                Notifications.formatBytes(done) + " / " + Notifications.formatBytes(total)
+                        } else progressText = Notifications.formatBytes(done)
                     }
                 }
                 status = str(R.string.update_installing)
                 withContext(Dispatchers.IO) { UpdateInstaller.install(ctx, file, u.version) }
                 androidx.core.app.NotificationManagerCompat.from(ctx).cancel(Notifications.ID_UPDATE)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                status = str(R.string.update_download_cancelled)
             } catch (e: Exception) {
                 status = str(R.string.update_error, e.message ?: e.javaClass.simpleName)
             }
@@ -101,6 +118,8 @@ fun UpdateScreen(onBack: () -> Unit) {
                     Hint(str(R.string.update_source, s.updateRepo))
                     if (s.lastUpdateCheck > 0) Hint(str(R.string.update_last_check, formatTime(s.lastUpdateCheck)))
                     if (busy && progress == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    // Die Seite prüft beim Öffnen; erneut prüfen ohne die Seite zu verlassen
+                    if (!busy && !offline) TextButton(onClick = { check() }) { Text(str(R.string.update_check_now)) }
                     SwitchRow(str(R.string.update_daily), autoUpdate, subtitle = str(R.string.update_daily_sub)) {
                         autoUpdate = it; s.autoUpdateCheck = it; com.sync2pc.app.sync.SyncScheduler.setupAll(ctx)
                     }
@@ -110,7 +129,13 @@ fun UpdateScreen(onBack: () -> Unit) {
             if (u != null) item {
                 SectionCard(str(R.string.update_available, u.version)) {
                     if (u.size > 0) Hint(str(R.string.update_size, Notifications.formatBytes(u.size)))
-                    if (u.notes.isNotBlank()) Text(u.notes.take(3000), style = MaterialTheme.typography.bodySmall)
+                    val notes = remember(u.notes) { ReleaseNotes.clean(u.notes) }
+                    if (notes.text.isNotBlank()) Text(notes.text, style = MaterialTheme.typography.bodySmall)
+                    notes.link?.let { link ->
+                        TextButton(onClick = {
+                            try { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link))) } catch (ignored: Exception) {}
+                        }) { Text(str(R.string.update_changes_link)) }
+                    }
                     if (!canInstall) {
                         Hint(str(R.string.update_permission_hint))
                         OutlinedButton(onClick = {
@@ -123,8 +148,20 @@ fun UpdateScreen(onBack: () -> Unit) {
                     Hint(str(R.string.update_install_hint))
                 }
             }
-            if (progress != null) item { LinearProgressIndicator(progress = { progress ?: 0f }, modifier = Modifier.fillMaxWidth()) }
-            status?.let { item { Text(it) } }
+            if (progress != null) item {
+                SectionCard {
+                    LinearProgressIndicator(progress = { progress ?: 0f }, modifier = Modifier.fillMaxWidth())
+                    if (progressText.isNotBlank()) Hint(progressText)
+                    TextButton(onClick = { cancelRequested = true }) { Text(str(R.string.common_cancel)) }
+                }
+            }
+            if (offline) item {
+                SectionCard {
+                    Text(str(R.string.update_offline), color = MaterialTheme.colorScheme.error)
+                    status?.let { Hint(it) }
+                    TextButton(onClick = { check() }, enabled = !busy) { Text(str(R.string.update_check_again)) }
+                }
+            } else status?.let { item { Text(it) } }
         }
     }
 }

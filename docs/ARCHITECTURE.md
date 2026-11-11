@@ -1,6 +1,6 @@
 # Architektur – Sync2PC / LeoSync
 
-Technische Referenz der **aktuell implementierten** Architektur (Stand: Quellcode, App-Version aus `version.properties`, DB-Version 6). Maßgeblich ist der Quellcode; `docs/DECISIONS.md` liefert Hintergründe (DEC-IDs). Geplantes steht ausschliesslich in Abschnitt 14 und ist dort als solches gekennzeichnet.
+Technische Referenz der **aktuell implementierten** Architektur (Stand: Quellcode, App-Version aus `version.properties` (0.15.0), DB-Version 10). Maßgeblich ist der Quellcode; `docs/DECISIONS.md` liefert Hintergründe (DEC-IDs). Geplantes steht ausschliesslich in Abschnitt 14 und ist dort als solches gekennzeichnet.
 
 > Hinweis: Die frühere `docs/ARCHITECTURE.md` enthielt nur den Arbeitsauftrag für diese Dokumentation, keine Architektur. Sie wurde daher ersetzt.
 
@@ -41,7 +41,7 @@ flowchart TD
         Pause[PauseService]
     end
 
-    SW[SyncWorker<br/>CoroutineWorker, Mutex]
+    SW[SyncWorker<br/>CoroutineWorker, SyncGate]
 
     subgraph Engines
         SR{{SyncRunner}}
@@ -94,7 +94,7 @@ Zentrale Schnittstellen:
 
 - **`SyncRunner`** (`sync/SyncRunner.kt`): gemeinsames Interface der beiden Engines (`run()`, `preview`, `connectionFailed`, `wifiLost`, `blocked`, `newConflicts`, `spaceShortage`, `nextYoungFileAt`). `SyncWorker` kennt nur dieses Interface.
 - **`SyncDao`** (`data/SyncDao.kt`): einziger DB-Zugang; liefert für die UI `Flow`s (`profilesFlow()`, `decisionsFlow()` …).
-- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. Seit 0.13.0 führt ein einziger Anmeldeweg (`connectChecked`: connect → PC-Kennung prüfen → `authenticate`) die Prüfung der PC-Kennung aus (DEC-204, `docs/SYNC-ENGINE.md` 6.0); die Datenbank erreicht `SmbSession` nur über die Schnittstelle `PcStore` (`RoomPcStore`, gesetzt in `App.kt`).
+- **`SmbSession`** (`smb/SmbSession.kt`): einziger Ort mit smbj-Aufrufen. Seit 0.13.0 führt ein einziger Anmeldeweg (`connectChecked`: connect → PC-Kennung prüfen → `authenticate`) die Prüfung der PC-Kennung aus (DEC-204, `docs/SYNC-ENGINE.md` 6.0); die Datenbank erreicht `SmbSession` nur über die Schnittstelle `PcStore` (`RoomPcStore`, gesetzt in `App.kt`). Seit 0.15.0 baut die gemeinsame Fabrik `smbConfigFor` die `SmbConfig` für alle drei Verbindungsstellen (`open`, `checkPc`, Freigabenliste) abhängig von der Verschlüsselungsstufe des Profils (DEC-222).
 - **`GlobalSettings`** (`data/GlobalSettings.kt`): profilübergreifende Einstellungen und Zustandsmerker (SharedPreferences „global“).
 - **`Notifications`** (`sync/Notifications.kt`): einziger Ort, der Benachrichtigungen erzeugt; öffnet die UI über Intent-Extra `EXTRA_OPEN`.
 
@@ -155,7 +155,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `data/AppDatabase.kt` | Room-Datenbank `sync2pc.db`, Version 6, 10 Entitäten, Migrationen 1→6, **kein** `fallbackToDestructiveMigration` | `SyncDao`, `schemas/` | ● |
 | `data/Entities.kt` | Alle Entitäten und Enums: `Profile`, `SyncedFile`, `MirrorState`, `MirrorConflict`, `PendingRestore`, `FolderMapping`, `PendingDecision`, `MediaInfo`, `SyncRun`, `LogEntry`; `ProfileType`, `SyncDirection`, `DeleteMode`, `VerifyLevel`, `ConflictMode`; Konstanten `RunStatus`, `DeleteState`, `ConflictResolution` | überall | ● |
 | `data/SyncDao.kt` | Alle Abfragen (Flows für die UI, suspend-Funktionen für Engines) | Room | ● |
-| `data/GlobalSettings.kt` | Profilübergreifende Einstellungen und Zustandsmerker (Pause `pausedUntil`/`manualOnly`, `resumeOnWifi`, `shareRetryAt`, `awaitingFirstStart`, Benachrichtigungs-Schalter …) | Scheduler, Worker, UI | ● |
+| `data/GlobalSettings.kt` | Profilübergreifende Einstellungen und Zustandsmerker (Pause `pausedUntil`/`manualOnly`, `resumeOnWifi`, `shareRetryAt`, `deferredStart` (Nachlauf-Merker), `awaitingFirstStart`, Benachrichtigungs-Schalter …) | Scheduler, Worker, UI | ● |
 | `data/CredentialCrypto.kt` | Ver-/Entschlüsselung der SMB-Passwörter mit nicht exportierbarem Android-Keystore-Schlüssel | `SmbSession`, `BackupManager` | ● |
 | `data/CredentialGroups.kt` | Gruppiert Profile mit gleichen Zugangsdaten (Übernehmen im Profilformular) | `ProfileScreen` | ○ rein |
 | `data/ProfileOverlap.kt` | Erkennt identische/überlappende Profile (IDENTICAL, PARTIAL); bei Fotoprofilen mit gleichem Ziel und anderer Ordnerstruktur blockiert (DEC-209) | `ProfileScreen`, `BackupManager` | ○ rein |
@@ -167,7 +167,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | Datei | Verantwortlichkeit / Inhalt | Zusammenarbeit | Rel. |
 |---|---|---|---|
 | `sync/SyncScheduler.kt` | Alle WorkManager-Aufträge und Auslöser: `enqueueAuto/Manual/FollowUp/Resume`, `enqueueShareRetry`, `armContentTrigger` (MediaStore-Content-URI-Trigger), `scheduleSafetyNet` (6 h), `onOffWifiChanged` (Neuplanung und Verwerfen der Wartezeit bei Wechsel von `syncOffWifi`, auch nach Sicherung einspielen), `scheduleRemotePoll`, `pause/pauseForever/resume/cancelAll`, `setupAll` | `SyncWorker`, `TriggerWorker`, `WifiHelper`, `UpdateWorker`, `StaleCheck` | ● |
-| `sync/SyncWorker.kt` | `CoroutineWorker`; ein Lauf für alle passenden Profile: Pause/Wartebedingungen prüfen, WLAN-SSID abgleichen, PC-Erreichbarkeit testen, PC-Kennung vorab prüfen (`GUID`/`BOTH`), je Profil `SyncRunner` wählen und ausführen, Abschluss-Benachrichtigungen, Folgeaufträge; globaler `Mutex` gegen parallele Läufe | `SyncEngine`, `MirrorEngine`, `Notifications`, `PauseService`, `TransferLocks`, `GuardStore` | ● |
+| `sync/SyncWorker.kt` | `CoroutineWorker`; ein Lauf für alle passenden Profile: Pause/Wartebedingungen prüfen, WLAN-SSID abgleichen, PC-Erreichbarkeit testen, PC-Kennung vorab prüfen (`GUID`/`BOTH`), je Profil `SyncRunner` wählen und ausführen, Abschluss-Benachrichtigungen, Folgeaufträge; `SyncGate` (seit 0.15.0, ersetzt den globalen `Mutex`) gegen parallele Läufe mit Nachlauf-Merker (DEC-221) | `SyncEngine`, `MirrorEngine`, `Notifications`, `PauseService`, `TransferLocks`, `GuardStore` | ● |
 | `sync/SyncRunner.kt` | Interface beider Engines | Worker, Engines | ● |
 | `sync/SyncEngine.kt` | Bildordner-Lauf pro Profil: Scan → bekannte Dateien per DB aussortieren → Analyse + Zielordner (sequenziell) → parallele Uploads (je eigene SMB-Verbindung), Verifikation, Log. Enthält `SyncProgress`, `PreviewEntry` | `MediaScanner`, `MediaAnalyzer`, `TargetResolver`, `SmbSession`, `PartialHash`, `DeletionManager`, DAO | ● |
 | `sync/TargetResolver.kt` | Bestimmt den Zielordner je Ordnerstruktur des Profils (V1/V2/V3, `FolderLayout`, DEC-209): gespeicherte Entscheidung, Standardname, umbenannte Ordner → Rückfrage. Enthält die Schnittstelle `MappingStore` (Tests: Fake, Produktion: `SyncDao`) | `SyncEngine`, `FolderNames`, `CountryLookup`, `MonthFolderSearch` | ● |
@@ -181,6 +181,9 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 | `sync/FreeRules.kt` | Auswahlregeln (Alter, Ordner, Typ, Grösse, Ausnahmen) für „Speicher freigeben“ | `SpaceFreer`, `FolderFreer`, UI | ○ rein |
 | `sync/Notifications.kt` | Kanäle (`sync_progress`, `sync_alerts`), Fortschritt/Foreground-Info, Zusammenfassungen, Hinweise; Intent-Extras `EXTRA_OPEN`/`OPEN_*` | Worker, `MainActivity` | ● |
 | `sync/PauseService.kt` | Foreground-Service (`dataSync`) „Pausiert – wartet auf WLAN“ nach WLAN-Unterbruch | `SyncWorker`, `SyncScheduler` | ● |
+| `sync/SyncGate.kt` | Reine Klasse (0.15.0, DEC-221): prozessweite Sync-Sperre und persistenter Nachlauf-Merker unter einer gemeinsamen `synchronized`-Sperre; Entscheidungslogik per `SyncGateTest` geprüft | `SyncWorker`, `SyncScheduler` | ○ |
+| `sync/PresenceCheck.kt` | Prüfung «bereits vorhanden» bei Löschmodus ≠ KEEP mindestens auf Stufe «Mittel» (0.15.0, DEC-223) | `SyncEngine` | ○ |
+| `mirror/ContentCompare.kt` | Vollständiger Hash-Vergleich beider Seiten für Dateien über 32 MB, abbrechbar mit Fortschritt (0.15.0, DEC-223) | `MirrorEngine`, `FolderFreer` | ○ |
 | `sync/Receivers.kt` | `WifiNetworkReceiver` (System-Callback bei WLAN-Verbindung), `BootReceiver` (Boot/App-Update) | `SyncScheduler`, `WifiHelper` | ● |
 | `sync/WifiHelper.kt` | SSID lesen, WLAN-Status, Registrierung des `NetworkCallback` über `PendingIntent`; liest die Netzeigenschaften (`isOnMobileOrVpn`) und ruft `NetworkRules` auf | Receiver, Worker, Scheduler | ● |
 | `sync/NetworkRules.kt` | Reine Netzentscheidungen (seit 0.11.7, DEC-126): erlaubte Netzart, SSID-Prüfung ja/nein, Wartezeit „PC nicht erreichbar“ (`retryMinutes`: 30 min / 2 min / 2 h ausserhalb WLAN), Erreichbarkeitsversuche (`reachabilityWaits`); seit 0.13.0 je PC-Erkennungsmodus (`needsWifiName`, `eligible`, `mayContinue(mode, …)`, `wifiTriggerMatches`) | `WifiHelper`, `SyncWorker`, `Receivers`, `PauseService` | ○ |
@@ -276,7 +279,7 @@ Legende Relevanz: **●** zentral, **○** unterstützend. Pfade relativ zu `app
 - **Handy-Zugriff** – `MediaScanner` (MediaStore, nur Fotos/Videos) gegenüber `LocalTree` (SAF, beliebige Dateien). Die Trennung folgt aus Android 11+, wo der MediaStore keine Dokumente liefert.
 - **Datenbank (`data/`)** – Room als zentraler Zustandsspeicher (DEC-003). Vollständiges Schema: `docs/DATA-MODEL.md`.
 - **Metadaten/EXIF (`media/`, `geo/`)** – Datum und Land einer Datei; Ergebnis wird in `MediaInfo` zwischengespeichert, damit Dateien nicht mehrfach geöffnet werden.
-- **Hintergrundverarbeitung** – ausschliesslich WorkManager plus System-Callbacks; kein Dauerdienst. `PauseService` ist ein reiner Wartedienst (Abschnitt 9).
+- **Hintergrundverarbeitung** – ausschliesslich WorkManager plus System-Callbacks; kein eigener Dauerdienst für Synchronisierung. `PauseService` ist ein `dataSync`-Vordergrunddienst ohne eigene Laufzeitgrenze, der das Android-15-Tagesbudget für `dataSync` mit dem Vordergrunddienst des Sync-Workers teilt (Architecture SYNC-20261110-124/-141, R-BG1; Abschnitt 9).
 - **Einstellungen** – profilbezogen in `Profile` (Room), profilübergreifend in `GlobalSettings` (SharedPreferences „global“), kleinere Zustände in eigenen SharedPreferences („guard“, „purge“, „restore“, „lang“).
 - **Diagnose/Logging** – Lauf-Log in der DB (`SyncRun`, `LogEntry`), Diagnosetext (`Diagnostics`), lokaler Absturzbericht (`CrashReporter`). Es wird nichts automatisch übertragen.
 - **Updates (`update/`)** – GitHub Releases, tägliche Prüfung, Installation über `PackageInstaller`.
@@ -395,7 +398,7 @@ Schutzbremse prüfen → `LocalTree` und `SmbSession` einlesen → 3-Wege-Plan a
 
 ### 7.4 Unterbruch und Fortsetzen
 
-Verliert das Handy das Ziel-WLAN, markiert `SyncWorker.markInterrupted()` den Zustand (`GlobalSettings.resumeOnWifi`), plant `enqueueResume` ein und startet `PauseService` (oder eine „Pausiert“-Benachrichtigung). Fortgesetzt wird über `WifiNetworkReceiver` *oder* den Resume-Auftrag, spätestens nach Ablauf von 24 h wird aufgegeben.
+Verliert das Handy das Ziel-WLAN, markiert `SyncWorker.markInterrupted()` den Zustand (`GlobalSettings.resumeOnWifi`), plant `enqueueResume` ein und startet `PauseService` (oder eine „Pausiert“-Benachrichtigung). Fortgesetzt wird über `WifiNetworkReceiver` *oder* den Resume-Auftrag, spätestens nach Ablauf von 24 h wird aufgegeben (gilt nur im Worker-Pfad; `PauseService` hat keine eigene Grenze, R-BG1).
 
 ---
 

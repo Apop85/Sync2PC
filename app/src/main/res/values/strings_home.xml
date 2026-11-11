@@ -121,6 +121,31 @@
     <string name="home_resume">Resume</string>
     <string name="home_sync">Sync</string>
     <string name="home_sync_needs_profile">Create a profile first.</string>
+    <!-- Statuskarte folgt dem Gesamtzustand (SYNC-20261110-113) -->
+    <plurals name="home_status_attention">
+        <item quantity="one">Decision required</item>
+        <item quantity="other">%1$s decisions required</item>
+    </plurals>
+    <plurals name="home_status_conflict_detail">
+        <item quantity="one">%1$s conflict is waiting for your decision.</item>
+        <item quantity="other">%1$s conflicts are waiting for your decision.</item>
+    </plurals>
+    <string name="home_status_attention_detail">Something is waiting for your decision – see the cards on this page.</string>
+    <string name="home_status_no_connection">No connection</string>
+    <string name="home_no_connection_wifi">No matching Wi-Fi – sync is waiting</string>
+    <string name="home_no_connection_hint">Connect to the Wi-Fi set in the profile. “Sync” still tries right away.</string>
+    <plurals name="home_status_errors">
+        <item quantity="one">Last sync: %1$s error</item>
+        <item quantity="other">Last sync: %1$s errors</item>
+    </plurals>
+    <string name="home_status_failed">Last sync failed</string>
+    <string name="home_status_errors_hint">Tap to open the history.</string>
+    <string name="home_status_not_configured">Nothing set up yet</string>
+    <string name="home_status_no_active">No active profile</string>
+    <string name="home_no_active_detail">Turn on a profile or finish setting it up.</string>
+    <string name="home_status_idle">Ready</string>
+    <string name="home_sync_feedback_wifi">No matching Wi-Fi – trying anyway</string>
+    <string name="home_sync_feedback_pc">PC not reachable – checking again now</string>
     <string name="home_profile_disabled">disabled</string>
     <string name="home_profile_on_wifi">on Wi-Fi ✓</string>
     <string name="home_profile_no_target">No target set</string>
@@ -166,4 +191,10 @@
     <string name="perm_location_off">Location service is turned off</string>
     <string name="perm_location_service">Location service turned on</string>
     <string name="perm_battery">Disable battery optimization (reliable background sync)</string>
+    <!-- Follow-up (SYNC-20261111-146 part A) -->
+    <string name="home_sync_deferred_snack">Will start after the current sync.</string>
+    <string name="home_next_all">Next: all profiles</string>
+    <string name="home_next_auto">Another sync follows.</string>
+    <string name="perm_blocked_title">Permission blocked</string>
+    <string name="perm_blocked_text">Android no longer asks. Open App info → Permissions and allow the access.</string>
 </resources>

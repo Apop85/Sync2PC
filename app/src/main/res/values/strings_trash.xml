@@ -24,19 +24,19 @@
     </plurals>
     <string name="trash_pc_unreachable">PC: not reachable</string>
     <string name="trash_pc_unreachable_hint">Entries from the PC trash are missing from the list. Restoring and deleting on the PC are scheduled and carried out at the next sync with a reachable PC.</string>
-    <string name="trash_cleanup_button">Clean up…</string>
+    <string name="trash_cleanup_button">Clean up trash…</string>
     <string name="trash_reload">Reload</string>
     <string name="trash_empty">The trash is empty.</string>
     <string name="trash_intro">Deleted files and older versions are kept here. Mark entries to restore them or delete them permanently.</string>
     <string name="trash_day">Day</string>
     <string name="trash_all_days">All days</string>
     <string name="trash_select_day">Select everything from %1$s</string>
-    <string name="trash_whole_folder">Whole folder</string>
+    <string name="trash_whole_folder">Select newest version of each file</string>
     <string name="trash_older_version">older version</string>
     <string name="trash_deleted">deleted</string>
     <string name="trash_reserved">scheduled for restore</string>
     <string name="trash_selected">%1$s selected · %2$s</string>
-    <string name="trash_clear_selection">Clear</string>
+    <string name="trash_clear_selection">Clear selection</string>
     <string name="trash_restore">Restore</string>
     <string name="trash_purged_pc_pending">Mobile emptied – the PC will be emptied at the next sync with the PC</string>
     <string name="trash_purged">Trash cleaned up</string>
@@ -55,7 +55,7 @@
     <string name="trash_restore_text">The current versions go to the trash first. The chosen versions are written back on mobile and PC.</string>
     <string name="trash_restore_now">This happens right away with a sync.</string>
     <string name="trash_restore_later">The PC is not reachable: this happens at the next sync with the PC.</string>
-    <string name="trash_cleanup">Clean up</string>
+    <string name="trash_cleanup">Clean up trash</string>
     <string name="trash_cleanup_hint">Permanently deleted files can no longer be restored.</string>
     <string name="trash_what">What?</string>
     <string name="trash_mode_older">Older than … days</string>
@@ -93,4 +93,6 @@
         <item quantity="one">%1$s file · %2$s</item>
         <item quantity="other">%1$s files · %2$s</item>
     </plurals>
+    <string name="trash_days_invalid">Enter a number of days (1 or more).</string>
+    <string name="trash_delete_title_one">Delete “%1$s” permanently?</string>
 </resources>

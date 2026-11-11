@@ -28,15 +28,13 @@ import com.sync2pc.app.smb.SmbSession
 import com.sync2pc.app.smb.SmbTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
 /** Führt den Sync für alle passenden Profile aus (läuft im Hintergrund, ggf. als Vordergrunddienst). */
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     companion object {
-        /** Verhindert parallele Läufe (Auto, Manuell, Nachholen) */
-        private val mutex = Mutex()
+        // Verhinderung paralleler Läufe (Auto, Manuell, Nachholen): SyncScheduler.gate (SyncGate), siehe doWork
 
         const val P_PROFILE = "profile"
         const val P_PHASE = "phase"
@@ -59,22 +57,49 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         Notifications.foregroundInfo(applicationContext, null, null)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        if (!mutex.tryLock()) return@withContext Result.success()
+        val ctx = applicationContext
+        val gate = SyncScheduler.gate(ctx)
+        // R-N1: Bekommt dieser Auftrag die Sperre nicht, ist ein Lauf aktiv. Der Start wird dann nicht mehr stumm verworfen,
+        // sondern atomar vorgemerkt (Merker im Speicher und in GlobalSettings); der Lauf-Inhaber reiht nach seiner Freigabe
+        // genau einen Nachlauf ein. Die Oberfläche sieht es an deferred = true bzw. an SyncScheduler.deferredState.
+        if (!gate.tryAcquireOrDefer(manual = inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)))
+            return@withContext Result.success(workDataOf(SyncScheduler.KEY_DEFERRED to true))
+        // Zwischen tryAcquireOrDefer und try darf nichts stehen: die Sperre muss in jedem Fall wieder frei werden (R-BG4)
+        // -157: Scheitert work() UND der Abschluss, bleibt die Ursache aus work() erhalten (die zweite Ausnahme wird nur
+        // angehängt); ein Ausdruck try/finally würde sie überschreiben.
+        var workFailure: Throwable? = null
+        val workResult: Result? = try { work() } catch (t: Throwable) { workFailure = t; null }
         try {
-            work()
-        } finally {
-            // Fortschrittsanzeige nie stehen lassen (sie würde sonst nach einem Abbruch "hängen")
-            Notifications.cancelProgress(applicationContext)
-            // Von Android gestoppt (z. B. WLAN weg -> Netzwerk-Bedingung verletzt): beim Wiederverbinden fortsetzen
-            // ("Abbrechen" durch den Benutzer ist kein Unterbruch -> nicht fortsetzen)
-            if (isStopped && stopReasonCompat() != WorkInfo.STOP_REASON_CANCELLED_BY_APP &&
-                !inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)
-            ) markInterrupted()
-            mutex.unlock()
-            SyncScheduler.armContentTrigger(applicationContext)
-            // Sicherheitsnetz: 6 Stunden nach diesem Lauf erneut prüfen (schiebt den Zeitpunkt nach hinten)
-            SyncScheduler.scheduleSafetyNet(applicationContext, restart = true)
+            try {
+                // finishRun: Aufräumen darf scheitern, die Sperre wird trotzdem freigegeben und ein vorgemerkter Nachlauf
+                // eingereiht. Freigabe NACH markInterrupted (Zustand "Pausiert" gehört noch zu diesem Lauf); ein sofort
+                // startender Fortsetzen-Auftrag (R-BG5) wird nicht verworfen, sondern vorgemerkt und nachgeholt.
+                gate.finishRun(
+                    cleanup = {
+                        // Fortschrittsanzeige nie stehen lassen (sie würde sonst nach einem Abbruch "hängen")
+                        try { Notifications.cancelProgress(ctx) } catch (ignored: Exception) {}
+                        // Von Android gestoppt (z. B. WLAN weg -> Netzwerk-Bedingung verletzt): beim Wiederverbinden fortsetzen
+                        // ("Abbrechen" durch den Benutzer ist kein Unterbruch -> nicht fortsetzen)
+                        if (SyncDecisions.resumeAfterStop(isStopped, stopReasonCompat(), inputData.getBoolean(SyncScheduler.KEY_MANUAL, false)))
+                            markInterrupted()
+                    },
+                    followUp = { kind -> SyncScheduler.enqueueDeferred(ctx, kind) }
+                )
+            } finally {
+                try {
+                    SyncScheduler.armContentTrigger(ctx)
+                } finally {
+                    // Sicherheitsnetz: 6 Stunden nach diesem Lauf erneut prüfen (schiebt den Zeitpunkt nach hinten)
+                    SyncScheduler.scheduleSafetyNet(ctx, restart = true)
+                }
+            }
+        } catch (t: Throwable) {
+            val first = workFailure
+            if (first == null) throw t
+            first.addSuppressed(t)
         }
+        workFailure?.let { throw it }
+        workResult!!
     }
 
     private val isResumeRun: Boolean get() = inputData.getBoolean(SyncScheduler.KEY_RESUME, false)
@@ -94,17 +119,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
      * "Abbrechen" durch den Benutzer – das gilt als echter Abbruch.
      */
     private fun interruptReason(): Msg? {
-        if (!isStopped) return null
-        return when (val r = stopReasonCompat()) {
-            WorkInfo.STOP_REASON_CANCELLED_BY_APP -> null
-            WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> Msg.of(R.string.stop_wifi)
-            WorkInfo.STOP_REASON_CONSTRAINT_CHARGING -> Msg.of(R.string.stop_charger)
-            WorkInfo.STOP_REASON_TIMEOUT -> Msg.of(R.string.stop_timeout)
-            WorkInfo.STOP_REASON_QUOTA, WorkInfo.STOP_REASON_APP_STANDBY,
-            WorkInfo.STOP_REASON_BACKGROUND_RESTRICTION, WorkInfo.STOP_REASON_DEVICE_STATE,
-            WorkInfo.STOP_REASON_SYSTEM_PROCESSING -> Msg.of(R.string.stop_system, r)
-            else -> Msg.of(R.string.stop_android, r)
-        }
+        val t = SyncDecisions.interruptText(isStopped, stopReasonCompat()) ?: return null
+        return if (t.arg != null) Msg.of(t.res, t.arg) else Msg.of(t.res)
     }
 
     /**
@@ -244,7 +260,13 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         for (p in runnable) if (p.pcMode().checksGuid) settings.setPcNotified(p.id, false)
         if (unreachable.isNotEmpty()) settings.noteSkip(str(R.string.skip_pc_unreachable, unreachable.joinToString(", ") { it.name }))
         if (rejected.isNotEmpty()) {
-            settings.noteSkip(str(R.string.skip_pc_not_recognised, rejected.joinToString(", ") { it.profile.name }))
+            // -157: Aushandlungsfehler (z. B. Verschlüsselung erforderlich, aber nicht verfügbar) sind keine «nicht erkannten» PCs
+            val failedNeg = rejected.filter { it.decision == null }
+            val notRecognised = rejected.filter { it.decision != null }
+            settings.noteSkip(listOfNotNull(
+                notRecognised.takeIf { it.isNotEmpty() }?.let { str(R.string.skip_pc_not_recognised, it.joinToString(", ") { r -> r.profile.name }) },
+                failedNeg.takeIf { it.isNotEmpty() }?.let { str(R.string.skip_pc_failed, it.joinToString(", ") { r -> r.profile.name }) },
+            ).joinToString(" · "))
             if (manual) {
                 Notifications.summary(ctx, rejected.joinToString("\n") { "${it.profile.name}: ${it.message()}" }, error = true)
             } else for (r in rejected) if (!settings.pcNotified(r.profile.id)) {

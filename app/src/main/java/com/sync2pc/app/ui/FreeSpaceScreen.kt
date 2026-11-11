@@ -157,6 +157,8 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
     var resultFailed by remember(profile.id) { mutableStateOf(false) }
     var confirmFolder by remember { mutableStateOf(false) }
     var confirmDirect by remember { mutableStateOf<List<SpaceFreer.Candidate>?>(null) }
+    // Anzahl der Dateien der letzten Prüfung, die nicht auf dem PC bestätigt wurden (bleiben auf dem Handy)
+    var skipped by remember(profile.id) { mutableIntStateOf(0) }
 
     // Systemdialoge "In den Papierkorb" nacheinander (je max. 500 Dateien, nur Fotos)
     var requests by remember { mutableStateOf<List<Pair<android.app.PendingIntent, Int>>>(emptyList()) }
@@ -166,10 +168,10 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         if (res.resultCode == Activity.RESULT_OK && current != null) {
             moved += current.second
             requests = requests.drop(1)
-            if (requests.isEmpty()) { resultText = plural(R.plurals.free_moved_to_gallery_trash, moved); reload++ }
+            if (requests.isEmpty()) { resultText = plural(R.plurals.free_moved_to_gallery_trash, moved) + skippedNote(skipped); reload++ }
         } else {
             requests = emptyList()
-            if (moved > 0) { resultText = plural(R.plurals.free_moved_to_gallery_trash, moved); reload++ }
+            if (moved > 0) { resultText = plural(R.plurals.free_moved_to_gallery_trash, moved) + skippedNote(skipped); reload++ }
         }
     }
     LaunchedEffect(requests) {
@@ -214,6 +216,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         scope.launch {
             try {
                 val v = SpaceFreer.verify(ctx, list) { d, t -> progress = d to t }
+                skipped = list.size - v.confirmed.size
                 resultText = buildString {
                     append(plural(R.plurals.free_confirmed, v.confirmed.size))
                     if (v.missing > 0) append(" ").append(plural(R.plurals.free_missing, v.missing))
@@ -324,7 +327,9 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                 ) {
                     Text(str(if (photos && hasTrash) R.string.free_run_trash else R.string.free_run_delete))
                 }
+                if (selection.candidates.isEmpty()) Hint(str(R.string.free_none_match))
                 if (photos && hasTrash) Hint(str(R.string.free_gallery_trash_hint))
+                else if (photos) Hint(str(R.string.free_no_trash_android10))
             }
         }
         busy?.let { b ->
@@ -421,6 +426,11 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                     scope.launch {
                         val n = SpaceFreer.deleteDirectly(ctx, list)
                         Toast.makeText(ctx, plural(R.plurals.free_direct_done, n), Toast.LENGTH_LONG).show()
+                        // Ergebnis auf der Seite nennt, dass die Dateien auf dem Handy gelöscht wurden
+                        val freed = Notifications.formatBytes(list.sumOf { it.size })
+                        resultFailed = n < list.size
+                        resultText = (if (n == list.size) plural(R.plurals.free_deleted_from_mobile, n, n, freed)
+                            else str(R.string.free_partial_result, n, list.size - n)) + skippedNote(skipped)
                         reload++
                     }
                 }) { Text(str(R.string.common_delete)) }
@@ -429,6 +439,9 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
         )
     }
 }
+
+/** Zusatz zum Ergebnis: Dateien, die nicht auf dem PC bestätigt wurden, blieben auf dem Handy */
+private fun skippedNote(n: Int): String = if (n > 0) " " + plural(R.plurals.free_skipped_note, n) else ""
 
 private fun typesLabel(c: FreeCriteria): String {
     val parts = c.kinds.sortedBy { it.ordinal }.map { it.label } + c.extensions.sorted().map { "*.$it" }
@@ -482,6 +495,7 @@ private fun AgeDialog(current: Age?, onDismiss: () -> Unit, onDone: (Age?) -> Un
             OutlinedTextField(
                 amount, { v -> amount = v.filter { it.isDigit() }.take(4) },
                 label = { Text(str(R.string.free_amount)) }, isError = n == null, singleLine = true,
+                supportingText = if (n == null) ({ Text(str(R.string.free_enter_one_or_more)) }) else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             )
@@ -553,6 +567,7 @@ private fun SizeDialog(current: Long, onDismiss: () -> Unit, onDone: (Long) -> U
         if (custom) OutlinedTextField(
             text, { v -> text = v.filter { it.isDigit() }.take(7) }, label = { Text("MB") },
             isError = customMb == null, singleLine = true,
+            supportingText = if (customMb == null) ({ Text(str(R.string.free_enter_one_or_more)) }) else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
         )

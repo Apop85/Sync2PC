@@ -71,4 +71,8 @@
     <string name="report_chooser">Report a problem</string>
     <string name="settings_diag_copy">Copy diagnostic data</string>
     <string name="settings_about">LeoSync %1$s – Open Source (MIT)</string>
+    <string name="settings_diag_copied">Diagnostic data copied to the clipboard</string>
+    <string name="settings_err_days">Enter a number from 1 to 365.</string>
+    <string name="settings_err_minutes">Enter a number from 0 to 1440.</string>
+    <string name="settings_err_country">Enter a valid two-letter country code (e.g. CH).</string>
 </resources>

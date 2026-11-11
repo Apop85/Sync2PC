@@ -53,8 +53,10 @@ class ProfileOverlapTest {
         val sameTarget = ProfileOverlap.check(other, listOf(m1))
         assertEquals(Kind.PARTIAL, sameTarget?.kind)
         assertEquals(true, sameTarget?.nested)
-        // Fotos- und Ordner-Profil mit gleichem Ziel stören sich nicht
-        assertNull(ProfileOverlap.check(photos(0, "\\\\pc\\Doku", "DCIM/"), listOf(m1)))
+        // Fotos- und Ordner-Profil mit gleichem Ziel: seit SYNC-20261111-152 eine Warnung (nur PARTIAL)
+        val cross = ProfileOverlap.check(photos(0, "\\\\pc\\Doku", "DCIM/"), listOf(m1))
+        assertEquals(Kind.PARTIAL, cross?.kind)
+        assertEquals(ProfileOverlap.Cross.PC_FROM_PHOTOS, cross?.cross)
     }
 
     @Test fun nestedMirrorProfilesWarn() {
@@ -108,9 +110,86 @@ class ProfileOverlapTest {
     @Test fun mirrorProfilesAreNeverBlockedByLayout() {
         val m1 = Profile(id = 1, profileType = ProfileType.MIRROR.name, smbPath = "\\\\pc\\Doku", localTreeUri = "content://tree/primary%3ADocuments")
         val ph = photos(0, "\\\\pc\\Doku", "DCIM/").copy(folderLayout = v2)
-        assertNull(ProfileOverlap.check(ph, listOf(m1)))
+        assertEquals(Kind.PARTIAL, ProfileOverlap.check(ph, listOf(m1))?.kind) // nie BLOCKED, nur Warnung
     }
 
     @Test fun editingTheSameProfileIsNotBlockedByItself() {
         assertNull(ProfileOverlap.check(existing.copy(folderLayout = v2), listOf(existing)))
-    }}
+    }
+
+    // ---- Fotos ↔ Ordner typübergreifend und kanonischer Vergleich (SYNC-20261111-152) ----
+    private val ext = "content://com.android.externalstorage.documents/tree/"
+    private val dl = "content://com.android.providers.downloads.documents/tree/"
+    private fun mirror(id: Long, pc: String, tree: String, dir: String = "BOTH") =
+        Profile(id = id, name = "M$id", profileType = ProfileType.MIRROR.name, smbPath = pc, localTreeUri = tree, direction = dir)
+
+    @Test fun photosInsideMirrorPcFolderWarnsInBothDirectionsAndAnyDirection() {
+        for (dir in listOf("UPLOAD", "DOWNLOAD", "BOTH")) {
+            val m = mirror(1, "\\\\pc\\Share", ext + "primary%3ADocuments", dir)
+            val inside = photos(0, "\\\\pc\\Share", "DCIM/Camera/", remoteSub = "Fotos")
+            assertEquals(ProfileOverlap.Cross.PC_FROM_PHOTOS, ProfileOverlap.check(inside, listOf(m))?.cross)
+            // umgekehrt: Fotoprofil existiert, Ordner-Profil wird gespeichert
+            val ph = photos(2, "\\\\pc\\Share", "DCIM/Camera/", remoteSub = "Fotos")
+            assertEquals(ProfileOverlap.Cross.PC_FROM_MIRROR, ProfileOverlap.check(m.copy(id = 0), listOf(ph))?.cross)
+        }
+        // anderes Ziel: keine Warnung
+        assertNull(ProfileOverlap.check(photos(0, "\\\\pc\\Fotos", "DCIM/Camera/"), listOf(mirror(1, "\\\\pc\\Doku", ext + "primary%3AScans"))))
+    }
+
+    @Test fun photoSourceInsideWritingMirrorFolderWarns() {
+        val m = mirror(1, "\\\\pc\\Doku", ext + "primary%3ADCIM", "BOTH")
+        val ph = photos(0, "\\\\pc\\Fotos", "DCIM/Camera/")
+        assertEquals(ProfileOverlap.Cross.PHONE_FROM_PHOTOS, ProfileOverlap.check(ph, listOf(m))?.cross)
+        assertEquals(ProfileOverlap.Cross.PHONE_FROM_PHOTOS, ProfileOverlap.check(ph, listOf(m.copy(direction = "DOWNLOAD")))?.cross)
+        // Ordner-Profil «Handy → PC» schreibt nicht aufs Handy: keine Meldung
+        assertNull(ProfileOverlap.check(ph, listOf(m.copy(direction = "UPLOAD"))))
+        // gleicher Ordner, umgekehrte Richtung des Speicherns
+        val same = mirror(1, "\\\\pc\\Doku", ext + "primary%3ADCIM%2FCamera")
+        assertEquals(ProfileOverlap.Cross.PHONE_FROM_MIRROR, ProfileOverlap.check(same.copy(id = 0), listOf(photos(2, "\\\\pc\\Fotos", "DCIM/Camera/")))?.cross)
+        // Handy-Ordner des Ordner-Profils enthält den Foto-Quellordner nur mit Unterordnern wirksam
+        val parent = photos(0, "\\\\pc\\Fotos", "DCIM/", sub = true)
+        assertEquals(ProfileOverlap.Cross.PHONE_FROM_PHOTOS, ProfileOverlap.check(parent, listOf(same))?.cross)
+        assertNull(ProfileOverlap.check(parent.copy(includeSubfolders = false), listOf(same)))
+        // anderer Ordner
+        assertNull(ProfileOverlap.check(photos(0, "\\\\pc\\Fotos", "Pictures/"), listOf(m)))
+        // nicht abbildbare Kennung (msd:) -> keine Handy-Warnung, kein Absturz
+        assertNull(ProfileOverlap.check(ph, listOf(mirror(1, "\\\\pc\\Doku", dl + "msd%3A12"))))
+    }
+
+    @Test fun canonicalTreeMapsPrimaryAndRaw() {
+        assertEquals("primary:documents/scans", ProfileOverlap.canonicalTree(ext + "primary%3ADocuments%2FScans"))
+        assertEquals("primary:documents/scans", ProfileOverlap.canonicalTree(ext + "primary%3ADocuments%2FScans%2F/document/primary%3ADocuments"))
+        assertEquals("primary:download/testsync", ProfileOverlap.canonicalTree(dl + "raw%3A%2Fstorage%2Femulated%2F0%2FDownload%2FTestsync"))
+        assertNull(ProfileOverlap.canonicalTree(dl + "msd%3A12"))
+        assertNull(ProfileOverlap.canonicalTree(ext + "1234-ABCD%3ADCIM"))
+        assertNull(ProfileOverlap.canonicalTree(""))
+    }
+
+    @Test fun sameFolderViaDifferentIdsIsRecognized() {
+        val a = mirror(1, "\\\\pc\\Doku", ext + "primary%3ADownload%2FTestsync")
+        val b = mirror(0, "\\\\pc\\Doku", dl + "raw%3A%2Fstorage%2Femulated%2F0%2FDownload%2FTestsync")
+        assertEquals(Kind.IDENTICAL, ProfileOverlap.check(b, listOf(a))?.kind)
+        // Unterordner über raw: im Ordner eines anderen Profils (anderes PC-Ziel): verschachtelt, Handy-Seite
+        val sub = mirror(0, "\\\\pc\\Andere", dl + "raw%3A%2Fstorage%2Femulated%2F0%2FDownload%2FTestsync%2Funter")
+        val hit = ProfileOverlap.check(sub, listOf(a))
+        assertEquals(true, hit?.nested)
+        assertEquals(true, hit?.localSide)
+        assertEquals(false, hit?.remoteSide)
+    }
+
+    @Test fun sameFolderTwoPcTargetsStaysAllowed() {
+        // DEC-219: derselbe Handy-Ordner mit verschiedenen PC-Zielen bleibt ohne Meldung, auch über verschiedene Kennungen
+        val a = mirror(1, "\\\\pc\\Eins", ext + "primary%3ADownload%2FTestsync")
+        val b = mirror(0, "\\\\pc\\Zwei", dl + "raw%3A%2Fstorage%2Femulated%2F0%2FDownload%2FTestsync")
+        assertNull(ProfileOverlap.check(b, listOf(a)))
+    }
+
+    @Test fun injectedCanonicalizerIsUsed() {
+        val a = mirror(1, "\\\\pc\\Doku", dl + "msd%3A12")
+        val b = mirror(0, "\\\\pc\\Doku", ext + "primary%3ADownload%2FTestsync")
+        // ohne Auflösung: nicht vergleichbar -> keine falsche Warnung
+        assertEquals(Kind.PARTIAL, ProfileOverlap.check(b, listOf(a))?.kind) // gleiches PC-Ziel bleibt eine Warnung
+        val hit = ProfileOverlap.check(b, listOf(a)) { uri -> if (uri.contains("msd")) "primary:download/testsync" else ProfileOverlap.canonicalTree(uri) }
+        assertEquals(Kind.IDENTICAL, hit?.kind)
+    }
+}

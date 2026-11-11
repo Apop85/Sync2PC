@@ -61,6 +61,11 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
     var running by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var statusFailed by remember { mutableStateOf(false) }
+    // V1: Offline-Vorschau (PC nicht erreichbar): Liste zeigt nur eine Annahme
+    var offline by remember { mutableStateOf(false) }
+    // V2: Ergebnis ohne Aktionen erklären; Typ des Profils für den passenden Wortlaut
+    var statusEmptyOk by remember { mutableStateOf(false) }
+    var mirrorProfile by remember { mutableStateOf(true) }
     var result by remember { mutableStateOf<List<PreviewEntry>?>(null) }
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
     // 0 = alle
@@ -76,7 +81,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
         val p = profile ?: return
         val max = if (all) Int.MAX_VALUE else (limit ?: return)
         settings.previewLimit = if (all) 0 else max
-        running = true; result = null; statusFailed = false; status = str(R.string.preview_starting); expanded.clear()
+        running = true; result = null; statusFailed = false; offline = false; statusEmptyOk = false; status = str(R.string.preview_starting); expanded.clear()
         scope.launch {
             val onProgress: (com.sync2pc.app.sync.SyncProgress) -> Unit = { pr ->
                 status = if (pr.totalFiles > 0) "${pr.phase} ${pr.doneFiles} / ${pr.totalFiles}" else pr.phase
@@ -88,7 +93,12 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
             val run = withContext(Dispatchers.IO) { engine.run() }
             result = engine.preview.toList()
             status = run.messageText()
-            statusFailed = run.status == com.sync2pc.app.data.RunStatus.FAILED || run.messageCode?.contains("eng_offline_preview") == true
+            offline = run.messageCode?.contains("eng_offline_preview") == true
+            statusFailed = run.status == com.sync2pc.app.data.RunStatus.FAILED || offline
+            mirrorProfile = p.type() == com.sync2pc.app.data.ProfileType.MIRROR
+            // Nur die Standardzeile "0 Aktionen simuliert" entfällt; andere Meldungen bleiben sichtbar
+            statusEmptyOk = !offline && run.status != com.sync2pc.app.data.RunStatus.FAILED &&
+                result.orEmpty().isEmpty() && (run.messageCode?.contains("eng_actions_all") == true)
             running = false
         }
     }
@@ -113,6 +123,8 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
                         )
                         Text(str(R.string.preview_files))
                     }
+                    // V3: Fehlertext mit Bereich statt nur rotem Rahmen
+                    if (!all && limit == null) ErrorText(str(R.string.preview_limit_error))
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { all = true }) {
                         RadioButton(selected = all, onClick = { all = true })
                         Text(str(R.string.preview_all_files))
@@ -122,13 +134,19 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
                         Text(str(R.string.preview_start))
                     }
                     if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    status?.let { if (statusFailed) ErrorText(it) else Text(it) }
+                    status?.let { if (statusEmptyOk) Unit else if (statusFailed) ErrorText(it) else Text(it) }
                 }
             }
             val r = result
             if (r != null) {
                 val groups = r.groupBy { it.targetFolder }.toSortedMap()
-                item { Text(plural(R.plurals.preview_summary, r.size, r.size, plural(R.plurals.free_n_folders, groups.size)),
+                // V1: im Offline-Fall steht der Hinweis immer bei der Liste, nicht nur in der Statuszeile
+                if (offline) item { ErrorText(str(R.string.preview_offline_assumption)) }
+                if (r.isEmpty() && !offline && !statusFailed) {
+                    // V2: leeres Ergebnis erklären, "0 Dateien in 0 Ordner" entfällt
+                    item { Text(str(if (mirrorProfile) R.string.preview_nothing_to_do else R.string.preview_nothing_new),
+                        style = MaterialTheme.typography.titleMedium) }
+                } else if (r.isNotEmpty()) item { Text(plural(R.plurals.preview_summary, r.size, r.size, plural(R.plurals.free_n_folders, groups.size)),
                     style = MaterialTheme.typography.titleMedium) }
                 groups.forEach { (folder, entries) ->
                     item(key = folder) {
@@ -137,7 +155,7 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
                             Column(Modifier.padding(12.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        folder, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f),
+                                        groupLabel(folder), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f),
                                         color = if (entries.first().needsDecision) MaterialTheme.colorScheme.error
                                         else MaterialTheme.colorScheme.onSurface,
                                     )
@@ -155,4 +173,10 @@ fun PreviewScreen(profileId: Long, onBack: () -> Unit) {
             }
         }
     }
+}
+
+/** V4: "2026\? (12)" (Ordner noch offen) als verständlicher Text, z. B. "2026 – Dezember (Ordner noch offen)" */
+private fun groupLabel(folder: String): String {
+    val g = PreviewGroupLabel.parse(folder) ?: return folder
+    return str(R.string.preview_group_open, PreviewGroupLabel.title(g, monthNames))
 }

@@ -1,7 +1,7 @@
 # Datenmodell – LeoSync (Sync2PC)
 
 Technische Referenz der **aktuell implementierten** persistenten Datenstrukturen.
-Stand: Quellcode, App-Version 0.14.7 (`version.properties`), **Room-Datenbankversion 9** (neu: `folderLayout`, DEC-209, 3.1, 10, 11.2; v8: `pcCheck`, `pcGuid`, `pcGuidHost`; Stand der übrigen Abschnitte: s. u.). Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
+Stand: Quellcode, App-Version 0.15.0 (`version.properties`), **Room-Datenbankversion 10** (neu: `smbEncryption`, DEC-222, 3.1; v9: `folderLayout`, DEC-209, 3.1, 10, 11.2; v8: `pcCheck`, `pcGuid`, `pcGuidHost`; Stand der übrigen Abschnitte: s. u.). Abschnitte 3.9, 3.10, 10, 12.4, 14 und 17 sind auf 0.12.x nachgeführt (Verlauf mit Kennungen); die übrigen Abschnitte wurden zuletzt mit 0.11.0 abgeglichen.
 Der Quellcode ist massgeblich; `docs/DECISIONS.md` liefert Hintergründe (DEC-IDs). Geplantes steht nur in Abschnitt 17 und ist dort als solches gekennzeichnet.
 
 > **Hinweis zu Dateinamen:** Massgeblich sind die Dateien mit Bindestrich: `docs/DATA-MODEL.md` (diese Datei) und `docs/SYNC-ENGINE.md` (Sync-Abläufe).
@@ -13,7 +13,7 @@ Quellen (alle relativ zum Repository):
 | Datenbank, Migrationen | `app/src/main/java/com/sync2pc/app/data/AppDatabase.kt` |
 | Entities, Enums, Konstanten | `app/src/main/java/com/sync2pc/app/data/Entities.kt` |
 | DAO | `app/src/main/java/com/sync2pc/app/data/SyncDao.kt` |
-| Exportierte Schemas | `app/schemas/com.sync2pc.app.data.AppDatabase/1.json … 9.json` |
+| Exportierte Schemas | `app/schemas/com.sync2pc.app.data.AppDatabase/1.json … 10.json` |
 | Einstellungen ausserhalb der DB | `data/GlobalSettings.kt`, `mirror/MirrorGuard.kt` (`GuardStore`), `mirror/TrashPurge.kt` (`PurgeStore`), `mirror/RestoreManager.kt` (`RestoreFailures`), `l10n/AppLanguage.kt` |
 | Sicherung | `backup/BackupCodec.kt`, `backup/BackupManager.kt` |
 | Tests | `app/src/test/…`, `app/src/androidTest/…/MigrationTest.kt` |
@@ -107,6 +107,7 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `pcGuid` | TEXT | nein | `""` | | Gelernte PC-Kennung (SMB-Server-GUID, kleingeschrieben); leer = unbekannt (v8) |
 | `pcGuidHost` | TEXT | nein | `""` | | Host (kleingeschrieben), zu dem `pcGuid` gelernt wurde; die Kennung gilt nur für diesen Host (`PcIdentity.storedFor`) (v8) |
 | `folderLayout` | TEXT | nein | `"MONTH_SUFFIX"` | | Ordnerstruktur auf dem PC, nur Fotoprofile (DEC-209): `MONTH_SUFFIX` (V1 `Jahr\MM[ - Land]`, Standard) / `COUNTRY_FOLDER` (V2 `Jahr\[Land\]MM`) / `COUNTRY_SUBFOLDER` (V3 `Jahr\MM\[Land]`). Abgeleitet: `Profile.layout()` (`FolderLayout.of`, unbekannt oder leer → V1). Die Codes dürfen sich nie ändern. Ab der ersten Synchronisierung gesperrt: `SyncDao.updateProfile` übernimmt dann immer den gespeicherten Wert (`FolderLayoutGuard`) (v9, 0.14.3) |
+| `smbEncryption` | TEXT | nein | `"PREFERRED"` | | SMB3-Verschlüsselung (DEC-222): `OFF` (Aus, wie bisher) / `PREFERRED` (Wenn möglich, Standard auch für bestehende Profile; `withEncryptData(true)`) / `REQUIRED` (Erforderlich: nur SMB 3.x, Pflichtprüfung vor `authenticate()`). Enum `SmbEncryption`, Zugriff `Profile.encryption()`; fehlender oder unbekannter Wert in Sicherung = `PREFERRED` (v10, 0.15.0) |
 
 **Indizes:** keine.
 **Beziehungen:** `profiles.id` wird von allen anderen Tabellen (ausser `media_info`) als `profileId` referenziert – ohne Fremdschlüssel.
@@ -127,7 +128,7 @@ Konvention: Kotlin `Long`/`Int`/`Boolean` → SQLite `INTEGER`, `String` → `TE
 | `mediaUri` | TEXT | nein | – | | `content://`-URI der Quelldatei; für Löschen/Papierkorb (`DeletionManager`) |
 | `size` | INTEGER | nein | – | | Grösse in Bytes beim Upload |
 | `dateModified` | INTEGER | nein | – | | Änderungsdatum in **Sekunden** (MediaStore `dateModifiedSec`) |
-| `partialHash` | TEXT | **ja** | – | | Teil-Prüfsumme (SHA-256, „Wenig“-Stufe); nur gesetzt, wenn sie im Lauf berechnet wurde, sonst `null` |
+| `partialHash` | TEXT | **ja** | – | | Teil-Prüfsumme (SHA-256, „Wenig“-Stufe); seit 0.15.0 wird sie in `SyncEngine.transfer` **immer** als LOW-Teil-Prüfsumme abgelegt (auch ab Prüfstufe „Mittel“; bis 0.14.7 oft `null`); Zeilen aus älteren Läufen können weiter `null` enthalten |
 | `remotePath` | TEXT | nein | – | | Pfad der Zieldatei relativ zur Share-Wurzel bzw. voller UNC-Pfad (siehe Besonderheiten) |
 | `syncedAt` | INTEGER | nein | – | | Zeitpunkt der Aufzeichnung (ms) |
 | `verified` | INTEGER | nein | – | | `true`, wenn nach dem Upload eine Prüfsumme (Stufe ≥ LOW) übereinstimmte; „Aus“ gilt nicht als verifiziert |
@@ -330,6 +331,7 @@ Alle Entities liegen in `data/Entities.kt` und sind Kotlin-`data class`es. Verwe
 | `SyncDirection` | `UPLOAD`, `DOWNLOAD`, `BOTH` | `profiles.direction` (TEXT); Standard `UPLOAD`; `up`/`down`-Hilfseigenschaften |
 | `VerifyLevel` | `OFF(0)`, `LOW(1)`, `MEDIUM(2)`, `HIGH(3)`, `FULL(4)` | `profiles.verifyLevel` (Code als INTEGER); `of(code)` → Standard `MEDIUM` |
 | `ConflictMode` | `ASK`, `NEWER` | `profiles.conflictMode` (TEXT); Standard `ASK` |
+| `SmbEncryption` | `OFF`, `PREFERRED`, `REQUIRED` | `profiles.smbEncryption` (Name als TEXT); `SmbEncryption.parse` → Standard `PREFERRED` (0.15.0, DEC-222) |
 | `DeleteState` (Objekt) | `NONE=0`, `WANTED=1`, `QUEUED_TRASH=2`, `DONE=3`, `QUEUED_DELETE=4` | `synced_files.deleteState` (INTEGER) |
 | `ConflictResolution` (Objekt) | `LOCAL`, `REMOTE`, `BOTH` (Konstanten `KEEP_LOCAL`, `KEEP_REMOTE`, `KEEP_BOTH`) | `mirror_conflicts.resolution` (TEXT) |
 | `RunStatus` (Objekt) | `RUNNING`, `OK`, `PARTIAL`, `FAILED`, `CANCELLED`, `INTERRUPTED`, `WAITING` | `sync_runs.status` (TEXT); SQL-Abfragen nutzen die Texte direkt (`'OK'`, `'RUNNING'` …) |
@@ -462,7 +464,7 @@ Alle Linien im Diagramm sind **keine** DB-Constraints (kein FK); das Diagramm ze
 | Tabelle | Lesen | Schreiben | Löschen |
 |---|---|---|---|
 | `profiles` | `profilesFlow`, `profiles`, `profile(id)` | `insertProfile` (→ neue `id`), `updateProfile` | `deleteProfileRow(id)` |
-| `synced_files` | `syncedLite`, `synced`*, `syncedAllProfiles`, `byDeleteState`, `queuedDeleteCount` (Flow), `queuedDeletes`, `syncedCount`* (Flow), `syncedCountNow`, `statRows`, `allSynced`, `verifiedSynced`, `deleteStateCounts` | `upsertSynced` (REPLACE), `upsertSyncedAll` (REPLACE), `setDeleteStateForKey` (`deleteState IN (1,2,4)`), `setDeleteState`* | `clearSynced(profileId)` |
+| `synced_files` | `syncedLite`, `synced`*, `syncedAllProfiles`, `byDeleteState`, `queuedDeleteCount` (Flow), `queuedDeletes`, `syncedCount`* (Flow), `syncedCountNow`, `statRows`, `allSynced`, `verifiedSynced`, `deleteStateCounts` | `upsertSynced` (REPLACE), `upsertSyncedAll` (REPLACE), `setDeleteStateForKey` (`deleteState IN (1,2,4)`), `setDeleteState`* | `clearSynced(profileId)`, `deleteSynced(profileId, key)` (0.15.0: entfernt eine Zeile, wenn die PC-Kopie vor dem Löschen fehlt, damit die Datei neu gesichert wird, DEC-223) |
 | `folder_mappings` | `mapping`, `allMappings` | `upsertMapping`, `upsertMappings` (REPLACE) | `deleteMapping`, `clearMappings` |
 | `pending_decisions` | `decisionsFlow`, `decisions`, `decisionCount` | `upsertDecision` (REPLACE) | `deleteDecision`, `deleteDecisionsOfProfile`, `clearDecisions` |
 | `media_info` | `mediaInfo(key)` | `upsertMediaInfo` (REPLACE) | – (keine) |
@@ -544,7 +546,7 @@ Vollständige Abläufe: `docs/SYNC-ENGINE.md` . Hier nur die Rolle der Daten.
 | Bekannter Dateibestand | `synced_files` | Datei gilt als bekannt bei gleichem `sourceKey` + `size` + `dateModified` (Sekunden) → ohne Netzzugriff übersprungen |
 | Lokale Kennung | `sourceKey` (`RELATIVE_PATH + DISPLAY_NAME`), `mediaUri` | `sourceKey` ist profilübergreifender Schlüssel (auch für `media_info`, `DeletionManager`); `mediaUri` für Löschen |
 | Entfernte Kennung | `remotePath` | Ort auf dem Share (Statistik, „Speicher freigeben“) |
-| Hash | `partialHash` (optional) | Teil-Prüfsumme „Wenig“ (SHA-256 über Grösse + 3×64 KB; ≤ 192 KB vollständig); nur gesetzt, wenn berechnet. Die Prüfung nach dem Upload (`VerifyLevel`) wird nicht als Hash gespeichert, sondern als Ergebnis `verified` |
+| Hash | `partialHash` (optional) | Teil-Prüfsumme „Wenig“ (SHA-256 über Grösse + 3×64 KB; ≤ 192 KB vollständig); seit 0.15.0 immer gesetzt, wenn die Zeile neu geschrieben wird. Die Prüfung nach dem Upload (`VerifyLevel`) wird nicht als Hash gespeichert, sondern als Ergebnis `verified` |
 | Übertragungsstatus | `verified`, `syncedAt` | Eine Zeile entsteht **erst nach** erfolgreichem Upload + Prüfung (`record` am Ende von `transfer`) oder nach erkanntem Duplikat |
 | Löschinformation | `deleteState` + Profilfeld `deleteMode` | Zustandsmaschine 8.1 |
 | Zielordner | `folder_mappings` (+ `seen`), `pending_decisions` | Benutzerentscheid pro Gruppe |
@@ -733,7 +735,7 @@ Legende: **DB** = von SQLite/Room erzwungen · **App** = durch Anwendungscode ab
 
 ## 10. Migrationen und Versionshistorie
 
-**Aktuelle Version:** 9 (DEC-209). Schemas 1–9 liegen vor (`app/schemas/…/1.json … 9.json`). **Migrationen 1→2, 2→3, 3→4, 4→5, 5→6, 6→7, 7→8, 8→9** sind registriert (`addMigrations` in `AppDatabase.get`). **Destruktive Migrationen: keine** (`fallbackToDestructiveMigration` wird nicht aufgerufen; Kommentar und DEC-084). Alle Migrationen sind rein additiv (`ALTER TABLE … ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`) bzw. enthalten `UPDATE`-Datenkonvertierung.
+**Aktuelle Version:** 10 (DEC-222). Schemas 1–10 liegen vor (`app/schemas/…/1.json … 10.json`). **Migrationen 1→2, 2→3, 3→4, 4→5, 5→6, 6→7, 7→8, 8→9, 9→10** sind registriert (`addMigrations` in `AppDatabase.get`). **Destruktive Migrationen: keine** (`fallbackToDestructiveMigration` wird nicht aufgerufen; Kommentar und DEC-084). Alle Migrationen sind rein additiv (`ALTER TABLE … ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`) bzw. enthalten `UPDATE`-Datenkonvertierung.
 
 | Von → Nach | App-Version | Änderungen am Schema | Datenkonvertierung | Hinweise für bestehende Installationen |
 |---|---|---|---|---|
@@ -746,6 +748,7 @@ Legende: **DB** = von SQLite/Room erzwungen · **App** = durch Anwendungscode ab
 | **6 → 7** | 0.12.0 | `sync_runs` + `messageCode TEXT`, `triggerCode TEXT`; `log_entries` + `code TEXT` (alle nullable, ohne DEFAULT) | keine | Bestehende Läufe und Log-Zeilen behalten ihren Text, Kennung `NULL` → Anzeige des gespeicherten Textes (Abschnitt 3.11) |
 | **7 → 8** | 0.13.0 | `profiles` + `pcCheck TEXT NOT NULL DEFAULT 'WIFI'`, `pcGuid TEXT NOT NULL DEFAULT ''`, `pcGuidHost TEXT NOT NULL DEFAULT ''` | keine | Bestehende Profile bleiben bei der WLAN-Prüfung (DEC-204) |
 | **8 → 9** | 0.14.3 | `profiles.folderLayout TEXT NOT NULL DEFAULT 'MONTH_SUFFIX'` | keine | Bestehende Profile behalten Struktur V1, Verhalten unverändert (DEC-209, DEC-084); Migration am Emulator mit echten Daten (0.13.14 → 0.14.3) erfolgreich (QA SYNC-20261109-088) |
+| **9 → 10** | 0.15.0 | `profiles.smbEncryption TEXT NOT NULL DEFAULT 'PREFERRED'` | keine | Bestehende Profile erhalten «Wenn möglich» (DEC-222); Schema `10.json`; `MigrationTest` 9→10 ergänzt, laut Development (SYNC-20261111-142 bis -144) **nicht ausgeführt** |
 
 Versionsangaben aus den KDoc-Kommentaren der Migrationen und DEC-084/-172; die Zuordnung `1.json`-Inhalt zu „0.0.x“ ist aus dem Quellcode **nicht** belegt (Git-Historie liegt nicht vor; das Projekt ist kein Git-Repository). **Dies ist eine offene Frage.**
 
@@ -753,7 +756,7 @@ Versionsangaben aus den KDoc-Kommentaren der Migrationen und DEC-084/-172; die Z
 - **Durchgehende Regel (DEC-084):** neue Spalten per `ALTER TABLE … DEFAULT …`, Entity bekommt denselben Kotlin-Default, **kein** `@ColumnInfo(defaultValue)`. Folge: Migrierte DBs haben SQL-DEFAULTs, frische nicht (Abschnitt 3.1).
 - **Fehlende Migrationen = Absturz**, nicht stilles Löschen. Eine Schemaänderung ohne Migration bricht Bestandsinstallationen.
 - **Sicherung/Import** ist die einzige Brücke bei Paket-/DB-Wechsel (DEC-110), Format `leosync-backup` Version 1 (Abschnitt 11).
-- `MigrationTest` (instrumentiert, `app/src/androidTest/…`) enthält die Kette 1→neueste sowie `verifyLevelFromVersion5`, `runCodesFromVersion6`, `pcCheckFromVersion7` und `folderLayoutFromVersion8`; die Zwischenstufen 2→3, 3→4, 4→5 laufen nur als Teil der Kette (Abschnitt 14). Der Testlauf von 8→9 wurde laut QA -088 nicht ausgeführt.
+- `MigrationTest` (instrumentiert, `app/src/androidTest/…`) enthält die Kette 1→neueste sowie `verifyLevelFromVersion5`, `runCodesFromVersion6`, `pcCheckFromVersion7` und `folderLayoutFromVersion8`; die Zwischenstufen 2→3, 3→4, 4→5 laufen nur als Teil der Kette (Abschnitt 14). Der Testlauf von 8→9 wurde laut QA -088 nicht ausgeführt; 9→10 (0.15.0) ist ergänzt und laut Development ebenfalls nicht ausgeführt.
 
 ```mermaid
 timeline
@@ -767,6 +770,7 @@ timeline
     v7 (0.12.0) : messageCode, triggerCode, log code
     v8 (0.13.0) : pcCheck, pcGuid, pcGuidHost
     v9 (0.14.3) : folderLayout
+    v10 (0.15.0) : smbEncryption
 ```
 
 ---
@@ -791,7 +795,7 @@ timeline
 
 Format `leosync-backup`, `VERSION = 1`. Inhalt: `settings`, `profiles` (+ optional verschlüsseltes Passwort), `folderMappings`, `syncedFiles`, `mirrorState`. Optional AES-256-GCM mit PBKDF2-HMAC-SHA256 (210 000 Iterationen) und Prüfwert. Rückwärtskompatibilität: `verifyLevel` fehlt in alten Sicherungen → aus `verifyUpload`; `folderLayout` ist optional (fehlt → V1, DEC-209). Ein vorhandener, aber unbekannter `folderLayout`-Code lässt das Profil **nicht** importieren (`FolderLayout.parse` streng, kein stilles Zurückfallen auf V1); „Ersetzen“ bricht dann ab, bevor etwas gelöscht wird. Zuordnungspfade (`folderMappings`) werden beim Lesen bereinigt (kein `..`, höchstens 2 Segmente). Beim Einlesen werden fehlende Felder mit den `Profile`-Defaults belegt (`optString/optBoolean`).
 
-**In der Sicherung enthalten:** `profiles`, `folder_mappings`, `synced_files` (ohne `deleteState`), `mirror_state` (die beiden Sync-Stände nur mit Option „Sync-Status“), exportierbare `GlobalSettings`.
+**In der Sicherung enthalten:** `profiles` (seit 0.15.0 inkl. `smbEncryption` als Name; fehlend oder unbekannt = `PREFERRED`), `folder_mappings`, `synced_files` (ohne `deleteState`), `mirror_state` (die beiden Sync-Stände nur mit Option „Sync-Status“), exportierbare `GlobalSettings`.
 **Nicht enthalten:** `pending_decisions`, `media_info`, `mirror_conflicts`, `pending_restores`, `sync_runs`, `log_entries`, `guard`, `purge`, `restore`, `lang`, Gerätezustand (Pause, Update-Zustand, `deviceId`, `awaitingFirstStart`).
 **Import:** neue Profil-IDs; `profileId` der Kindzeilen wird umgeschrieben; Ordner-Profile erhalten `awaitingFirstStart` und – bei importiertem Sync-Stand – eine Stichproben-Vormerkung (`guard`).
 
@@ -799,7 +803,7 @@ Format `leosync-backup`, `VERSION = 1`. Inhalt: `settings`, `profiles` (+ option
 
 | Datei | Schlüssel (Auswahl) | Inhalt |
 |---|---|---|
-| `global` (`GlobalSettings`) | `autoSyncOnWifi`, `syncOnNewMedia`, `onlyWhileCharging`, `minFileAgeMinutes`, `homeCountryIso`, `parallelUploads` (1–4), `notifySummary/Update/Hints`, `autoUpdateCheck`, `update*`, `shareRetryAt`, `shareUnreachable`, `resumeOnWifi`, `resumeSince`, `remotePollMinutes`, `lastSkipInfo/At`, `awaitingFirstStart` (Menge), `previewLimit`, `logFilterErrors/Transfers`, `pausedUntil`, `manualOnly`, `staleWarn*`, `staleBaseline`, `freeSpaceMonths`, `freeSpaceKeepFavorites`, `deviceId`, `lastWifiTriggerAt`, `pullTipDone`, `syncOffWifi` (Bool, Standard aus, seit 0.11.5, DEC-126) | Anwendungseinstellungen und Gerätezustand. `exportable()`/`importFrom` begrenzen, was gesichert wird (14 Schlüssel, ab 0.11.5 zusätzlich `syncOffWifi`; ältere Sicherungen ohne den Schlüssel bleiben gültig – laut Development, Anzahl nicht nachgezählt) |
+| `global` (`GlobalSettings`) | `autoSyncOnWifi`, `syncOnNewMedia`, `onlyWhileCharging`, `minFileAgeMinutes`, `homeCountryIso`, `parallelUploads` (1–4), `notifySummary/Update/Hints`, `autoUpdateCheck`, `update*`, `shareRetryAt`, `deferredStart` (Nachlauf-Merker, 0.15.0, DEC-221; mit `commit()` geschrieben), `shareUnreachable`, `resumeOnWifi`, `resumeSince`, `remotePollMinutes`, `lastSkipInfo/At`, `awaitingFirstStart` (Menge), `previewLimit`, `logFilterErrors/Transfers`, `pausedUntil`, `manualOnly`, `staleWarn*`, `staleBaseline`, `freeSpaceMonths`, `freeSpaceKeepFavorites`, `deviceId`, `lastWifiTriggerAt`, `pullTipDone`, `syncOffWifi` (Bool, Standard aus, seit 0.11.5, DEC-126) | Anwendungseinstellungen und Gerätezustand. `exportable()`/`importFrom` begrenzen, was gesichert wird (14 Schlüssel, ab 0.11.5 zusätzlich `syncOffWifi`; ältere Sicherungen ohne den Schlüssel bleiben gültig – laut Development, Anzahl nicht nachgezählt) |
 | `guard` (`GuardStore`) | `block_<profileId>` = `"<Kind>;<count>;<total>;<folder>"`; `check_<profileId>` = `"LOCAL,REMOTE"`; `allowDelete_<id>`, `keepFiles_<id>` (Booleans, einmalig verbraucht) | offene Schutzbremse, Stichproben-Vormerkung, Einmal-Freigaben |
 | `purge` (`PurgeStore`) | `rules_<profileId>` (Menge kodierter `PurgeRule`), `files_<profileId>` (Menge Pfade) | vorgemerktes PC-Leeren |
 | `restore` (`RestoreFailures`) | `failed` = Menge `"<profileId>:<restoreId>"` | fehlgeschlagene Wiederherstellungen |

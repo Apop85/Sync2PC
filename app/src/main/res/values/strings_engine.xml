@@ -13,6 +13,7 @@
     <string name="trigger_new_media">New photos/videos</string>
     <string name="trigger_pause_end">Pause ended</string>
     <string name="trigger_resumed">Resumed</string>
+    <string name="trigger_deferred">Caught up (start requested during a running sync)</string>
     <string name="trigger_generic">Trigger</string>
 
     <!-- Hintergrund-Lauf (SyncWorker) -->
@@ -27,6 +28,7 @@
     <string name="skip_ssid_unknown">Wi-Fi “%1$s” is not set in any profile</string>
     <string name="skip_pc_unreachable">PC not reachable: %1$s</string>
     <string name="skip_pc_not_recognised">PC not recognised: %1$s</string>
+    <string name="skip_pc_failed">Connection to the PC not possible: %1$s</string>
     <string name="wait_for_pc">Waiting for PC (%1$s) – attempt %2$s/%3$s…</string>
     <string name="summary_failed">Sync failed – %1$s</string>
     <plurals name="summary_transferred">
@@ -78,6 +80,11 @@
     <!-- Fehler und Meldungen (Update, SMB, Sicherung, Handy-Ordner) -->
     <string name="delete_log_done">Deleted: %1$s</string>
     <string name="delete_log_failed">Deleting failed: %1$s – %2$s</string>
+    <string name="delete_log_pc_missing">Not removed from the phone: the copy on the PC is missing or differs, the file will be backed up again: %1$s</string>
+    <string name="delete_log_phone_unreadable">Not removed from the phone: the file cannot be read for the check: %1$s</string>
+    <string name="delete_pc_unreachable">PC not reachable – nothing deleted. The files stay queued.</string>
+    <string name="delete_pc_rejected">PC not recognised – nothing deleted. %1$s</string>
+    <string name="delete_pc_reset">%1$d files not removed: the copy on the PC is missing or differs. They will be backed up again.</string>
     <string name="update_err_404">No release found (repository “%1$s” private, misspelled or without a release yet)</string>
     <string name="update_err_403">GitHub request limit reached – try again later</string>
     <string name="update_err_http">GitHub responds with HTTP %1$s</string>
@@ -103,6 +110,8 @@
     <string name="smb_err_pc_unknown">The PC at %1$s is not recognised yet. No sign-in data was sent. Open the profile and tap “Test connection” (or save the profile) so the app learns the PC.</string>
     <string name="smb_err_pc_wrong_net">The PC at %1$s is not recognised yet, and the current Wi-Fi is not in the profile’s list (or the Wi-Fi name cannot be read). No sign-in data was sent. Tap “Test connection” in the listed Wi-Fi, allow location access, or set the PC ID to “PC ID only”.</string>
     <string name="smb_err_pc_no_id">The PC at %1$s provides no ID, so it cannot be recognised. No sign-in data was sent. Set the PC ID to “Wi-Fi name only”.</string>
+    <string name="smb_err_encryption_required">Encryption is required for this profile, but the PC at %1$s does not offer SMB 3 encryption. No sign-in data was sent. Change the encryption setting of the profile or enable SMB encryption on the PC.</string>
+    <string name="smb_err_encryption_not_established">Encryption is required for this profile, but the connection to %1$s could not be encrypted. The connection was closed and no data was transferred. Change the encryption setting of the profile or check SMB encryption on the PC.</string>
     <string name="smb_test_missing_folder">Connected, but folder “%1$s” does not exist (will be created at the first sync).</string>
     <plurals name="smb_test_ok">
         <item quantity="one">Connection OK – %1$s (%2$s entry)</item>
@@ -234,6 +243,8 @@
     <string name="eng_transferring">Transferring…</string>
     <string name="eng_err_unreadable">File not readable: %1$s</string>
     <string name="eng_err_verify">Check after upload failed – the file will be transferred again at the next run</string>
+    <string name="eng_err_verify_cleanup">The faulty copy on the PC could not be removed (%1$s): %2$s</string>
+    <string name="eng_present_unverified">Already on the PC, but not confirmed identical – stays on the phone: %1$s</string>
     <string name="tree_sd_card">SD card</string>
     <string name="tree_err_rename_short">Renaming failed</string>
     <string name="update_err_no_tag">Release without version tag</string>

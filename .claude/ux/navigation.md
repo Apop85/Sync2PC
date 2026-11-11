@@ -1,6 +1,8 @@
 # Navigation durch LeoSync (UX)
 
-Wegbeschreibungen zu Zielfenstern der App. **Nicht vollständig einlesen:** gezielt nach der Überschrift des Zielfensters suchen und nur diesen Abschnitt lesen. Pflege: UX-Specialist.
+Wegbeschreibungen zu Zielfenstern der App. **Nicht vollständig einlesen:** gezielt nach der Überschrift des Zielfensters suchen und nur diesen Abschnitt lesen. Wenn eine Wegbeschreibung noch nicht vorhanden ist, merke dir den Weg und erfasse ihn in diesem Dokument. Wenn du einee Wegbeschreibung findest, welche keine Koordinaten aufweist, erstelle den Eintrag neu. Wenn du einen Eintrag mit allen Voraussetzungen findest, folge Blind der Anleitung und den Koordinaten. Wenn du am Schluss nicht am richtigen Ort gelandet bist, erstelle den Teil der Anleitung neu. Es dürfen keine anderen Informationen hier abgelegt werden ausser Wegbeschreibungen.
+
+Pflege: UX-Specialist.
 
 ## Emulator-Hinweise (gelten für alle Prüfungen)
 - **Hell-/Dunkelmodus wechseln:** nur über die Android-Einstellungen, nicht per `adb shell cmd uimode` (wirkt nicht): `adb shell am start -a android.settings.DISPLAY_SETTINGS` -> «Dark theme» (Schalter rechts, ca. x=972 y=657) antippen, 5 Sekunden warten, danach mit `adb shell cmd uimode night` prüfen («no» = hell, «yes» = dunkel). Die App folgt dem Systemmodus. Nach der Prüfung wieder auf den Ausgangszustand (dunkel) zurückstellen.
@@ -14,8 +16,8 @@ Wegbeschreibungen zu Zielfenstern der App. **Nicht vollständig einlesen:** gezi
 ## <Name des Zielfensters>
 Stand: <App-Version>
 1. Start: Startseite
-2. <Schritt>
-3. <Schritt> -> Zielfenster
+2. <Schritt>: Scrollposition, x-/y-Koordinaten für den nächsten Klick
+3. <Schritt>: Scrollposition, x-/y-Koordinaten für den nächsten Klick -> Zielfenster
 ```r
 
 ---
@@ -51,3 +53,30 @@ Stand: 0.14.7
 2. Richtung und Löschungen: nach unten scrollen bis zur Karte «Richtung und Änderungen» (Radiobuttons, Schalter); Änderung + oben rechts Haken («Speichern») -> Dialog «Änderung bestätigen» (V1)
 3. Filter: weiter nach unten, Karte «Filter (optional)» antippen (aufklappen) -> «Nur diese Dateien» / «Diese Dateien ausschliessen»
 4. Schriftgrösse: `adb shell settings put system font_scale 2.0` (Formular schliesst dabei, ungespeicherte Änderungen gehen verloren)
+
+## Papierkorb
+Stand: 0.14.7
+1. Start: Startseite
+2. Einmal nach oben wischen (swipe 540,1900 -> 540,600)
+3. «Papierkorb» antippen (ca. x=313 y=1943, dunkel/Schrift 1,0; bei anderer Schriftgrösse per uiautomator suchen) -> Papierkorb
+
+## Speicher freigeben
+Stand: 0.14.7
+1. Start: Startseite
+2. Einmal nach oben wischen (swipe 540,1900 -> 540,600)
+3. «Speicher freigeben» antippen (ca. x=379 y=1683, dunkel/Schrift 1,0) -> Speicher freigeben
+
+## Verlauf (Protokoll)
+Stand: 0.14.7
+1. Start: Startseite
+2. Symbol «Verlauf» oben rechts antippen (x=871 y=171), oder per Intent: `am start -n com.sync2pc.app/.ui.MainActivity --es open log` -> Verlauf. Achtung: das Papierkorb-Symbol rechts daneben (x=1003 y=171) löscht ohne Rückfrage.
+
+## Statistik
+Stand: 0.14.7
+1. Start: Startseite
+2. Symbol «Statistik» oben (x=739 y=171) antippen -> Statistik
+
+## Updates
+Stand: 0.14.7
+1. Start: Startseite
+2. Per Intent: `am start -n com.sync2pc.app/.ui.MainActivity --es open update` -> Updates (prüft beim Öffnen automatisch)

@@ -57,8 +57,16 @@ sealed class Screen {
 
 class MainActivity : ComponentActivity() {
 
-    private var screen by mutableStateOf<Screen>(Screen.Home)
+    private var screen by mutableStateOf<Screen>(
+        // Nach dem Sprachwechsel (Activity wird neu aufgebaut) auf der Einstellungsseite bleiben
+        returnToSection?.also { returnToSection = null }?.let { Screen.Settings(it) } ?: Screen.Home
+    )
     private var startDeleteFlow by mutableStateOf(false)
+
+    companion object {
+        /** Einstellungsseite, auf die nach dem nächsten Neuaufbau der Activity (Sprachwechsel) zurückgekehrt wird */
+        @Volatile var returnToSection: SettingsSection? = null
+    }
 
     /** Android 10–12: gewählte App-Sprache auch für System- und Material-Texte (ab 13 erledigt das Android) */
     override fun attachBaseContext(newBase: Context) {
@@ -161,9 +169,18 @@ private fun AppRoot(
     }
     val confirmDeletes: () -> Unit = {
         scope.launch {
-            val b = withContext(Dispatchers.IO) { DeletionManager.buildRequests(ctx) }
-            if (b.isEmpty()) Toast.makeText(ctx, str(R.string.main_nothing_to_remove), Toast.LENGTH_SHORT).show()
-            batches = b
+            val out = withContext(Dispatchers.IO) { DeletionManager.buildRequests(ctx) }
+            // Vor dem Systemdialog wird die PC-Kopie geprüft (SYNC-20261111-142): Ist der PC nicht erreichbar, wird nichts
+            // gelöscht, die Dateien bleiben vorgemerkt
+            val note = when {
+                out.unreachable -> str(R.string.delete_pc_unreachable)
+                out.rejectedMessage != null -> str(R.string.delete_pc_rejected, out.rejectedMessage)
+                out.reset > 0 -> str(R.string.delete_pc_reset, out.reset)
+                out.batches.isEmpty() -> str(R.string.main_nothing_to_remove)
+                else -> null
+            }
+            if (note != null) Toast.makeText(ctx, note, Toast.LENGTH_LONG).show()
+            batches = out.batches
         }
     }
     LaunchedEffect(startDeleteFlow) {

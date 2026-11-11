@@ -102,9 +102,10 @@ object BackupManager {
             }
             // Bestehende (bei "Ersetzen" keine) + bereits importierte Profile -> doppelte erkennen
             val present = dao.profiles().toMutableList()
+            val canonicalCache = HashMap<String, String?>()
             for (p in c.profiles) {
                 // id = -1: die ID aus der Sicherung darf nicht mit einer bestehenden ID verwechselt werden
-                when (ProfileOverlap.check(p.copy(id = -1), present)?.kind) {
+                when (ProfileOverlap.check(p.copy(id = -1), present) { uri -> canonicalCache.getOrPut(uri) { LocalTree.canonical(context, uri) } }?.kind) {
                     ProfileOverlap.Kind.BLOCKED -> { blockedLayout += p.name; continue }
                     ProfileOverlap.Kind.IDENTICAL -> { skipped += p.name; continue }
                     ProfileOverlap.Kind.PARTIAL -> overlapping += p.name

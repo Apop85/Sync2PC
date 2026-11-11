@@ -15,6 +15,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,10 +72,44 @@ fun LogScreen(onBack: () -> Unit) {
     var onlyTransfers by remember { mutableStateOf(settings.logFilterTransfers) }
     val grouped = remember(runs) { RunGrouping.group(runs) }
     val shown = RunGrouping.filter(grouped, onlyErrors, onlyTransfers)
+    var confirmClear by remember { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
+
+    // L2: Filter gelten nur, solange die Seite offen ist; beim Verlassen zurück auf «Alle»
+    DisposableEffect(Unit) {
+        onDispose { settings.logFilterErrors = false; settings.logFilterTransfers = false }
+    }
+
+    if (confirmClear) AlertDialog(
+        onDismissRequest = { confirmClear = false },
+        title = { Text(str(R.string.log_clear_title)) },
+        text = { Text(str(R.string.log_clear_text, runs.size)) },
+        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(str(R.string.common_cancel)) } },
+        confirmButton = {
+            TextButton(onClick = {
+                confirmClear = false
+                scope.launch {
+                    // Vor dem Löschen zwischenhalten, damit «Rückgängig» alles unverändert wiederherstellen kann
+                    val savedRuns = withContext(Dispatchers.IO) { dao.clearableRuns() }
+                    val savedLogs = withContext(Dispatchers.IO) { dao.allLogEntries() }
+                    withContext(Dispatchers.IO) { dao.clearLogs(); dao.clearRuns() }
+                    val res = snackbar.showSnackbar(
+                        message = str(R.string.log_cleared),
+                        actionLabel = str(R.string.log_undo),
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (res == SnackbarResult.ActionPerformed) withContext(Dispatchers.IO) {
+                        dao.restoreRuns(savedRuns); dao.restoreLogs(savedLogs)
+                    }
+                }
+            }) { Text(str(R.string.log_clear), color = MaterialTheme.colorScheme.error) }
+        },
+    )
 
     ScreenScaffold(
         title = str(R.string.home_cd_log),
         onBack = onBack,
+        snackbarHost = { SnackbarHost(snackbar) },
         actions = {
             IconButton(onClick = {
                 scope.launch {
@@ -77,9 +121,9 @@ fun LogScreen(onBack: () -> Unit) {
                     }
                 }
             }) { Icon(Icons.Filled.Share, str(R.string.log_share)) }
-            IconButton(onClick = {
-                scope.launch { withContext(Dispatchers.IO) { dao.clearLogs(); dao.clearRuns() } }
-            }) { Icon(Icons.Filled.Delete, str(R.string.log_clear)) }
+            IconButton(onClick = { confirmClear = true }, enabled = runs.isNotEmpty()) {
+                Icon(Icons.Filled.Delete, str(R.string.log_clear))
+            }
         },
     ) { pad ->
         LazyColumn(
@@ -93,11 +137,11 @@ fun LogScreen(onBack: () -> Unit) {
                     FilterChip(selected = !onlyErrors && !onlyTransfers, onClick = {
                         onlyErrors = false; onlyTransfers = false
                         settings.logFilterErrors = false; settings.logFilterTransfers = false
-                    }, label = { Text(str(R.string.free_all)) })
+                    }, label = { Text(str(R.string.free_all)) }, leadingIcon = checkIcon(!onlyErrors && !onlyTransfers))
                     FilterChip(selected = onlyErrors, onClick = { onlyErrors = !onlyErrors; settings.logFilterErrors = onlyErrors },
-                        label = { Text(str(R.string.log_filter_errors)) })
+                        label = { Text(str(R.string.log_filter_errors)) }, leadingIcon = checkIcon(onlyErrors))
                     FilterChip(selected = onlyTransfers, onClick = { onlyTransfers = !onlyTransfers; settings.logFilterTransfers = onlyTransfers },
-                        label = { Text(str(R.string.log_filter_transfers)) })
+                        label = { Text(str(R.string.log_filter_transfers)) }, leadingIcon = checkIcon(onlyTransfers))
                 }
             }
             if (shown.isEmpty()) item {
@@ -126,6 +170,18 @@ fun LogScreen(onBack: () -> Unit) {
             }
         }
     }
+}
+
+/** Haken vor gewählten Filter-Chips (Auswahl nicht nur an der Füllfarbe erkennbar) */
+private fun checkIcon(selected: Boolean): (@Composable () -> Unit)? =
+    if (selected) ({ Icon(Icons.Filled.Check, null, Modifier.size(FilterChipDefaults.IconSize)) }) else null
+
+/** Handlungsempfehlung je Fehlerart (L1); nur Anzeige, erkannt am Text des Eintrags */
+internal fun errorAdviceRes(text: String): Int = when {
+    Regex("FileNotFound|ENOENT|No such file", RegexOption.IGNORE_CASE).containsMatchIn(text) -> R.string.log_advice_missing
+    Regex("UnknownHost|Unable to resolve|SocketException|SocketTimeout|ConnectException|ECONN|timed? ?out|Connection|SMB|network|Netzwerk|Verbindung", RegexOption.IGNORE_CASE)
+        .containsMatchIn(text) -> R.string.log_advice_connection
+    else -> R.string.log_advice_unknown
 }
 
 /** Mehrere aufeinanderfolgende Läufe ohne Übertragung als ein Eintrag; antippen zeigt die einzelnen Läufe */
@@ -179,6 +235,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
             if (r.bytes > 0) Hint(Notifications.formatBytes(r.bytes))
             if (expanded) {
                 val entries by remember(r.id) { dao.logFlow(r.id) }.collectAsState(initial = emptyList())
+                val firstError = entries.takeLast(300).firstOrNull { it.level == "E" }
                 entries.takeLast(300).forEach { e ->
                     Text(
                         "${formatTime(e.time).substringAfter(' ')}  ${e.text()}",
@@ -188,6 +245,12 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
                             "W" -> Color(0xFFB26A00)
                             else -> MaterialTheme.colorScheme.onSurface
                         },
+                    )
+                    // Empfehlung unter dem ersten Fehler; der technische Text bleibt darüber als Zeile erhalten
+                    if (e === firstError) Text(
+                        str(errorAdviceRes(e.text())),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                     )
                 }
             }

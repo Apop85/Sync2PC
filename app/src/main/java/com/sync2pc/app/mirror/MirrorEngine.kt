@@ -45,6 +45,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Art der Aktion je Datei; die Entscheidungstabelle steht in [MirrorPlanner] (SYNC-20261111-163) */
+private typealias Kind = PlanKind
+
 /**
  * Ordner-Spiegelung Handy-Ordner ⇄ PC-Ordner (1:1 mit Unterordnern).
  *
@@ -103,7 +106,6 @@ class MirrorEngine(
     private var propagate = profile.propagateDeletes
     private val today = SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).format(Date())
 
-    private enum class Kind { UPLOAD, DOWNLOAD, TRASH_LOCAL, TRASH_REMOTE, RECORD, DROP, CONFLICT, KEEP_BOTH }
 
     /** key = relativer Pfad in Kleinbuchstaben, rel = Originalschreibweise */
     private data class Action(val key: String, val rel: String, val kind: Kind, val trashOther: Boolean = false)
@@ -112,6 +114,9 @@ class MirrorEngine(
     private var smb: SmbSession? = null
     private var local: Map<String, Pair<String, LocalEntry>> = emptyMap()
     private var remote: Map<String, Pair<String, RemoteEntry>> = emptyMap()
+    /** Ein Inhaltsvergleich wurde abgebrochen (WLAN weg): Der Lauf endet ohne etwas auszuführen (R-I3) */
+    private var hashAborted = false
+    private var lastCompareEmit = 0L
 
     private var run = SyncRun(
         profileId = profile.id, profileName = profile.name, trigger = trigger.text(), triggerCode = trigger.toCode(),
@@ -263,7 +268,15 @@ class MirrorEngine(
                     // Eine Seite ist inzwischen weg -> Konflikt erledigt, normal weiter
                     doneConflicts += c.relPath
                 }
-                plan(k, rel, l?.second, r?.second, st)?.let { actions += it }
+                val planned = plan(k, rel, l?.second, r?.second, st)
+                // Vergleich wegen WLAN-Verlust abgebrochen: Ergebnis wäre "nicht gleich" ohne Beweis -> nichts ausführen
+                if (hashAborted) break
+                planned?.let { actions += it }
+            }
+            if (hashAborted) {
+                wifiLost = true
+                log("W", Msg.of(R.string.eng_wifi_lost))
+                return finish(RunStatus.PARTIAL, Msg.of(R.string.eng_wifi_lost))
             }
 
             // Schutzbremse: zu viele Löschungen (Anteil pro Profil, ab 100 Dateien immer) oder ein ganzer Unterordner
@@ -345,63 +358,49 @@ class MirrorEngine(
     }
 
     // ---- Planung einer Datei ---------------------------------------------------------
-    private suspend fun plan(k: String, rel: String, l: LocalEntry?, r: RemoteEntry?, st: MirrorState?): Action? {
-        if (l == null && r == null) return if (st != null) Action(k, rel, Kind.DROP) else null
-
-        if (l != null && r == null) {
-            if (st == null) return if (dir.up) Action(k, rel, Kind.UPLOAD) else null // neu auf dem Handy
-            // war synchron, auf dem PC gelöscht
-            return when {
-                dir == SyncDirection.UPLOAD -> Action(k, rel, Kind.UPLOAD)            // Ziel wiederherstellen
-                propagate -> Action(k, rel, Kind.TRASH_LOCAL)
-                dir == SyncDirection.BOTH -> Action(k, rel, Kind.UPLOAD)              // nichts verlieren
-                else -> Action(k, rel, Kind.DROP)                                     // PC → Handy: Handy-Kopie behalten
-            }
-        }
-        if (l == null && r != null) {
-            if (st == null) return if (dir.down) Action(k, rel, Kind.DOWNLOAD) else null // neu auf dem PC
-            return when {
-                dir == SyncDirection.DOWNLOAD -> Action(k, rel, Kind.DOWNLOAD)
-                propagate -> Action(k, rel, Kind.TRASH_REMOTE)
-                dir == SyncDirection.BOTH -> Action(k, rel, Kind.DOWNLOAD)
-                else -> Action(k, rel, Kind.DROP)
-            }
-        }
-        // beide vorhanden
-        l!!; r!!
-        val changedL = st == null || l.size != st.localSize || l.modified != st.localModified
-        val changedR = st == null || r.size != st.remoteSize || r.modified != st.remoteModified
-        if (!changedL && !changedR) return null
-        if (st == null || (changedL && changedR)) {
-            if (sameContent(l, rel, r)) return Action(k, rel, Kind.RECORD)
-            return when (dir) {
-                SyncDirection.UPLOAD -> Action(k, rel, Kind.UPLOAD, trashOther = true)
-                SyncDirection.DOWNLOAD -> Action(k, rel, Kind.DOWNLOAD, trashOther = true)
-                SyncDirection.BOTH ->
-                    if (profile.conflict() == ConflictMode.NEWER) {
-                        if (l.modified >= r.modified) Action(k, rel, Kind.UPLOAD, trashOther = true)
-                        else Action(k, rel, Kind.DOWNLOAD, trashOther = true)
-                    } else Action(k, rel, Kind.CONFLICT)
-            }
-        }
-        // Nur eine Seite "geändert", Grösse aber gleich wie auf der anderen Seite: Ist der Inhalt gleich, hat sich nur
-        // der Zeitstempel verschoben (z. B. vom Speicherort nachträglich gesetzt) -> Stand merken statt übertragen (0.5.1)
-        // (nur prüfen, wenn sonst wirklich übertragen würde – sonst würde bei Einweg-Profilen jeder Lauf neu hashen)
-        val wouldTransfer = if (changedL) dir.up else dir.down
-        if (wouldTransfer && l.size == r.size && sameContent(l, rel, r)) return Action(k, rel, Kind.RECORD)
-        // Nur eine Seite geändert: Versionsschutz (0.5.0) -> die überschriebene Version kommt in den Papierkorb
-        if (changedL) return if (dir.up) Action(k, rel, Kind.UPLOAD, trashOther = profile.keepVersions) else null
-        return if (dir.down) Action(k, rel, Kind.DOWNLOAD, trashOther = profile.keepVersions) else null
-    }
-
+    private suspend fun plan(k: String, rel: String, l: LocalEntry?, r: RemoteEntry?, st: MirrorState?): Action? =
+        MirrorPlanner.decide(
+            l, r, st, dir, propagate,
+            conflictNewer = profile.conflict() == ConflictMode.NEWER, keepVersions = profile.keepVersions,
+            sameContent = { sameContent(l!!, rel, r!!) },
+        )?.let { Action(k, rel, it.kind, it.trashOther) }
     /**
-     * Gleicher Inhalt? Nur beim Erstabgleich und bei auf beiden Seiten geänderten Dateien nötig, darum
-     * gründlich (0.4.1): bis 32 MB die ganze Datei, darüber 32 Stichproben (PartialHash.thorough).
+     * Gleicher Inhalt? Nur beim Erstabgleich, bei auf beiden Seiten geänderten Dateien und bei einseitig geänderten
+     * Dateien gleicher Grösse nötig, darum gründlich: immer die GANZE Datei beider Seiten (R-I3, SYNC-20261111-142,
+     * vorher über 32 MB nur 32 Stichproben: eine Änderung dazwischen wurde nie übertragen). Das Lesen ist abbrechbar
+     * (Coroutine, WLAN weg) und meldet bei grossen Dateien den Fortschritt. Lesefehler oder Abbruch ergeben
+     * "nicht gleich" (siehe [ContentCompare]); bei WLAN-Verlust endet der Lauf, bevor etwas ausgeführt wird.
      */
-    private fun sameContent(l: LocalEntry, rel: String, r: RemoteEntry): Boolean {
+    private suspend fun sameContent(l: LocalEntry, rel: String, r: RemoteEntry): Boolean {
         val s = smb ?: return false
         if (l.size != r.size) return false
-        return tree.contentHash(l.docId, l.size) == s.contentHash(remotePath(rel), r.size)
+        val ctx = currentCoroutineContext()
+        var lastNetCheck = 0L
+        val check: () -> Unit = {
+            ctx.ensureActive()
+            val now = System.currentTimeMillis()
+            if (now - lastNetCheck > 2_000) {
+                lastNetCheck = now
+                if (!shouldContinue()) throw HashAbortedException()
+            }
+        }
+        val big = l.size > PartialHash.FULL_LIMIT
+        var doneLocal = 0L
+        var doneRemote = 0L
+        fun report() {
+            val now = System.currentTimeMillis()
+            if (now - lastCompareEmit < 700) return
+            lastCompareEmit = now
+            emit(str(R.string.eng_comparing), 0, 0, doneLocal + doneRemote, l.size * 2, rel)
+        }
+        return try {
+            ContentCompare.same(l.size, r.size,
+                { tree.contentHash(l.docId, l.size, check) { b -> if (big) { doneLocal = b; report() } } },
+                { s.contentHash(remotePath(rel), r.size, check) { b -> if (big) { doneRemote = b; report() } } })
+        } catch (e: HashAbortedException) {
+            hashAborted = true
+            false
+        }
     }
 
     /** Stichprobe nach einem Ordnerwechsel: passt der Ordner auf den gewechselten Seiten zum Sync-Stand? */

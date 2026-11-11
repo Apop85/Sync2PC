@@ -21,6 +21,7 @@ class MigrationTest {
         AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4,
         AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7,
         AppDatabase.MIGRATION_7_8, AppDatabase.MIGRATION_8_9,
+        AppDatabase.MIGRATION_9_10,
     )
 
     @get:Rule
@@ -36,8 +37,8 @@ class MigrationTest {
             )
             close()
         }
-        val d = helper.runMigrationsAndValidate(db, 9, true, *all)
-        d.query("SELECT name, profileType, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel, folderLayout FROM profiles").use { c ->
+        val d = helper.runMigrationsAndValidate(db, 10, true, *all)
+        d.query("SELECT name, profileType, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel, folderLayout, smbEncryption FROM profiles").use { c ->
             c.moveToFirst()
             assertEquals("Fotos", c.getString(0))
             assertEquals("PHOTOS", c.getString(1))
@@ -46,6 +47,39 @@ class MigrationTest {
             assertEquals(1, c.getInt(4))
             assertEquals(1, c.getInt(5)) // Prüfung an -> "Wenig" wie bisher
             assertEquals("MONTH_SUFFIX", c.getString(6)) // Ordnerstruktur V1 wie bisher
+            assertEquals("PREFERRED", c.getString(7)) // SMB3-Verschlüsselung Standard
+        }
+        d.close()
+    }
+
+    /** 9 -> 10 (SYNC-20261111-144): SMB3-Verschlüsselung; bestehende Profile behalten alle Daten und bekommen PREFERRED, Sync-Stand bleibt */
+    @Test fun smbEncryptionFromVersion9() {
+        helper.createDatabase(db, 9).apply {
+            execSQL(
+                "INSERT INTO profiles (id, name, enabled, smbPath, smbUser, smbDomain, smbPasswordEnc, sourceFolders, " +
+                    "wifiSsids, includeImages, includeVideos, includeSubfolders, deleteMode, verifyUpload, profileType, " +
+                    "direction, localTreeUri, remoteSubfolder, propagateDeletes, conflictMode, includePatterns, " +
+                    "excludePatterns, remotePollMinutes, trashRetentionDays, massDeletePercent, keepVersions, verifyLevel, " +
+                    "pcCheck, pcGuid, pcGuidHost, folderLayout) VALUES " +
+                    "(1, 'Fotos', 1, '\\\\pc\\Fotos', 'leo', '', 'enc', 'DCIM/Camera/', 'heim', 1, 1, 1, 'KEEP', 1, 'PHOTOS', " +
+                    "'UPLOAD', '', '', 0, 'ASK', '', '', 60, 30, 20, 1, 2, 'WIFI', '', '', 'COUNTRY_SUBFOLDER')"
+            )
+            execSQL("INSERT INTO folder_mappings (profileId, groupKey, folderName, seen) VALUES (1, '2026/10/EG', '10 - Ägypten', 1)")
+            close()
+        }
+        val d = helper.runMigrationsAndValidate(db, 10, true, AppDatabase.MIGRATION_9_10)
+        d.query("SELECT name, smbPath, smbPasswordEnc, wifiSsids, folderLayout, smbEncryption FROM profiles WHERE id = 1").use { c ->
+            c.moveToFirst()
+            assertEquals("Fotos", c.getString(0))
+            assertEquals("\\\\pc\\Fotos", c.getString(1))
+            assertEquals("enc", c.getString(2))
+            assertEquals("heim", c.getString(3))
+            assertEquals("COUNTRY_SUBFOLDER", c.getString(4))
+            assertEquals("PREFERRED", c.getString(5))
+        }
+        d.query("SELECT folderName FROM folder_mappings WHERE profileId = 1").use { c ->
+            c.moveToFirst()
+            assertEquals("10 - Ägypten", c.getString(0))
         }
         d.close()
     }

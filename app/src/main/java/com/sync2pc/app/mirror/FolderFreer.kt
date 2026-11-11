@@ -89,6 +89,8 @@ object FolderFreer {
     suspend fun verifyAndDelete(
         context: Context, profile: Profile, list: List<FreeItem>, onProgress: (Int, Int) -> Unit,
         onStart: () -> Unit = {},
+        /** Fortschritt beim Lesen einer grossen Datei: (relativer Pfad, gelesene Bytes beider Seiten, Bytes gesamt) */
+        onBytes: (String, Long, Long) -> Unit = { _, _, _ -> },
     ): Result = withContext(Dispatchers.IO) {
         MirrorLock.mutex.withLock {
             onStart() // Sperre erworben: ab jetzt läuft der Eingriff wirklich (0.11.10)
@@ -114,11 +116,22 @@ object FolderFreer {
                             st == null || st.localSize != e.size || st.localModified != e.modified) { kept++; continue }
                         val path = s.path(item.rel.replace('/', '\\'))
                         val r = s.stat(path)
-                        if (r == null || r.size != e.size ||
-                            tree.contentHash(e.docId, e.size) != s.contentHash(path, r.size)) { kept++; continue }
+                        if (r == null) { kept++; continue }
+                        // Nachweislich unverändert = ganze Datei beider Seiten gleich (R-I3, SYNC-20261111-142): auch über
+                        // 32 MB kein Stichproben-Hash mehr. Lesefehler -> "nicht gleich" -> Datei bleibt auf dem Handy.
+                        // Abbruch (Coroutine) und Netzwerkfehler gehen nach aussen (unten: Abbruch bzw. "nicht erreichbar").
+                        val ctx = currentCoroutineContext()
+                        val check: () -> Unit = { ctx.ensureActive() }
+                        var doneLocal = 0L; var doneRemote = 0L
+                        val same = ContentCompare.same(e.size, r.size,
+                            { tree.contentHash(e.docId, e.size, check) { b -> doneLocal = b; onBytes(item.rel, doneLocal + doneRemote, e.size * 2) } },
+                            { s.contentHash(path, r.size, check) { b -> doneRemote = b; onBytes(item.rel, doneLocal + doneRemote, e.size * 2) } })
+                        if (!same) { kept++; continue }
                         dao.deleteMirrorState(profile.id, key)
                         tree.delete(e.docId)
                         deleted++; bytes += e.size; deletedRels += item.rel
+                    } catch (ex: kotlinx.coroutines.CancellationException) {
+                        throw ex
                     } catch (ex: Exception) {
                         if (com.sync2pc.app.sync.isNetworkError(ex)) {
                             unreachable = true

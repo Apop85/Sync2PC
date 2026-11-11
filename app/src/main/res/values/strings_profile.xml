@@ -131,7 +131,7 @@
     <string name="profile_checking_folder">Checking folder…</string>
     <string name="profile_checking_folder_text">Does the new folder match the previous sync state?</string>
     <string name="profile_folder_warning_title">Is this really the right folder?</string>
-    <string name="profile_folder_warning_text">The chosen folder does not match the previous sync state of this profile.</string>
+    <string name="profile_folder_warning_text">The chosen folder does not match the previous sync state of this profile. After a reinstall or an import this is expected: choose “Accept anyway”.</string>
     <string name="profile_reset_title">Reset sync status?</string>
     <string name="profile_reset_text">The next sync compares all files with the Share again. With many files this can take a while.</string>
     <string name="profile_reset_done">Reset</string>
@@ -173,6 +173,7 @@
     <string name="home_profile_pc_unknown">PC not recognised yet</string>
     <!-- SYNC-20261110-114/-115: input validation, confirmation, error messages -->
     <string name="profile_number_range">Please enter a number from %1$d to %2$d</string>
+    <string name="profile_number_step_blocked">Please correct the number field with an error in this step first.</string>
     <string name="profile_number_blocked">Not saved: please correct the number fields with errors first.</string>
     <string name="profile_test_need_path">Please enter the share path first, e.g. %1$s.</string>
     <string name="profile_test_bad_input">The input is invalid. Please check the share path and user.</string>
@@ -184,11 +185,33 @@
     <string name="profile_folder_unusable_root">The selected folder is the top level of the storage and cannot be used. Please choose a subfolder.</string>
     <string name="profile_folder_unusable_provider">Android provides this folder via a detour (e.g. “Downloads”), so it cannot be used for photos. Please choose the folder directly in internal storage.</string>
     <string name="profile_filter_include_hint">Everything else is not synchronized.</string>
-    <string name="profile_filter_bad">Invalid pattern “%1$s”: a bracket is not closed.</string>
+    <string name="profile_filter_bad">Invalid pattern “%1$s”: a bracket is missing or extra.</string>
     <string name="profile_filter_summary_include">Only: %1$s</string>
     <string name="profile_filter_summary_exclude">Excluded: %1$d patterns</string>
     <string name="profile_folder_warning_options">Accept anyway: the previous sync state is kept.\nTreat as new folder: the state is reset and all files are compared again.</string>
     <string name="overlap_nested_remote">The target folder on the PC lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
+    <string name="overlap_cross_pc_from_photos">The target folder of this photo backup lies inside the PC folder of profile “%1$s” (or vice versa). The folder profile treats the backed-up photos like its own files: they can be downloaded to the mobile again or moved to the recycle bin when deletions are applied.</string>
+    <string name="overlap_cross_pc_from_mirror">The PC folder of this profile lies inside the target folder of photo backup “%1$s” (or vice versa). This profile treats the backed-up photos like its own files: they can be downloaded to the mobile or moved to the recycle bin when deletions are applied.</string>
+    <string name="overlap_cross_phone_from_photos">A source folder of this photo backup lies inside the mobile folder of profile “%1$s”, which loads files onto the mobile (or vice versa). That profile can replace files there or add new files that would then be backed up as photos.</string>
+    <string name="overlap_cross_phone_from_mirror">The mobile folder of this profile, which loads files onto the mobile, lies inside a source folder of photo backup “%1$s” (or vice versa). This profile can replace files there or add new files that would then be backed up as photos.</string>
     <string name="overlap_nested_local">The folder on the mobile lies inside a folder of profile “%1$s” (or vice versa). The same files would be synchronized by both profiles – this can lead to duplicate copies, conflicts or unwanted deletions.</string>
     <string name="home_profile_filter_active">Filter active</string>
+    <!-- SMB encryption, profile (SYNC-20261111-146 part B) -->
+    <string name="enc_title">Encryption</string>
+    <string name="enc_title_value">%1$s · %2$s</string>
+    <string name="enc_intro">Protects the transfer to the PC so nobody on the network can read along.</string>
+    <string name="enc_value_off">Off</string>
+    <string name="enc_value_preferred">If possible</string>
+    <string name="enc_value_required">Required</string>
+    <string name="enc_off">Off</string>
+    <string name="enc_off_sub">No encryption, as before. Only recommended on a network you trust.</string>
+    <string name="enc_preferred">If possible (recommended)</string>
+    <string name="enc_preferred_sub">Encrypted as soon as the PC supports it. Otherwise the connection stays unencrypted.</string>
+    <string name="enc_required">Required</string>
+    <string name="enc_required_sub">Connects only if encrypted. If the PC cannot do that, no connection is made and no password is sent. Most secure.</string>
+    <string name="enc_test_ok">✓ Encrypted (%1$s)</string>
+    <string name="enc_test_warn">⚠ Not encrypted (%1$s). Your PC or NAS cannot encrypt, or it is switched off.</string>
+    <string name="enc_test_off">Not encrypted (%1$s), as set.</string>
+    <string name="enc_help">Help: turn on encryption</string>
+    <string name="enc_test_required_fail">✗ Connection not possible: Your PC or NAS cannot make an encrypted connection. No sign-in data was sent. Turn on encryption on the PC or NAS (see help) or choose «If possible».</string>
 </resources>

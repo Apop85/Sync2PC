@@ -58,7 +58,8 @@ object Diagnostics {
     private val WORK_NAMES = listOf(
         SyncScheduler.WORK_AUTO, SyncScheduler.WORK_MANUAL, SyncScheduler.WORK_FOLLOWUP,
         SyncScheduler.WORK_CONTENT, SyncScheduler.WORK_SAFETY, SyncScheduler.WORK_RETRY,
-        SyncScheduler.WORK_REMOTE_POLL, SyncScheduler.WORK_RESUME, "update-check", "stale-check", SyncScheduler.WORK_PAUSE_END,
+        SyncScheduler.WORK_REMOTE_POLL, SyncScheduler.WORK_RESUME, SyncScheduler.WORK_DEFERRED_AUTO,
+        SyncScheduler.WORK_DEFERRED_MANUAL, "update-check", "stale-check", SyncScheduler.WORK_PAUSE_END,
     )
 
     /** Kopfzeilen, die jeder Export trägt (Zuordnung zum Gerät) */

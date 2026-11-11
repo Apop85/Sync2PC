@@ -82,6 +82,13 @@ interface SyncDao {
     @Query("SELECT * FROM synced_files WHERE profileId = :profileId AND sourceKey = :key")
     suspend fun synced(profileId: Long, key: String): SyncedFile?
 
+    /**
+     * Zeile einer Datei für ein Profil entfernen (SYNC-20261111-142, R-I1): Die PC-Kopie fehlt oder weicht ab, die
+     * Datei gilt beim nächsten Lauf wieder als neu und wird erneut gesichert (kein Schemawechsel).
+     */
+    @Query("DELETE FROM synced_files WHERE profileId = :profileId AND sourceKey = :key")
+    suspend fun deleteSynced(profileId: Long, key: String)
+
     @Query("SELECT * FROM synced_files WHERE sourceKey = :key")
     suspend fun syncedAllProfiles(key: String): List<SyncedFile>
 
@@ -308,4 +315,17 @@ interface SyncDao {
 
     @Query("DELETE FROM sync_runs WHERE status != 'RUNNING'")
     suspend fun clearRuns()
+
+    // ---- «Verlauf löschen» mit Rückgängig (nur Anzeigeschicht, kein Schema) ----------
+    @Query("SELECT * FROM sync_runs WHERE status != 'RUNNING'")
+    suspend fun clearableRuns(): List<SyncRun>
+
+    @Query("SELECT * FROM log_entries")
+    suspend fun allLogEntries(): List<LogEntry>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun restoreRuns(list: List<SyncRun>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun restoreLogs(list: List<LogEntry>)
 }

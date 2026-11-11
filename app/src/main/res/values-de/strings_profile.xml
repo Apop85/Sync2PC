@@ -131,7 +131,7 @@
     <string name="profile_checking_folder">Prüfe Ordner…</string>
     <string name="profile_checking_folder_text">Passt der neue Ordner zum bisherigen Synchronisierungsstand?</string>
     <string name="profile_folder_warning_title">Ist das wirklich der richtige Ordner?</string>
-    <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Synchronisierungsstand dieses Profils.</string>
+    <string name="profile_folder_warning_text">Der gewählte Ordner passt nicht zum bisherigen Synchronisierungsstand dieses Profils. Nach einer Neuinstallation oder einem Import ist das normal: Wähle dann „Trotzdem übernehmen“.</string>
     <string name="profile_reset_title">Synchronisierungsstatus zurücksetzen?</string>
     <string name="profile_reset_text">Die nächste Synchronisierung gleicht alle Dateien erneut mit der Freigabe ab. Das kann bei vielen Dateien länger dauern.</string>
     <string name="profile_reset_done">Zurückgesetzt</string>
@@ -173,6 +173,7 @@
     <string name="home_profile_pc_unknown">PC noch nicht erkannt</string>
     <!-- SYNC-20261110-114/-115: Eingabeprüfung, Bestätigung, Fehlermeldungen -->
     <string name="profile_number_range">Bitte eine Zahl von %1$d bis %2$d eingeben</string>
+    <string name="profile_number_step_blocked">Bitte zuerst das Zahlenfeld mit Fehler in diesem Schritt korrigieren.</string>
     <string name="profile_number_blocked">Nicht gespeichert: Bitte zuerst die Zahlenfelder mit Fehler korrigieren.</string>
     <string name="profile_test_need_path">Bitte zuerst den Freigabe-Pfad eingeben, z. B. %1$s.</string>
     <string name="profile_test_bad_input">Die Eingabe ist ungültig. Bitte Freigabe-Pfad und Benutzer prüfen.</string>
@@ -184,11 +185,33 @@
     <string name="profile_folder_unusable_root">Der gewählte Ordner ist der oberste Ordner des Speichers und kann nicht verwendet werden. Bitte einen Unterordner wählen.</string>
     <string name="profile_folder_unusable_provider">Dieser Ordner wird von Android über einen Umweg (z. B. „Downloads“) geliefert und kann für Fotos nicht verwendet werden. Bitte den Ordner direkt im internen Speicher wählen.</string>
     <string name="profile_filter_include_hint">Alles andere wird nicht synchronisiert.</string>
-    <string name="profile_filter_bad">Ungültiges Muster „%1$s“: Eine Klammer wurde nicht geschlossen.</string>
+    <string name="profile_filter_bad">Ungültiges Muster „%1$s“: Eine Klammer fehlt oder ist zu viel.</string>
     <string name="profile_filter_summary_include">Nur: %1$s</string>
     <string name="profile_filter_summary_exclude">Ausgeschlossen: %1$d Muster</string>
     <string name="profile_folder_warning_options">Trotzdem übernehmen: der bisherige Synchronisierungsstand bleibt.\nAls neuen Ordner behandeln: der Stand wird zurückgesetzt, alle Dateien werden neu abgeglichen.</string>
     <string name="overlap_nested_remote">Der Zielordner auf dem PC liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen.</string>
+    <string name="overlap_cross_pc_from_photos">Der Zielordner dieser Fotosicherung liegt im PC-Ordner von Profil „%1$s“ (oder umgekehrt). Das Ordner-Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können wieder aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden.</string>
+    <string name="overlap_cross_phone_from_photos">Ein Quellordner dieser Fotosicherung liegt im Handy-Ordner von Profil „%1$s“, das Dateien aufs Handy lädt (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden.</string>
+    <string name="overlap_cross_phone_from_mirror">Der Handy-Ordner dieses Profils, das Dateien aufs Handy lädt, liegt in einem Quellordner der Fotosicherung „%1$s“ (oder umgekehrt). Dieses Profil kann dort Dateien ersetzen oder neue Dateien ablegen, die dann als Fotos gesichert würden.</string>
+    <string name="overlap_cross_pc_from_mirror">Der PC-Ordner dieses Profils liegt im Zielordner der Fotosicherung „%1$s“ (oder umgekehrt). Dieses Profil behandelt die gesicherten Fotos wie eigene Dateien: Sie können aufs Handy geladen oder bei übernommenen Löschungen in den Papierkorb gelegt werden.</string>
     <string name="overlap_nested_local">Der Ordner auf dem Handy liegt innerhalb eines Ordners von Profil „%1$s“ (oder umgekehrt). Dieselben Dateien würden von beiden Profilen synchronisiert – das kann zu doppelten Kopien, Konflikten oder ungewollten Löschungen führen.</string>
     <string name="home_profile_filter_active">Filter aktiv</string>
+    <!-- SMB-Verschlüsselung, Profil (SYNC-20261111-146 Teil B) -->
+    <string name="enc_title">Verschlüsselung</string>
+    <string name="enc_title_value">%1$s · %2$s</string>
+    <string name="enc_intro">Schützt die Übertragung zum PC, damit niemand im Netz mitlesen kann.</string>
+    <string name="enc_value_off">Aus</string>
+    <string name="enc_value_preferred">Wenn möglich</string>
+    <string name="enc_value_required">Erforderlich</string>
+    <string name="enc_off">Aus</string>
+    <string name="enc_off_sub">Keine Verschlüsselung, wie bisher. Nur in einem Netz empfohlen, dem du vertraust.</string>
+    <string name="enc_preferred">Wenn möglich (empfohlen)</string>
+    <string name="enc_preferred_sub">Verschlüsselt, sobald der PC es kann. Sonst läuft die Verbindung unverschlüsselt weiter.</string>
+    <string name="enc_required">Erforderlich</string>
+    <string name="enc_required_sub">Verbindet nur verschlüsselt. Kann der PC das nicht, kommt keine Verbindung zustande und es wird kein Passwort gesendet. Am sichersten.</string>
+    <string name="enc_test_ok">✓ Verschlüsselt (%1$s)</string>
+    <string name="enc_test_warn">⚠ Nicht verschlüsselt (%1$s). Dein PC oder NAS kann nicht verschlüsseln oder es ist ausgeschaltet.</string>
+    <string name="enc_test_off">Nicht verschlüsselt (%1$s), wie eingestellt.</string>
+    <string name="enc_help">Hilfe: Verschlüsselung einschalten</string>
+    <string name="enc_test_required_fail">✗ Verbindung nicht möglich: Dein PC oder NAS kann keine verschlüsselte Verbindung herstellen. Es wurden keine Anmeldedaten gesendet. Schalte die Verschlüsselung am PC oder NAS ein (siehe Hilfe) oder wähle «Wenn möglich».</string>
 </resources>

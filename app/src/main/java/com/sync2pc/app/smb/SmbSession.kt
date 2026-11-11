@@ -4,8 +4,10 @@ import com.hierynomus.msdtyp.AccessMask
 import com.hierynomus.msdtyp.FileTime
 import com.hierynomus.msfscc.FileAttributes
 import com.hierynomus.msfscc.fileinformation.FileBasicInformation
+import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.mssmb2.SMB2CreateDisposition
+import com.hierynomus.mssmb2.SMB2Dialect
 import com.hierynomus.mssmb2.SMB2CreateOptions
 import com.hierynomus.mssmb2.SMB2ShareAccess
 import com.hierynomus.smbj.SMBClient
@@ -16,6 +18,7 @@ import com.hierynomus.smbj.session.Session
 import com.hierynomus.smbj.share.DiskShare
 import com.sync2pc.app.data.CredentialCrypto
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.SmbEncryption
 import com.sync2pc.app.sync.PartialHash
 import com.sync2pc.app.sync.PcAccess
 import com.sync2pc.app.sync.PcDecision
@@ -45,6 +48,68 @@ data class SmbTarget(val host: String, val share: String, val basePath: String) 
 }
 
 data class RemoteEntry(val name: String, val size: Long, val isDirectory: Boolean, val modified: Long = 0L)
+
+/**
+ * Gemeinsame Verbindungskonfiguration für [SmbSession.open], [SmbSession.checkPc] und [SmbSession.listShares]
+ * (SYNC-20261111-144). Zeitlimits wie bisher: [timeoutSec] (Verbindung/Transaktion), [soTimeoutSec] nur wenn gesetzt,
+ * [multiProtocol] nur für open. Verschlüsselung:
+ * - OFF: wie bisher (smbj-Standard, nie verschlüsseln);
+ * - PREFERRED: `withEncryptData(true)` (verschlüsselt, sobald der Server SMB3-Verschlüsselung kann, sonst still unverschlüsselt);
+ * - REQUIRED: zusätzlich nur die Dialekte SMB 3.1.1, 3.0.2 und 3.0 (die Pflichtprüfung vor/nach der Anmeldung steht in [PcLogin]).
+ * `withSigningRequired` bleibt unverändert (nicht Teil des Auftrags).
+ */
+internal fun smbConfigFor(
+    encryption: SmbEncryption, timeoutSec: Long, soTimeoutSec: Long? = null, multiProtocol: Boolean = false,
+): SmbConfig {
+    val b = SmbConfig.builder().withTimeout(timeoutSec, TimeUnit.SECONDS)
+    if (soTimeoutSec != null) b.withSoTimeout(soTimeoutSec, TimeUnit.SECONDS)
+    if (multiProtocol) b.withMultiProtocolNegotiate(true)
+    when (encryption) {
+        SmbEncryption.OFF -> {}
+        SmbEncryption.PREFERRED -> b.withEncryptData(true)
+        SmbEncryption.REQUIRED -> {
+            b.withEncryptData(true)
+            b.withDialects(SMB2Dialect.SMB_3_1_1, SMB2Dialect.SMB_3_0_2, SMB2Dialect.SMB_3_0)
+        }
+    }
+    return b.build()
+}
+
+/** Verschlüsselt die angemeldete Sitzung tatsächlich? (SMB 3.x, Ver- und Entschlüsselungsschlüssel, smbj verschlüsselt Pakete) */
+internal fun smbSessionEncrypted(session: Session): Boolean = try {
+    val ctx = session.sessionContext
+    session.connection.connectionContext.negotiatedProtocol.dialect.isSmb3x &&
+        ctx.encryptionKey != null && ctx.decryptionKey != null && session.shouldEncryptData()
+} catch (e: Exception) { false }
+
+/** Dialekt als Text ("3.1.1", "3.0.2", "3.0", "2.1", "2.0.2"), sonst der Aufzählungsname */
+internal fun smbDialectText(d: SMB2Dialect?): String = when (d) {
+    null -> "?"
+    SMB2Dialect.SMB_3_1_1 -> "3.1.1"
+    SMB2Dialect.SMB_3_0_2 -> "3.0.2"
+    SMB2Dialect.SMB_3_0 -> "3.0"
+    SMB2Dialect.SMB_2_1 -> "2.1"
+    SMB2Dialect.SMB_2_0_2 -> "2.0.2"
+    else -> d.name
+}
+
+/**
+ * Ergebnis von [SmbSession.testDetailed]: bisheriger Meldetext plus Verbindungsdaten (strukturiert, kein UI-Text).
+ * [dialect] z. B. "3.1.1" ("?" unbekannt), [smb3] Dialekt ist SMB 3.x, [encrypted] die angemeldete Sitzung ist verschlüsselt,
+ * [cipher] Verfahren ("AES_128_GCM" / "AES_128_CCM") nur wenn [encrypted], [serverEncryption] der PC bietet Verschlüsselung an
+ * (bei [setting] OFF und SMB 3.0/3.0.2 nicht erkennbar: dann false, da der Client keine Verschlüsselung anmeldet), [setting] die Einstellung des getesteten Profils.
+ * [folderMissing] true: der Zielordner fehlt ([message] ist dann der Hinweis), sonst ist [message] die Erfolgsmeldung.
+ */
+data class SmbTestResult(
+    val message: String,
+    val folderMissing: Boolean,
+    val dialect: String,
+    val smb3: Boolean,
+    val encrypted: Boolean,
+    val cipher: String?,
+    val serverEncryption: Boolean,
+    val setting: SmbEncryption,
+)
 
 /** Nur Ordnerlisten des Share (für [com.sync2pc.app.sync.TargetResolver]; in Tests durch ein Fake ersetzbar). */
 interface RemoteDirs {
@@ -91,11 +156,18 @@ class SmbSession private constructor(
             private val client: SMBClient, private val connection: Connection, private val profile: Profile,
         ) : PcLink<Session> {
             override fun serverGuid(): String? = connection.getConnectionContext().getServerGuid()?.toString()
+            // smbj 0.13.0: Dialekt SMB 3.x und ConnectionContext.supportsEncryption() (3.1.1: Verfahren ausgehandelt;
+            // 3.0/3.0.2: Client-Fähigkeit [nur mit withEncryptData(true)] und Server-Fähigkeit)
+            override fun encryptionAvailable(): Boolean = try {
+                val cc = connection.getConnectionContext()
+                cc.negotiatedProtocol.dialect.isSmb3x && cc.supportsEncryption()
+            } catch (e: Exception) { false }
             override fun authenticate(): Session = connection.authenticate(AuthenticationContext(
                 profile.smbUser,
                 CredentialCrypto.decrypt(profile.smbPasswordEnc).toCharArray(),
                 profile.smbDomain.ifBlank { null },
             ))
+            override fun sessionEncrypted(session: Session): Boolean = smbSessionEncrypted(session)
             override fun close() {
                 try { connection.close() } catch (ignored: Exception) {}
                 try { client.close() } catch (ignored: Exception) {}
@@ -109,10 +181,26 @@ class SmbSession private constructor(
                 val client = SMBClient(config)
                 return try { SmbLink(client, client.connect(host), profile) } catch (e: Exception) {
                     try { client.close() } catch (ignored: Exception) {}
+                    // «Erforderlich» schränkt die Dialekte auf SMB 3.x ein: lehnt der Server die Aushandlung ab
+                    // (STATUS_NOT_SUPPORTED, nur SMB 2.x), ist das "Verschlüsselung nicht verfügbar", kein Verbindungsfehler
+                    if (profile.encryption() == SmbEncryption.REQUIRED && isDialectRejected(e))
+                        throw SmbEncryptionUnavailableException(host, cause = e)
                     throw e
                 }
             }
+
         }
+
+        /** Lehnt der Server die Dialekt-Aushandlung ab (STATUS_NOT_SUPPORTED, nur SMB 2.x)? Auch als Ursache in der Kette. */
+        internal fun isDialectRejected(e: Throwable): Boolean =
+            generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9)
+                .any { it is SMBApiException && it.statusCode == NtStatus.STATUS_NOT_SUPPORTED.value }
+
+        /** Nur normale Datei-Freigaben (Typ Disk, keine versteckten/administrativen «C$», «IPC$»), nach Name sortiert */
+        internal fun filterShares(shares: List<Pair<String, Int>>): List<String> =
+            shares.filter { (name, type) -> (type and 0x0FFFFFFF) == 0 && !name.endsWith("$") }
+                .map { it.first }
+                .sortedBy { it.lowercase() }
 
         private fun connectChecked(
             profile: Profile, host: String, config: SmbConfig, access: PcAccess,
@@ -139,10 +227,8 @@ class SmbSession private constructor(
         ): SmbSession {
             val target = targetOf(profile)
                 ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
-            val config = (if (quick) SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).withSoTimeout(30, TimeUnit.SECONDS)
-                else SmbConfig.builder().withTimeout(60, TimeUnit.SECONDS).withSoTimeout(90, TimeUnit.SECONDS))
-                .withMultiProtocolNegotiate(true)
-                .build()
+            val config = if (quick) smbConfigFor(profile.encryption(), 30, 30, multiProtocol = true)
+                else smbConfigFor(profile.encryption(), 60, 90, multiProtocol = true)
             val c = connectChecked(profile, target.host, config, access, learn, learnNetOk, onChangedGuid, authenticate = true)
             try {
                 val link = c.link as SmbLink
@@ -165,7 +251,7 @@ class SmbSession private constructor(
         fun checkPc(profile: Profile, access: PcAccess = PcAccess.AUTO, seen: PcSeen? = null): PcDecision {
             val host = SmbTarget.hostOf(profile.smbPath)
                 ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
-            val config = SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).build()
+            val config = smbConfigFor(profile.encryption(), 30)
             return connectChecked(profile, host, config, access, false, true, null, authenticate = false, seen = seen).decision
         }
 
@@ -182,14 +268,13 @@ class SmbSession private constructor(
         ): List<String> {
             val host = SmbTarget.hostOf(profile.smbPath)
                 ?: throw IllegalArgumentException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_path, profile.smbPath))
-            val config = SmbConfig.builder().withTimeout(30, TimeUnit.SECONDS).build()
+            val config = smbConfigFor(profile.encryption(), 30)
             val c = connectChecked(profile, host, config, access, false, learnNetOk, onChangedGuid, authenticate = true)
             try {
                 val transport = com.rapid7.client.dcerpc.transport.SMBTransportFactories.SRVSVC.getTransport(c.session!!)
-                val shares = com.rapid7.client.dcerpc.mssrvs.ServerService(transport).shares1
-                    .filter { (it.type and 0x0FFFFFFF) == 0 && !it.netName.endsWith("$") }
-                    .map { it.netName }
-                    .sortedBy { it.lowercase() }
+                val shares = filterShares(
+                    com.rapid7.client.dcerpc.mssrvs.ServerService(transport).shares1.map { it.netName to it.type }
+                )
                 PcLogin.commit(c, pcStore)
                 return shares
             } finally {
@@ -201,27 +286,52 @@ class SmbSession private constructor(
          * Schneller, akkuschonender Erreichbarkeitstest: nur TCP-Verbindung auf Port 445,
          * ohne Anmeldung. true = der PC antwortet.
          */
-        fun isReachable(host: String, timeoutMs: Int = 3000): Boolean = try {
-            java.net.Socket().use { it.connect(java.net.InetSocketAddress(host, 445), timeoutMs) }
+        fun isReachable(host: String, timeoutMs: Int = 3000, port: Int = 445): Boolean = try {
+            java.net.Socket().use { it.connect(java.net.InetSocketAddress(host, port), timeoutMs) }
             true
         } catch (e: Exception) {
             false
         }
 
-        /** Verbindung testen: verbinden, Zielordner prüfen. Liefert eine lesbare Meldung. */
+        /** Verbindung testen: verbinden, Zielordner prüfen. Liefert eine lesbare Meldung (Kurzform von [testDetailed]). */
         fun test(
             profile: Profile,
             learnNetOk: Boolean = true,
             onChangedGuid: ((host: String, oldGuid: String, newGuid: String) -> Boolean)? = null,
-        ): String = open(profile, PcAccess.SETUP, onChangedGuid, learn = true, learnNetOk = learnNetOk).use { s ->
+        ): String = testDetailed(profile, learnNetOk, onChangedGuid).message
+
+        /**
+         * Wie [test], liefert aber zusätzlich den ausgehandelten Dialekt und den Verschlüsselungsstatus der Sitzung
+         * (SYNC-20261111-144, strukturierte Daten in [SmbTestResult]). Fehler (inkl. [SmbEncryptionUnavailableException]) werden
+         * wie bei [test] geworfen.
+         */
+        fun testDetailed(
+            profile: Profile,
+            learnNetOk: Boolean = true,
+            onChangedGuid: ((host: String, oldGuid: String, newGuid: String) -> Boolean)? = null,
+        ): SmbTestResult = open(profile, PcAccess.SETUP, onChangedGuid, learn = true, learnNetOk = learnNetOk).use { s ->
             val base = s.target.basePath
-            if (base.isNotEmpty() && !s.share.folderExists(base))
+            val missing = base.isNotEmpty() && !s.share.folderExists(base)
+            val message = if (missing)
                 com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_test_missing_folder, base)
             else {
                 val n = s.listDir(base).size
                 com.sync2pc.app.l10n.plural(com.sync2pc.app.R.plurals.smb_test_ok, n,
                     "${s.target.host}\\${s.target.share}" + (if (base.isNotEmpty()) "\\$base" else ""), n)
             }
+            val cc = try { s.connection.getConnectionContext() } catch (e: Exception) { null }
+            val dialect = try { cc?.negotiatedProtocol?.dialect } catch (e: Exception) { null }
+            val encrypted = smbSessionEncrypted(s.session)
+            SmbTestResult(
+                message = message,
+                folderMissing = missing,
+                dialect = smbDialectText(dialect),
+                smb3 = dialect?.isSmb3x == true,
+                encrypted = encrypted,
+                cipher = if (encrypted) try { cc?.cipherId?.name } catch (e: Exception) { null } else null,
+                serverEncryption = try { dialect?.isSmb3x == true && cc?.supportsEncryption() == true } catch (e: Exception) { false },
+                setting = profile.encryption(),
+            )
         }
     }
 
@@ -351,12 +461,15 @@ class SmbSession private constructor(
             SMB2CreateDisposition.FILE_OPEN, null
         ).use { f -> PartialHash.forLevel(level, size) { off, len -> readFully(f, off, len) } }
 
-    /** Gründlicher Inhalts-Hash für den Ordner-Vergleich (0.4.1, siehe [PartialHash.thorough]) */
-    fun contentHash(path: String, size: Long): String =
+    /**
+     * Vollständiger Inhalts-Hash für den Ordner-Vergleich (siehe [PartialHash.comparison]): ganze Datei, auch über
+     * 32 MB (SYNC-20261111-142). [check] bricht per Exception ab, [onBytes] meldet den Fortschritt.
+     */
+    fun contentHash(path: String, size: Long, check: () -> Unit = {}, onBytes: (Long) -> Unit = {}): String =
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, null
-        ).use { f -> PartialHash.thorough(size) { off, len -> readFully(f, off, len) } }
+        ).use { f -> PartialHash.comparison(size, { off, len -> readFully(f, off, len) }, check, onBytes) }
 
     private fun readFully(f: com.hierynomus.smbj.share.File, off: Long, len: Int): ByteArray {
         val buf = ByteArray(len)

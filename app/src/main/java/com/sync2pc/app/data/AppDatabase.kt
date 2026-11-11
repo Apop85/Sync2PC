@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MediaInfo::class, SyncRun::class, LogEntry::class, MirrorState::class, MirrorConflict::class,
         PendingRestore::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,12 +26,19 @@ abstract class AppDatabase : RoomDatabase() {
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "sync2pc.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .build().also { instance = it }
             }
 
         // Wichtig: Kein fallbackToDestructiveMigration() – fehlt eine Migration, soll die App
         // lieber abstürzen, als still alle Daten zu löschen.
+
+        /** SYNC-20261111-144: SMB3-Verschlüsselung je Profil. Bestehende Profile = PREFERRED (Standard). */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN smbEncryption TEXT NOT NULL DEFAULT 'PREFERRED'")
+            }
+        }
 
         /** SYNC-20261109-083: Ordnerstruktur je Fotoprofil. Bestehende Profile = V1 (MONTH_SUFFIX), Verhalten unverändert (DEC-084). */
         val MIGRATION_8_9 = object : Migration(8, 9) {

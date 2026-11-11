@@ -14,6 +14,28 @@
     <string name="decision_new_folder">New folder: %1$s</string>
     <string name="decision_custom_name">Custom name…</string>
     <string name="decision_folder_name">Folder name (must contain %1$s)</string>
+    <string name="decision_none_hint">LeoSync asks here when there are several renamed folders on the PC for one month.</string>
+    <string name="decision_choose_first">Choose a folder to apply.</string>
+    <plurals name="decision_snack_one">
+        <item quantity="one">%1$s file will be transferred to %2$s</item>
+        <item quantity="other">%1$s files will be transferred to %2$s</item>
+    </plurals>
+    <plurals name="decision_snack_all">
+        <item quantity="one">%1$s file will be transferred (%2$s)</item>
+        <item quantity="other">%1$s files will be transferred (%2$s)</item>
+    </plurals>
+    <plurals name="decision_n_groups">
+        <item quantity="one">%1$s group</item>
+        <item quantity="other">%1$s groups</item>
+    </plurals>
+    <plurals name="decision_n_files">
+        <item quantity="one">%1$s file</item>
+        <item quantity="other">%1$s files</item>
+    </plurals>
+    <plurals name="decision_all_confirm">
+        <item quantity="one">%1$s group with %2$s will be applied. Groups without a choice stay open.</item>
+        <item quantity="other">%1$s groups with %2$s will be applied. Groups without a choice stay open.</item>
+    </plurals>
 
     <!-- Konflikte (ConflictScreen) -->
     <string name="trigger_conflicts">Conflict resolution</string>
@@ -22,7 +44,24 @@
     <string name="conflict_none">No open conflicts.</string>
     <string name="conflict_hint">These files were changed on the mobile and on the PC. Choose which version wins. The other version is moved to the folder “%1$s”, not deleted. The choice is applied at the next sync on Wi-Fi.</string>
     <string name="conflict_newer">(newer)</string>
-    <string name="conflict_both">Both</string>
+    <string name="conflict_keep_phone">Keep mobile</string>
+    <string name="conflict_keep_pc">Keep PC</string>
+    <string name="conflict_keep_both">Keep both</string>
+    <string name="conflict_keep_phone_hint">Keep mobile: the PC version goes to %1$s.</string>
+    <string name="conflict_keep_pc_hint">Keep PC: the mobile version goes to %1$s.</string>
+    <string name="conflict_keep_both_hint">Keep both: both files stay; the mobile version gets the name suffix %1$s.</string>
+    <string name="conflict_snack_phone">%1$s: mobile version kept (applies at the next sync on Wi-Fi)</string>
+    <string name="conflict_snack_pc">%1$s: PC version kept (applies at the next sync on Wi-Fi)</string>
+    <string name="conflict_snack_both">%1$s: both versions kept (applies at the next sync on Wi-Fi)</string>
+    <plurals name="conflict_snack_all">
+        <item quantity="one">%1$s conflict decided: newer version kept (applies at the next sync on Wi-Fi)</item>
+        <item quantity="other">%1$s conflicts decided: newer version kept (applies at the next sync on Wi-Fi)</item>
+    </plurals>
+    <plurals name="conflict_all_confirm">
+        <item quantity="one">%1$s conflict: the newer version is kept, the other goes to %2$s. Continue?</item>
+        <item quantity="other">%1$s conflicts: in each case the newer version is kept, the other goes to %2$s. Continue?</item>
+    </plurals>
+    <string name="conflict_undo_late">Can no longer be undone: the choice has already been applied.</string>
 
     <!-- Simulation (PreviewScreen) -->
     <string name="preview_starting">Starting…</string>
@@ -32,6 +71,11 @@
     <string name="preview_all_files">All files</string>
     <string name="preview_all_hint">With many photos “All” takes longer because every photo is analysed for date and location.</string>
     <string name="preview_start">Start simulation</string>
+    <string name="preview_limit_error">Please enter a number from 1 to 100000.</string>
+    <string name="preview_offline_assumption">Assumption: the PC is not known, the list assumes an empty PC. Real actions can differ.</string>
+    <string name="preview_nothing_to_do">Nothing to do – everything is up to date.</string>
+    <string name="preview_nothing_new">Nothing to transfer – no new files.</string>
+    <string name="preview_group_open">%1$s (folder still open)</string>
     <plurals name="preview_summary">
         <item quantity="one">%1$s file in %2$s</item>
         <item quantity="other">%1$s files in %2$s</item>
@@ -75,12 +119,17 @@
     <string name="update_daily_sub">Only on Wi-Fi, notification when found</string>
     <string name="update_available">Version %1$s available</string>
     <string name="update_size">Size: %1$s</string>
-    <string name="update_permission_hint">Android has to allow LeoSync once to install apps.</string>
+    <string name="update_permission_hint">Android has to allow LeoSync once to install apps. Then use Back to return here.</string>
     <string name="update_permission">Grant permission</string>
     <string name="update_install">Download and install</string>
-    <string name="update_install_hint">Android asks for confirmation. After the update LeoSync restarts.</string>
+    <string name="update_install_hint">Android asks for confirmation. After the update, open LeoSync again.</string>
 
     <!-- Datenbank (SyncDao) -->
     <string name="run_dangling_log">Interrupted – the app was closed (e.g. by an update). The rest follows at the next sync.</string>
     <string name="run_dangling">Interrupted – app was closed (e.g. update), rest follows at the next sync</string>
+    <string name="update_offline">Could not check for updates. No internet connection. Connect to Wi-Fi and try again.</string>
+    <string name="update_check_again">Check again</string>
+    <string name="update_check_now">Check now</string>
+    <string name="update_changes_link">View changes on GitHub</string>
+    <string name="update_download_cancelled">Download cancelled.</string>
 </resources>

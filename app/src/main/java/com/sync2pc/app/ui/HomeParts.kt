@@ -38,6 +38,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -103,6 +104,14 @@ import kotlinx.coroutines.flow.combine
 
 /** Produktseite mit Hilfe (0.11.0, Inhaber) */
 internal const val HELP_URL = "https://apop85.github.io/leosync/"
+
+/**
+ * Hilfeabschnitt «Verschlüsselung einschalten» (SYNC-20261111-159). Die Website pflegt der Inhaber nach dem Ordner docs/hilfe;
+ * die Anker (Überschrift als Kleinbuchstaben-Kennung) sind dort zu bestätigen. Fehlt ein Anker, öffnet die Seite oben.
+ */
+internal fun encryptionHelpUrl(): String =
+    if (Texts.isGerman) HELP_URL + "hilfe.html#verschluesselung-einschalten"
+    else HELP_URL + "en/help.html#turning-on-encryption"
 
 // Restzeit nur bei belastbarer Übertragungsrate (SYNC-20261109-063): mindestens so lange gemessen, so viel übertragen
 // und höchstens so lang (sonst «wird berechnet»). Verhindert Anzeigen wie «noch ca. 411967 Std.» zu Beginn eines Laufs.
@@ -207,48 +216,39 @@ internal fun StatusCard(
     skipInfo: String?,
     paused: Boolean,
     userPausedUntil: Long,
-    allUpToDate: Boolean,
-    needsYou: Boolean,
+    /** Überschrift nach dem Gesamtzustand (siehe [HomeStatus.headline]); Konflikt/Verbindung/Profil fliessen dort ein */
+    headline: HomeHeadline,
+    /** Anzahl offener Entscheidungen (für die Überschrift «n Entscheidungen erforderlich») */
+    attentionCount: Int,
+    /** Zeile unter der Überschrift bei offenen Entscheidungen, z. B. «1 Konflikt wartet auf deine Entscheidung.» */
+    attentionText: String,
+    /** Letzter Lauf mit Fehlern: Anzahl (0 = Lauf fehlgeschlagen ohne Einzelfehler) */
+    lastRunErrors: Int,
     onSync: () -> Unit,
     onCancel: () -> Unit,
     onResume: () -> Unit,
+    onOpenLog: () -> Unit,
     hasProfiles: Boolean,
     etaText: String? = null,
+    /** Platz für eine zusätzliche Hinweiszeile in der Laufanzeige (z. B. «Danach: …»); null = nichts */
+    runHint: String? = null,
 ) {
     val userPaused = userPausedUntil > 0
     SectionCard(title = str(R.string.home_status)) {
-        // Zustandsbild: laufender Hund = Sync läuft, stehender Hund = wartet auf dich, schlafender Hund =
-        // alles gesichert, sonst sitzender Hund. Vorrang: läuft > wartet auf dich > pausiert > alles gesichert > wartet
-        val upToDate = !isRunning && !paused && !userPaused && shareWait == null && allUpToDate
-        val dog = when {
-            isRunning -> DogState.RUNNING
-            needsYou -> DogState.ATTENTION
-            userPaused -> DogState.PAUSED
-            upToDate -> DogState.SLEEPING
-            else -> DogState.WAITING
-        }
-        DogStatus(dog, Modifier.align(Alignment.CenterHorizontally))
-        // Feste Plätze für alle Zustände (0.9.3), damit WLAN-Zeile und Knopf nie verrutschen:
-        // 1. Überschrift (nur "✓ Alles gesichert" sichtbar, sonst leere Zeile) + eine Zeile Abstand,
+        // Zustandsbild folgt der Überschrift (HomeStatus.dogFor); Vorrang steht in HomeStatus.headline
+        DogStatus(HomeStatus.dogFor(headline, userPaused), Modifier.align(Alignment.CenterHorizontally))
+        // Aufbau (A5, SYNC-20261110-113): 1. Überschrift mit Symbol (immer 1–2 Zeilen, linksbündig wie alle Zeilen),
         // 2. WLAN (einzeilig), 3. Zustandsbereich mit Mindesthöhe für die üblichen Fälle
-        // (2 Zeilen Haupttext + Balken bzw. Hinweis + 2 kleine Zeilen). Nur lange Fehlermeldungen machen ihn grösser.
+        // (2 Zeilen Haupttext + Balken bzw. Hinweis + 2 kleine Zeilen, davon eine für runHint). Nur lange Meldungen machen ihn grösser.
         val typo = MaterialTheme.typography
         val density = LocalDensity.current
         val statusMin = with(density) {
             (typo.bodyLarge.lineHeight * 2).toDp() + (typo.bodySmall.lineHeight * 2).toDp() + 24.dp
         }
-        // Screenreader (0.11.0): Zustandswechsel werden angesagt (Live-Bereich), auch wenn die Zeile sichtbar leer ist
-        val stateLabel = when {
-            isRunning -> str(R.string.home_running)
-            upToDate -> str(R.string.home_all_saved)
-            else -> ""
-        }
-        Text(if (upToDate) str(R.string.home_all_saved) else "", style = typo.titleSmall, minLines = 1, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.CenterHorizontally).semantics {
-                liveRegion = LiveRegionMode.Polite
-                contentDescription = stateLabel
-            })
-        Spacer(Modifier.height(with(density) { typo.bodySmall.lineHeight.toDp() }))
+        StatusHeadline(
+            headline, attentionCount, lastRunErrors,
+            onClick = if (headline == HomeHeadline.ERRORS) onOpenLog else null,
+        )
         Text(str(R.string.home_wifi, ssid ?: str(R.string.home_wifi_none)), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Column(Modifier.fillMaxWidth().heightIn(min = statusMin), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when {
@@ -259,7 +259,7 @@ internal fun StatusCard(
                 val mainText = if (withFiles != null) str(R.string.home_progress, withFiles.profileName.trim(),
                     withFiles.doneFiles, withFiles.totalFiles, Notifications.formatBytes(withFiles.doneBytes),
                     Notifications.formatBytes(withFiles.totalBytes))
-                    else progress?.phase ?: str(R.string.home_running)
+                    else progress?.phase ?: str(R.string.home_starting) // die Überschrift sagt schon «Synchronisierung läuft»
                 Text(mainText, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (withFiles != null) {
                     val f = if (withFiles.totalBytes > 0) withFiles.doneBytes.toFloat() / withFiles.totalBytes else 0f
@@ -270,7 +270,22 @@ internal fun StatusCard(
                     listOfNotNull(etaText, progress?.currentFile).joinToString(" · "), minLines = 1, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // Platz für eine zusätzliche Hinweiszeile («Danach: …»), die der Mindesthöhe entspricht (zweite kleine Zeile)
+                // -146: einzeilig, vom Screenreader höflich angesagt (polite), Höhe liegt in der Mindesthöhe der Karte
+                if (runHint != null) Text(
+                    runHint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite },
+                )
             }
+            // Ohne Profil: «Lege zuerst ein Profil an» als Hauptaussage, keine Zeitangaben gelöschter Profile (A9)
+            !hasProfiles -> Text(str(R.string.home_sync_needs_profile))
+            // Offene Entscheidung: nie «alles aktuell» (A1); Zeitpunkt des letzten Laufs bleibt als kleine Zeile
+            headline == HomeHeadline.ATTENTION -> {
+                Text(attentionText)
+                lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
+            }
+            headline == HomeHeadline.NO_ACTIVE_PROFILE -> Text(str(R.string.home_no_active_detail))
             userPaused && userPausedUntil == Long.MAX_VALUE -> {
                 Text(str(R.string.home_manual_only), style = MaterialTheme.typography.titleSmall)
                 Hint(str(R.string.home_manual_only_hint))
@@ -288,23 +303,29 @@ internal fun StatusCard(
                 Text(shareWait, color = MaterialTheme.colorScheme.error)
                 Hint(str(R.string.home_pc_unreachable_hint))
             }
+            // Soll-WLAN nicht verbunden: Ursache und Handlung statt grünem Gut-Zustand (A2)
+            headline == HomeHeadline.NO_CONNECTION -> {
+                Text(str(R.string.home_no_connection_wifi))
+                Hint(str(R.string.home_no_connection_hint))
+            }
             isQueued -> Text(waitText)
             lastRun != null -> {
                 Text(str(R.string.home_last_sync, formatTime(lastRun.finishedAt ?: lastRun.startedAt), lastRun.profileName.trim()))
                 val nothing = lastRun.status == RunStatus.OK && lastRun.uploaded == 0 && lastRun.failed == 0
-                Hint(if (nothing) str(R.string.home_nothing_to_do) else lastRun.messageText())
+                // «Nichts zu tun – alles aktuell» nur, wenn die Überschrift ebenfalls «aktuell» sagt
+                if (headline == HomeHeadline.ERRORS) Hint(str(R.string.home_status_errors_hint))
+                else if (nothing && headline == HomeHeadline.UP_TO_DATE) Hint(str(R.string.home_nothing_to_do))
+                else if (!nothing) Hint(lastRun.messageText())
             }
             else -> Text(str(R.string.home_no_sync_yet))
         }
-        // Zeitversetzt geplante Prüfung (z. B. Nachhol-Sync für gerade erst aufgenommene Fotos)
-        if (!isRunning && !userPaused && !isQueued && nextPlanned != null)
+        // Zeitversetzt geplante Prüfung (z. B. Nachhol-Sync für gerade erst aufgenommene Fotos); ohne Profil nie (A9)
+        if (hasProfiles && !isRunning && !userPaused && !isQueued && nextPlanned != null)
             Hint(str(R.string.home_next_check, pauseEndText(nextPlanned)))
-        if (!isRunning && !userPaused && shareWait == null && skipInfo != null) {
+        if (hasProfiles && !isRunning && !userPaused && shareWait == null && skipInfo != null) {
             Text(str(R.string.home_skipped, skipInfo), color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
-        // Ohne Profil ist "Synchronisieren" ausgegraut – sagen, warum (im Zustandsbereich, damit nichts verrutscht)
-        if (!hasProfiles) Hint(str(R.string.home_sync_needs_profile))
         }
         // Zwei gleich breite Knöpfe, Text einzeilig (kein Umbruch wie "Vorsc-hau")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -319,7 +340,44 @@ internal fun StatusCard(
     }
 }
 
-/** Eintrag in der Sektion "Tools" (0.5.0, seit 0.6.1 eine Zeile pro Tool, seit 0.6.3 ausgegraut möglich) */
+/**
+ * Überschrift der Statuskarte: Symbol plus Text, nie nur Farbe (A4). Warnzustände mit Warnzeichen, «nichts eingerichtet»
+ * mit neutralem Info-Symbol. Linksbündig wie die übrigen Zeilen; 1–2 Zeilen, damit lange Schrift den Text nicht abschneidet.
+ * Zustandswechsel werden dem Screenreader angesagt (Live-Bereich).
+ */
+@Composable
+private fun StatusHeadline(headline: HomeHeadline, attentionCount: Int, errors: Int, onClick: (() -> Unit)?) {
+    val text = when (headline) {
+        HomeHeadline.RUNNING -> str(R.string.home_running)
+        HomeHeadline.NOT_CONFIGURED -> str(R.string.home_status_not_configured)
+        HomeHeadline.NO_ACTIVE_PROFILE -> str(R.string.home_status_no_active)
+        HomeHeadline.ATTENTION -> plural(R.plurals.home_status_attention, attentionCount.coerceAtLeast(1))
+        HomeHeadline.PAUSED -> "" // Pausentext steht fett im Zustandsbereich (Symbol ⏸ im Text)
+        HomeHeadline.NO_CONNECTION -> str(R.string.home_status_no_connection)
+        HomeHeadline.ERRORS ->
+            if (errors > 0) plural(R.plurals.home_status_errors, errors) else str(R.string.home_status_failed)
+        HomeHeadline.UP_TO_DATE -> str(R.string.home_all_saved)
+        HomeHeadline.IDLE -> str(R.string.home_status_idle)
+    }
+    if (text.isEmpty()) return
+    val warn = HomeStatus.showsWarning(headline)
+    val color = if (headline == HomeHeadline.ERRORS || headline == HomeHeadline.ATTENTION)
+        MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    Row(
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (warn) { Icon(Icons.Filled.Warning, null, tint = color, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)) }
+        else if (headline == HomeHeadline.NOT_CONFIGURED) {
+            Icon(Icons.Filled.Info, null, tint = color, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp))
+        }
+        Text(text, style = MaterialTheme.typography.titleSmall, color = color, minLines = 1, maxLines = 2,
+            overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Eintrag in der Sektion "Tools" (0.5.0,seit 0.6.1 eine Zeile pro Tool, seit 0.6.3 ausgegraut möglich) */
 internal class ToolTile(
     val id: String, val icon: ImageVector, val title: String, val text: String,
     val enabled: Boolean = true, val disabledHint: String? = null,

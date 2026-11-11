@@ -35,6 +35,20 @@ class ProfileWizardTest {
         assertEquals(Step.SOURCE, ProfileWizard.firstIncomplete(photos.copy(sourceFolders = "")))
     }
 
+    @Test fun invalidNumberFieldBlocksItsStep() {
+        // -120: leeres/ungültiges Zahlenfeld blockiert genau seinen Schritt; Fotos-Profile haben keine Zahlenfelder
+        assertNull(ProfileWizard.firstInvalidNumberStep(mirror, "30", "60", "20"))
+        assertEquals(Step.OPTIONS, ProfileWizard.firstInvalidNumberStep(mirror, "", "60", "20"))
+        assertEquals(Step.OPTIONS, ProfileWizard.firstInvalidNumberStep(mirror, "30", "5", "20"))
+        assertEquals(Step.GUARD, ProfileWizard.firstInvalidNumberStep(mirror, "30", "60", "150"))
+        assertEquals(Step.OPTIONS, ProfileWizard.firstInvalidNumberStep(mirror, "", "60", ""))
+        assertNull(ProfileWizard.firstInvalidNumberStep(photos, "", "", ""))
+        assertTrue(ProfileWizard.numberBlocksStep(mirror, Step.OPTIONS, "", "60", "20"))
+        assertFalse(ProfileWizard.numberBlocksStep(mirror, Step.GUARD, "", "60", "20")) // Fehler liegt in einem anderen Schritt
+        assertTrue(ProfileWizard.numberBlocksStep(mirror, Step.GUARD, "30", "60", "0"))
+        assertFalse(ProfileWizard.numberBlocksStep(mirror, Step.FILTER, "", "", ""))
+    }
+
     @Test fun layoutEditableOnlyForUnlockedIdlePhotos() {
         assertTrue(ProfileWizard.layoutEditable(photos, locked = false, syncRunning = false))
         assertFalse(ProfileWizard.layoutEditable(photos, locked = true, syncRunning = false))

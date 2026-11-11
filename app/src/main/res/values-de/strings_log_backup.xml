@@ -76,8 +76,15 @@
     <string name="backup_pw_taken">SMB-Passwörter: werden übernommen</string>
     <string name="backup_pw_wrong">SMB-Passwörter: Export-Passwort fehlt oder ist falsch – Passwörter werden nicht übernommen</string>
     <string name="backup_pw_none">SMB-Passwörter: nicht enthalten</string>
-    <string name="backup_replace_hint">„Ersetzen“ löscht alle bisherigen Profile samt Synchronisierungsstatus und übernimmt auch die Einstellungen. „Hinzufügen“ legt die Profile zusätzlich an.</string>
+    <string name="backup_replace_hint">„Ersetzen“ löscht alle bisherigen Profile samt Synchronisierungsstatus und übernimmt auch die Einstellungen (nicht die Sprache der App, sie bleibt unverändert). „Hinzufügen“ legt die Profile zusätzlich an.</string>
     <string name="backup_replace">Ersetzen</string>
     <string name="backup_import_done">Import abgeschlossen</string>
     <string name="backup_err_replace_rejected">Ersetzen abgebrochen, nichts wurde gelöscht: Die Sicherung enthält Profile, die nicht importiert werden können (unbekannte Ordnerstruktur, Sicherung aus einer neueren Version?): %1$s</string>
+    <string name="log_clear_title">Gesamten Verlauf löschen?</string>
+    <string name="log_clear_text">%1$d Einträge werden gelöscht und lassen sich danach nicht wiederherstellen. Mit «Verlauf teilen» kannst du sie vorher sichern.</string>
+    <string name="log_cleared">Verlauf gelöscht</string>
+    <string name="log_undo">Rückgängig</string>
+    <string name="log_advice_missing">Die Datei existiert auf dem Handy nicht mehr. Synchronisiere erneut; bleibt der Fehler, die Dateiliste im Profil prüfen.</string>
+    <string name="log_advice_connection">Verbindung zum PC prüfen (WLAN, Freigabe), dann erneut synchronisieren.</string>
+    <string name="log_advice_unknown">Synchronisiere erneut. Bleibt der Fehler, teile den Verlauf mit dem Entwickler.</string>
 </resources>

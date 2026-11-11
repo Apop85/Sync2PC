@@ -1,6 +1,8 @@
 package com.sync2pc.app
 
 import com.sync2pc.app.data.Profile
+import com.sync2pc.app.data.SmbEncryption
+import com.sync2pc.app.smb.SmbEncryptionUnavailableException
 import com.sync2pc.app.smb.PcLink
 import com.sync2pc.app.smb.PcLogin
 import com.sync2pc.app.smb.PcSeen
@@ -29,21 +31,30 @@ class PcLoginTest {
     private val host = "192.168.1.20"
     private val log = ArrayList<String>()
 
-    private inner class FakeLink(val guid: String?, val n: Int) : PcLink<String> {
+    private inner class FakeLink(
+        val guid: String?, val n: Int, val encAvailable: Boolean = true, val sessionEnc: Boolean = true,
+        val encThrows: Boolean = false,
+    ) : PcLink<String> {
         override fun serverGuid(): String? { log += "guid#$n"; return guid }
+        override fun encryptionAvailable(): Boolean { if (encThrows) throw IllegalStateException("kaputt"); return encAvailable }
         override fun authenticate(): String { log += "auth#$n"; return "session#$n" }
+        override fun sessionEncrypted(session: String): Boolean { log += "sessenc#$n"; return sessionEnc }
         override fun close() { log += "close#$n" }
     }
 
     /** Liefert nacheinander die angegebenen Kennungen; ein Eintrag Exception = Verbindungsfehler */
     private inner class FakeTransport(private vararg val guids: Any?) : PcTransport<String> {
         var connects = 0
+        /** Verschlüsselung am "PC" verfügbar / Sitzung nach der Anmeldung verschlüsselt / Abfrage wirft */
+        var encAvailable = true
+        var sessionEnc = true
+        var encThrows = false
         override fun connect(host: String): PcLink<String> {
             val g = guids[minOf(connects, guids.size - 1)]
             connects++
             log += "connect#$connects"
             if (g is Exception) throw g
-            return FakeLink(g as String?, connects)
+            return FakeLink(g as String?, connects, encAvailable, sessionEnc, encThrows)
         }
     }
 
@@ -55,8 +66,9 @@ class PcLoginTest {
         override fun trust(host: String, oldGuid: String, newGuid: String): Int { trusted += Triple(host, oldGuid, newGuid); return 1 }
     }
 
-    private fun profile(mode: String, guid: String = "", guidHost: String = "", id: Long = 1) =
-        Profile(id = id, smbPath = "\\\\$host\\Fotos", smbUser = "u", pcCheck = mode, pcGuid = guid, pcGuidHost = guidHost)
+    private fun profile(mode: String, guid: String = "", guidHost: String = "", id: Long = 1, enc: SmbEncryption = SmbEncryption.PREFERRED) =
+        Profile(id = id, smbPath = "\\\\$host\\Fotos", smbUser = "u", pcCheck = mode, pcGuid = guid, pcGuidHost = guidHost,
+            smbEncryption = enc.name)
 
     private fun run(
         copy: Profile, transport: PcTransport<String>, store: PcStore?, access: PcAccess,
@@ -310,5 +322,127 @@ class PcLoginTest {
         run(profile("GUID"), t, store, PcAccess.AUTO, authenticate = true, seen = seen)
         assertEquals(2, t.connects)
         assertEquals(1, log.count { it == "auth#2" })
+    }
+
+    // ---- SMB3-Verschlüsselung (SYNC-20261111-144, Testfälle S2/S3 aus SYNC-20261110-129) ------------
+
+    private fun encProfile(enc: SmbEncryption) = profile("GUID", a, host, enc = enc)
+
+    private fun assertEncRejected(afterLogin: Boolean, block: () -> Unit) {
+        try { block(); fail("SmbEncryptionUnavailableException erwartet") } catch (e: SmbEncryptionUnavailableException) {
+            assertEquals(afterLogin, e.afterLogin)
+            assertEquals(host, e.host)
+        }
+        // jede geöffnete Verbindung wurde wieder geschlossen
+        val opened = log.filter { it.startsWith("connect#") }.map { it.substringAfter('#') }
+        for (n in opened) assertTrue("close#$n fehlt: $log", log.contains("close#$n"))
+    }
+
+    @Test fun requiredWithoutServerEncryptionNeverAuthenticates() {
+        val t = FakeTransport(a).also { it.encAvailable = false }
+        val p = encProfile(SmbEncryption.REQUIRED)
+        assertEncRejected(afterLogin = false) { run(p, t, FakeStore(p), PcAccess.AUTO) }
+        assertFalse("Zugangsdaten gesendet: $log", log.any { it.startsWith("auth") })
+    }
+
+    @Test fun requiredWhenEncryptionQueryFailsCountsAsUnavailable() {
+        val t = FakeTransport(a).also { it.encThrows = true }
+        val p = encProfile(SmbEncryption.REQUIRED)
+        assertEncRejected(afterLogin = false) { run(p, t, FakeStore(p), PcAccess.AUTO) }
+        assertFalse("Zugangsdaten gesendet: $log", log.any { it.startsWith("auth") })
+    }
+
+    @Test fun requiredWithServerEncryptionAuthenticatesAndChecksSession() {
+        val p = encProfile(SmbEncryption.REQUIRED)
+        val c = run(p, FakeTransport(a), FakeStore(p), PcAccess.AUTO)
+        assertEquals("session#1", c.session)
+        // Reihenfolge: aushandeln, Kennung, Anmeldung, danach Sitzungsprüfung
+        assertEquals(listOf("connect#1", "guid#1", "auth#1", "sessenc#1"), log)
+    }
+
+    @Test fun requiredWithUnencryptedSessionAfterLoginAbortsAndClosesTheConnection() {
+        val t = FakeTransport(a).also { it.sessionEnc = false }
+        val p = encProfile(SmbEncryption.REQUIRED)
+        assertEncRejected(afterLogin = true) { run(p, t, FakeStore(p), PcAccess.AUTO) }
+        assertTrue(log.contains("auth#1"))
+        assertTrue(log.indexOf("sessenc#1") > log.indexOf("auth#1"))
+        // nichts gelernt/übernommen: die Sitzung wird nie an den Aufrufer gegeben
+        val store = FakeStore(encProfile(SmbEncryption.REQUIRED))
+        log.clear()
+        assertEncRejected(afterLogin = true) { run(encProfile(SmbEncryption.REQUIRED), FakeTransport(a).also { it.sessionEnc = false }, store, PcAccess.AUTO) }
+        assertTrue(store.learned.isEmpty() && store.trusted.isEmpty())
+    }
+
+    @Test fun preferredAndOffAuthenticateWithoutServerEncryptionAndSkipTheCheck() {
+        for (enc in listOf(SmbEncryption.PREFERRED, SmbEncryption.OFF)) {
+            log.clear()
+            val t = FakeTransport(a).also { it.encAvailable = false; it.sessionEnc = false }
+            val p = encProfile(enc)
+            val c = run(p, t, FakeStore(p), PcAccess.AUTO)
+            assertEquals("session#1", c.session)
+            assertEquals("$enc: keine Sitzungsprüfung", listOf("connect#1", "guid#1", "auth#1"), log)
+        }
+    }
+
+    @Test fun existingProfilesWithoutFieldBehaveAsPreferred() {
+        // Standardwert des Profils und unbekannte/leere Werte -> PREFERRED (kein Abbruch ohne Serververschlüsselung)
+        assertEquals(SmbEncryption.PREFERRED, Profile().encryption())
+        assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse(null))
+        assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse(""))
+        assertEquals(SmbEncryption.PREFERRED, SmbEncryption.parse("quatsch"))
+        assertEquals(SmbEncryption.REQUIRED, SmbEncryption.parse("required"))
+    }
+
+    @Test fun precheckRequiredWithoutServerEncryptionAborts() {
+        val t = FakeTransport(a).also { it.encAvailable = false }
+        val p = encProfile(SmbEncryption.REQUIRED)
+        assertEncRejected(afterLogin = false) { run(p, t, FakeStore(p), PcAccess.AUTO, authenticate = false) }
+        assertFalse(log.any { it.startsWith("auth") })
+    }
+
+    @Test fun precheckRequiredWithServerEncryptionAllows() {
+        val p = encProfile(SmbEncryption.REQUIRED)
+        assertEquals(PcDecision.ALLOW, run(p, FakeTransport(a), FakeStore(p), PcAccess.AUTO, authenticate = false).decision)
+    }
+
+    @Test fun precheckPreferredWithoutServerEncryptionAllows() {
+        val t = FakeTransport(a).also { it.encAvailable = false }
+        val p = encProfile(SmbEncryption.PREFERRED)
+        assertEquals(PcDecision.ALLOW, run(p, t, FakeStore(p), PcAccess.AUTO, authenticate = false).decision)
+    }
+
+    @Test fun precheckIdentityDecisionHasPrecedenceOverEncryption() {
+        // Unbekannte Kennung bei REQUIRED ohne Verschlüsselung: die Kennungs-Entscheidung wird geliefert (kein Verschlüsselungsabbruch)
+        val t = FakeTransport(b).also { it.encAvailable = false }
+        val p = encProfile(SmbEncryption.REQUIRED)
+        assertEquals(PcDecision.CHANGED, run(p, t, FakeStore(p), PcAccess.AUTO, authenticate = false).decision)
+    }
+
+    @Test fun hostCacheKeepsEncryptionResultPerModeAndRepeatsTheAbort() {
+        val t = FakeTransport(a).also { it.encAvailable = false }
+        val seen = PcSeen()
+        val req = encProfile(SmbEncryption.REQUIRED)
+        repeat(2) { assertEncRejected(afterLogin = false) { run(req, t, FakeStore(req), PcAccess.AUTO, authenticate = false, seen = seen) } }
+        assertEquals("gleicher Modus: nur eine Aushandlung je Host und Lauf", 1, t.connects)
+        // anderer Modus am selben Host: eigene Aushandlung (die Verfügbarkeit hängt von der Konfiguration ab)
+        val pref = encProfile(SmbEncryption.PREFERRED)
+        assertEquals(PcDecision.ALLOW, run(pref, t, FakeStore(pref), PcAccess.AUTO, authenticate = false, seen = seen).decision)
+        assertEquals(2, t.connects)
+    }
+
+    @Test fun encryptionExceptionIsNotNetworkErrorAndHasReadableTexts() {
+        val e = SmbEncryptionUnavailableException(host)
+        val e2 = SmbEncryptionUnavailableException(host, afterLogin = true)
+        for (x in listOf(e, e2)) {
+            assertFalse(com.sync2pc.app.sync.isNetworkError(x))
+            assertFalse(com.sync2pc.app.sync.isNetworkError(java.net.SocketException("w").initCause(x)))
+            assertFalse((x as Exception) is java.io.IOException)
+            assertTrue(x.message, x.message.contains(host))
+            assertEquals(x.message, com.sync2pc.app.sync.userError(x))
+            assertEquals(x.message, com.sync2pc.app.sync.userError(RuntimeException("outer", x)))
+            assertEquals(x.message, com.sync2pc.app.sync.shortError(x))
+            assertEquals(x.message, com.sync2pc.app.sync.userErrorMsg(x).text())
+        }
+        assertTrue(e.message != e2.message)
     }
 }

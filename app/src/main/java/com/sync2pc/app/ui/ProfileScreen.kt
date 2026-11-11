@@ -79,6 +79,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.data.SmbEncryption
 import com.sync2pc.app.data.SyncDirection
 import com.sync2pc.app.l10n.str
 import com.sync2pc.app.mirror.FolderCheck
@@ -114,6 +115,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     var testFailed by remember { mutableStateOf(false) }
     var testing by remember { mutableStateOf(false) }
     var testDetail by remember { mutableStateOf<String?>(null) }
+    // -146 Teil B: Verschlüsselungszeile des Verbindungstests, Hilfeknopf und Signal zum Aufklappen der Karte
+    var encLine by remember { mutableStateOf<String?>(null) }
+    var encHelp by remember { mutableStateOf(false) }
+    var encOpenSignal by remember { mutableStateOf(0) }
     // PC-Erkennung (0.13.0): Modus vom Benutzer gewählt? Zuletzt "anderer PC" gemeldet? Rückfrage zum Neuvertrauen
     var pcTouched by remember { mutableStateOf(false) }
     var pcChanged by remember { mutableStateOf(false) }
@@ -124,6 +129,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     // V1: Bestätigung bei Änderung von Richtung / «Löschungen übernehmen» (bestehendes Ordner-Profil)
     var changeAsk by remember { mutableStateOf<ChangeAsk?>(null) }
     var confirmedChange by remember { mutableStateOf<String?>(null) }
+    // Assistent (0.5.0): aktueller Schritt; «Hinweis fehlt» nach einem blockierten «Weiter» (-120: auch bei ungültigem Zahlenfeld)
+    var step by rememberSaveable { mutableStateOf(Step.NAME) }
+    var showMissing by remember { mutableStateOf(false) }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -255,14 +263,21 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             testResult = "✗ " + str(R.string.profile_test_need_path, "\\\\192.168.1.20"); testFailed = true; testDetail = null
             return
         }
-        testing = true; testResult = null; testFailed = false; testDetail = null; pcChanged = false
+        testing = true; testResult = null; testFailed = false; testDetail = null; pcChanged = false; encLine = null; encHelp = false
         scope.launch {
             val prof = withPassword()
             withContext(Dispatchers.IO) {
                 try {
                     // Netzbedingung fürs erste Kennenlernen (BOTH: WLAN muss in der Liste stehen), Test lernt als einziger Weg neben dem Speichern
                     val netOk = com.sync2pc.app.sync.PcLearner.learnNetOk(ctx, prof)
-                    testResult = "✓ " + SmbSession.test(prof, netOk) { host, _, _ -> askTrust(host) }
+                    val r = SmbSession.testDetailed(prof, netOk) { host, _, _ -> askTrust(host) }
+                    testResult = "✓ " + r.message
+                    // Zeile zur Verschlüsselung: Symbol plus Text, die SMB-Version steht immer in Klammern
+                    when {
+                        r.encrypted -> encLine = str(R.string.enc_test_ok, r.dialect)
+                        r.setting == SmbEncryption.OFF -> encLine = str(R.string.enc_test_off, r.dialect)
+                        else -> { encLine = str(R.string.enc_test_warn, r.dialect); encHelp = true }
+                    }
                     // Gelernte/übernommene Kennung in die Ansicht holen (übrige Eingaben bleiben unangetastet)
                     if (prof.id != 0L) dao.profile(prof.id)?.let { db ->
                         p = p.copy(pcGuid = db.pcGuid, pcGuidHost = db.pcGuidHost)
@@ -270,6 +285,13 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     }
                 } catch (e: Exception) {
                     if (e is PcIdentityException && e.decision == PcDecision.CHANGED) pcChanged = true
+                    if (e is com.sync2pc.app.smb.SmbEncryptionUnavailableException) {
+                        // Erforderlich, aber der PC kann nicht verschlüsseln: keine Anmeldedaten gesendet; Karte klappt auf
+                        testResult = str(R.string.enc_test_required_fail); testFailed = true
+                        testDetail = com.sync2pc.app.sync.shortError(e); encHelp = true; encOpenSignal++
+                        testing = false
+                        return@withContext
+                    }
                     // 0.11.0: verständlich, technischer Text aufklappbar
                     testResult = "✗ " + (if (e is IllegalArgumentException) str(R.string.profile_test_bad_input)
                         else com.sync2pc.app.sync.userError(e)); testFailed = true
@@ -301,7 +323,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             // Leerzeichen am Rand des Namens entfernen (sonst "(Fotos )" im Verlauf); verifyUpload spiegelt die Stufe
             val toSave = withPassword().let { it.copy(name = it.name.trim(), verifyUpload = it.mustVerify()) }
             // Doppelte Profile verhindern bzw. bei Überschneidung warnen
-            val hit = withContext(Dispatchers.IO) { ProfileOverlap.check(toSave, dao.profiles()) }
+            val hit = withContext(Dispatchers.IO) {
+                val cache = HashMap<String, String?>()
+                ProfileOverlap.check(toSave, dao.profiles()) { uri -> cache.getOrPut(uri) { LocalTree.canonical(ctx, uri) } }
+            }
             if (hit != null && (hit.kind != ProfileOverlap.Kind.PARTIAL || !force)) {
                 overlap = hit
                 return@launch
@@ -362,8 +387,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
      */
     fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
         // P7/P8: nie mit leerem oder ungültigem Zahlenfeld speichern (sonst stiller Zwischenwert)
-        if (p.type() == ProfileType.MIRROR && !(NumberInput.isValid(trashText, NumberInput.TRASH_DAYS) &&
-                NumberInput.isValid(pollText, NumberInput.POLL_MINUTES) && NumberInput.isValid(guardText, NumberInput.GUARD_PERCENT))) {
+        val badStep = ProfileWizard.firstInvalidNumberStep(p, trashText, pollText, guardText)
+        if (badStep != null) {
+            // -120: im Assistenten zum ersten fehlerhaften Schritt zurückspringen, damit der Fehlertext sichtbar ist
+            if (profileId == 0L) { showMissing = false; step = badStep }
             Toast.makeText(ctx, str(R.string.profile_number_blocked), Toast.LENGTH_LONG).show()
             return
         }
@@ -386,8 +413,6 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     // Profil-Assistent (0.5.0): neues Profil Schritt für Schritt
     val wizard = profileId == 0L
-    var step by rememberSaveable { mutableStateOf(Step.NAME) }
-    var showMissing by remember { mutableStateOf(false) }
     val steps = ProfileWizard.steps(p)
     val stepIndex = steps.indexOf(step).coerceAtLeast(0)
     // Zurück-Geste im Assistenten: einen Schritt zurück (später registriert -> hat Vorrang)
@@ -400,7 +425,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         AlertDialog(
             onDismissRequest = { ask.answer.complete(false) },
             title = { Text(str(R.string.profile_pc_trust_title)) },
-            text = { Text(str(R.string.profile_pc_trust_body, ask.host)) },
+            text = { DialogScroll { Text(str(R.string.profile_pc_trust_body, ask.host)) } },
             confirmButton = { TextButton(onClick = { ask.answer.complete(true) }) { Text(str(R.string.profile_pc_trust_yes)) } },
             dismissButton = { TextButton(onClick = { ask.answer.complete(false) }) { Text(str(R.string.profile_pc_trust_no)) } },
         )
@@ -411,7 +436,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         AlertDialog(
             onDismissRequest = { hostAsk = null },
             title = { Text(str(R.string.profile_host_change_title)) },
-            text = { Text(str(R.string.profile_host_change_body, ask.oldHost, ask.newHost)) },
+            text = { DialogScroll { Text(str(R.string.profile_host_change_body, ask.oldHost, ask.newHost)) } },
             confirmButton = { TextButton(onClick = { confirmedHost = ask.newHost; hostAsk = null; ask.action() }) { Text(str(R.string.profile_host_change_yes)) } },
             dismissButton = { TextButton(onClick = { hostAsk = null }) { Text(str(R.string.common_cancel)) } },
         )
@@ -571,6 +596,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     }
                     testResult?.let { if (testFailed) ErrorText(it) else Text(it) }
                     testDetail?.let { ErrorDetails(it) }
+                    encLine?.let { Text(it) }
+                    if (encHelp) TextButton(onClick = {
+                        ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(encryptionHelpUrl())))
+                    }) { Text(str(R.string.enc_help)) }
                 }
             }
 
@@ -619,6 +648,35 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         color = if (pcChanged && mode.checksGuid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                }
+            }
+
+            // Verschlüsselung (-146 Teil B): direkt unter «PC-Kennung», standardmässig eingeklappt
+            if (show(Step.OPTIONS)) item {
+                val enc = p.encryption()
+                CollapsibleCard(
+                    str(R.string.enc_title), startOpen = false, closedHint = str(R.string.enc_intro),
+                    titleSuffix = str(when (enc) {
+                        SmbEncryption.OFF -> R.string.enc_value_off
+                        SmbEncryption.PREFERRED -> R.string.enc_value_preferred
+                        SmbEncryption.REQUIRED -> R.string.enc_value_required
+                    }),
+                    openSignal = encOpenSignal,
+                ) {
+                    HintMore(str(R.string.enc_intro))
+                    listOf(
+                        Triple(SmbEncryption.OFF, R.string.enc_off, R.string.enc_off_sub),
+                        Triple(SmbEncryption.PREFERRED, R.string.enc_preferred, R.string.enc_preferred_sub),
+                        Triple(SmbEncryption.REQUIRED, R.string.enc_required, R.string.enc_required_sub),
+                    ).forEach { (m, title, sub) ->
+                        Row(Modifier.fillMaxWidth().clickable { p = p.copy(smbEncryption = m.name) }, verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = enc == m, onClick = { p = p.copy(smbEncryption = m.name) })
+                            Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
+                                Text(str(title))
+                                Hint(str(sub))
+                            }
+                        }
+                    }
                 }
             }
 
@@ -736,6 +794,11 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         if (stepIndex < steps.lastIndex) {
                             val next: () -> Unit = {
                                 if (missingText != null) { showMissing = true }
+                                else if (ProfileWizard.numberBlocksStep(p, step, trashText, pollText, guardText)) {
+                                    // -120: Fehlertext steht schon unter dem Feld; zusätzlich Hinweis, kein stilles Korrigieren
+                                    showMissing = false
+                                    Toast.makeText(ctx, str(R.string.profile_number_step_blocked), Toast.LENGTH_LONG).show()
+                                }
                                 else { showMissing = false; step = steps[stepIndex + 1] }
                             }
                             if (step.optional) OutlinedButton(onClick = next) { Text(str(R.string.profile_next)) }
@@ -788,7 +851,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         AlertDialog(
             onDismissRequest = { changeAsk = null },
             title = { Text(str(R.string.profile_confirm_title)) },
-            text = { Text(ask.text) },
+            text = { DialogScroll { Text(ask.text) } },
             confirmButton = {
                 TextButton(onClick = { changeAsk = null; confirmedChange = ask.signature; save(ask.force, ask.folderChoice) }) {
                     Text(str(R.string.common_save))
@@ -801,7 +864,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
         title = { Text(str(R.string.profile_delete_title)) },
-        text = { Text(str(R.string.profile_delete_text)) },
+        text = { DialogScroll { Text(str(R.string.profile_delete_text)) } },
         confirmButton = {
             TextButton(onClick = {
                 // 0.11.0: erst vormerken; die Startseite zeigt "Profil gelöscht – Rückgängig"
@@ -879,10 +942,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             })) },
             text = {
                 // BLOCKED: roter Fehler (DEC-207) mit Namen des anderen Profils und seiner Struktur (DEC-189), kein «Trotzdem speichern»
+                DialogScroll {
                 if (blocked) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ErrorText(hit.message())
                     Text(str(R.string.profile_not_saved))
                 } else Text(hit.message() + if (identical) "\n\n" + str(R.string.profile_not_saved) else "")
+                }
             },
             confirmButton = {
                 if (identical) TextButton(onClick = { overlap = null }) { Text(str(R.string.common_ok)) }
@@ -910,7 +975,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             onDismissRequest = { folderWarning = null },
             title = { Text(str(R.string.profile_folder_warning_title)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DialogScroll(Arrangement.spacedBy(8.dp)) {
                     Text(str(R.string.profile_folder_warning_text))
                     // P10: Wirkung der Optionen erklären
                     HintMore(str(R.string.profile_folder_warning_options))
@@ -985,7 +1050,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     if (confirmReset) AlertDialog(
         onDismissRequest = { confirmReset = false },
         title = { Text(str(R.string.profile_reset_title)) },
-        text = { Text(str(R.string.profile_reset_text)) },
+        text = { DialogScroll { Text(str(R.string.profile_reset_text)) } },
         confirmButton = {
             TextButton(onClick = {
                 scope.launch {
@@ -1002,6 +1067,18 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     )
 }
 
+/**
+ * Dialogtext vertikal scrollbar (-122 Punkt 1): Titel und Schaltflächen bleiben stehen, der Text ist bei jeder
+ * Systemschrift bis zum letzten Wort erreichbar (der Material3-AlertDialog scrollt seinen Textbereich nicht selbst).
+ */
+@Composable
+private fun DialogScroll(
+    spacing: Arrangement.Vertical = Arrangement.Top,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = spacing, content = content)
+}
+
 /** Optionaler Bereich: beim Bearbeiten aufklappbar, im Assistenten eine normale Karte (0.9.0) */
 @Composable
 private fun OptionalCard(
@@ -1011,7 +1088,7 @@ private fun OptionalCard(
     closedHint: String = str(R.string.profile_section_unset),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    if (collapsible) CollapsibleCard(title, startOpen, closedHint, content)
+    if (collapsible) CollapsibleCard(title, startOpen, closedHint, content = content)
     else SectionCard(title, content = content)
 }
 

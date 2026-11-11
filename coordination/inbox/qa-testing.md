@@ -4,6 +4,7 @@ Nur Verweise auf aktive, an QA adressierte Aufträge (Details in der Task-Datei)
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261110-127 | Project Manager | Testabdeckung Android-Hintergrund (WorkManager, SyncWorker, Receiver, PauseService, Mutex) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261110-127.md |
-| SYNC-20261110-128 | Project Manager | Testabdeckung Datenintegrität (Dateioperationen, 3-Wege, Lösch-/Wiederherstellungsabläufe, Race Conditions) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261110-128.md |
-| SYNC-20261110-129 | Project Manager | Testabdeckung SMB-Sicherheit und SMB-Schicht (Verbindung, Authentifizierung, Signing, Fehlerfälle) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261110-129.md |
+| SYNC-20261111-160 | Development | QA: Verlauf löschen/Rückgängig, Papierkorb, Speicher freigeben, Update-Seite, Eingabeprüfung, Berechtigungen (0.15.1) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-160.md |
+| SYNC-20261110-138 | UX-Specialist | Neuinstallation: Ordner in Download liefert Duplikate «(1)», Teilfehler und Phantomdateien | HIGH | OPEN | ../tasks/OPEN/SYNC-20261110-138.md |
+| SYNC-20261111-148 | Development | QA: Assistent «Weiter» bei ungültigem Zahlenfeld, Dialoge bei Schrift 2,0 (0.14.8) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-148.md |
+| SYNC-20261111-153 | Development | QA: Datenintegrität, Sync-Steuerung, SMB-Verschlüsselung, Überschneidung, Home/Konflikte (0.15.0) | HIGH | OPEN | ../tasks/OPEN/SYNC-20261111-153.md |

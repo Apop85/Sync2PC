@@ -19,6 +19,8 @@
 > **Session 5** („UX-Prüfung und Design-Skills“, 0.9.0 – 0.11.0, Entscheidungen vom 2026-11-03 bis 2026-11-08): DEC-167 bis DEC-205 (DEC-201 und DEC-202 am 2026-11-08; DEC-202 seit 0.12.0/0.12.1 Implemented, DEC-201 Accepted; DEC-203 Implemented; DEC-204 und DEC-205 am 2026-11-09, seit 0.13.0/0.13.1 Implemented); dazu Aktualisierungen an DEC-001, DEC-006, DEC-013, DEC-024, DEC-039, DEC-040, DEC-108, DEC-109, DEC-113, DEC-165.
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
+> - Version 0.15.1 (2026-11-11): DEC-226 bis DEC-230 (Verlauf löschen, Papierkorb, Import «Ersetzen», Update-Hinweis, Sprache ausserhalb der Sicherung), Status Implemented laut Development.
+> - Version 0.15.0 (2026-11-11): DEC-221 bis DEC-225 (Nachlauf, SMB-Verschlüsselung, Gleichheit vor Löschen, UX Nachlauf-Hinweis und Karte «Verschlüsselung»), Status Implemented laut Development; Aktualisierungen an DEC-021, DEC-052, DEC-092, DEC-134, DEC-217, DEC-219.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
 >
 > **Hinweis:** Die frühere Notiz „Änderungen aus späteren Sessions sind nicht erfasst“ (Statistik-Symbol 0.9.0, Begriffe „Mobile/Share“, Roadmap ab 0.10.0) ist mit Session 5 erledigt.
@@ -28,11 +30,11 @@
 | Status | Anzahl |
 |---|---|
 | Accepted | 24 |
-| Implemented | 160 |
+| Implemented | 170 |
 | Proposed | 3 |
 | Rejected | 15 |
 | Superseded | 18 |
-| **Total** | **220** |
+| **Total** | **230** |
 
 ---
 
@@ -130,6 +132,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-022: Duplikatsuche in allen Ordnern desselben Monats
 - DEC-092: Doppelte Profile blockieren, Überschneidungen warnen
 - DEC-219: Derselbe Handy-Ordner mit mehreren PC-Zielen ist zulässig
+- DEC-223: Gleichheit vor Löschen, Freigeben und «synchron» wird inhaltlich geprüft (präzisiert DEC-021)
 - DEC-129: Stichprobe nach einem Ordnerwechsel
 - DEC-130: Handy-Dateien sicher ersetzen (`.s2pold`)
 - DEC-132: Gründlicher Inhaltsvergleich – bis 32 MB vollständig, darüber 32 Stichproben
@@ -183,6 +186,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-206: Laufanimation: Einzelbilder als feste Quell-Assets (ersetzt DEC-060)
 - DEC-207: Fehlermeldungen im UI in einem zentralen Fehler-Rotton
 - DEC-208: Rückfrage beim Hostwechsel eines bestehenden Profils (schliesst R1 aus DEC-205 für diesen Fall)
+- DEC-221: Verworfener Start während eines laufenden Syncs wird einmal nachgeholt
 - DEC-152: App nur im Hochformat
 - DEC-183: Ziel-Version Android 16 (API 36) vorgezogen
 - DEC-190: Berechtigungen erst bei Bedarf
@@ -231,6 +235,13 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-216: Bestätigung beim Ändern von Richtung oder «Löschungen übernehmen»
 - DEC-217: Zahlenfelder im Profilformular prüfen statt still korrigieren
 - DEC-218: Fotos-Ordner über «Downloads»: nur interner Speicher
+- DEC-224: Nachlauf-Hinweis: Snackbar und Zeile «Danach: …» in der Statuskarte
+- DEC-225: Karte «Verschlüsselung» im Profilformular
+- DEC-226: Verlauf löschen mit Bestätigung und «Rückgängig»
+- DEC-227: Papierkorb: nur Texte und Uhrzeit
+- DEC-228: Import «Ersetzen» in Warnfarbe, ohne zusätzliche Bestätigung
+- DEC-229: Update: Hinweis statt automatischem Neustart
+- DEC-230: Die App-Sprache bleibt ausserhalb der Sicherung
 
 **11. Lokalisierung und Sprache**
 
@@ -550,6 +561,16 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-213 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-214 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-220 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
+| DEC-221 | Implemented | 9. Android und Hintergrundprozesse |
+| DEC-222 | Implemented | 13. Sicherheit, Datenschutz und Diagnose |
+| DEC-223 | Implemented | 8. Lösch- und Wiederherstellungslogik |
+| DEC-224 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-225 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-226 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-227 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-228 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-229 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-230 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-215 | Accepted | 15. Build, Tests, Versionierung und Arbeitsregeln |
 | DEC-216 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-217 | Implemented | 10. Benutzeroberfläche und UX |
@@ -1165,6 +1186,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Rückfrage 3 („beides“) und Vorschlag 4 des Inhabers (nur Ausschnitte hashen, bei anderer Grösse überspringen).
 - **Alternativen:** Prüfsumme über die ganze Datei (abgelehnt: zu viele Daten).
 - **Konsequenzen:** Kein vollständiger Inhaltsbeweis; das PC-Import-Skript muss denselben Algorithmus verwenden.
+- **Aktualisierung (2026-11-11, DEC-223, 0.15.0):** Bei Löschmodus ≠ KEEP erteilt «bereits vorhanden» eine Löschfreigabe nur nach Prüfung mindestens auf Stufe «Mittel» (`PresenceCheck`); bei KEEP gilt «bereits vorhanden» weiter als gesichert. Für Dateien über 32 MB vergleicht der Ordner-Sync vollständig statt per Stichprobe.
 - **Betroffene Komponenten:** `sync/PartialHash.kt`, `SyncEngine.transfer`, `SyncDao.syncedLite`, `tools/LeoSyncImport.cs`
 - **Abhängigkeiten:** DEC-022, DEC-024, DEC-068
 
@@ -1193,6 +1215,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Alternativen:** Überschneidungen ebenfalls blockieren (Empfehlung, nicht gewählt).
 - **Konsequenzen:** PC-Name und IP desselben PCs werden nicht als gleich erkannt.
 - **Aktualisierung (Session 3):** Für Ordner-Profile warnt die App seit 0.4.1 auch bei gleichem oder verschachteltem PC- bzw. Handy-Ordner (`Hit.nested`, DEC-134).
+- **Aktualisierung (2026-11-11, Entscheid Inhaber im Architecture-Chat, Quelle SYNC-20261111-151/-152, 0.15.0):** Die Überschneidungsprüfung gilt typübergreifend. Fotoprofil und Ordner-Profil warnen («Trotzdem speichern»), wenn das Fotos-Ziel gleich dem PC-Ordner des Ordner-Profils ist, darin liegt oder ihn enthält (immer), sowie wenn ein Fotos-Quellordner und der Handy-Ordner ineinander liegen und das Ordner-Profil aufs Handy schreibt (Richtung «Beide» oder «PC → Handy»). Handy-Ordner werden kanonisch aufgelöst (SAF-Kennungen `primary:`/`raw:`, `msd:` per `findDocumentPath`), nicht auflösbare per Text verglichen; nur Warnung, nicht blockieren. Begründung: Datenverlustpfad über «Löschungen übertragen» bei Fotosicherungen im Ordner-Profil, Doppelungen. Verworfen: blockieren; Handy-Seite immer warnen; kanonischen Pfad in der DB speichern. Offen: Spike-Ergebnis zu `msd:` am Gerät, SD-Karte im Fotoprofil (relative Pfade ohne Datenträger, mögliche falsche Warnung).
 - **Aktualisierung (2026-11-09):** Ein zweites Fotoprofil mit gleichem Ziel und anderer Ordnerstruktur wird blockiert, bei verschachteltem Ziel gibt es eine Warnung (DEC-209).
 - **Betroffene Komponenten:** `data/ProfileOverlap.kt`, `ui/ProfileScreen.kt`, `BackupManager.import`
 - **Abhängigkeiten:** DEC-005, DEC-089, DEC-209
@@ -1238,7 +1261,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Begründung:** Massnahme aus der Datenverlust-Prüfung; zwei Profile könnten sich gegenseitig Löschungen übertragen.
 - **Alternativen:** blockieren (nicht gewählt).
 - **Konsequenzen:** —
-- **Betroffene Komponenten:** `data/ProfileOverlap.kt` (`mirrorHit`, `Hit.nested`, `treePath`), `ProfileOverlapTest`
+- **Aktualisierung (2026-11-11):** Typübergreifende Prüfung Fotos ↔ Ordner-Profil siehe DEC-092 (`Hit.cross`, `ProfileOverlap.canonicalTree`, `LocalTree.canonical`).
 - **Abhängigkeiten:** DEC-092
 
 ### DEC-136: Speicher freigeben – Fund in anderem Monatsordner nur mit gleicher Prüfsumme
@@ -1291,6 +1314,18 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Dieselbe Quelle wird zu mehreren PC-Zielen gesichert; verschachtelte oder gleiche PC-Ziele warnen weiterhin (DEC-092). Keine Code- und keine Hilfeänderung nötig.
 - **Betroffene Komponenten:** `data/ProfileOverlap.kt` (`mirrorHit`)
 - **Abhängigkeiten:** DEC-092
+
+
+### DEC-223: Gleichheit vor Löschen, Freigeben und «synchron» wird inhaltlich geprüft
+- **Status:** Implemented (0.15.0 laut Development, SYNC-20261111-142; Tests `DataIntegrityTest`, `RemoteFinderTest`; Integrationstests für `plan()`/`FolderFreer` über 32 MB und `DeletionManager` fehlen)
+- **Datum:** 2026-11-11 (Entscheid Inhaber im Architecture-Chat; Quellen SYNC-20261110-125, -141, -142)
+- **Kategorie:** Synchronisation
+- **Entscheidung:** (1) Der Ordner-Sync vergleicht Dateien über 32 MB per vollständigem Hash beider Seiten statt per Stichprobe (abbrechbar, Lesefehler = nicht gleich); dasselbe gilt für «unverändert» bei «Speicher freigeben» (Ordner). (2) «Speicher freigeben» (Fotos) verlangt am gespeicherten Pfad zusätzlich den Teil-Hash, `photoItems` zusätzlich das Änderungsdatum. (3) Vor dem Löschen nach der Sicherung wird die PC-Kopie erneut geprüft; ohne erreichbaren PC wird nichts gelöscht; fehlt die Kopie, bleibt das Original und wird neu gesichert. (4) «Bereits vorhanden» erteilt bei Löschmodus ≠ KEEP eine Löschfreigabe nur nach Prüfung mindestens auf Stufe «Mittel» (präzisiert DEC-021).
+- **Begründung:** R-I1 bis R-I3 und R-F1/R-I4: Datenverlustpfade durch Gleichheit auf Basis von Grösse oder Stichprobe.
+- **Alternativen:** Konflikt oder Übertragung statt Vollhash über 32 MB (verworfen, Konfliktflut beim Erstabgleich).
+- **Konsequenzen:** Längere Prüfzeiten bei grossen Dateien; `ContentCompare`, `PresenceCheck`, `SyncDao.deleteSynced`; Toast «PC nicht erreichbar – nichts gelöscht». Restrisiken siehe `docs/SYNC-ENGINE.md` 17 (R-I1, R-I3, R-I5 bis R-I7).
+- **Betroffene Komponenten:** `mirror/MirrorEngine.kt`, `mirror/FolderFreer.kt`, `sync/SpaceFreer.kt`, `sync/DeletionManager.kt`, `sync/SyncEngine.kt`, `sync/PartialHash.kt`
+- **Abhängigkeiten:** DEC-021, DEC-091, DEC-131, DEC-135
 
 ---
 
@@ -1615,7 +1650,7 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Status:** Implemented
 - **Datum:** 2026-11-08 (2026-11-01)
 - **Kategorie:** Android
-- **Entscheidung:** `PauseService` ist ein dataSync-Vordergrunddienst mit der Anzeige „Pausiert – wartet auf WLAN …“ und eigener ID 1008. Er registriert einen eigenen NetworkCallback und startet den Sync, sobald das Ziel-WLAN zurück ist. Rückfall ist eine normale Benachrichtigung; ab Android 15 beendet ihn `onTimeout`.
+- **Entscheidung:** `PauseService` ist ein dataSync-Vordergrunddienst mit der Anzeige „Pausiert – wartet auf WLAN …“ und eigener ID 1008. Er registriert einen eigenen NetworkCallback und startet den Sync, sobald das Ziel-WLAN zurück ist. Rückfall ist eine normale Benachrichtigung; ab Android 15 beendet ihn `onTimeout` (im Code bei 0.14.7 nur `stopSelf()`, ohne Rückfall-Benachrichtigung; Ist-Stand nach Architecture SYNC-20261110-124/-141, R-BG3).
 - **Begründung:** Wunsch des Inhabers. Der Feldtest zeigte, dass das Gerät die App ohne sichtbare Anzeige zu stark einschränkt.
 - **Alternativen:** reine Benachrichtigung (DEC-051); nur WorkManager (DEC-050).
 - **Konsequenzen:** Ab Android 15 gilt ein Zeitlimit von 6 Stunden pro Tag für dataSync; danach bleibt nur noch der Rückfall.
@@ -1846,6 +1881,18 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - **Konsequenzen:** Ein Profil ohne WLAN-Namen verlangt keinen Standort.
 - **Betroffene Komponenten:** `ui/Permissions.kt` (`PermNeeds`, `missing`), `ui/PermissionRows.kt`, `ui/HomeScreen.kt`, `ui/ProfileScreen.kt`
 - **Abhängigkeiten:** DEC-055, DEC-177
+
+
+### DEC-221: Verworfener Start während eines laufenden Syncs wird einmal nachgeholt
+- **Status:** Implemented (0.15.0 laut Development, SYNC-20261111-143; APK 0.15.0 vorhanden; Gesamtlauf 373 Tests grün laut Development; Gerätetest nicht dokumentiert)
+- **Datum:** 2026-11-11 (Entscheid Inhaber im Architecture-Chat; Quellen SYNC-20261110-124, -141, -143)
+- **Kategorie:** Android
+- **Entscheidung:** Ein Start (manuell oder automatisch), der während eines laufenden Syncs verworfen würde, wird als Nachlauf vorgemerkt und nach Ende des laufenden Syncs genau einmal nachgeholt; ein manueller Start bleibt manuell. Die Sperre wird in jedem Fall freigegeben (auch bei einer Ausnahme in `markInterrupted`/`cancelProgress`). Der Merker liegt im Speicher und persistent; Setzen und Prüfen laufen unter einer gemeinsamen kurzen Sperre (`SyncGate`).
+- **Begründung:** R-N1 (alle fünf Sync-Namen betroffen, Wirkung von `manual` ging verloren, Oberfläche zeigte nichts) sowie R-BG4/R-BG5 (Sperre konnte hängen bleiben oder den Folgeauftrag verwerfen).
+- **Alternativen:** `APPEND` für alle Sync-Aufträge; Warten auf die Sperre im Worker (beide verworfen).
+- **Konsequenzen:** Neue reine Klasse `SyncGate`, `SyncScheduler.enqueueDeferred`, `GlobalSettings.deferredStart`; «Pausieren» und «Abbrechen» verwerfen den Merker; Details in `docs/SYNC-ENGINE.md` 11.2. Die Anzeige regelt DEC-224. Offen (keine Entscheidung): `PauseService`/`dataSync`-Budget (R-BG1/R-BG3).
+- **Betroffene Komponenten:** `sync/SyncGate.kt`, `sync/SyncWorker.kt`, `sync/SyncScheduler.kt`, `data/GlobalSettings`, `SyncGateTest`
+- **Abhängigkeiten:** DEC-052, DEC-103
 
 ---
 
@@ -2335,6 +2382,7 @@ Pausiert angezeigt.
 - **Begründung:** Stilles Korrigieren verschleierte, welcher Wert tatsächlich gespeichert wird; bei der Schutzbremse wäre 0 gleichbedeutend mit «aus».
 - **Alternativen:** — (in den Quellen nicht genannt).
 - **Konsequenzen:** Neue Hilfsklasse `NumberInput`; Text `profile_number_range` in beiden Sprachdateien.
+- **Aktualisierung (0.14.8, 2026-11-11, Quelle SYNC-20261110-120/-150):** Sperre statt stilles Korrigieren (Sollverhalten Inhaber 2026-11-10): Im Profil-Assistenten lässt «Weiter» einen Schritt mit leerem oder ungültigem Zahlenfeld nicht verlassen, «Speichern» springt zum ersten fehlerhaften Schritt. Dialogtexte im Profilformular scrollen bei grosser Systemschrift; der Filter-Fehlertext ist vereinfacht.
 - **Betroffene Komponenten:** `data/NumberInput.kt`, `ui/ProfileCards.kt`, `ui/ProfileScreen.kt`, `strings_profile.xml`
 - **Abhängigkeiten:** SYNC-20261110-114, -115
 
@@ -2348,6 +2396,85 @@ Pausiert angezeigt.
 - **Konsequenzen:** —
 - **Betroffene Komponenten:** `mirror/LocalTree.kt`, `ui/ProfileScreen.kt`
 - **Abhängigkeiten:** —
+
+
+### DEC-224: Nachlauf-Hinweis: Snackbar und Zeile «Danach: …» in der Statuskarte
+- **Status:** Implemented (0.15.0 laut Development, SYNC-20261111-146; UX-Review in SYNC-20261111-154 offen)
+- **Datum:** 2026-11-11 (Freigabe Inhaber im UX-Chat; Quellen SYNC-20261111-145, -146, -147)
+- **Kategorie:** UI
+- **Entscheidung:** Ein vorgemerkter Start während eines laufenden Syncs wird beim manuellen Start per Snackbar bestätigt («Wird nach der laufenden Synchronisierung gestartet.») und als Zeile in der Statuskarte gezeigt, innerhalb der Mindesthöhe (die Karte springt nicht). Die Zeile lautet manuell «Danach: alle Profile», automatisch «Danach folgt eine weitere Synchronisierung.» (die Variante «Danach: <Profilname>» entfällt, es gibt keinen Start für ein einzelnes Profil). «Pausieren» und «Abbrechen» verwerfen den Nachlauf. Bei Start von anderer Seite (Benachrichtigung/WLAN-Auslöser) nur die Zeile, keine Snackbar.
+- **Begründung:** Der Benutzer soll sehen, dass sein Start angenommen ist (vorher sah er nur «Sync läuft»).
+- **Alternativen:** nur Snackbar (A1), nur Zeile (A2); gewählt A3 beides.
+- **Konsequenzen:** Zeile im Live-Bereich (polite) für Screenreader; Texte DE/EN in `strings_home.xml`.
+- **Betroffene Komponenten:** `ui/HomeScreen.kt`, `ui/HomeParts.kt`
+- **Abhängigkeiten:** DEC-221
+
+### DEC-225: Karte «Verschlüsselung» im Profilformular
+- **Status:** Implemented (0.15.0 laut Development, SYNC-20261111-146; UX-Review in SYNC-20261111-154 offen; Hilfeabschnitt siehe Hilfe, Anker mit Development abzustimmen)
+- **Datum:** 2026-11-11 (Freigabe Inhaber im UX-Chat; Quellen SYNC-20261111-145, -146, -147)
+- **Kategorie:** UI
+- **Entscheidung:** Eigene Karte «Verschlüsselung» direkt unter «PC-Kennung», standardmässig eingeklappt (Begründung des Inhabers: betrifft die meisten Benutzer nicht); eingeklappt zeigt die Kopfzeile den Wert («Verschlüsselung · Wenn möglich»). Drei Optionen als Radio-Liste mit Erklärsatz (Aus / Wenn möglich (empfohlen) / Erforderlich). Kein zusätzlicher Bestätigungsdialog beim Wechsel auf «Aus» (der Optionstext warnt); die Wahl wirkt wie die übrigen Felder erst mit «Speichern». «Verbindung testen» zeigt eine eigene Zeile zu Verschlüsselung und SMB-Version; Hilfeverweis statt Inline-Anleitung; kein Element «Zertifikatsprüfung ignorieren» (bei SMB gibt es keine Zertifikate).
+- **Begründung:** Wunsch des Inhabers; Bedienmuster wie bei «PC-Kennung».
+- **Alternativen:** unter «Erweitert» (B), Dropdown in «Verbindung» (C); gewählt A (eigene Karte).
+- **Konsequenzen:** `CollapsibleCard` um `titleSuffix` und `openSignal` erweitert; Hilfeknopf öffnet bis zum Hilfeabschnitt `HELP_URL`.
+- **Betroffene Komponenten:** `ui/ProfileScreen.kt`, `ui/ProfileParts.kt`, `ui/Common.kt`, `strings_profile.xml`
+- **Abhängigkeiten:** DEC-222, DEC-204
+
+
+### DEC-226: Verlauf löschen mit Bestätigung und «Rückgängig» (Variante A)
+- **Status:** Implemented (0.15.1 laut Development, SYNC-20261111-162; QA-/UX-Prüfung offen, SYNC-20261111-160/-161)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261110-139, -162)
+- **Kategorie:** UI
+- **Entscheidung:** Verlauf löschen verlangt eine Bestätigung und bietet danach «Rückgängig». Die Einträge werden im Speicher zurückgehalten, bis die Snackbar abläuft.
+- **Begründung:** Freigabe «Variante A» (Dialog + Rückgängig) in SYNC-20261110-139; weitere Begründung nennt die Quelle nicht.
+- **Alternativen:** andere Varianten laut SYNC-20261110-139 (hier nicht übernommen).
+- **Konsequenzen:** Erst nach Ablauf der Snackbar wird endgültig gelöscht.
+- **Betroffene Komponenten:** ui/LogScreen.kt, SyncDao.kt (4 neue Abfragen, kein Schema)
+- **Abhängigkeiten:** —
+
+### DEC-227: Papierkorb: nur Texte und Uhrzeit (Variante A)
+- **Status:** Implemented (0.15.1 laut Development, SYNC-20261111-162; QA-/UX-Prüfung offen, SYNC-20261111-160/-161)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261110-139, -162)
+- **Kategorie:** UI
+- **Entscheidung:** Der Papierkorb erhält neue Beschriftungen («Papierkorb aufräumen…», «Neueste Version je Datei wählen», «Auswahl aufheben»), Datum mit Uhrzeit je Eintrag, den Dateinamen im Löschdialog bei einer Datei sowie ein Aufräumen-Sheet mit fester Fusszeile und Tage ≥ 1. Keine weiteren Funktionsänderungen.
+- **Begründung:** Freigabe «Variante A» (nur Texte und Uhrzeit) in SYNC-20261110-139; weitere Begründung nennt die Quelle nicht.
+- **Alternativen:** andere Varianten laut SYNC-20261110-139 (hier nicht übernommen).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** ui/TrashScreen.kt
+- **Abhängigkeiten:** —
+
+### DEC-228: Import «Ersetzen» in Warnfarbe, ohne zusätzliche Bestätigung (Variante A)
+- **Status:** Implemented (0.15.1 laut Development, SYNC-20261111-162; QA-/UX-Prüfung offen, SYNC-20261111-160/-161)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261110-134, -162)
+- **Kategorie:** UI
+- **Entscheidung:** Im Import-Dialog ist «Ersetzen» als destruktive Aktion in Warnfarbe hervorgehoben, ohne zusätzliche Bestätigung. Die Knöpfe brechen bei grosser Schrift um; ein Hinweis nennt, dass die App-Sprache nicht zur Sicherung gehört.
+- **Begründung:** Freigabe «Variante A» laut SYNC-20261110-134; weitere Begründung nennt die Quelle nicht.
+- **Alternativen:** zusätzliche Bestätigung (nicht gewählt).
+- **Konsequenzen:** —
+- **Betroffene Komponenten:** ui/BackupSection.kt
+- **Abhängigkeiten:** DEC-230
+
+### DEC-229: Update: Hinweis statt automatischem Neustart
+- **Status:** Implemented (0.15.1 laut Development, SYNC-20261111-162; QA-/UX-Prüfung offen, SYNC-20261111-160/-161)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261110-140, -162)
+- **Kategorie:** UI
+- **Entscheidung:** Nach der Installation eines Updates zeigt die Update-Seite den Hinweis «Danach LeoSync wieder öffnen», statt die App automatisch neu zu starten.
+- **Begründung:** Die Paketinstallation beendet die App, ein Neustart wäre nicht zuverlässig.
+- **Alternativen:** automatischer Neustart (verworfen, nicht zuverlässig).
+- **Konsequenzen:** Weitere Änderungen der Update-Seite (Offline-Meldung mit «Erneut prüfen», «Jetzt prüfen», Changelog ohne Markdown mit Link-Knopf, Fortschritt in Prozent/MB mit «Abbrechen») siehe PATCHNOTES 0.15.1.
+- **Betroffene Komponenten:** ui/UpdateScreen.kt, ReleaseNotes.kt
+- **Abhängigkeiten:** —
+
+### DEC-230: Die App-Sprache bleibt ausserhalb der Sicherung
+- **Status:** Implemented (0.15.1 laut Development, SYNC-20261111-162; QA-/UX-Prüfung offen, SYNC-20261111-160/-161)
+- **Datum:** 2026-11-11 (Quelle SYNC-20261110-137, -162)
+- **Kategorie:** UI
+- **Entscheidung:** Die App-Sprache gehört nicht zur Sicherung (Dateiformat unverändert); der Import-Dialog weist darauf hin.
+- **Begründung:** Das Dateiformat bleibt unverändert (SYNC-20261111-162); weitere Begründung nennt die Quelle nicht.
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Nach Neuinstallation/Import bleibt die Sprache wie auf dem Gerät eingestellt.
+- **Betroffene Komponenten:** ackup/BackupCodec.kt (unverändert), ui/BackupSection.kt
+- **Abhängigkeiten:** DEC-228
 
 ---
 
@@ -2589,6 +2716,18 @@ Pausiert angezeigt.
 - **Konsequenzen:** Der Scan legt einen Ordner `CLAUDE-SECURITY-<Zeitstempel>` im Projekt an (mit eigener `.gitignore`); Patches nur auf Auftrag und mit Git-Checkout.
 - **Betroffene Komponenten:** —
 - **Abhängigkeiten:** —
+
+
+### DEC-222: SMB3-Verschlüsselung pro Profil (Aus / Wenn möglich / Erforderlich)
+- **Status:** Implemented (0.15.0 laut Development, SYNC-20261111-144; Schema 10; Tests laut Development; Prüfung gegen echte Server und Durchsatzmessung offen)
+- **Datum:** 2026-11-11 (Entscheid Inhaber im Architecture-Chat; Quellen SYNC-20261110-126, -141, -144)
+- **Kategorie:** Sicherheit
+- **Entscheidung:** Je Profil drei Stufen: «Aus» (wie bisher), «Wenn möglich» (Standard, auch für bestehende Profile), «Erforderlich» (ohne Verschlüsselung keine Anmeldung, Zugangsdaten werden nicht gesendet; nur SMB 3.x). Kein Schalter für Zertifikate: SMB3 über TCP verwendet keine Zertifikate, smbj unterstützt kein SMB über QUIC. Signieren wird nicht erzwungen (offen bis Leistungsmessung).
+- **Begründung:** R-SMB1 bis R-SMB3 und Benutzerwunsch.
+- **Alternativen:** Verschlüsselung immer erzwingen (bricht Server ohne SMB3-Verschlüsselung); einfacher Ein/Aus-Schalter (kein Schutz gegen stille Herabstufung); Schalter «Zertifikatsprüfung ignorieren» (bei SMB nicht anwendbar).
+- **Konsequenzen:** Neues Profilfeld `smbEncryption` (Room 9 → 10, `MIGRATION_9_10`), Backup-Feld optional (fehlend/unbekannt = «Wenn möglich»); gemeinsame Fabrik `smbConfigFor`; Pflichtprüfung in `PcLogin` vor `authenticate()`; eigene Ausnahme statt `PcDecision`; «Verbindung testen» zeigt Dialekt und Verschlüsselung. Offen (keine Entscheidung): Signieren erzwingen, Sicherheitsanbieter (BouncyCastle gegen JCE). Verhalten und Ist-Stand: `docs/SYNC-ENGINE.md` 10.2.
+- **Betroffene Komponenten:** `smb/SmbSession.kt`, `smb/PcLogin.kt`, `data/Entities.kt`, `data/AppDatabase.kt`, `backup/BackupCodec.kt`, `SmbConfigTest`
+- **Abhängigkeiten:** DEC-204, DEC-205
 
 ---
 

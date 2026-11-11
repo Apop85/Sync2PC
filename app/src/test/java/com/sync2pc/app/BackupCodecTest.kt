@@ -151,6 +151,23 @@ class BackupCodecTest {
         assertEquals(listOf("Neu (YEAR_ONLY)", "Leer ()"), c.rejectedProfiles)
     }
 
+    @Test fun smbEncryptionRoundTrips() {
+        for (e in com.sync2pc.app.data.SmbEncryption.entries) {
+            val c = content().copy(profiles = listOf(content().profiles.single().copy(smbEncryption = e.name)))
+            val json = BackupCodec.encode(c, exportPassword = null, iterations = fast)
+            assertTrue(json.contains("\"smbEncryption\":\"${e.name}\""))
+            assertEquals(e.name, BackupCodec.parse(json, null).content.profiles.single().smbEncryption)
+        }
+    }
+
+    @Test fun olderOrUnknownSmbEncryptionIsPreferred() {
+        val json = """{"format":"leosync-backup","version":1,"profiles":[
+            {"id":1,"name":"Alt"},{"id":2,"name":"Neu","smbEncryption":"ULTRA"},{"id":3,"name":"Leer","smbEncryption":""},
+            {"id":4,"name":"Req","smbEncryption":"REQUIRED"}]}"""
+        val p = BackupCodec.parse(json, null).content.profiles
+        assertEquals(listOf("PREFERRED", "PREFERRED", "PREFERRED", "REQUIRED"), p.map { it.smbEncryption })
+    }
+
     @Test fun rejectsForeignAndFutureFiles() {
         for (json in listOf("kein json", """{"format":"etwas"}""", """{"format":"leosync-backup","version":99}""")) {
             try { BackupCodec.parse(json, null); fail("erwartet: Fehler für $json") } catch (e: BackupException) { /* ok */ }

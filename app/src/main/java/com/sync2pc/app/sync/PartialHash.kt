@@ -81,11 +81,36 @@ object PartialHash {
     fun forLevel(level: Int, size: Long, read: (offset: Long, length: Int) -> ByteArray): String =
         hash(size, levelRegions(level, size), read)
 
-    private fun hash(size: Long, regions: List<Pair<Long, Int>>, read: (Long, Int) -> ByteArray): String {
+    /**
+     * Vollständiger Inhaltsvergleich für den Ordner-Sync (SYNC-20261111-142, R-I3): immer die ganze Datei in Blöcken
+     * à 1 MB, auch über [FULL_LIMIT] (kein Stichproben-Hash mehr: Eine Änderung zwischen den Stichproben bliebe sonst
+     * unbemerkt). Bis [FULL_LIMIT] identisch mit [thorough]. [check] läuft vor jedem Block und bricht durch eine
+     * Exception ab (Coroutine-Abbruch, WLAN weg); [onBytes] meldet die bisher gelesenen Bytes dieser Datei.
+     * Liefert ein Block weniger Bytes als verlangt (Datei kürzer als erwartet, geändert), wirft die Funktion
+     * eine [java.io.IOException]: Ein Vergleich über unvollständig gelesene Daten gilt nie als Beweis.
+     */
+    fun comparison(
+        size: Long,
+        read: (offset: Long, length: Int) -> ByteArray,
+        check: () -> Unit = {},
+        onBytes: (Long) -> Unit = {},
+    ): String = hash(size, levelRegions(LEVEL_FULL, size), read, check, onBytes, strict = true)
+
+    private fun hash(
+        size: Long, regions: List<Pair<Long, Int>>, read: (Long, Int) -> ByteArray,
+        check: () -> Unit = {}, onBytes: (Long) -> Unit = {}, strict: Boolean = false,
+    ): String {
         val md = MessageDigest.getInstance("SHA-256")
         md.update(ByteBuffer.allocate(8).putLong(size).array())
+        var done = 0L
         for ((off, len) in regions) {
-            if (len > 0) md.update(read(off, len))
+            if (len <= 0) continue
+            check()
+            val block = read(off, len)
+            if (strict && block.size != len) throw java.io.IOException("Datei kürzer als erwartet (Offset $off)")
+            md.update(block)
+            done += block.size
+            onBytes(done)
         }
         return md.digest().joinToString("") { "%02x".format(it) }
     }

@@ -24,19 +24,19 @@
     </plurals>
     <string name="trash_pc_unreachable">PC: nicht erreichbar</string>
     <string name="trash_pc_unreachable_hint">Einträge aus dem PC-Papierkorb fehlen in der Liste. Wiederherstellen und Löschen auf dem PC werden vorgemerkt und bei der nächsten Synchronisierung mit erreichbarem PC ausgeführt.</string>
-    <string name="trash_cleanup_button">Aufräumen…</string>
+    <string name="trash_cleanup_button">Papierkorb aufräumen…</string>
     <string name="trash_reload">Neu einlesen</string>
     <string name="trash_empty">Der Papierkorb ist leer.</string>
     <string name="trash_intro">Hier liegen gelöschte Dateien und ältere Versionen. Markiere Einträge, um sie wiederherzustellen oder endgültig zu löschen.</string>
     <string name="trash_day">Tag</string>
     <string name="trash_all_days">Alle Tage</string>
     <string name="trash_select_day">Alles vom %1$s auswählen</string>
-    <string name="trash_whole_folder">Ganzer Ordner</string>
+    <string name="trash_whole_folder">Neueste Version je Datei wählen</string>
     <string name="trash_older_version">ältere Version</string>
     <string name="trash_deleted">gelöscht</string>
     <string name="trash_reserved">zum Wiederherstellen vorgemerkt</string>
     <string name="trash_selected">%1$s ausgewählt · %2$s</string>
-    <string name="trash_clear_selection">Aufheben</string>
+    <string name="trash_clear_selection">Auswahl aufheben</string>
     <string name="trash_restore">Wiederherstellen</string>
     <string name="trash_purged_pc_pending">Handy geleert – PC wird bei der nächsten Synchronisierung mit PC geleert</string>
     <string name="trash_purged">Papierkorb aufgeräumt</string>
@@ -55,7 +55,7 @@
     <string name="trash_restore_text">Die aktuellen Versionen kommen zuerst in den Papierkorb. Die gewählten Versionen werden auf Handy und PC zurückgeschrieben.</string>
     <string name="trash_restore_now">Das passiert gleich mit einer Synchronisierung.</string>
     <string name="trash_restore_later">Der PC ist nicht erreichbar: Das passiert bei der nächsten Synchronisierung mit PC.</string>
-    <string name="trash_cleanup">Aufräumen</string>
+    <string name="trash_cleanup">Papierkorb aufräumen</string>
     <string name="trash_cleanup_hint">Endgültig gelöschte Dateien lassen sich nicht mehr wiederherstellen.</string>
     <string name="trash_what">Was?</string>
     <string name="trash_mode_older">Älter als … Tage</string>
@@ -93,4 +93,6 @@
         <item quantity="one">%1$s Datei · %2$s</item>
         <item quantity="other">%1$s Dateien · %2$s</item>
     </plurals>
+    <string name="trash_days_invalid">Bitte Anzahl Tage eingeben (1 oder mehr).</string>
+    <string name="trash_delete_title_one">«%1$s» endgültig löschen?</string>
 </resources>

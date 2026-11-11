@@ -2,6 +2,43 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.15.1 (2026-11-11)
+
+### Geändert
+- **Verlauf:** Löschen mit Bestätigung und «Rückgängig» (die Einträge bleiben im Speicher, bis die Snackbar abläuft, DEC-226). Verlauf-Filter mit Haken und Rücksetzen beim Verlassen; Handlungsempfehlung bei Fehlereinträgen.
+- **Papierkorb:** neue Beschriftungen («Papierkorb aufräumen…», «Neueste Version je Datei wählen», «Auswahl aufheben»), Datum mit Uhrzeit je Eintrag, Dateiname im Löschdialog bei einer Datei, Aufräumen-Sheet mit fester Fusszeile und Tage ≥ 1 (DEC-227).
+- **Speicher freigeben:** Die Ergebnismeldung nennt gelöscht, übersprungen und freigegebenen Speicher; Hinweis ohne Papierkorb unter Android 10; Hilfetexte und Leerzustand.
+- **Update-Seite:** Offline-Meldung mit «Erneut prüfen», «Jetzt prüfen», Changelog ohne Markdown mit Link-Knopf, Fortschritt in Prozent/MB mit «Abbrechen», Hinweis «Danach LeoSync wieder öffnen» statt automatischem Neustart (DEC-229).
+- **Einstellungen:** Eingabeprüfung für «Tage ohne Sicherung» (1–365), Mindestalter (0–1440 Min.) und Heimatland (gültiger Code); Toast nach «Diagnosedaten kopieren»; ein Sprachwechsel bleibt auf der Seite.
+- **Berechtigungen:** Dialog «Berechtigung gesperrt» mit App-Info-Knopf, wenn Android nicht mehr fragt.
+- **Import-Dialog:** «Ersetzen» in Warnfarbe (DEC-228), Knöpfe brechen bei grosser Schrift um, Hinweis, dass die App-Sprache nicht zur Sicherung gehört (DEC-230). Die Rückfrage «richtiger Ordner» nennt Neuinstallation und Import.
+
+### Intern
+- Neue Datei `ReleaseNotes.kt`; 4 neue Abfragen in `SyncDao`, kein Schema. Neuer Test `ReleaseNotesTest`. Stand 40 Klassen, 377 Tests (Quelltext-Zählung); Gesamtlauf laut Development 0 Fehler (nicht von Documentation ausgeführt).
+- QA- und UX-Prüfung offen (SYNC-20261111-160/-161); ein APK 0.15.1 lag beim Abfassen in `releases\` nicht vor (0.15.0 ist gebaut).
+## 0.15.0 (2026-11-11, gebaut)
+
+### Neu
+- **SMB-Verschlüsselung pro Profil** (DEC-222): Stufen «Aus», «Wenn möglich» (Standard, auch für bestehende Profile) und «Erforderlich». Bei «Erforderlich» wird ohne Verschlüsselung keine Verbindung aufgebaut und kein Passwort gesendet. Eigene, standardmässig eingeklappte Karte «Verschlüsselung» im Profilformular (DEC-225); «Verbindung testen» zeigt SMB-Version und Verschlüsselung. Datenbank Version 10 (Spalte `smbEncryption`, Migration 9 → 10); Sicherung enthält das Feld optional.
+
+### Geändert
+- **Datenintegrität** (DEC-223): Der Ordner-Sync vergleicht Dateien über 32 MB vollständig statt per Stichprobe. Vor dem Löschen nach der Sicherung wird die PC-Kopie erneut geprüft; ist der PC nicht erreichbar, wird nichts gelöscht, und fehlt die Kopie, bleibt das Original und wird neu gesichert. «Speicher freigeben» (Fotos) prüft zusätzlich Teil-Prüfsumme und Änderungsdatum. «Bereits vorhanden» erteilt bei Löschmodus ≠ «Behalten» eine Löschfreigabe nur nach Prüfung mindestens auf Stufe «Mittel».
+- **Start während eines laufenden Syncs** wird nicht mehr verworfen, sondern genau einmal nachgeholt; die Sperre wird in jedem Fall freigegeben (DEC-221). Hinweis per Meldung und Zeile «Danach: …» in der Statuskarte (DEC-224); «Pausieren» und «Abbrechen» verwerfen den Nachlauf.
+- **Überschneidungswarnung** gilt typübergreifend: Fotoprofil und Ordner-Profil warnen bei gleichem oder verschachteltem PC-Ziel, und bei ineinanderliegenden Handy-Ordnern, wenn das Ordner-Profil aufs Handy schreibt (DEC-092/DEC-134 aktualisiert).
+- **Oberfläche:** Home-Status, Konflikt-Knöpfe (Rückgängig), Ordnerauswahl und Vorschau überarbeitet (laut Development SYNC-20261111-155; Einzelheiten siehe Hilfe).
+
+### Intern
+- Neue Klassen `SyncGate`, `ContentCompare`, `PresenceCheck`; gemeinsame Verbindungskonfiguration `smbConfigFor`; `SyncDao.deleteSynced`; `partialHash` wird immer als LOW-Teil-Prüfsumme abgelegt.
+- Neue Tests `DataIntegrityTest`, `SyncGateTest`, `SmbConfigTest`, `HomeStatusTest`, `ScreenLogicTest`; erweitert `PcLoginTest`, `ProfileOverlapTest`, `BackupCodecTest`, `MigrationTest` (9 → 10, nicht ausgeführt). Gesamtlauf `testDebugUnitTest`: 373 Tests, 0 Fehler (Angabe Development).
+- Nicht geprüft: Gerätetests gegen echte Windows-/NAS-Server, Durchsatz mit Verschlüsselung, UX-Review.
+
+## 0.14.8 (2026-11-11)
+
+### Geändert
+- **Profil-Assistent:** «Weiter» lässt einen Schritt mit leerem oder ungültigem Zahlenfeld (Papierkorb-Tage 0–3650, Prüfintervall 15–1440 Minuten, Schutzbremse 1–100 %) nicht verlassen; «Speichern» im Assistenten springt zum ersten fehlerhaften Schritt (DEC-217).
+- **Dialoge im Profilformular** scrollen bei grosser Systemschrift.
+- **Ordneranzeige** zeigt für Ordner des Download-Anbieters den ganzen Pfad, sofern der Anbieter ihn liefert.
+- **Filter:** Fehlertext vereinfacht.
 ## 0.14.7 (2026-11-10)
 
 ### Geändert

@@ -10,6 +10,7 @@ import com.sync2pc.app.data.AppDatabase
 import com.sync2pc.app.data.FolderLayout
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.data.ProfileType
+import com.sync2pc.app.data.SyncedFile
 import com.sync2pc.app.smb.RemoteEntry
 import com.sync2pc.app.smb.RemoteFiles
 import com.sync2pc.app.smb.SmbSession
@@ -59,6 +60,8 @@ object SpaceFreer {
     private data class Media(
         val id: Long, val uri: Uri, val name: String, val relPath: String, val size: Long,
         val takenMs: Long, val favorite: Boolean,
+        /** MediaStore DATE_MODIFIED in Sekunden (wie [SyncedFile.dateModified]) */
+        val modifiedSec: Long = 0,
     ) {
         val sourceKey get() = relPath + name
         val group get() = (relPath + name.substringBeforeLast('.')).lowercase()
@@ -73,8 +76,16 @@ object SpaceFreer {
         all.groupBy(group).values.filter { members -> members.all(ok) }.flatten()
 
     /**
-     * Alle Fotos/Videos eines Fotos-Profils (0.7.0). Gesichert = in der Datenbank mit gleicher Grösse (geprüft wird
-     * vor dem Löschen auf dem PC). Live-Foto-Paare haben dieselbe Gruppe; FreeRules trennt sie nie.
+     * Passt die Datenbankzeile zur aktuellen Datei auf dem Handy? Grösse UND Änderungsdatum müssen gleich sein
+     * (R-I2, SYNC-20261111-142): Ein bearbeitetes Foto gleicher Grösse gilt nicht als gesichert.
+     */
+    internal fun rowMatches(row: SyncedFile, size: Long, modifiedSec: Long): Boolean =
+        row.size == size && row.dateModified == modifiedSec
+
+    /**
+     * Alle Fotos/Videos eines Fotos-Profils (0.7.0). Gesichert = in der Datenbank mit gleicher Grösse und gleichem
+     * Änderungsdatum (geprüft wird vor dem Löschen auf dem PC). Live-Foto-Paare haben dieselbe Gruppe; FreeRules
+     * trennt sie nie.
      */
     suspend fun photoItems(context: Context, profile: Profile): PhotoItems = withContext(Dispatchers.IO) {
         val dao = AppDatabase.get(context).dao()
@@ -83,7 +94,7 @@ object SpaceFreer {
         val items = ArrayList<FreeItem>()
         val candidates = HashMap<String, Candidate>()
         for (m in media) {
-            val s = synced[m.sourceKey]?.firstOrNull { it.size == m.size }
+            val s = synced[m.sourceKey]?.firstOrNull { rowMatches(it, m.size, m.modifiedSec) }
             items += FreeItem(
                 key = m.sourceKey, folder = m.relPath.trimEnd('/'), name = m.name, size = m.size, time = m.takenMs,
                 backedUp = s != null, favorite = m.favorite, group = m.group,
@@ -124,7 +135,8 @@ object SpaceFreer {
                 for (c in list) {
                     currentCoroutineContext().ensureActive()
                     // Zuerst am gespeicherten Pfad; nur wenn dort nichts liegt: Monat aus media_info als Zusatz zum Pfad
-                    if (finder.existsAtPath(c.remotePath, c.size) ||
+                    // Am Pfad zählt nur gleiche Grösse UND gleicher Teil-Hash (R-I2): Name und Grösse allein beweisen nichts
+                    if (finder.existsAtPath(c.remotePath, c.size) { c.hash ?: localHash(context, c) } ||
                         finder.existsElsewhere(c.remotePath, c.size, layout, dao.mediaInfo(c.sourceKey)?.month) {
                             c.hash ?: localHash(context, c)
                         }
@@ -155,11 +167,14 @@ object SpaceFreer {
     }
 
     /** Teil-Hash der Datei auf dem Handy (null = nicht lesbar) */
-    private fun localHash(context: Context, c: Candidate): String? = try {
-        context.contentResolver.openFileDescriptor(c.uri, "r")?.let { pfd ->
+    private fun localHash(context: Context, c: Candidate): String? = localHash(context, c.uri, c.size)
+
+    /** Teil-Hash (LOW) der aktuellen Datei hinter [uri] (null = nicht lesbar); auch für [DeletionManager] */
+    internal fun localHash(context: Context, uri: Uri, size: Long): String? = try {
+        context.contentResolver.openFileDescriptor(uri, "r")?.let { pfd ->
             android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).use { ins ->
                 val ch = ins.channel
-                PartialHash.compute(c.size) { off, len ->
+                PartialHash.compute(size) { off, len ->
                     val bb = java.nio.ByteBuffer.allocate(len)
                     var pos = off
                     while (bb.hasRemaining()) {
@@ -232,6 +247,7 @@ object SpaceFreer {
                 out[id] = Media(
                     id, ContentUris.withAppendedId(base, id), name, c.getString(iPath) ?: "", size, taken,
                     favorite = iFav >= 0 && c.getInt(iFav) == 1,
+                    modifiedSec = c.getLong(iMod),
                 )
             }
         }
@@ -247,9 +263,25 @@ internal class RemoteFinder(private val s: RemoteFiles) {
     private val dirListings = HashMap<String, List<String>>()
     private val fileListings = HashMap<String, Map<String, RemoteEntry>>()
 
-    fun existsAtPath(remotePath: String, size: Long): Boolean {
+    /**
+     * Liegt die Datei am gespeicherten Pfad? Bestätigt nur bei gleicher Grösse UND gleichem Teil-Hash (R-I2,
+     * SYNC-20261111-142; zuvor genügte die Grösse): Eine auf dem PC ersetzte oder beschädigte Datei gleicher Grösse
+     * darf das Original nie freigeben. [hash] liefert den Teil-Hash der Handy-Datei (null = nicht lesbar -> nicht
+     * bestätigt). Lesefehler am PC (kein Netzwerkfehler) = nicht bestätigt; Netzwerkfehler gehen nach aussen.
+     */
+    fun existsAtPath(remotePath: String, size: Long, hash: () -> String?): Boolean {
         if (remotePath.isBlank()) return false
-        return s.stat(remotePath)?.let { it.size == size } == true
+        val e = s.stat(remotePath) ?: return false
+        if (e.size != size) return false
+        val local = hash() ?: return false
+        return try {
+            s.partialHash(remotePath, size) == local
+        } catch (ex: kotlinx.coroutines.CancellationException) {
+            throw ex
+        } catch (ex: Exception) {
+            if (isNetworkError(ex)) throw ex
+            false
+        }
     }
 
     /**

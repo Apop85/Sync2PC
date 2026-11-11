@@ -561,7 +561,10 @@ class SyncEngine(
 
         // Namensvergabe unter Sperre: bild.jpg, bild_2.jpg, bild_3.jpg, …
         // (andere Worker könnten gleichzeitig eine gleichnamige Datei in denselben Ordner laden)
-        val candidate: String
+        var candidate = ""
+        // Treffer «bereits vorhanden»: nur den Pfad merken; das (evtl. lange) Hashen der Prüfstufe läuft NACH der Sperre (-157),
+        // sonst stehen alle parallelen Übertragungen still, solange auf beiden Seiten bis zu 256 MB gelesen werden
+        var presentPath: String? = null
         sh.nameLock.withLock {
             val listing = sh.listings.getOrPut(folderKey) {
                 HashMap<String, RemoteEntry>().apply {
@@ -575,8 +578,8 @@ class SyncEngine(
                 if ("$folderKey\\$key" !in sh.reserved) {
                     val e = listing[key] ?: break
                     if (e.size == item.size && smb.partialHash("$folderPath\\${e.name}", e.size) == lh()) {
-                        record(item, "$folderPath\\${e.name}", lh(), verified = true)
-                        return false
+                        presentPath = "$folderPath\\${e.name}"
+                        return@withLock
                     }
                 }
                 n++
@@ -594,14 +597,18 @@ class SyncEngine(
                 for (e in sListing.values) {
                     if (e.size != item.size || !FolderNames.sameBaseName(e.name, name)) continue
                     if (smb.partialHash("$sPath\\${e.name}", e.size) == lh()) {
-                        record(item, "$sPath\\${e.name}", lh(), verified = true)
-                        return false
+                        presentPath = "$sPath\\${e.name}"
+                        return@withLock
                     }
                 }
             }
             sh.reserved += "$folderKey\\${c.lowercase()}"
             smb.ensureDir(folderPath)
             candidate = c
+        }
+        presentPath?.let { path ->
+            record(item, path, lh(), verified = presentVerified(smb, item, path))
+            return false
         }
 
         val finalPath = "$folderPath\\$candidate"
@@ -631,11 +638,16 @@ class SyncEngine(
                 else -> smb.levelHash(finalPath, item.size, level.code) == localLevelHash(item, level.code)
             }
             if (remoteSize != item.size || !sameContent) {
-                try { smb.delete(finalPath) } catch (ignored: Exception) {}
+                // Fehlerhafte Zieldatei entfernen; scheitert das, nicht still ignorieren (R-F1): sonst bliebe sie
+                // unbemerkt liegen und würde beim nächsten Lauf als "bereits vorhanden" erscheinen
+                try { smb.delete(finalPath) } catch (ex: CancellationException) { throw ex } catch (ex: Exception) {
+                    log("E", Msg.of(R.string.eng_err_verify_cleanup, finalPath, shortError(ex)))
+                }
                 throw java.io.IOException(str(R.string.eng_err_verify))
             }
             if (level != VerifyLevel.OFF) verified = true
-            record(item, finalPath, lHash, verified)
+            // Teil-Hash (LOW) immer ablegen, auch ab Stufe "Mittel" (vorher null): "Speicher freigeben" vergleicht damit
+            record(item, finalPath, lh(), verified)
             ok = true
             return true
         } finally {
@@ -646,6 +658,20 @@ class SyncEngine(
                 }
             }
         }
+    }
+
+    /**
+     * Gilt eine schon vorhandene PC-Datei als gesichert? Bei Löschmodus KEEP wie bisher ja (DEC-021); sonst nur, wenn
+     * sie auf der Profilstufe, mindestens "Mittel", übereinstimmt (R-F1/R-I4, siehe [PresenceCheck]).
+     */
+    private suspend fun presentVerified(smb: SmbSession, item: MediaItem, remotePath: String): Boolean {
+        val mode = profile.delete()
+        if (mode == DeleteMode.KEEP) return true
+        val level = PresenceCheck.level(profile.verify().code)
+        val ok = PresenceCheck.verifiedWhenPresent(mode,
+            { localLevelHash(item, level) }, { smb.levelHash(remotePath, item.size, level) })
+        if (!ok) log("W", Msg.of(R.string.eng_present_unverified, item.displayName))
+        return ok
     }
 
     private fun openAt(item: MediaItem, offset: Long): InputStream {

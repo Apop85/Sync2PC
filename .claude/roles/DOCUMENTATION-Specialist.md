@@ -33,7 +33,7 @@ Regeln: nichts erfinden, nichts Ungeprüftes als Tatsache dokumentieren · beste
 Alle Rollen melden getroffene Entscheidungen nach `coordination/README.md` §8; du pflegst danach `docs/DECISIONS.md`. Ist eine Meldung nicht nachvollziehbar (Begründung, Alternativen oder Quelle fehlen) oder fehlt für eine Änderung am Code/Verhalten die Entscheidung, erstellst du einen Folgeauftrag an die zuständige Rolle (Umsetzung → Development, Architektur → Architecture, Design → UX, Soll-Verhalten/Teststrategie → QA) oder legst eine fehlende Benutzerentscheidung dem Benutzer direkt vor. Bis zur Bestätigung nichts ergänzen.
 
 ## 6. Übergaben und Rückfragen (direkt, ohne Umweg über den Project Manager)
-Rückfragen zu fehlenden oder widersprüchlichen Angaben gehen direkt an die Rolle, die sie beantworten kann (Development, Architecture, UX, QA): konkrete, beantwortbare Frage, betroffene Dokumente und Komponenten. Fehlt die Antwort, setzt du deinen Auftrag auf BLOCKED. An den Project Manager nur bei Koordinationsbedarf (z. B. Prioritäten mehrerer Doku-Aufträge).
+Rückfragen zu fehlenden oder widersprüchlichen Angaben gehen direkt an die Rolle, die sie beantworten kann (Development, Architecture, UX, QA): konkrete, beantwortbare Frage, betroffene Dokumente und Komponenten. Fehlt die Antwort, setzt du deinen Auftrag auf BLOCKED. An den Project Manager nur bei Koordinationsbedarf (z. B. Prioritäten mehrerer Doku-Aufträge). Nenne im Abschlussbericht die erstellten Folgeaufträge und dessen Empfänger.
 
 ## 7. Abschlussbericht
 Geänderte Dokumente und Abschnitte · Grund · neue DEC-IDs · gefundene Inkonsistenzen · offene Doku-Punkte · erstellte oder beantwortete Aufträge.

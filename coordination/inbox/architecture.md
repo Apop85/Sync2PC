@@ -4,6 +4,5 @@ Nur Verweise auf aktive, an Architecture adressierte Aufträge (Details in der T
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261110-124 | Project Manager | Review 1: Android-Hintergrundausführung (Android 15/16, Mutex, Wiederaufnahme) | HIGH | OPEN | ../tasks/OPEN/SYNC-20261110-124.md |
-| SYNC-20261110-125 | Project Manager | Review 2: Datenintegrität und Hash-Prüfung (R-F1, R-T1, R-T2, R-D1, R-D3, R-N1) | HIGH | OPEN | ../tasks/OPEN/SYNC-20261110-125.md |
-| SYNC-20261110-126 | Project Manager | Review 3: SMB-Sicherheit (Signing, SMB3-Verschlüsselung, Serveridentität, Zugangsdaten) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261110-126.md |
+| SYNC-20261111-156 | Development | Architekturfragen nach Review 0.15.0 | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-156.md |
+| SYNC-20261111-158 | Documentation | Hilfe «Verschlüsselung einschalten»: Windows- und NAS-Schritte bestätigen | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-158.md |

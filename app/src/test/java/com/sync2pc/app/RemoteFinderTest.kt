@@ -109,13 +109,16 @@ class RemoteFinderTest {
         assertEquals(0, share.hashReads)
     }
 
-    @Test fun pathCheckAcceptsOnlyMatchingSize() {
+    /** SYNC-20261111-142 (R-I2): Am Pfad zählt nur gleiche Grösse UND gleicher Teil-Hash (vorher genügte die Grösse) */
+    @Test fun pathCheckAcceptsOnlyMatchingSizeAndHash() {
         val share = FakeShare("Fotos").add("2026\\06\\a.jpg", size, "H")
         val f = RemoteFinder(share)
-        assertTrue(f.existsAtPath("Fotos\\2026\\06\\a.jpg", size))
-        assertFalse(f.existsAtPath("Fotos\\2026\\06\\a.jpg", size + 1))
-        assertFalse(f.existsAtPath("Fotos\\2026\\06\\fehlt.jpg", size))
-        assertFalse(f.existsAtPath("", size))
+        assertTrue(f.existsAtPath("Fotos\\2026\\06\\a.jpg", size) { "H" })
+        assertFalse(f.existsAtPath("Fotos\\2026\\06\\a.jpg", size) { "ANDERS" })
+        assertFalse(f.existsAtPath("Fotos\\2026\\06\\a.jpg", size) { null })
+        assertFalse(f.existsAtPath("Fotos\\2026\\06\\a.jpg", size + 1) { "H" })
+        assertFalse(f.existsAtPath("Fotos\\2026\\06\\fehlt.jpg", size) { "H" })
+        assertFalse(f.existsAtPath("", size) { "H" })
     }
 
     @Test fun unknownPathShapeIsNotFound() {

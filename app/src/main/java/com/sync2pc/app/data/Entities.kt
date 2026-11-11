@@ -167,7 +167,11 @@ data class Profile(
     // ---- seit DB v9 (SYNC-20261109-083) ----
     /** Ordnerstruktur auf dem PC ([FolderLayout.code], nur Fotos); nach dem ersten Sync nicht mehr änderbar (SyncDao.updateProfile) */
     val folderLayout: String = FolderLayout.MONTH_SUFFIX.code,
+    // ---- seit DB v10 (SYNC-20261111-144) ----
+    /** SMB3-Verschlüsselung ([SmbEncryption.name]): OFF, PREFERRED (Standard) oder REQUIRED */
+    val smbEncryption: String = SmbEncryption.PREFERRED.name,
 ) {
+    fun encryption(): SmbEncryption = SmbEncryption.parse(smbEncryption)
     fun layout(): FolderLayout = FolderLayout.of(folderLayout)
     fun folders(): List<String> = splitLines(sourceFolders)
     fun ssids(): List<String> = splitLines(wifiSsids)
@@ -399,3 +403,13 @@ data class LogEntry(
     /** seit DB v7 (0.12.0): Zeile als Kennung (JSON); null = nur [message] */
     val code: String? = null,
 )
+
+/** SMB3-Verschlüsselung pro Profil (SYNC-20261111-144): Aus, Wenn möglich (Standard), Erforderlich */
+enum class SmbEncryption {
+    OFF, PREFERRED, REQUIRED;
+
+    companion object {
+        /** Unbekannte oder leere Werte (ältere Sicherung, Fehler) ergeben PREFERRED */
+        fun parse(s: String?): SmbEncryption = entries.firstOrNull { it.name == s?.trim()?.uppercase() } ?: PREFERRED
+    }
+}

@@ -76,8 +76,15 @@
     <string name="backup_pw_taken">SMB passwords: will be taken over</string>
     <string name="backup_pw_wrong">SMB passwords: export password missing or wrong – passwords are not taken over</string>
     <string name="backup_pw_none">SMB passwords: not included</string>
-    <string name="backup_replace_hint">“Replace” deletes all existing profiles including sync status and also takes over the settings. “Add” creates the profiles in addition.</string>
+    <string name="backup_replace_hint">“Replace” deletes all existing profiles including sync status and also takes over the settings (not the app language, which stays as it is). “Add” creates the profiles in addition.</string>
     <string name="backup_replace">Replace</string>
     <string name="backup_import_done">Import finished</string>
     <string name="backup_err_replace_rejected">Replace cancelled, nothing was deleted: the backup contains profiles that cannot be imported (unknown folder structure, backup from a newer version?): %1$s</string>
+    <string name="log_clear_title">Delete the whole history?</string>
+    <string name="log_clear_text">%1$d entries will be deleted and cannot be restored. Use “Share history” first to keep a copy.</string>
+    <string name="log_cleared">History deleted</string>
+    <string name="log_undo">Undo</string>
+    <string name="log_advice_missing">The file no longer exists on the mobile. Sync again; if the error stays, check the file list in the profile.</string>
+    <string name="log_advice_connection">Check the connection to the PC (Wi-Fi, share), then sync again.</string>
+    <string name="log_advice_unknown">Sync again. If the error stays, share the history with the developer.</string>
 </resources>

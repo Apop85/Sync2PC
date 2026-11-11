@@ -93,6 +93,7 @@ import com.sync2pc.app.mirror.RestoreFailures
 import com.sync2pc.app.mirror.RestoreManager
 import com.sync2pc.app.sync.Notifications
 import com.sync2pc.app.sync.SyncProgress
+import com.sync2pc.app.sync.StartResult
 import com.sync2pc.app.sync.SyncScheduler
 import com.sync2pc.app.sync.SyncWorker
 import com.sync2pc.app.sync.WifiHelper
@@ -255,11 +256,53 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
         else null
     }
 
+    // Gesamtzustand für die Statuskarte (SYNC-20261110-113): Verbindung, Profile, offene Entscheidungen
+    val activeProfiles = profiles.filter { it.enabled && it.isConfigured() }
+    val onAllowedNet = remember(tick, workKey) { WifiHelper.onAllowedNetwork(ctx) }
+    val offWifiActive = remember(tick, workKey) { WifiHelper.offWifiSyncActive(ctx) }
+    val noConnection = HomeStatus.noConnection(
+        activeProfiles.size,
+        anyCanRunNow = activeProfiles.any { HomeStatus.profileCanRunNow(it.pcMode(), it.ssids(), ssid, onAllowedNet, offWifiActive) },
+        pcUnreachable = shareWait != null,
+    )
+    // Offene Entscheidungen: Konflikte, Ordnerzuordnung, Schutzbremse, Löschbestätigung
+    val attentionCount = conflicts.size + decisions.size + guards.size + (if (deleteCount > 0) 1 else 0)
+    val lastRunErrors = lastRun?.takeIf { it.status == RunStatus.FAILED || it.failed > 0 }?.failed ?: -1
+    val headline = HomeStatus.headline(HomeStatusInput(
+        isRunning = running != null,
+        hasProfiles = profiles.isNotEmpty(),
+        hasActiveProfile = activeProfiles.isNotEmpty(),
+        attentionCount = attentionCount,
+        noConnection = noConnection,
+        userPaused = userPausedUntil > 0,
+        wifiPaused = paused,
+        lastRunHadErrors = lastRunErrors >= 0,
+        // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
+        allUpToDate = lastRun?.status == RunStatus.OK && !queued && skipInfo == null &&
+            decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0 && guards.isEmpty(),
+    ))
+    val attentionText = if (conflicts.isNotEmpty()) plural(R.plurals.home_status_conflict_detail, conflicts.size)
+        else str(R.string.home_status_attention_detail)
+
+    // -146 Teil A: Start während eines laufenden Syncs wird nachgeholt; beim manuellen Start sofort sagen, dass er vorgemerkt ist
+    val deferred by remember { SyncScheduler.deferredState(ctx) }.collectAsState()
+    val deferredSnack = str(R.string.home_sync_deferred_snack)
+    fun enqueueManualWithFeedback() {
+        if (SyncScheduler.enqueueManual(ctx) == StartResult.DEFERRED) scope.launch {
+            snackbar.currentSnackbarData?.dismiss() // mehrfaches Tippen: dieselbe Meldung erneut, nichts stapeln
+            snackbar.showSnackbar(deferredSnack)
+        }
+    }
+
     /** Synchronisieren (Knopf und Herunterziehen); erste Synchronisierung ohne Ladegerät -> vorher warnen */
     val startSync: () -> Unit = {
+        // A2: ohne Verbindung kurz sagen, warum es evtl. nicht klappt (der manuelle Lauf prüft den PC trotzdem selbst)
+        if (noConnection) scope.launch {
+            snackbar.showSnackbar(str(if (shareWait != null) R.string.home_sync_feedback_pc else R.string.home_sync_feedback_wifi))
+        }
         scope.launch {
             if (FirstSync.warnNeeded(ctx, profiles)) showChargeWarning = true
-            else { SyncScheduler.enqueueManual(ctx); pauseVersion++ }
+            else { enqueueManualWithFeedback(); pauseVersion++ }
         }
     }
     // Herunterziehen (0.10.0): Kreis kurz zeigen, danach übernimmt die Statuskachel
@@ -323,6 +366,33 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
             val needs = PermNeeds.of(profiles)
             if (perms.missing(needs)) item { PermissionCard(perms, needs) }
 
+            // A8: Karten, die eine Entscheidung verlangen, stehen über der Statuskarte (bei Systemschrift 2,0 ohne Scrollen erreichbar)
+            if (conflicts.isNotEmpty()) item {
+                ActionCard(
+                    title = str(R.string.home_conflicts_title),
+                    text = plural(R.plurals.home_conflicts_text, conflicts.size),
+                    button = str(R.string.home_conflicts_button),
+                    onClick = { navigate(Screen.Conflicts) },
+                )
+            }
+            if (decisions.isNotEmpty()) item {
+                val files = decisions.sumOf { it.fileCount }
+                ActionCard(
+                    title = str(R.string.home_decisions_title),
+                    text = plural(R.plurals.home_decisions_text, files, files, plural(R.plurals.home_groups, decisions.size)),
+                    button = str(R.string.home_decisions_button),
+                    onClick = { navigate(Screen.Decisions) },
+                )
+            }
+            if (deleteCount > 0) item {
+                ActionCard(
+                    title = str(R.string.home_delete_title),
+                    text = plural(R.plurals.home_delete_text, deleteCount),
+                    button = str(R.string.home_delete_button),
+                    onClick = onConfirmDeletes,
+                )
+            }
+
             item {
                 StatusCard(
                     ssid = ssid,
@@ -336,16 +406,18 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     skipInfo = skipInfo,
                     paused = paused,
                     userPausedUntil = userPausedUntil,
-                    // "Alles aktuell": letzter Lauf ohne Probleme und nichts mehr offen
-                    allUpToDate = lastRun?.status == RunStatus.OK && !queued && skipInfo == null &&
-                        decisions.isEmpty() && conflicts.isEmpty() && deleteCount == 0 && guards.isEmpty(),
-                    // LeoSync wartet auf eine Entscheidung von dir (Bild "Aufmerksamkeit")
-                    needsYou = guards.isNotEmpty() || decisions.isNotEmpty() || conflicts.isNotEmpty() || deleteCount > 0,
+                    headline = headline,
+                    attentionCount = attentionCount,
+                    attentionText = attentionText,
+                    lastRunErrors = lastRunErrors.coerceAtLeast(0),
                     onSync = startSync,
                     onCancel = { SyncScheduler.cancelAll(ctx) },
                     onResume = { SyncScheduler.resume(ctx); pauseVersion++ },
+                    onOpenLog = { navigate(Screen.Log) },
                     hasProfiles = profiles.isNotEmpty(),
                     etaText = etaText,
+                    runHint = if (running != null && deferred.requested)
+                        str(if (deferred.manual) R.string.home_next_all else R.string.home_next_auto) else null,
                 )
             }
             if (!pullTipDone && profiles.isNotEmpty()) item {
@@ -375,32 +447,6 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                     onClick = { navigate(Screen.Update) },
                 )
             }
-            if (conflicts.isNotEmpty()) item {
-                ActionCard(
-                    title = str(R.string.home_conflicts_title),
-                    text = plural(R.plurals.home_conflicts_text, conflicts.size),
-                    button = str(R.string.home_conflicts_button),
-                    onClick = { navigate(Screen.Conflicts) },
-                )
-            }
-            if (decisions.isNotEmpty()) item {
-                val files = decisions.sumOf { it.fileCount }
-                ActionCard(
-                    title = str(R.string.home_decisions_title),
-                    text = plural(R.plurals.home_decisions_text, files, files, plural(R.plurals.home_groups, decisions.size)),
-                    button = str(R.string.home_decisions_button),
-                    onClick = { navigate(Screen.Decisions) },
-                )
-            }
-            if (deleteCount > 0) item {
-                ActionCard(
-                    title = str(R.string.home_delete_title),
-                    text = plural(R.plurals.home_delete_text, deleteCount),
-                    button = str(R.string.home_delete_button),
-                    onClick = onConfirmDeletes,
-                )
-            }
-
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(str(R.string.home_profiles), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -443,7 +489,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                         text = str(R.string.home_purge_pending_text) +
                             (note?.let { "\n$it" } ?: ""),
                         button = str(R.string.common_sync_now),
-                        onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+                        onClick = { enqueueManualWithFeedback(); pauseVersion++ },
                     )
                 }
                 if (failedRestores > 0) item {
@@ -481,7 +527,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
                         text = plural(R.plurals.home_restore_pending_text, pendingRestores - failedRestores) +
                             (note?.let { "\n$it" } ?: ""),
                         button = str(R.string.common_sync_now),
-                        onClick = { SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+                        onClick = { enqueueManualWithFeedback(); pauseVersion++ },
                     )
                 }
                 // Ein Tool pro Zeile (0.6.1)
@@ -501,7 +547,7 @@ fun HomeScreen(navigate: (Screen) -> Unit, onConfirmDeletes: () -> Unit) {
     }
 
     if (showChargeWarning) ChargeWarningDialog(
-        onStart = { showChargeWarning = false; SyncScheduler.enqueueManual(ctx); pauseVersion++ },
+        onStart = { showChargeWarning = false; enqueueManualWithFeedback(); pauseVersion++ },
         onDismiss = { showChargeWarning = false },
     )
 

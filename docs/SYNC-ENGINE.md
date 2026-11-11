@@ -174,9 +174,9 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 
 ### 3.1 Koordination durch `SyncWorker` (beide Profiltypen)
 
-`SyncWorker.doWork` (`SyncWorker.kt:57`) → `work()` (`:114`). Reihenfolge:
+`SyncWorker.doWork` → `work()`. Reihenfolge:
 
-1. **Mutex:** `mutex.tryLock()` (prozessweit, `companion object`). Ist bereits ein Lauf aktiv, endet der Worker sofort mit `Result.success()` – die Anfrage wird **verworfen, nicht eingereiht** **[RISIKO]** (Abschnitt 11.2).
+1. **Sperre:** `SyncGate` (seit 0.15.0, reine Klasse; ersetzt den früheren `SyncWorker.mutex`, Sperre und Nachlauf-Merker unter einer gemeinsamen `synchronized`-Sperre). Ist bereits ein Lauf aktiv, endet der Worker sofort mit `Result.success()` (Ausgabedaten `deferred = true`), die Anfrage wird aber als **Nachlauf vorgemerkt** und nach dem laufenden Sync genau einmal nachgeholt (Abschnitt 11.2, DEC-221).
 2. `dao.closeDanglingRuns()`: Läufe mit Status `RUNNING` (App wurde währenddessen beendet) werden auf `INTERRUPTED` gesetzt **[IMPL]**.
 3. **Pause:** Nicht-manuell und `settings.isPaused()` → Lauf entfällt (Grund wird notiert).
 4. **Profilauswahl:** aktiv (`enabled`), konfiguriert (`isConfigured`), bei automatischen Läufen nicht in `awaitingFirstStart` (neue Profile warten auf ersten manuellen Start, DEC-103), **nicht durch die Schutzbremse blockiert** (`GuardStore.blockedIds`), nicht gerade zum Löschen vorgemerkt (`PendingProfileDelete`).
@@ -186,7 +186,7 @@ Vollständige Vergleichstabelle in Abschnitt 9. Es gibt effektiv vier Verhaltens
 8. **Schleife über alle lauffähigen Profile, nacheinander** (nicht parallel): Engine erzeugen (`MIRROR` → `MirrorEngine`, sonst `SyncEngine`), `engine.run()`, danach Flags auswerten:
    `engine.blocked` → Benachrichtigung „Entscheidung nötig“; `wifiLost && !manual` → `markInterrupted()`; `connectionFailed` → Profil zählt als „nicht erreichbar“ und der Lauf als mitten unterbrochen; `FAILED` → harter Fehler.
 9. **Abschluss:** Sperren freigeben, Zusammenfassungs-Benachrichtigungen (Fehler, Übertragen, Entscheidungen, Konflikte, Speichermangel, Löschfreigaben), Nachhol-Sync für während des Laufs entstandene Medien (`MediaScanner.hasAddedSince`), `handleUnreachable` (Wiederholung bzw. `markInterrupted`; Wartezeit nach `NetworkRules.retryMinutes`: 30 min, mitten im Lauf 2 min, ausserhalb des WLAN immer 2 h; die Wartezeit endet durch neue WLAN-Verbindung, manuellen Start oder erfolgreichen Lauf, neue Auslöser (Fotos, Sicherheitsnetz, Ordner-Prüfung) ignorieren sie, DEC-126).
-10. `finally` in `doWork`: Fortschritt entfernen; wenn von Android gestoppt (nicht vom Benutzer) und nicht manuell → `markInterrupted()`; Mutex freigeben; `armContentTrigger`; Sicherheitsnetz neu starten.
+10. `finally` in `doWork`: Fortschritt entfernen; wenn von Android gestoppt (nicht vom Benutzer) und nicht manuell → `markInterrupted()`; Sperre (`SyncGate`) in jedem Fall freigeben (verschachteltes `finally`, auch wenn `markInterrupted`/`cancelProgress` eine Ausnahme werfen); danach genau einen vorgemerkten Nachlauf einreihen (Abschnitt 11.2); `armContentTrigger`; Sicherheitsnetz neu starten.
 
 `doWork` gibt in allen regulären Pfaden `Result.success()` zurück (Engine-Ausnahmen werden in den Engines abgefangen); es gibt kein `Result.retry()` und kein `Result.failure()` im Code **[IMPL]**. Wiederholungen werden ausschliesslich über eigene Folgeaufträge erzeugt (Abschnitt 12).
 
@@ -212,7 +212,7 @@ flowchart TD
     J -->|"fertig"| N["Benachrichtigungen,\nNachhol-Sync, Sicherheitsnetz, Content-Trigger"]
 ```
 
-### 3.2 Foto-Lauf (`SyncEngine.run`, `SyncEngine.kt:164`)
+### 3.2 Foto-Lauf (`SyncEngine.run`)
 
 Kein Vergleich mit dem Zustand des PCs; der Lauf entscheidet allein aus dem Handy-Bestand und der Tabelle `synced_files`.
 
@@ -249,16 +249,16 @@ Fotos liegen immer direkt in der letzten Ebene. Bei V2/V3 gibt es keine Länderl
 **Duplikat- und Namenslogik in `transfer()`** **[IMPL]** (Zeilenverweis `SyncEngine.kt:533` seit 0.14.3 veraltet, Funktion `transfer` in `SyncEngine.kt`):
 
 1. Name = `FolderNames.sanitize(displayName)` (Windows-ungültige Zeichen → `_`).
-2. Unter `sh.nameLock`: Ordnerliste des Ziels (gecacht je Lauf). Existiert der Name: gleiche Grösse **und** gleicher Teil-Hash (`PartialHash.compute`, Stufe „Wenig“) → „bereits vorhanden“, `record(..., verified = true)`, kein Upload. Sonst nächster Name `bild_2.jpg`, `bild_3.jpg`, … (`FolderNames.conflictName`).
+2. Unter `sh.nameLock`: Ordnerliste des Ziels (gecacht je Lauf). Existiert der Name: gleiche Grösse **und** gleicher Teil-Hash (`PartialHash.compute`, Stufe „Wenig“) → „bereits vorhanden“, kein Upload. Seit 0.15.0 (R-F1/R-I4, `PresenceCheck`): bei `deleteMode ≠ KEEP` gilt die vorhandene Zieldatei nur dann als gesichert (`verified = true`), wenn sie mit der Profilstufe, mindestens „Mittel“, auf beiden Seiten übereinstimmt, sonst `verified = false` (keine Löschfreigabe); bei `KEEP` unverändert (DEC-021). Sonst nächster Name `bild_2.jpg`, `bild_3.jpg`, … (`FolderNames.conflictName`).
 3. Danach Duplikatsuche in den **anderen Ordnern desselben Monats** (gleicher Grundname, gleiche Grösse, gleicher Teil-Hash); die Ordnerliste liefert `MonthFolderSearch` (auch Länder- und Unterordner, siehe oben).
 4. Name wird in `sh.reserved` eingetragen (gegen gleichzeitige Worker), Ordner wird angelegt.
 5. Upload (Abschnitt 6.1), danach Grössen- und Inhaltsprüfung (Abschnitt 6.4), dann `record()`.
 
-> **[RISIKO] R-F1:** Bei „bereits vorhanden“ wird `verified = true` gesetzt, **unabhängig von der gewählten Prüfstufe** des Profils – die Gleichheit stützt sich nur auf Name, Grösse und Teil-Hash (3 × 64 KB). Ist `deleteMode ≠ KEEP`, kann daraus die Freigabe zum Löschen des Handy-Originals entstehen (Abschnitt 7.5). Das Verhalten ist bewusst (DEC-021), umgeht aber die Stufen „Mittel/Viel/Alles“.
+> **[RISIKO] R-F1 (bis 0.14.7; seit 0.15.0 für `deleteMode ≠ KEEP` behoben, siehe oben):** Bei „bereits vorhanden“ wurde `verified = true` gesetzt, **unabhängig von der gewählten Prüfstufe** des Profils – die Gleichheit stützt sich nur auf Name, Grösse und Teil-Hash (3 × 64 KB). Ist `deleteMode ≠ KEEP`, kann daraus die Freigabe zum Löschen des Handy-Originals entstehen (Abschnitt 7.5). Das Verhalten ist bewusst (DEC-021), umgeht aber die Stufen „Mittel/Viel/Alles“.
 
 > **Konsequenz bei bearbeiteten Fotos:** Ändern sich Grösse oder Änderungsdatum einer bereits gesicherten Datei, gilt sie als „nicht bekannt“. Ist der Inhalt auf dem PC verschieden, wird sie als `name_2.ext` zusätzlich hochgeladen; die Zeile in `synced_files` (Schlüssel `profileId + sourceKey`) wird überschrieben und zeigt danach auf die neue Datei. Die alte PC-Datei bleibt unangetastet liegen.
 
-### 3.3 Ordner-Lauf (`MirrorEngine.runInner`, `MirrorEngine.kt:145`)
+### 3.3 Ordner-Lauf (`MirrorEngine.runInner`)
 
 `run()` umschliesst `runInner()` mit `MirrorLock.mutex.withLock` – ausser bei der Simulation (`MirrorEngine.kt:143`).
 
@@ -385,7 +385,7 @@ Vergleich ist **exakte Gleichheit** (`MirrorEngine.kt:356`). Es gibt keine Toler
 Gelöscht ist eine Datei, wenn sie in der eigenen Seitenliste fehlt, aber S existiert.
 Neu ist eine Datei, die auf einer Seite vorkommt, während S fehlt.
 
-### 4.4 Entscheidungsbaum von `plan()` (`MirrorEngine.kt:332`)
+### 4.4 Entscheidungsbaum von `plan()` (`MirrorEngine.plan`)
 
 ```mermaid
 flowchart TD
@@ -511,7 +511,7 @@ unterschiedliche Gross-/Kleinschreibung (Abschnitt 8.5).
 ### 5.2 Kriterien
 
 - **Auslöser:** beide Seiten seit S verändert (4.3).
-- **Inhaltsvergleich** (`sameContent`, `MirrorEngine.kt:385`): ungleiche Grösse → sofort „verschieden“, **ohne** Hash; gleiche Grösse → `PartialHash.thorough` auf beiden Seiten (≤ 32 MB ganze Datei, sonst 32 Stichproben à 64 KB). Ohne SMB-Verbindung → `false`.
+- **Inhaltsvergleich** (`MirrorEngine.sameContent`): ungleiche Grösse → sofort „verschieden“, **ohne** Hash; gleiche Grösse → Inhaltshash auf beiden Seiten: ≤ 32 MB ganze Datei; **seit 0.15.0 (E1, R-I3) darüber ebenfalls vollständiger Hash beider Seiten** (`ContentCompare`, `PartialHash.comparison`), abbrechbar und mit Fortschritt; Lesefehler oder Abbruch → „nicht gleich“. Bis 0.14.7 galten darüber 32 Stichproben à 64 KB, deren Treffer in `plan()` als `RECORD` gewertet wurde (Änderung zwischen den Stichproben blieb unentdeckt). Ohne SMB-Verbindung → `false`.
 - **Zeitstempel** entscheiden nur bei `NEWER` (und im Dialog „Alle: neuere“). Sie stammen aus **verschiedenen Uhren/Anbietern** (SAF `lastModified` gegen SMB `lastWriteTime`).
 
 > **[RISIKO] R-K1:** `NEWER` vergleicht `l.modified >= r.modified` über zwei unabhängige Quellen. Uhrenabweichung zwischen Handy und PC oder ein SAF-Anbieter, der beim Download die Schreibzeit statt der Originalzeit liefert, kann die „falsche“ Datei gewinnen lassen. Die unterlegene Version wird immer in den Papierkorb gelegt, ist also wiederherstellbar.
@@ -608,7 +608,7 @@ Eine gespeicherte Kennung gilt nur, wenn `pcGuidHost` dem aktuellen Host entspri
 
 > **Umgesetzt in 0.13.1 (DEC-205; APK 0.13.1 in `releases\` vorhanden, Gerätetest nicht dokumentiert):** Beschreibung oben = Stand des Codes laut Development SYNC-20261109-055. Offen: Gerätetest (QA). Bekannte Restpunkte: Ein sofortiger manueller Start direkt nach dem Speichern kann das Lernen knapp verpassen (R5, einmalig «PC unbekannt»); manueller Sync und wiederhergestellte Sicherungen lernen nicht mehr (R3); das Zeitlimit von 30 s gilt je SMB-Vorgang, nicht gesamt; die Einrichtungsausnahme gilt bei Ersteinrichtung weiterhin ohne Rückfrage; bei Hostwechsel eines bestehenden Profils fragt die App seit 0.13.14 (DEC-208, gebaut; Sicherheits-QA -081 bestanden nach Code und Emulator-Gerätetest, Restrisiken: „Speicher freigeben“ bei fremdem PC, EN, Dunkelmodus, Fremd-WLAN; UI-Verdrahtung ohne Unit-Test; der Picker bleibt auf dem Host des Profils, `onPick` übernimmt nur den Pfad).
 
-### 6.1 Hochladen (`SmbSession.upload`, `SmbSession.kt:301`) **[IMPL]**
+### 6.1 Hochladen (`SmbSession.upload`) **[IMPL]**
 
 1. Zieldatei `<finalPath>.s2ptmp` (Konstante `SmbSession.TEMP_SUFFIX`).
 2. Vorhandene Temp-Datei: Fortsetzen nur wenn `TransferPlan.resumeOffset(tmpSize, tmpModified, size, modifiedMillis)` > 0 (Temp kleiner als Original **und** Original-Änderungszeit ≤ Temp-Änderungszeit; unbekannte Zeiten → 0) **und** ein `expectedHash` übergeben wurde; sonst `offset = 0` und `FILE_OVERWRITE_IF`.
@@ -620,7 +620,7 @@ Eine gespeicherte Kennung gilt nur, wenn `pcGuidHost` dem aktuellen Host entspri
 
 Zugriffe: Foto-Engine `openAt(item, offset)` über `ContentResolver` (mit `setRequireOriginal` für GPS), Ordner-Engine `tree.openInput(docId, offset)`.
 
-### 6.2 Herunterladen (`LocalTree.writeFileResumable`, `LocalTree.kt:273`, und `SmbSession.download`) **[IMPL]**
+### 6.2 Herunterladen (`LocalTree.writeFileResumable`, und `SmbSession.download`) **[IMPL]**
 
 1. Elternordner anlegen (`ensureDir`, `@Synchronized`), Geschwisterliste lesen.
 2. `expectNew` (Datei gab es beim Einlesen nicht) und Datei existiert inzwischen → `ChangedDuringRunException`.
@@ -628,9 +628,9 @@ Zugriffe: Foto-Engine `openAt(item, offset)` über `ContentResolver` (mit `setRe
 4. Schreiben in die Temp-Datei, danach **Grössenprüfung** (`stat(...).size == expectedSize`); Abweichung → Temp löschen, `IOException`.
 5. `replaceWith(...)`: siehe 6.3.
 
-> **[RISIKO] R-T1:** Das Fortsetzen von **Downloads** prüft keinen Inhalt – nur Grösse und Zeitstempelheuristik (`resumeOffset`). Beim **Upload** dagegen ist ein Hash Pflicht (DEC-131). Eine PC-Datei, die mit gleicher Grösse und rückdatiertem Zeitstempel ersetzt wurde, könnte als Mischung zweier Versionen enden. Der Fall ist unwahrscheinlich; ein Test existiert nicht.
+> **[RISIKO] R-T1:** Das Fortsetzen von **Downloads** prüft keinen Inhalt – nur Grösse und Zeitstempelheuristik (`resumeOffset`). Beim **Upload** dagegen ist ein Hash Pflicht (DEC-131). Eine Rückdatierung ist dafür nicht nötig (R-I6): ändert sich die PC-Datei während des Downloads und bricht dieser ab, genügt es, dass die Änderungszeit der PC-Datei nicht nach der der Temp-Datei liegt und die Temp-Datei kleiner ist; verglichen werden dabei die Uhren von PC und Handy. Der Anfang käme dann aus der alten, der Rest aus der neuen Version, danach folgt nur die Grössenprüfung. Ein Test existiert nicht.
 
-### 6.3 Datei sicher ersetzen auf dem Handy (`replaceWith`, `LocalTree.kt:247`) **[IMPL]**
+### 6.3 Datei sicher ersetzen auf dem Handy (`LocalTree.replaceWith`) **[IMPL]**
 
 ```
 alte Datei  → "<name>.s2pold"   (umbenennen)
@@ -743,20 +743,20 @@ Regeln **[IMPL]**:
 - Eine Datei wird nur freigegeben, wenn **alle aktiven Foto-Profile, die ihren Ordner abdecken** (`covers`: Ordner, Unterordner-Option, Bild/Video-Typ), sie `verified` gesichert haben (`syncedAllProfiles`).
 - „Papierkorb gewinnt“, wenn irgendein abdeckendes Profil nur Papierkorb wünscht.
 - Android 11+ (API 30): nie ohne **Systemdialog** (`MediaStore.createTrashRequest`/`createDeleteRequest`, Pakete à 500). Android 10: direkt, vorher `stillSame` (Grösse gleich, sonst `DONE` ohne Löschung).
-- `stillSame` vergleicht **nur die Grösse** der Datei (`MediaStore.MediaColumns.SIZE`); eine bearbeitete Datei mit identischer Grösse würde nicht erkannt. **[RISIKO]** gering; vor dem Löschen prüft `buildRequests` ebenfalls nur die Grösse.
-- Zusammenhang mit R-F1: Eine als „bereits vorhanden“ erkannte Datei erhält `verified = true` nach Teil-Hash – unabhängig von der Prüfstufe.
+- `stillSame` vergleicht seit 0.15.0 Grösse **und** `DATE_MODIFIED` mit der DB-Zeile (bis 0.14.7 nur die Grösse, R-I1). Vor dem Löschen (Android 10: `sweep`; ab Android 11: `buildRequests` vor dem Systemdialog) wird die **PC-Kopie erneut geprüft** (Datei vorhanden, gleiche Grösse, gleicher LOW-Teil-Hash gegen die aktuelle Handy-Datei; gemeinsame Funktion mit `SpaceFreer`). Fehlt die Kopie oder weicht sie ab: das Original bleibt, die Zeile wird mit `SyncDao.deleteSynced` entfernt und die Datei beim nächsten Lauf neu gesichert (Toast und Verlaufszeile). PC nicht erreichbar oder von der PC-Erkennung abgelehnt: **nichts löschen**, die Zeilen bleiben vorgemerkt. `syncedBy` zählt eine Zeile nur bei passender Grösse und passendem Änderungsdatum. **[RISIKO]** Android 11+: nach dem Systemdialog keine erneute Prüfung (Zeitfenster).
+- Zusammenhang mit R-F1: Eine als „bereits vorhanden“ erkannte Datei erhält bei `deleteMode ≠ KEEP` seit 0.15.0 `verified = true` nur nach Prüfung mindestens auf Stufe „Mittel“ (bis 0.14.7 nach Teil-Hash, unabhängig von der Stufe).
 
-`SpaceFreer` („Speicher freigeben“, Fotos) prüft vor dem Entfernen jede Datei erneut auf dem PC (Pfad aus der DB, sonst andere Ordner des Monats, Grösse; zusätzlich Hash). Details in `DECISIONS.md` DEC-091/136; der Rest der Datei wurde hier nicht gelesen (**[OFFEN]**). `SpaceFreer` nimmt keinen `MirrorLock` und keinen Worker-Mutex (nur `ensureActive` im Prüfablauf).
+`SpaceFreer` („Speicher freigeben“, Fotos) prüft vor dem Entfernen jede Datei erneut auf dem PC: am gespeicherten Pfad (`RemoteFinder.existsAtPath`) seit 0.15.0 Grösse **und** LOW-Teil-Hash (bis 0.14.7 nur Grösse, R-I2), sonst in den anderen Ordnern des Monats (Name, Grösse, Teil-Hash); als „gesichert“ gilt eine Foto-Zeile nur, wenn Grösse **und** `dateModified` zur aktuellen Datei passen (`photoItems`). Details in `DECISIONS.md` DEC-091/136; der Rest der Datei wurde hier nicht gelesen (**[OFFEN]**). `SpaceFreer` nimmt keinen `MirrorLock` und keinen Worker-Mutex (nur `ensureActive` im Prüfablauf).
 
 ### 7.6 Papierkorb, Frist und Wiederherstellung (Ordner-Profile)
 
 **Speicherort:** je Seite `<Profilordner>/.LeoSync-Bin/<yyyy-MM-dd>/<ursprünglicher Unterpfad>/<Name>`.
 
-**Automatische Frist** (`purgeTrash`, `MirrorEngine.kt:781`): `trashRetentionDays > 0` → `PurgeRule(OLDER, before = cutoff)` – löscht ganze Datumsordner, deren Name `yyyy-MM-dd` **vor** dem Stichtag liegt; andere Namen werden nie gelöscht (`TrashPolicy.isExpired`). Vorgemerkte Wiederherstellungen bleiben liegen (`TrashPurge.reservedPaths`). Fehler lokal → nur Warnung; Netzwerkfehler auf dem PC → Lauf wird unterbrochen. Läuft bei jedem echten Lauf vor dem Planen.
+**Automatische Frist** (`MirrorEngine.purgeTrash`): `trashRetentionDays > 0` → `PurgeRule(OLDER, before = cutoff)` – löscht ganze Datumsordner, deren Name `yyyy-MM-dd` **vor** dem Stichtag liegt; andere Namen werden nie gelöscht (`TrashPolicy.isExpired`). Vorgemerkte Wiederherstellungen bleiben liegen (`TrashPurge.reservedPaths`). Fehler lokal → nur Warnung; Netzwerkfehler auf dem PC → Lauf wird unterbrochen. Läuft bei jedem echten Lauf vor dem Planen.
 
 **Von Hand** (`TrashCleaner`): nimmt `MirrorLock`; Handy sofort, PC sofort wenn erreichbar, sonst als Vormerkung in `PurgeStore` (SharedPreferences `purge`), vom nächsten Lauf ausgeführt (`runPendingPurges`, nach dem Wiederherstellen).
 
-**Wiederherstellung** (`RestoreManager.request` → Tabelle `pending_restores` → `MirrorEngine.runRestores`, `MirrorEngine.kt:634`):
+**Wiederherstellung** (`RestoreManager.request` → Tabelle `pending_restores` → `MirrorEngine.runRestores`):
 
 1. Vormerken (kein sofortiger Eingriff); ein Lauf wird angestossen. Ausgeführt wird nur bei erreichbarem PC und keiner ausstehenden Stichprobe.
 2. Pro Eintrag: Quelle (Handy- oder PC-Papierkorb) prüfen – fehlt sie, Eintrag verwerfen (Warnung).
@@ -825,7 +825,7 @@ Regeln **[IMPL]**:
 SHA-256 über `[Grösse (8 Byte)] + Bereiche`. Bereiche:
 
 - **Wenig/„compute“:** ≤ 192 KB ganz, sonst 3 × 64 KB (Anfang, Mitte, Ende).
-- **Mittel/„thorough“:** ≤ 32 MB ganz (1-MB-Blöcke), sonst 32 gleichmässig verteilte Stichproben à 64 KB.
+- **Mittel/„thorough“:** ≤ 32 MB ganz (1-MB-Blöcke), sonst 32 gleichmässig verteilte Stichproben à 64 KB. Für den **Ordner-Sync-Vergleich** und „Speicher freigeben“ (Ordner) gilt seit 0.15.0 über 32 MB ein vollständiger Hash beider Seiten (`ContentCompare`); die Stichprobe dient dort nicht mehr als Gleichheitsbeweis. In `synced_files` wird der LOW-Teil-Hash seit 0.15.0 immer abgelegt (`SyncEngine.transfer`), damit `partialHash` ab Stufe „Mittel“ nicht `null` bleibt.
 - **Viel:** ≤ 256 MB ganz, sonst 128 Stichproben.
 - **Alles:** ganz.
 
@@ -917,7 +917,7 @@ bauen Pfade über `SmbSession.path(...)` (Basisordner des Profils + Teile). Ordn
 
 ### 10.2 Verbindungsaufbau und Authentifizierung
 
-`SmbSession.open` (`SmbSession.kt:68`): `SmbConfig` mit Timeout 60 s, Socket-Timeout 90 s, `multiProtocolNegotiate = true`; `client.connect(host)`; `AuthenticationContext(user, password, domain|null)` mit dem **entschlüsselten** Passwort (`CredentialCrypto`, Android-Keystore); `connectShare(share) as? DiskShare`. Bei jedem Fehler werden `connection` und `client` geschlossen und die Ausnahme weitergeworfen. Weitere SMB-Konfiguration (Signierung, Verschlüsselung, Dialekte) wird nicht gesetzt – es gelten die smbj-Standardwerte **[OFFEN: Wirkung nicht geprüft]**.
+`SmbSession.open` : `SmbConfig` über die gemeinsame Fabrik `smbConfigFor` (verwendet von `open`, `checkPc` und der Freigabenliste) mit Timeout 60 s, Socket-Timeout 90 s, `multiProtocolNegotiate = true`; `client.connect(host)`; `AuthenticationContext(user, password, domain|null)` mit dem **entschlüsselten** Passwort (`CredentialCrypto`, Android-Keystore); `connectShare(share) as? DiskShare`. Bei jedem Fehler werden `connection` und `client` geschlossen und die Ausnahme weitergeworfen. Verschlüsselung je Profil (`smbEncryption`, seit 0.15.0, DEC-222): «Aus» = wie bisher (`withEncryptData(false)`); «Wenn möglich» (Standard, auch für bestehende Profile) = `withEncryptData(true)`: smbj verschlüsselt automatisch (AES-128-GCM/CCM), sobald der Server SMB3-Verschlüsselung kann, sonst läuft die Verbindung unverschlüsselt weiter; «Erforderlich» = zusätzlich nur Dialekte SMB 3.1.1/3.0.2/3.0 und Pflichtprüfung in `PcLogin` **vor** `authenticate()` (ohne ausgehandelte Verschlüsselung Abbruch ohne Senden der Zugangsdaten, `SmbEncryptionUnavailableException`) und nach der Anmeldung (Sitzung muss einen Verschlüsselungsschlüssel haben). «Verbindung testen» zeigt Dialekt und Verschlüsselungsstatus (`SmbSession.testDetailed`). Es gibt keinen Zertifikatsschalter (SMB3 über TCP nutzt keine Zertifikate, smbj unterstützt kein SMB über QUIC). **Ist-Stand smbj 0.13.0 (Architecture SYNC-20261110-126, Bytecode-Prüfung):** Signieren wird nicht verlangt (`withSigningRequired(false)`), Dialekte 3.1.1, 3.0.2, 3.0, 2.1, 2.0.2, nur NTLMv2/SPNEGO, Pre-Auth-Integrity für 3.1.1, **keine** `FSCTL_VALIDATE_NEGOTIATE_INFO`-Prüfung für 3.0.x, nur TCP (keine Zertifikate, kein QUIC); Sicherheitsanbieter BouncyCastle. Offen/nicht entschieden: Signieren erzwingen, Sicherheitsanbieter (Risiken R-SMB2 bis R-SMB5, Abschnitt 17).
 
 ### 10.3 Fehlerbehandlung, Abbrüche, Wiederverbindung
 
@@ -942,7 +942,7 @@ Alle Handy-Zugriffe laufen über `DocumentsContract`/`ContentResolver` mit einer
 | Ebene | Mechanismus | Zweck |
 |---|---|---|
 | WorkManager (Einreihen) | eindeutige Aufträge je Art: `sync-auto` (`KEEP`), `sync-manual` (`KEEP`), `sync-followup`, `sync-share-retry`, `sync-resume` (`REPLACE`/`APPEND_OR_REPLACE`), `trigger-content`, `trigger-safety`, `trigger-remote-poll`, `pause-end` | verhindert Mehrfach-Einträge derselben Art |
-| Worker-Mutex | `SyncWorker.mutex` (prozessweit) mit `tryLock` | höchstens **ein** Lauf in der ganzen App |
+| Sync-Sperre | `SyncGate` (prozessweit, seit 0.15.0; vorher `SyncWorker.mutex` mit `tryLock`): Sperre und persistenter Nachlauf-Merker (`GlobalSettings.deferredStart`, `commit`) unter einer gemeinsamen kurzen `synchronized`-Sperre | höchstens **ein** Lauf in der ganzen App; ein währenddessen verworfener Start wird genau einmal nachgeholt |
 | `MirrorLock` | `Mutex` um `MirrorEngine.run` (echt) | Handeingriffe (Papierkorb leeren, endgültig löschen, Speicher freigeben Ordner) warten auf den Lauf |
 | Pro Foto-Lauf | `Shared.nameLock` (Mutex), `reserved`, `listings`, atomare Zähler, `Channel(32)` | eindeutige Zielnamen bei parallelen Uploads |
 | Pro Ordner-Lauf | `ConcurrentLinkedQueue`, atomare Zähler, geteiltes `Shared.budget`, `stop`-Flag | parallele Übertragungen |
@@ -950,9 +950,9 @@ Alle Handy-Zugriffe laufen über `DocumentsContract`/`ContentResolver` mit einer
 ### 11.2 Verhalten und Grenzen
 
 - **Parallelität:** `parallelUploads` 1–4 (Standard 3) Worker mit **je eigener** SMB-Verbindung; Profile laufen **nacheinander**.
-- **Gleichzeitige Läufe:** durch den Worker-Mutex ausgeschlossen. `WORK_AUTO` und `WORK_MANUAL` sind verschiedene Auftragsnamen und könnten sich überschneiden; der zweite Worker beendet sich sofort.
+- **Gleichzeitige Läufe:** durch `SyncGate` ausgeschlossen. `WORK_AUTO` und `WORK_MANUAL` sind verschiedene Auftragsnamen und könnten sich überschneiden; der zweite Worker beendet sich sofort (Ausgabe `deferred = true`) und hinterlässt einen Nachlauf-Merker.\n- **Nachlauf (seit 0.15.0, DEC-221):** Der Inhaber der Sperre prüft nach der Freigabe den Merker und reiht genau einen Nachlauf ein (`SyncScheduler.enqueueDeferred`, Namen `sync-deferred` und `sync-deferred-manual`, `APPEND_OR_REPLACE`, Auslöser «nachgeholt»); manuell bleibt manuell. Keine Schleife: ein weiterer Nachlauf entsteht nur, wenn während seiner Laufzeit erneut ein Start verworfen wurde. `SyncScheduler.setupAll` holt einen Merker nach Prozess-Kill nach. «Pausieren» und «Abbrechen» (`cancelAll`) verwerfen den Merker. Schnittstelle für die Oberfläche: `enqueueManual`/`enqueueAuto` liefern `StartResult`, `deferredState()` als StateFlow.
 
-> **[RISIKO] R-N1:** Wird die Manuell-Aktion gestartet, während ein Auto-Lauf läuft, beendet sich der Manuell-Worker sofort mit `success` und tut **nichts**; die Anfrage wird nicht gemerkt. (`enqueueManual` hebt zwar die Pause auf, aber ein Lauf für die Entscheidungen, z. B. nach „Trotzdem löschen“, entsteht dann erst durch einen späteren Auslöser.) Wie die Oberfläche das darstellt, wurde nicht geprüft **[OFFEN]**. Der Sicherheitsmechanismus „Content-Trigger und Sicherheitsnetz stellen sich nach jedem Lauf neu auf“ fängt verlorene Anfragen spätestens nach 6 Stunden auf.
+> **[RISIKO] R-N1 (bis 0.14.7; seit 0.15.0 durch den Nachlauf behoben, DEC-221):** Wurde ein Start gestartet, während ein Lauf aktiv war, beendete sich der Worker sofort mit `success` und tat **nichts**; die Anfrage wurde nicht gemerkt. Das betraf alle fünf Sync-Namen (`sync-auto`, `sync-manual`, `sync-followup`, `sync-share-retry`, `sync-resume`). Die Oberfläche zeigte nichts an (Home wertet nur RUNNING/ENQUEUED). Daten gingen nicht verloren (Entscheidungen, Konfliktwahl, Wiederherstellungs-Vormerkungen und Guard-Freigaben sind vorher in DB/`GuardStore` persistiert), verloren ging nur die Wirkung von `manual` (u. a. Erststart neuer Profile, Umgehung von WLAN-Regel und Wartezeit). Aufgefangen wurde sie durch WLAN-Ereignis, Medien-Trigger, Poll oder das Sicherheitsnetz (6 h, wird nach jedem Lauf neu gesetzt) – **nicht** bei „Für immer pausiert“ (Sicherheitsnetz aus).
 
 - **Simulation** läuft ausserhalb von Worker-Mutex und `MirrorLock`; sie liest, schreibt aber `SyncRun`/Cache-Daten (z. B. `media_info`-Einträge werden nur bei `!dryRun` aktualisiert).
 - **Abbrüche:** `CancellationException` wird in beiden Engines gefangen, in `withContext(NonCancellable)` mit Status `INTERRUPTED` (Android hat gestoppt, mit Grund) oder `CANCELLED` (Benutzer) abgeschlossen und **erneut geworfen**. Übertragungsschleifen rufen `ensureActive()` pro 1-MB-Block und pro Datei. Temp-Dateien bleiben liegen (Fortsetzen).
@@ -1078,14 +1078,14 @@ Legende: **[IMPL]** vorhanden, **[RISIKO]** vorhanden mit Lücke, **[FEHLT]** ni
 | I-01 | Zieldatei erscheint nie unvollständig unter ihrem Namen | Upload/Download in `.s2ptmp`, danach Umbenennen | `SmbSession.upload`, `LocalTree.writeFileResumable/replaceWith` | `TEMP_SUFFIX`, `rename`, Grössenprüfung (`offset != size`, `written != expectedSize`) | **[IMPL]** |
 | I-02 | Alte Handy-Version geht beim Ersetzen nie verloren | `.s2pold`-Wechsel | `LocalTree.replaceWith`, `listRecursive(recover)` | alte → `.s2pold`; bei Fehler zurück; Absturz-Recovery | **[IMPL]** |
 | I-03 | Keine Fortschreibung des Stands ohne Erfolg | `mirror_state`/`synced_files` bilden nur Abgeschlossenes ab | `MirrorEngine.record`, `SyncEngine.record` | `record` nur nach `upload`/`download`/Verifikation; nicht bei `skipChanged`/Fehler | **[IMPL]** |
-| I-04 | Fotos gelten nur nach Prüfung als gesichert | `verified`/`WANTED` hängen an Verifikation | `SyncEngine.transfer`, `Profile.verify()` | Grösse + Hash nach Stufe; bei Fehler Zieldatei löschen, kein `record`; Löschen erzwingt ≥ „Mittel“ | **[IMPL]**, Ausnahme R-F1 |
+| I-04 | Fotos gelten nur nach Prüfung als gesichert | `verified`/`WANTED` hängen an Verifikation | `SyncEngine.transfer`, `Profile.verify()` | Grösse + Hash nach Stufe; bei Fehler Zieldatei löschen (best-effort, R-I4; ein Fehler wird seit 0.15.0 im Verlauf gemeldet), kein `record`; Löschen erzwingt ≥ „Mittel“ (auch bei „bereits vorhanden“ seit 0.15.0, `PresenceCheck`) | **[IMPL]**, Rest R-I4 (best-effort) |
 | I-05 | Eine Überschreibung hinterlässt eine wiederherstellbare Vorversion | `trashOther` | `MirrorEngine.plan/executeTransfer/trashRemote`, `LocalTree.moveToTrash` | `trashOther = true` bei beidseitiger Änderung/Erstabgleich; bei einseitiger nur mit `keepVersions` | **[RISIKO]** (`keepVersions = false`) |
 | I-06 | Fehlschlag einer Überschreibung wird nie als Löschung gewertet | Stand vor der Operation entfernen | `executeTransfer`, `KEEP_BOTH`, `runRestores` | `deleteMirrorState` vor `trashRemote/moveToTrash` | **[IMPL]** (DEC-133) |
 | I-07 | Nichts wird überschrieben, was sich seit dem Einlesen geändert hat | Prüfung der Gegenseite vor dem Schreiben | `executeTransfer`, `unchanged`, `writeFileResumable(expectNew)` | Vergleich `size` + `modified`; `ChangedDuringRunException` | **[RISIKO]** nicht bei `KEEP_BOTH`, `TRASH_*`; kleines TOCTOU-Fenster |
 | I-08 | Kein Löschen grosser Mengen ohne Rückfrage | `GuardPolicy` | `MirrorGuard.kt`, `MirrorEngine.runInner` | > `massDeletePercent` (Standard 20 %), ≥ 100 Löschungen, Unterordner > 5 Dateien weg, kleine Profile nur bei „alles“ | **[IMPL]**, gezählt werden nur `TRASH_*` (nicht `trashOther`) |
 | I-09 | Fehlender Basisordner ist keine „Massenlöschung“ | beide Seiten | `runInner` | `LOCAL_MISSING`, `REMOTE_MISSING`; SAF-`children` wirft bei `null` | **[IMPL]** |
 | I-10 | Falscher Ordner nach Wechsel wird erkannt | Stichprobe | `FolderCheck`, `folderMatches`, `GuardPolicy.sample/matches` | 20 Dateien + 20 Top-Ordner, ≥ 80 % gleiche Grösse | **[IMPL]** |
-| I-11 | Höchstens ein Lauf gleichzeitig | Mutex | `SyncWorker.mutex`, `MirrorLock` | `tryLock`; `withLock` | **[IMPL]**, Folge R-N1 (Anfrage geht verloren) |
+| I-11 | Höchstens ein Lauf gleichzeitig | Mutex | `SyncGate`, `MirrorLock` | `tryLock` mit Nachlauf-Merker; `withLock` | **[IMPL]** (R-N1 seit 0.15.0 behoben) |
 | I-12 | Handeingriffe laufen nie parallel zum Ordner-Lauf | `MirrorLock` | `TrashCleaner`, `FolderFreer`, `MirrorEngine.run` | `MirrorLock.mutex.withLock` | **[IMPL]**; `SpaceFreer` (Fotos) ohne Sperre |
 | I-13 | Zum Wiederherstellen vorgemerkte Versionen werden nie gelöscht | `reservedPaths/Keys` | `purgeTrash`, `TrashCleaner`, `LocalTree.purgeTrash` | `keep`-Pfade werden übersprungen | **[IMPL]** |
 | I-14 | Nur Datumsordner werden automatisch gelöscht | `TrashPolicy.isExpired` | `purgeTrash`, `PurgeRule.matches` | Regex `\d{4}-\d{2}-\d{2}` und `name < cutoff` | **[IMPL]** |
@@ -1102,7 +1102,7 @@ Legende: **[IMPL]** vorhanden, **[RISIKO]** vorhanden mit Lücke, **[FEHLT]** ni
 | I-25 | Entscheidungen des Benutzers überstehen Unterbrechungen | – | `mirror_conflicts` | Konfliktzeile wird vor Ausführung gelöscht | **[RISIKO]** (R-K2) |
 | I-26 | Windows-ungültige Namen werden in der Ordner-Engine behandelt | – | – | nur Foto-Engine `FolderNames.sanitize` | **[FEHLT]** |
 | I-27 | Wiederherstellung übersteht Prozessabbruch | – | `runRestores` | Rollback nur bei Ausnahmen, nicht bei Prozessabbruch | **[OFFEN]** (R-D3) |
-| I-28 | Manuelle Startanfrage geht bei laufendem Sync nicht verloren | – | – | `tryLock`-Abbruch | **[RISIKO]** (R-N1) |
+| I-28 | Manuelle Startanfrage geht bei laufendem Sync nicht verloren | – | – | `SyncGate`: Merker, genau ein Nachlauf (E2) | **[IMPL]** seit 0.15.0 (DEC-221) |
 
 ---
 
@@ -1171,7 +1171,7 @@ Es gibt **kein Mocking-Framework**, **keine Fakes für SMB oder SAF** und **kein
 7. **Foto-Duplikatlogik und `verified = true`-Pfad** (R-F1).
 8. **Netzwerkfehler-Wiederholung** (ein Versuch, dann Lauf abbrechen; Zustand der anderen Worker).
 9. **Simulation vs. Echtlauf** (gleiche Ergebnisse der Planung).
-10. **Manueller Start während eines Laufs** (R-N1).
+10. **Manueller Start während eines Laufs** (R-N1): die Entscheidungslogik ist seit 0.15.0 per `SyncGateTest` geprüft; die Worker-Ebene (`SyncWorker`, `SyncScheduler`) bleibt ungetestet.
 
 ---
 
@@ -1223,14 +1223,34 @@ WLAN verschwindet bei 60 %. Worker: Netzwerkfehler ⇒ Sitzung schliessen, 2 s w
 | R-K3 | Entscheidung gilt für neuere Version als angezeigt | unerwartete Version bleibt/geht | Papierkorb | 5.4 |
 | R-T1 | Download-Resume ohne Hash | theoretische Mischdatei | Zeit-/Grössenprüfung | 6.2 |
 | R-T2 | Kein Inhalts-Hash nach Übertragung (Ordner) | unentdeckte Bit-Fehler bei gleicher Grösse | Grössenprüfung | 6.4 |
-| R-F1 | Foto „bereits vorhanden“ ⇒ `verified = true` unabhängig von Prüfstufe | Löschfreigabe auf Basis eines Teil-Hash | Systemdialog ab API 30; Android-Papierkorb | 3.2, 7.5 |
-| R-N1 | Manueller Start bei laufendem Sync wird verworfen | Entscheidung/Wiederherstellung wartet auf nächsten Auslöser | Sicherheitsnetz | 11.2 |
+| R-F1 | Foto „bereits vorhanden“ ⇒ `verified = true` unabhängig von Prüfstufe (bis 0.14.7) | Löschfreigabe auf Basis eines Teil-Hash | seit 0.15.0 bei `deleteMode ≠ KEEP` Prüfung mindestens „Mittel“ (`PresenceCheck`); bei `KEEP` bewusst unverändert (DEC-021); Systemdialog ab API 30 | 3.2, 7.5 |
+| R-N1 | Start bei laufendem Sync wurde verworfen (alle fünf Sync-Namen; Mittel, kein Datenverlust) | Wirkung von `manual` ging verloren (u. a. Erststart neuer Profile) | **behoben in 0.15.0** (Nachlauf, `SyncGate`, DEC-221); bis dahin Sicherheitsnetz (nicht bei „Für immer pausiert“) | 11.2 |
 | R-W1 | Windows-ungültige Dateinamen (Ordner-Engine) | Dateifehler in jedem Lauf | Fehlermeldung im Verlauf | 8.4 |
 | R-M1 | `modified = 0` bei Anbietern ohne Zeit | Änderungen mit gleicher Grösse unsichtbar | – | 8.4 |
 | R-C1 | Dateien nur in der Gross-/Kleinschreibung verschieden | eine Datei wird ignoriert | – | 8.4 |
 | R-L1 | `SmbSession.listDir` liefert für fehlenden Ordner „leer“ | fehlender Unterordner = „alles gelöscht“ | `vanishedFolder` (> 5 Dateien), `massDelete` | 7.1 |
 | R-V1 | `keepVersions = false` | einseitige Überschreibung ohne Vorversion | bewusst gewählte Einstellung | 6.5 |
 | R-S1 | `GuardStore` mit `apply()` | Entscheidung/Block könnte bei Prozess-Kill fehlen | Schutzbremse greift erneut | 13.3 |
+| R-I1 | Löschfreigabe Foto ohne erneute PC-Prüfung (Hoch, Codeanalyse; Architecture -125) | Original gelöscht trotz fehlender/abweichender PC-Kopie | **behoben in 0.15.0** (PC-Prüfung vor dem Löschen, `stillSame` mit Datum; DEC-223). Rest: Android 11+ keine erneute Prüfung nach dem Systemdialog | 7.5 |
+| R-I2 | „Speicher freigeben“ am gespeicherten Pfad nur nach Grösse (Hoch) | Original entfernt trotz abweichender PC-Datei | **behoben in 0.15.0** (Grösse + LOW-Teil-Hash, `photoItems` mit Datum; DEC-223) | 7.5, 3.2 |
+| R-I3 | Ordner-Sync wertet Stichproben-Gleichheit über 32 MB als Gleichheit (Hoch) | in-place geänderte grosse Datei erreicht die Gegenseite nie, Konflikt geht still verloren, `FolderFreer` kann Original entfernen | **behoben in 0.15.0** (Vollhash beider Seiten über 32 MB, abbrechbar; DEC-223). Rest: Hashen unter `nameLock`; kein Integrationstest | 5.2, 8.3 |
+| R-I4 | Fehlgeschlagene Foto-Verifikation löscht die Zieldatei nur best-effort (Mittel) | liegen gebliebene Datei galt über R-F1 als „vorhanden“ | seit 0.15.0 durch `PresenceCheck` (Stufe ≥ „Mittel“) entschärft; Fehler beim Aufräumen im Verlauf; Löschen bleibt best-effort | 3.2, 14 (I-04) |
+| R-I5 | Ersetzen am Ende der Übertragung ohne erneute Zielprüfung (Mittel; Upload `rename(replace)`, Download `replaceWith` mit alter Geschwisterliste); ungeklärt: `renameDocument` kann „name (1)“ vergeben | Zeitfenster = Übertragungsdauer | Papierkorb (`trashOther`); **offen** | 6.1, 6.3, 14 (I-07) |
+| R-I6 | Download-Fortsetzen ohne Rückdatierung und mit Uhrenvergleich PC/Handy (Mittel; Präzisierung R-T1) | Mischdatei aus alter und neuer PC-Version | Grössenprüfung; **offen** | 6.2 |
+| R-I7 | Kleinigkeiten (Niedrig): Ausweich-Kopieren in `moveToTrash`/`moveFile` ohne Prüfung; `.s2ptmp` auf dem PC (Fotos) nie aufgeräumt; `.s2pold`-Recovery löscht, sobald der Basisname existiert; `KEEP_BOTH`/`TRASH_*` ohne „unverändert seit Listing“ (I-07) | selten, kleine Wirkung | **offen** | 6.3 |
+| R-BG1 | `PauseService` verbraucht das `dataSync`-Tagesbudget (Android 15/16, 6 h/24 h), keine eigene Laufzeitgrenze; unter Android ≤ 14 unbegrenzt (Hoch, Codeanalyse; Architecture -124) | Budget fehlt danach dem eigentlichen Sync | **offen**, Inhaberentscheidung (Zielkonflikt DEC-052) | 11, `ARCHITECTURE.md` |
+| R-BG2 | Nicht expedited Läufe (`resume`, `followup`, `retry`, „nur beim Laden“) bekommen den Vordergrund voraussichtlich nicht (Mittel, ungeklärt) | Abbruch langer Läufe | **offen**, Gerätemessung nötig | 11 |
+| R-BG3 | `PauseService.onTimeout` nur `stopSelf()`, keine Rückfall-Anzeige; „Pausiert“ verschwindet bei `resumeOnWifi = true` (Niedrig, Code nachgewiesen) | Anzeige verschwindet | **offen** | 11 |
+| R-BG4 | Sperre blieb bei Ausnahme in `markInterrupted`/`cancelProgress` vor dem Freigeben hängen (Mittel, theoretisch) | jeder weitere Sync stumm verworfen bis Prozessende | **behoben in 0.15.0** (Freigabe in jedem Fall, verschachteltes `finally`) | 3.1 |
+| R-BG5 | `enqueueResume` konnte vor dem Freigeben starten und verworfen werden (Niedrig, theoretisch) | Fortsetzung verworfen | **behoben in 0.15.0** (Freigabe vor dem Einreihen, `APPEND_OR_REPLACE`) | 3.1, 11.2 |
+| R-BG6 | Android-16-Kontingente für FGS/expedited nicht geprüft (Mittel, ungeklärt; wie DEC-183) | unbekannt | **offen** | 11 |
+| R-BG7 | Keine Tests für `SyncWorker`, `SyncScheduler`, `TriggerWorker`, `PauseService`, Receiver; kein `work-testing` (Mittel) | fehlende Absicherung | teilweise: `SyncGateTest` (Entscheidungslogik); Worker-Ebene **offen** (SYNC-20261110-127) | 15 |
+| R-BG8 | `BootReceiver` mit `exported="true"` im Manifest (Niedrig, theoretisch) | – | **offen** (prüfen, ob `false` genügt) | – |
+| R-SMB1 | Keine Verschlüsselung; Freigaben mit Verschlüsselungspflicht nicht nutzbar (Mittel, belegt) | Dateiinhalte im Netz lesbar | **behoben in 0.15.0**: Verschlüsselung je Profil (Aus / Wenn möglich (Standard) / Erforderlich, DEC-222); echter Test gegen Windows/NAS **offen** | 10.2 |
+| R-SMB2 | Signieren clientseitig nicht verlangt (Mittel, belegt; setzt aktiven Angreifer im LAN voraus) | Dateiinhalte im Transport veränderbar bei Servern ohne Signierpflicht | **offen** (Signieren erzwingen nicht entschieden, erst nach Leistungsmessung) | 10.2 |
+| R-SMB3 | Herabstufung: Dialekte ab 2.0.2 angeboten, keine Negotiate-Validierung für 3.0.x (Mittel) | Angreifer kann Verbindung ohne Verschlüsselung erzwingen | nur mit Stufe „Erforderlich“ geschützt (nur SMB 3.x, Pflichtprüfung); bei „Wenn möglich“ **offen** | 10.2 |
+| R-SMB4 | NTLMv2-Antwort an gefälschten Server (GUID-Fälschung) erlaubt Offline-Angriff auf das Passwort (theoretisch; Mittel bei schwachem Passwort) | Passwort ratbar | Eigenschaft von NTLM; PC-Erkennung; Hilfe-Empfehlung eigenes Konto (offen, Documentation/UX) | 6.0 |
+| R-SMB5 | `CredentialCrypto.decrypt` liefert bei Keystore-Verlust still `""` (Niedrig; kein Sicherheitsrisiko) | Meldung „Anmeldung fehlgeschlagen“ statt „Passwort neu eingeben“ | **offen** (kleine Development-Aufgabe) | – |
 
 ---
 
@@ -1239,15 +1259,15 @@ WLAN verschwindet bei 60 %. Worker: Netzwerkfehler ⇒ Sitzung schliessen, 2 s w
 ### 18.1 Nicht eindeutig nachvollziehbar / nicht geprüft
 - Verhalten von `tree.rename` bei bereits existierendem `*_conflict-phone.*` (SAF-Anbieter-abhängig).
 - Verhalten von SAF-Anbietern ohne `COLUMN_LAST_MODIFIED` (R-M1) und von SD-Karten (Zeitstempel-Granularität).
-- Ob die Oberfläche einen verworfenen manuellen Start (R-N1) sichtbar macht (`ui/*`, `WifiHelper.registerWifiCallback`, `PauseService`, `Notifications` nicht gelesen).
-- SMB-Sicherheitsparameter (Signierung/Verschlüsselung/Dialekt) – nur smbj-Standard.
+- ~~Ob die Oberfläche einen verworfenen manuellen Start (R-N1) sichtbar macht~~ – geklärt: bis 0.14.7 nicht sichtbar (Home wertete nur RUNNING/ENQUEUED); seit 0.15.0 zeigt die Oberfläche den Nachlauf (Snackbar, Zeile «Danach: …», DEC-224).
+- ~~SMB-Sicherheitsparameter~~ – belegter Ist-Stand in Abschnitt 10.2; offen bleiben Signieren erzwingen, Sicherheitsanbieter (BouncyCastle gegen JCE), Verhalten gegen echte Windows-/NAS-Server mit Verschlüsselungspflicht, Zusammenspiel `withMultiProtocolNegotiate` mit eingeschränkten Dialekten, Durchsatz mit/ohne Verschlüsselung, SMB-Verschlüsselung des lokalen QA-Testservers.
 - Verhalten sehr langer Pfade und reservierter Windows-Namen.
 - Exakte Reihenfolge der Datumsermittlung (`MediaAnalyzer`, nur nach `Entities.kt`-Kommentar und DEC-017).
 - Rest von `SpaceFreer` (nach Zeile 120).
 - Ob `SyncWorker`-Abbrüche in allen Android-Versionen gleich `STOP_REASON_*` melden.
 
 ### 18.2 Geplant bzw. nicht umgesetzt (nur zur Abgrenzung, nicht Teil des Ist-Stands)
-Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Integration (nur offene Punkte, ohne Versionsnummer) sowie die Umsetzung von DEC-205 (Lernen der PC-Kennung nur beim Speichern/Test, Abschnitt 6.0). Die PC-Erkennung nach DEC-204 ist im Code vorhanden (Abschnitt 6.0); APK ab 0.13.0 in `releases\` vorhanden. Der Rest betrifft die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
+Quelle `DECISIONS.md`/`ARCHITECTURE.md` §14: Paketwechsel `ch.leo.sync` und Play-Store-Integration (nur offene Punkte, ohne Versionsnummer) (Die Umsetzung von DEC-205 ist seit 0.13.1 erfolgt, Abschnitt 6.0.) Die PC-Erkennung nach DEC-204 ist im Code vorhanden (Abschnitt 6.0); APK ab 0.13.0 in `releases\` vorhanden. Der Rest betrifft die Synchronisationslogik nicht. („Ordner anlegen“, DEC-192, ist seit 0.11.3 umgesetzt; „Verlauf mit Kennungen“, DEC-159/DEC-202, seit 0.12.0/0.12.1, siehe Lauf-Schritt 1 „Lauf anlegen“.)
 
 ### 18.3 Offene Dokumentationspunkte
 - Ergänzung nach Prüfung von `MediaAnalyzer`, `Notifications`, `WifiHelper`, `PauseService` (Abschnitte 2.3 und 11).

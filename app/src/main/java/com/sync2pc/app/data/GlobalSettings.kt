@@ -131,6 +131,15 @@ class GlobalSettings(context: Context) {
     /** Seit wann ein unterbrochener Sync auf das WLAN wartet (0 = nicht) */
     val resumeSince: Long get() = prefs.getLong("resumeSince", 0)
 
+    /**
+     * Vorgemerkter Nachlauf (R-N1, SYNC-20261111-143): "" = keiner, "auto" oder "manual". Ein Start, der während eines
+     * laufenden Syncs kam, wird nach dessen Ende nachgeholt. Mit `commit()` (nicht `apply()`): muss einen Prozess-Kill
+     * kurz nach der Anforderung überleben (vgl. R-S1). Nicht Teil der exportierbaren Einstellungen.
+     */
+    var deferredStart: String
+        get() = prefs.getString("deferredStart", "") ?: ""
+        set(v) = prefs.edit().putString("deferredStart", v).commit().let { }
+
     /** Kürzestes Prüfintervall aller aktiven Ordner-Profile (Minuten), 0 = keine Ordner-Profile */
     var remotePollMinutes: Int
         get() = prefs.getInt("remotePollMinutes", 0)

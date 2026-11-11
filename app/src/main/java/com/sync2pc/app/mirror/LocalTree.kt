@@ -63,6 +63,8 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
                 if (uri.authority == "com.android.providers.downloads.documents") {
                     val id = DocumentsContract.getTreeDocumentId(uri)
                     if (!id.startsWith("raw:") && !id.startsWith("/storage/")) {
+                        // -122 Punkt 3: ganzer Pfad (Download/Testsync/unter) über die Elternkette, sonst nur der Ordnername
+                        downloadPathLabel(context, uri, id)?.let { return it }
                         val doc = DocumentsContract.buildDocumentUriUsingTree(uri, id)
                         context.contentResolver.query(
                             doc, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null,
@@ -75,7 +77,42 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
             return label(uri)
         }
 
-        /** "/storage/emulated/0/Download/Test" -> "Download/Test", "/storage/1234-ABCD/DCIM" -> "SD-Karte: DCIM" */
+        /**
+         * Pfad eines Ordners des Download-Anbieters von der Wurzel aus (ab Android 8 über `findDocumentPath`). Das erste Element der
+         * Kette ist die Wurzel «Downloads» und entfällt. null = nicht ermittelbar (Anbieter liefert keine Kette, Name fehlt).
+         */
+        internal fun downloadPathLabel(context: Context, treeUri: Uri, docId: String): String? = try {
+            val docUri = DocumentsContract.buildDocumentUri(treeUri.authority, docId)
+            val ids = DocumentsContract.findDocumentPath(context.contentResolver, docUri)?.path
+            if (ids == null || ids.size < 2) null else {
+                val names = ids.drop(1).map { id ->
+                    context.contentResolver.query(
+                        DocumentsContract.buildDocumentUri(treeUri.authority, id),
+                        arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null,
+                    )?.use { c -> if (c.moveToFirst()) c.getString(0)?.takeIf { it.isNotBlank() } else null } ?: return null
+                }
+                "Download/" + names.joinToString("/")
+            }
+        } catch (e: Exception) { null }
+
+        /**
+         * Kanonische Form eines Handy-Ordners für die Überschneidungsprüfung (SYNC-20261111-152): erst rein über den URI-Text
+         * ([com.sync2pc.app.data.ProfileOverlap.canonicalTree]), sonst für Ordner des Download-Anbieters mit Nummern-Kennung
+         * (`msd:12`) über die Elternkette ([downloadPathLabel], Wurzel «Download» = `primary:download`). null = nicht abbildbar
+         * (dann gilt der Textvergleich der URI, es entsteht keine falsche Warnung). Greift auf den ContentResolver zu: nicht im UI-Thread.
+         */
+        fun canonical(context: Context, uriText: String): String? {
+            com.sync2pc.app.data.ProfileOverlap.canonicalTree(uriText)?.let { return it }
+            return try {
+                val uri = Uri.parse(uriText)
+                if (uri.authority != "com.android.providers.downloads.documents") return null
+                val id = DocumentsContract.getTreeDocumentId(uri)
+                if (id.startsWith("raw:") || id.startsWith("/storage/")) return null
+                downloadPathLabel(context, uri, id)?.let { "primary:" + it.lowercase() }
+            } catch (e: Exception) { null }
+        }
+
+        /** "/storage/emulated/0/Download/Test" -> "Download/Test","/storage/1234-ABCD/DCIM" -> "SD-Karte: DCIM" */
         fun rawPathLabel(path: String): String {
             val internal = Regex("""^/storage/emulated/\d+/?""")
             if (internal.containsMatchIn(path)) return path.replace(internal, "").trimEnd('/').ifEmpty { com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.free_main_folder) }
@@ -171,10 +208,13 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
         return id
     }
 
-    /** Gründlicher Inhalts-Hash für den Ordner-Vergleich (siehe [com.sync2pc.app.sync.PartialHash.thorough]) */
-    fun contentHash(docId: String, size: Long): String =
+    /**
+     * Vollständiger Inhalts-Hash für den Ordner-Vergleich (siehe [com.sync2pc.app.sync.PartialHash.comparison]):
+     * ganze Datei, auch über 32 MB. [check] bricht per Exception ab, [onBytes] meldet den Fortschritt.
+     */
+    fun contentHash(docId: String, size: Long, check: () -> Unit = {}, onBytes: (Long) -> Unit = {}): String =
         (openInput(docId) as ParcelFileDescriptor.AutoCloseInputStream).use { ins ->
-            com.sync2pc.app.sync.PartialHash.thorough(size) { off, len ->
+            com.sync2pc.app.sync.PartialHash.comparison(size, { off, len ->
                 val bb = java.nio.ByteBuffer.allocate(len)
                 var pos = off
                 while (bb.hasRemaining()) {
@@ -183,7 +223,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) {
                     pos += n
                 }
                 if (bb.position() == len) bb.array() else bb.array().copyOf(bb.position())
-            }
+            }, check, onBytes)
         }
 
     fun stat(docId: String): LocalEntry? =

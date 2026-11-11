@@ -270,7 +270,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                                         Checkbox(checked = isSel(v), onCheckedChange = { toggle(v) }, enabled = !reserved)
                                         Column {
                                             Text(
-                                                dayLabel(v.date) + " · " + str(if (v.side == Side.LOCAL) R.string.side_phone else R.string.side_pc) +
+                                                (if (v.modified > 0) formatTime(v.modified) else dayLabel(v.date)) + " · " + str(if (v.side == Side.LOCAL) R.string.side_phone else R.string.side_pc) +
                                                     " · " + Notifications.formatBytes(v.size),
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
@@ -329,7 +329,11 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
 
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
-        title = { Text(plural(R.plurals.trash_delete_title, selected.size)) },
+        title = {
+            // Bei genau einer Datei wird der Name genannt
+            if (selected.size == 1) Text(str(R.string.trash_delete_title_one, selected.first().name))
+            else Text(plural(R.plurals.trash_delete_title, selected.size))
+        },
         text = {
             Text(str(R.string.trash_delete_text) + if (!data.pcAvailable && selected.any { it.side == Side.REMOTE })
                 " " + str(R.string.trash_delete_pc_later) else "")
@@ -383,7 +387,8 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
     var confirm by remember { mutableStateOf(false) }
     var pickDays by remember { mutableStateOf(false) }
 
-    val days = daysText.toIntOrNull()?.coerceIn(0, 3650)
+    // 1 oder mehr Tage; leer/0 ist ungültig (Hinweiszeile, «Endgültig löschen» bleibt gesperrt)
+    val days = daysText.toIntOrNull()?.coerceIn(0, 3650)?.takeIf { it >= 1 }
     val rule: PurgeRule? = when (mode) {
         PurgeRule.Mode.ALL -> PurgeRule(PurgeRule.Mode.ALL)
         PurgeRule.Mode.OLDER -> days?.let { PurgeRule.older(it) }
@@ -397,8 +402,10 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
     val canRun = rule != null && (affected.isNotEmpty() || pcUnknown)
     val affectedBytes = Notifications.formatBytes(TrashPurge.bytes(affected))
 
+    Column(Modifier.fillMaxWidth()) {
+    // Inhalt scrollt; Zähler und Knopf liegen darunter in einer festen Fusszeile (immer sichtbar, auch mit Tastatur/grosser Schrift)
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp),
+        Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(str(R.string.trash_cleanup), style = MaterialTheme.typography.titleLarge)
@@ -409,6 +416,7 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
         if (mode == PurgeRule.Mode.OLDER) OutlinedTextField(
             daysText, { v -> daysText = v.filter { it.isDigit() }.take(4) },
             label = { Text(str(R.string.unit_days)) }, isError = days == null, singleLine = true,
+            supportingText = if (days == null) ({ Text(str(R.string.trash_days_invalid)) }) else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -426,19 +434,32 @@ private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, Purge
         Text(str(R.string.trash_where), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         PurgeSides.entries.forEach { s -> ModeRow(s.label, sides == s) { sides = s } }
         Hint(str(R.string.trash_phone_only_hint, PurgeSides.LOCAL.label))
+    }
 
-        Text(
-            if (rule == null) str(R.string.trash_choose_what)
-            else plural(R.plurals.trash_affects, affected.size, affected.size, affectedBytes) +
-                if (pcUnknown) " " + str(R.string.trash_affects_pc_later) else "",
-        )
-        if (pcUnknown) Hint(str(R.string.trash_pc_later_hint))
-        if (kept > 0) Hint(plural(R.plurals.trash_kept_reserved, kept))
-        Button(
-            onClick = { confirm = true }, enabled = canRun, modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError),
-        ) { Text(str(R.string.delete_mode_delete)) }
+    Surface(tonalElevation = 3.dp) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                when {
+                    mode == PurgeRule.Mode.OLDER && days == null -> str(R.string.trash_days_invalid)
+                    rule == null -> str(R.string.trash_choose_what)
+                    else -> plural(R.plurals.trash_affects, affected.size, affected.size, affectedBytes) +
+                        if (pcUnknown) " " + str(R.string.trash_affects_pc_later) else ""
+                },
+                color = if (mode == PurgeRule.Mode.OLDER && days == null) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface,
+            )
+            if (pcUnknown) Hint(str(R.string.trash_pc_later_hint))
+            if (kept > 0) Hint(plural(R.plurals.trash_kept_reserved, kept))
+            Button(
+                onClick = { confirm = true }, enabled = canRun, modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError),
+            ) { Text(str(R.string.delete_mode_delete)) }
+        }
+    }
     }
 
     if (pickDays) DayPickerDialog(

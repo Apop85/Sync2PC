@@ -6,9 +6,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,6 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Einstellungen → Sicherung: Profile, Einstellungen und Sync-Status exportieren/importieren. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun BackupSection() {
     val ctx = LocalContext.current
@@ -209,11 +213,15 @@ fun BackupSection() {
                     Hint(str(R.string.backup_replace_hint))
                 }
             },
-            confirmButton = { TextButton(onClick = { runImport(b, replace = true) }) { Text(str(R.string.backup_replace)) } },
-            dismissButton = {
-                Row {
+            // Reihenfolge unverändert (Abbrechen, Hinzufügen, Ersetzen); «Ersetzen» löscht alle bisherigen Profile und steht
+            // deshalb in der Fehlerfarbe. FlowRow: bei grosser Schrift stehen die Knöpfe untereinander statt abgeschnitten.
+            confirmButton = {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = { parsed = null; importJson = null }) { Text(str(R.string.common_cancel)) }
                     TextButton(onClick = { runImport(b, replace = false) }) { Text(str(R.string.profile_add)) }
+                    TextButton(onClick = { runImport(b, replace = true) }) {
+                        Text(str(R.string.backup_replace), color = MaterialTheme.colorScheme.error)
+                    }
                 }
             },
         )
