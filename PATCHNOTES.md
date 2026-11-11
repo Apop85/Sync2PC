@@ -2,6 +2,10 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.15 (2026-11-11)
+
+- Automatischer Build: Quellcode geaendert, Patchnotes bitte ergaenzen.
+
 ## 0.16.14 (2026-11-11)
 
 ### Geändert
