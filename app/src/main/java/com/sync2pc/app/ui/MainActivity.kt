@@ -220,7 +220,7 @@ private fun AppRoot(
             // Vor dem Systemdialog wird die PC-Kopie geprüft (SYNC-20261111-142): Ist der PC nicht erreichbar, wird nichts
             // gelöscht, die Dateien bleiben vorgemerkt
             val note = when {
-                out.unreachable -> str(R.string.delete_pc_unreachable_retry)
+                out.unreachable -> str(R.string.delete_pc_unreachable)
                 out.rejectedMessage != null -> str(R.string.delete_pc_rejected, out.rejectedMessage)
                 out.reset > 0 -> str(R.string.delete_pc_reset, out.reset)
                 out.batches.isEmpty() -> str(R.string.main_nothing_to_remove)

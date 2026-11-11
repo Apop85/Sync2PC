@@ -70,6 +70,7 @@ internal fun friendlyErrorId(e: Throwable): Int? {
             com.sync2pc.app.R.string.err_friendly_login
         has("STATUS_BAD_NETWORK_NAME") -> com.sync2pc.app.R.string.err_friendly_share_missing
         has("STATUS_OBJECT_NAME_NOT_FOUND", "STATUS_OBJECT_PATH_NOT_FOUND") -> com.sync2pc.app.R.string.err_friendly_folder_missing
+        chain.any { it is com.sync2pc.app.smb.SmbShareAccessDeniedException } -> com.sync2pc.app.R.string.err_friendly_access_unencrypted
         has("STATUS_ACCESS_DENIED") -> com.sync2pc.app.R.string.err_friendly_access
         has("STATUS_DISK_FULL") -> com.sync2pc.app.R.string.err_friendly_pc_full
         has("ENOSPC", "No space left") -> com.sync2pc.app.R.string.err_friendly_phone_full

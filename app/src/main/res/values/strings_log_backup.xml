@@ -81,7 +81,7 @@
     <string name="backup_import_done">Import finished</string>
     <string name="backup_err_replace_rejected">Replace cancelled, nothing was deleted: the backup contains profiles that cannot be imported (unknown folder structure, backup from a newer version?): %1$s</string>
     <string name="log_clear_title">Delete the whole history?</string>
-    <string name="log_clear_text">%1$d entries will be deleted and cannot be restored. Use “Share history” first to keep a copy.</string>
+    <string name="log_clear_text">%1$d entries will be deleted. You can undo this right afterwards with “Undo”. Use “Share history” first to keep a copy.</string>
     <string name="log_cleared">History deleted</string>
     <string name="log_undo">Undo</string>
     <string name="log_advice_missing">The file no longer exists on the phone. Sync again; if the error stays, check the file list in the profile.</string>

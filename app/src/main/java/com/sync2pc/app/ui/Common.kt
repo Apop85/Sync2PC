@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sync2pc.app.R
 import com.sync2pc.app.l10n.Texts
+import com.sync2pc.app.l10n.TimeFormat
 import com.sync2pc.app.l10n.str
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
@@ -298,9 +299,17 @@ fun ErrorDetails(technical: String) {
     }
 }
 
-/** Datum + Uhrzeit, getrennt durch genau ein Leerzeichen (Aufrufer nutzen substringAfter(' ') für die Uhrzeit) */
-fun formatTime(ms: Long): String =
-    SimpleDateFormat(str(R.string.fmt_date_time), Texts.locale).format(Date(ms))
+/** Datum + Uhrzeit nach Systemeinstellung (SYNC-20261111-233); nur Uhrzeit: [formatClock], nur Datum: [formatDate] */
+fun formatTime(ms: Long): String = TimeFormat.dateTime(ms)
+
+/** Datum + Uhrzeit mit Sekunden, damit Versionen derselben Minute unterscheidbar sind */
+fun formatTimeSec(ms: Long): String = TimeFormat.dateTime(ms, seconds = true)
+
+/** Nur Uhrzeit nach Systemeinstellung (12 h/24 h) */
+fun formatClock(ms: Long): String = TimeFormat.clock(ms)
+
+/** Nur Datum nach Systemeinstellung */
+fun formatDate(ms: Long): String = TimeFormat.date(ms)
 
 /** Monatsnamen in der App-Sprache (Januar … / January …) */
 val monthNames: List<String>

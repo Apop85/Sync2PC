@@ -29,8 +29,13 @@ object Texts {
     @Volatile
     var resolver: Resolver? = null
 
+    /** Anwendungskontext für Systemeinstellungen (Zeitformat, [TimeFormat]); in Unit-Tests null */
+    @Volatile
+    var appContext: Context? = null
+
     /** Beim App-Start und nach einem Sprachwechsel aufrufen. */
     fun init(ctx: Context) {
+        appContext = ctx.applicationContext ?: ctx
         resolver = AndroidResolver(AppLanguage.localized(ctx.applicationContext ?: ctx))
     }
 

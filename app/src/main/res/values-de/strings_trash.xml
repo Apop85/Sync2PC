@@ -34,6 +34,8 @@
     <string name="trash_whole_folder">Neueste Version je Datei wählen</string>
     <string name="trash_older_version">ältere Version</string>
     <string name="trash_deleted">gelöscht</string>
+    <string name="trash_modified_at">geändert %1$s</string>
+    <string name="trash_deleted_on">gelöscht am %1$s</string>
     <string name="trash_reserved">zum Wiederherstellen vorgemerkt</string>
     <string name="trash_selected">%1$s ausgewählt · %2$s</string>
     <string name="trash_clear_selection">Auswahl aufheben</string>

@@ -18,15 +18,15 @@ class ChangeConfirmTest {
     @Test fun noChangeNoDialog() {
         val b = mirror()
         assertFalse(ChangeConfirm.needed(b, b.copy(name = "anders")))
-        assertNull(ChangeConfirm.text(b, b, ".LeoSync-Bin"))
+        assertNull(ChangeConfirm.text(b, b, "@LeoSync-Bin"))
     }
 
     @Test fun directionChangeAsks() {
         val b = mirror(SyncDirection.BOTH)
-        val t = ChangeConfirm.text(b, b.copy(direction = SyncDirection.DOWNLOAD.name), ".LeoSync-Bin")
+        val t = ChangeConfirm.text(b, b.copy(direction = SyncDirection.DOWNLOAD.name), "@LeoSync-Bin")
         assertNotNull(t)
         assertTrue(t!!.contains(SyncDirection.BOTH.label) && t.contains(SyncDirection.DOWNLOAD.label))
-        assertTrue(t.contains(".LeoSync-Bin"))
+        assertTrue(t.contains("@LeoSync-Bin"))
     }
 
     @Test fun enablingDeletionsAsksDisablingDoesNot() {
@@ -36,7 +36,7 @@ class ChangeConfirmTest {
 
     @Test fun bothTriggersGiveTwoParagraphs() {
         val b = mirror(SyncDirection.BOTH, false)
-        val t = ChangeConfirm.text(b, b.copy(direction = SyncDirection.UPLOAD.name, propagateDeletes = true), ".LeoSync-Bin")!!
+        val t = ChangeConfirm.text(b, b.copy(direction = SyncDirection.UPLOAD.name, propagateDeletes = true), "@LeoSync-Bin")!!
         assertTrue(t.contains("\n\n"))
     }
 

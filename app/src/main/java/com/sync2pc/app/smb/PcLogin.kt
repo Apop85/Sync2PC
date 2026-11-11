@@ -42,6 +42,9 @@ interface PcLink<S> {
  * [afterLogin] false: die Zugangsdaten wurden NICHT gesendet (Prüfung vor der Anmeldung bzw. Aushandlung ohne SMB 3).
  * [afterLogin] true: Anmeldung erfolgte, die Sitzung hat aber keinen Verschlüsselungsschlüssel; sie wurde geschlossen.
  */
+/** «Zugriff verweigert» beim Verbinden mit der Freigabe bei Verschlüsselung «Aus»: kann ein Rechte- oder ein Verschlüsselungsproblem sein (SYNC-20261111-232) */
+class SmbShareAccessDeniedException(cause: Throwable) : Exception(cause)
+
 class SmbEncryptionUnavailableException(
     val host: String, val afterLogin: Boolean = false, cause: Throwable? = null,
 ) : Exception(cause) {

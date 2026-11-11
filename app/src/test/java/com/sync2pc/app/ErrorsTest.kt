@@ -83,6 +83,9 @@ class ErrorsTest {
         assertEquals(R.string.err_friendly_share_missing, friendlyErrorId(IOException("STATUS_BAD_NETWORK_NAME")))
         assertEquals(R.string.err_friendly_folder_missing, friendlyErrorId(IOException("STATUS_OBJECT_PATH_NOT_FOUND")))
         assertEquals(R.string.err_friendly_access, friendlyErrorId(IOException("STATUS_ACCESS_DENIED")))
+        // -232 (6): Zugriff verweigert bei Verschlüsselung «Aus» nennt auch die Verschlüsselung als mögliche Ursache
+        assertEquals(R.string.err_friendly_access_unencrypted,
+            friendlyErrorId(com.sync2pc.app.smb.SmbShareAccessDeniedException(IOException("STATUS_ACCESS_DENIED"))))
         assertEquals(R.string.err_friendly_pc_full, friendlyErrorId(IOException("STATUS_DISK_FULL")))
         assertEquals(R.string.err_friendly_phone_full, friendlyErrorId(IOException("write failed: ENOSPC (No space left on device)")))
     }

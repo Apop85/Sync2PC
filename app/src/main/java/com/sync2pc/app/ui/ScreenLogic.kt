@@ -47,11 +47,5 @@ object DecisionChoice {
     }
 }
 
-/** K1: Zeitformat mit Sekunden und Rückgängig-Prüfung */
-object ConflictUi {
-    /** Fügt Sekunden hinzu ("dd.MM.yyyy HH:mm" -> "dd.MM.yyyy HH:mm:ss"); Muster mit Sekunden bleiben unverändert */
-    fun patternWithSeconds(pattern: String): String =
-        if (pattern.contains("ss")) pattern else pattern.replace("HH:mm", "HH:mm:ss")
-
-    // Rückgängig: atomar über SyncDao.undoResolution (SYNC-20261111-172), keine Prüfung mehr in der Oberfläche
-}
+// K1: Zeit mit Sekunden kommt aus TimeFormat (SYNC-20261111-233). Rückgängig: atomar über
+// SyncDao.undoResolution (SYNC-20261111-172), keine Prüfung mehr in der Oberfläche.

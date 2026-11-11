@@ -15,6 +15,6 @@ interface LocalFiles {
     /** Datei von [fromRel] nach [toRel] verschieben (und umbenennen); liefert die Dokument-ID am neuen Ort */
     fun moveFile(fromRel: String, entry: LocalEntry, toRel: String): String
 
-    /** Datei in den Papierkorb ("<Ordner>/.LeoSync-Bin/<Datum>/<relPath>") verschieben; liefert den Pfad im Papierkorb */
+    /** Datei in den Papierkorb ("<Ordner>/@LeoSync-Bin/<Datum>/<relPath>") verschieben; liefert den Pfad im Papierkorb */
     fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String
 }

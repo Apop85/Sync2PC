@@ -38,7 +38,7 @@ When saving, LeoSync warns if profiles overlap, also between a photo profile and
 
 ### Turning on encryption
 
-On the **Encryption** card in the profile (collapsed by default) you decide per profile whether the transfer to the PC is encrypted, so that nobody on the network can read along:
+On the **Encryption** card in the profile (collapsed by default) you decide per profile whether the transfer to the PC is encrypted, so that nobody on the network can read along. The profile card shows a shield-with-lock icon at the top right when the profile's last sign-in was actually encrypted (not just because the setting is "If possible"). After changing the setting, the share or the subfolder, the card shows no icon until the next connection:
 
 - **Off:** no encryption, as before. Only recommended on a network you trust.
 - **If possible (recommended):** encrypted as soon as the PC supports it. Otherwise the connection stays unencrypted. This is the default, also for existing profiles.
@@ -76,7 +76,7 @@ New profiles only start after you tap **Sync** once. You can **simulate** first 
 ## 4. Keeping your files safe
 
 - **Check after upload:** LeoSync reads the file back from the PC and compares it with the original. The levels range from *Off* to *Complete*; the default is *Medium*. If photos are removed from the phone, a check is always done.
-- **Trash:** For folder profiles, deleted and overwritten files go to the `.LeoSync-Bin` folder (on phone and PC) and can be restored via **Tools → Trash**: choose the profile, select entries and tap **Restore** (or **Delete permanently**). It is emptied after 30 days (adjustable). Photo profiles have no trash of their own: removed photos are in the gallery trash.
+- **Trash:** For folder profiles, deleted and overwritten files go to the `.LeoSync-Bin` folder (on phone and PC; for folders of the Downloads app it is called `@LeoSync-Bin` on the phone so that Android shows it) and can be restored via **Tools → Trash**: choose the profile, select entries and tap **Restore** (or **Delete permanently**). It is emptied after 30 days (adjustable). Photo profiles have no trash of their own: removed photos are in the gallery trash.
 - **Safety brake:** If many files would be deleted at once (default: more than 20 %) or a whole folder is missing, LeoSync stops and asks you first. You then choose between **Don't delete** and **Move to trash anyway**; until then the profile rests.
 - **Confirm change:** If you change the direction of an existing folder profile or switch on **Apply deletions**, LeoSync shows what changes before saving, and you confirm with **Save** or cancel with **Cancel**. With a one-way direction, differing files on the target side are replaced; the replaced version may go to the trash.
 - **Removing after backup:** Before LeoSync removes a backed-up photo from the phone, it checks the copy on the PC again. If the PC is not reachable, nothing is deleted ("PC not reachable – nothing deleted"). If the copy is missing or differs, the original stays on the phone and is backed up again on the next run. **Free up space** additionally checks size, partial checksum and modification date.

@@ -4,5 +4,4 @@ Nur Verweise auf aktive, an UX adressierte Aufträge (Details in der Task-Datei)
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261111-181 | Development | UX-Review Startseite 0.16.2 (-177, -176 R4–R7) | MEDIUM | BLOCKED | ../tasks/BLOCKED/SYNC-20261111-181.md |
-| SYNC-20261111-184 | Development | UX-Review 0.16.3: Befunde R1–R3, R8–R12 aus -176 | MEDIUM | BLOCKED | ../tasks/BLOCKED/SYNC-20261111-184.md |
+| SYNC-20261111-242 | Development | UX-Review 0.16.27: 12 h/Schrift 2,0, Leerzustand, Dunkelmodus-Karte, Snackbar | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-242.md |

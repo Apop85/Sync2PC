@@ -2,7 +2,6 @@
 <resources>
     <!-- Gemeinsame Texte und Startbildschirm (MainActivity) -->
     <string name="common_back">Zurück</string>
-    <string name="fmt_date_time">dd.MM.yyyy HH:mm</string>
     <string name="main_install_status">Status %1$s</string>
     <string name="main_update_failed">Update fehlgeschlagen: %1$s</string>
     <string name="main_update_failed_key">Update fehlgeschlagen: %1$s – Die neue Version ist evtl. mit einem anderen Schlüssel signiert.</string>

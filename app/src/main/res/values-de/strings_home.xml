@@ -21,7 +21,6 @@
         <item quantity="other">%1$s Min.</item>
     </plurals>
     <string name="eta_hours">%1$s Std. %2$s Min.</string>
-    <string name="fmt_day_month">dd.MM.</string>
 
     <!-- Startseite (HomeScreen) -->
     <string name="home_wait_wifi">Wartet auf das Heim-WLAN.</string>
@@ -129,6 +128,7 @@
     <string name="home_location_missing">⚠ Standort-Berechtigung fehlt – der WLAN-Name ist nicht lesbar.</string>
     <string name="home_profile_access_lost">⚠ Handy-Ordner: Zugriff verloren – tippen und neu wählen</string>
     <string name="home_no_sync_yet">Noch keine Synchronisierung durchgeführt.</string>
+    <string name="home_no_success_yet">Noch keine erfolgreiche Synchronisierung.</string>
     <string name="home_next_check">Nächste Prüfung um %1$s</string>
     <string name="home_skipped">⚠ Automatischer Start übersprungen – %1$s</string>
     <string name="home_skipped_manual">⚠ Start nicht möglich – %1$s</string>

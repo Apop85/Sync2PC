@@ -136,12 +136,12 @@ internal fun formatEta(seconds: Long): String {
 /** "14:30", "morgen 14:30" oder "05.11. 14:30" */
 internal fun pauseEndText(until: Long): String {
     val day = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.ROOT)
-    val time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.ROOT).format(java.util.Date(until))
+    val time = com.sync2pc.app.l10n.TimeFormat.clock(until)
     val now = System.currentTimeMillis()
     return when (day.format(java.util.Date(until))) {
         day.format(java.util.Date(now)) -> time
         day.format(java.util.Date(now + 24 * 3_600_000L)) -> str(R.string.home_tomorrow, time)
-        else -> java.text.SimpleDateFormat(str(R.string.fmt_day_month), Texts.locale).format(java.util.Date(until)) + " $time"
+        else -> com.sync2pc.app.l10n.TimeFormat.dayMonth(until) + " $time"
     }
 }
 
@@ -211,6 +211,8 @@ internal fun StatusCard(
     nextPlanned: Long?,
     progress: SyncProgress?,
     lastRun: SyncRun?,
+    /** Letzter fehlerfreier Lauf eines Profils (SYNC-20261111-234); null = noch nie erfolgreich */
+    lastSuccess: SyncRun?,
     shareWait: String?,
     skipInfo: String?,
     /** Der Grund stammt von einem manuellen Start (SYNC-20261111-188 B1) */
@@ -292,14 +294,14 @@ internal fun StatusCard(
             // Offene Entscheidung: nie «alles aktuell» (A1); Zeitpunkt des letzten Laufs bleibt als kleine Zeile
             headline == HomeHeadline.ATTENTION -> {
                 Text(attentionText)
-                lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
+                lastSuccess?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
             }
             headline == HomeHeadline.NO_ACTIVE_PROFILE -> Text(str(R.string.home_no_active_detail))
             // R6: Die Überschrift «⏸ Pausiert» steht in der Überschriftszeile, hier nur die Detailzeile
             userPaused && userPausedUntil == Long.MAX_VALUE -> {
                 Text(str(R.string.home_manual_only))
                 Hint(str(R.string.home_manual_only_hint))
-                lastRun?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
+                lastSuccess?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
             }
             userPaused -> {
                 Text(str(R.string.home_paused_until, pauseEndText(userPausedUntil)))
@@ -321,7 +323,9 @@ internal fun StatusCard(
             }
             isQueued -> Text(waitText)
             lastRun != null -> {
-                Text(str(R.string.home_last_sync, formatTime(lastRun.finishedAt ?: lastRun.startedAt), lastRun.profileName.trim()))
+                // -234: Zeit der letzten fehlerfreien Synchronisierung, nicht des letzten Versuchs
+                Text(if (lastSuccess != null) str(R.string.home_last_sync, formatTime(lastSuccess.finishedAt ?: lastSuccess.startedAt), lastSuccess.profileName.trim())
+                    else str(R.string.home_no_success_yet))
                 val nothing = lastRun.status == RunStatus.OK && lastRun.uploaded == 0 && lastRun.failed == 0
                 // «Nichts zu tun – alles aktuell» nur, wenn die Überschrift ebenfalls «aktuell» sagt
                 if (headline == HomeHeadline.ERRORS) Hint(str(R.string.home_status_errors_hint))
@@ -489,8 +493,13 @@ internal fun GuardCard(g: Guard, profileName: String, onChooseFolder: () -> Unit
 
 @Composable
 internal fun ActionCard(title: String, text: String, button: String, onClick: () -> Unit) {
+    // -239 Punkt 4: Im Dunkelmodus eine abgedunkelte Lila-Fläche (Kontrast Text/Fläche über 9:1) statt der hellen Systemfarbe
+    val dark = androidx.compose.foundation.isSystemInDarkTheme()
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        colors = CardDefaults.cardColors(
+            containerColor = if (dark) androidx.compose.ui.graphics.Color(0xFF3A2F52) else MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = if (dark) androidx.compose.ui.graphics.Color(0xFFEADDFF) else MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -25,7 +25,8 @@ class FileFilter(include: String, exclude: String) {
 
     companion object {
         /** Temp-Dateien und Papierkorb werden nie synchronisiert */
-        // inkl. Papierkorb-Name bis 0.0.11 (".Sync2PC-Papierkorb") und alte Version beim Ersetzen (".s2pold", 0.4.1)
+        // alle Papierkorb-Namen ("@LeoSync-Bin" aktuell, ".LeoSync-Bin" 0.8.0 bis 0.16.x, ".LeoSync-Papierkorb", ".Sync2PC-Papierkorb"; Muster
+        // gehören zu [MirrorEngine.TRASH_DIRS]) und alte Version beim Ersetzen (".s2pold", 0.4.1)
         private val ALWAYS_EXCLUDED = parse("*.s2ptmp\n*.s2pold\n.LeoSync-Bin/**\n.LeoSync-Papierkorb/**\n.Sync2PC-Papierkorb/**\n@LeoSync-Bin/**")
 
         fun split(s: String): List<String> =

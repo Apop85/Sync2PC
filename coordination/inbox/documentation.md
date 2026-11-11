@@ -4,7 +4,6 @@ Nur Verweise auf aktive, an Documentation adressierte Aufträge (Details in der 
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261111-224 | Development | Doku/Patchnotes 0.16.19: Begriff Abgleichstand, Profilkarte Pfadumbruch | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-224.md |
-| SYNC-20261111-226 | Development | Doku 0.16.20: Icon «Verschlüsselt» an der Profilkachel | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-226.md |
-| SYNC-20261111-228 | Development | Patchnotes 0.16.22: Eigenes Warn-Icon in Statuskachel und Warnkarten | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-228.md |
-| SYNC-20261111-231 | Development | Doku 0.16.25: Handy-Papierkorb @LeoSync-Bin bei msd:-Ordnern | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-231.md |
+| SYNC-20261111-240 | Development | Doku-Übergabe 0.16.27: Zeitformat, Statuskachel, Papierkorb-Zeit, Dunkelmodus, Snackbar, Ordnername | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-240.md |
+| SYNC-20261111-245 | Architecture | Entscheidung SMB-Zeitlimits (aus -243) dokumentieren | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-245.md |
+| SYNC-20261111-246 | Development | Doku-Übergabe gesammelt: ausserplanmässige Änderungen 0.16.27 bis 0.16.34 (PATCHNOTES, Doku) | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-246.md |

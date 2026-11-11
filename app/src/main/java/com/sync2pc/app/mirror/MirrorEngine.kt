@@ -56,7 +56,7 @@ private typealias Kind = PlanKind
  *  - nur auf einer Seite geändert/neu   -> in Sync-Richtung kopieren
  *  - auf beiden Seiten geändert         -> gleich? merken : Konflikt (fragen bzw. neuere gewinnt)
  *  - auf einer Seite gelöscht           -> optional übernehmen (Papierkorb der Gegenseite), sonst wiederherstellen
- * Ersetzte oder gelöschte Dateien landen immer in ".LeoSync-Papierkorb/<Datum>/…". Endgültig gelöscht
+ * Ersetzte oder gelöschte Dateien landen immer in "@LeoSync-Bin/<Datum>/…". Endgültig gelöscht
  * werden sie erst nach Ablauf der Papierkorb-Frist des Profils (trashRetentionDays, 0 = nie).
  */
 class MirrorEngine(
@@ -73,21 +73,24 @@ class MirrorEngine(
 ) : SyncRunner {
 
     companion object {
-        const val TRASH_DIR = ".LeoSync-Bin"
+        /**
+         * Papierkorb auf Handy und PC, für alle Ordnertypen (SYNC-20261111-244). Ohne Punkt am Anfang, weil MediaStore
+         * Punkt-Ordner nicht listet (SYNC-20261111-229) und der Ordner so im Explorer sichtbar ist.
+         */
+        const val TRASH_DIR = "@LeoSync-Bin"
+        /**
+         * Papierkorb-Name von 0.8.0 bis 0.16.x: wird weiter erkannt (Liste, Wiederherstellen, Leeren) und von der
+         * [TrashMigration] nach [TRASH_DIR] übernommen; auf dem PC auch der Ausweichname, wenn [TRASH_DIR] dort nicht
+         * angelegt werden kann ([PcTrashMover])
+         */
+        const val DOT_TRASH_DIR = ".LeoSync-Bin"
         /** Name des Papierkorbs von 0.0.12 bis 0.7.x – wird weiter erkannt (Liste, Wiederherstellen, Leeren) */
         const val LEGACY_TRASH_DIR = ".LeoSync-Papierkorb"
         /** Papierkorb-Name bis 0.0.11 – wird weiterhin nie synchronisiert */
         const val OLD_TRASH_DIR = ".Sync2PC-Papierkorb"
         /** Alle Papierkorb-Namen: der aktuelle zuerst (dorthin wird neu verschoben) */
-        val TRASH_DIRS = listOf(TRASH_DIR, LEGACY_TRASH_DIR, OLD_TRASH_DIR)
-        /**
-         * Handy-Papierkorb in Ordnern des Download-Anbieters mit Nummern-Kennung (msd:, Android 10): MediaStore indexiert Ordner
-         * mit Punkt am Namensanfang nicht, sie fehlen in der Ordnerliste (SYNC-20261111-229). Dort heisst der Papierkorb ohne
-         * Punkt. Nur auf dem Handy; der PC-Papierkorb heisst weiter [TRASH_DIR] (darum nicht in [TRASH_DIRS]).
-         */
-        const val MEDIASTORE_TRASH_DIR = "@LeoSync-Bin"
-        fun isTrashDir(name: String): Boolean =
-            TRASH_DIRS.any { it.equals(name, ignoreCase = true) } || MEDIASTORE_TRASH_DIR.equals(name, ignoreCase = true)
+        val TRASH_DIRS = listOf(TRASH_DIR, DOT_TRASH_DIR, LEGACY_TRASH_DIR, OLD_TRASH_DIR)
+        fun isTrashDir(name: String): Boolean = TRASH_DIRS.any { it.equals(name, ignoreCase = true) }
         /** Zusatz beim Behalten beider Versionen (bis 0.7.x "_Konflikt-Handy") */
         const val CONFLICT_SUFFIX = ConflictName.SUFFIX
         /** Mindestens so viel Speicher frei lassen */
@@ -202,6 +205,13 @@ class MirrorEngine(
             }
             val filter = FileFilter(profile.includePatterns, profile.excludePatterns)
             val skipTrash: (String) -> Boolean = { isTrashDir(it) }
+            // Papierkorb-Übernahme ".LeoSync-Bin" -> "@LeoSync-Bin" (SYNC-20261111-244, Stufe B): vor dem Einlesen der Bäume, unter
+            // der Sperre dieses Laufs, nie in der Simulation. Nur ohne offene Wiederherstellung, ohne vorgemerktes Leeren und
+            // ohne ausstehende Ordner-Bestätigung: sonst stimmten gespeicherte Papierkorb-Pfade nicht mehr. Handy-Seite
+            // unabhängig vom PC; die PC-Seite folgt, sobald die Verbindung steht und der PC-Ordner bestätigt vorhanden ist.
+            val trashMigrationAllowed = !dryRun && TrashMigration.mayRun(
+                dao.pendingRestores(profile.id).size, PurgeStore(context).hasPending(profile.id), guards.pendingCheck(profile.id).isNotEmpty())
+            if (trashMigrationAllowed) migrateTrash(PhoneTrashSide(tree), phone = true)
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {
@@ -218,6 +228,7 @@ class MirrorEngine(
                     return block(Guard(profile.id, GuardKind.REMOTE_MISSING))
                 }
                 if (!baseExists && !dryRun) { s.ensureDir(base); baseExists = true } // Erstabgleich: Ordner anlegen
+                if (trashMigrationAllowed && baseExists && !pcRejectsNewTrashName) migrateTrash(PcTrashSide(s), phone = false)
             }
             // Vorgemerkte Wiederherstellungen (0.5.0) vor dem Einlesen: Der Abgleich sieht danach den neuen Stand
             // (nicht, solange nach einem Ordnerwechsel die Stichprobe aussteht – erst muss der Ordner bestätigt sein)
@@ -738,7 +749,7 @@ class MirrorEngine(
         val expectNew = local[key] == null || expectNewAfterOwnTrash
         val (docId, resumedAt) = try {
             localTouched = true; tree.writeFileResumable(rel, r.size, r.modified, expectNew = expectNew) { out, offset ->
-                s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset)
+                s.download(remotePath(s, rel), out, onBytes, { ctx.ensureActive() }, startOffset = offset, expectedSize = r.size)
             }
         } catch (e: ChangedDuringRunException) {
             return skipChanged(rel, Msg.of(R.string.eng_on_phone))
@@ -814,18 +825,48 @@ class MirrorEngine(
         log("W", Msg.of(R.string.eng_changed_during_run, rel, where))
     }
 
+    /** Grund des Rückfalls auf ".LeoSync-Bin" auf dem PC (erster Fehler); wird am Ende des Laufs einmal als Warnung protokolliert */
+    private val pcTrashFallback = java.util.concurrent.atomic.AtomicReference<Exception?>(null)
+    /** Merker «der PC lehnt @LeoSync-Bin ab» (Review -244 M1): dann gleich der Ausweichname, keine wiederholten Warnungen */
+    private val trashNames = PcTrashNameMemory(context)
+    private val pcRejectsNewTrashName = trashNames.isRejected(profile)
+    private val pcTrash = PcTrashMover(startWithFallback = pcRejectsNewTrashName) { e ->
+        pcTrashFallback.compareAndSet(null, e); trashNames.remember(profile)
+    }
+
     /**
-     * PC-Datei nach "<Basis>\.LeoSync-Papierkorb\<Datum>\<Pfad>" verschieben; gleicher Name dort -> Uhrzeit anhängen
-     * ("a (14-32-05).txt", 0.7.0). Liefert den vollen Pfad im Papierkorb.
+     * PC-Datei nach "<Basis>\@LeoSync-Bin\<Datum>\<Pfad>" verschieben; gleicher Name dort -> Uhrzeit anhängen
+     * ("a (14-32-05).txt", 0.7.0); Rückfall auf ".LeoSync-Bin" siehe [PcTrashMover]. Liefert den vollen Pfad im Papierkorb.
      */
     private fun trashRemote(s: SmbSession, rel: String): String {
-        val parent = rel.substringBeforeLast('/', "").replace('/', '\\')
-        val trashDir = s.path(listOf(TRASH_DIR, today, parent).filter { it.isNotEmpty() }.joinToString("\\"))
-        s.ensureDir(trashDir)
-        val name = TrashIndex.uniqueTrashName(rel.substringAfterLast('/'), TrashIndex.timeNow()) { s.stat("$trashDir\\$it") != null }
-        s.move(remotePath(s, rel), "$trashDir\\$name")
+        val full = pcTrash.trash(s, rel, today)
         trashed.incrementAndGet()
-        return "$trashDir\\$name"
+        return full
+    }
+
+    /**
+     * Papierkorb-Übernahme ".LeoSync-Bin" -> "@LeoSync-Bin" einer Seite (SYNC-20261111-244, Stufe B). Fehler sind nie ein
+     * Grund, den Lauf abzubrechen (nur Warnung); auf dem PC gehen Netzwerkfehler wie im restlichen Lauf nach aussen.
+     */
+    private suspend fun migrateTrash(side: TrashSide, phone: Boolean) {
+        val ctx = currentCoroutineContext()
+        val r = TrashMigration.run(side, check = { ctx.ensureActive() }, propagateNetworkErrors = !phone)
+        when (r.status) {
+            TrashMigration.Status.MIGRATED ->
+                log("I", Msg.of(if (phone) R.string.eng_trash_migrated_phone else R.string.eng_trash_migrated_pc, TRASH_DIR))
+            TrashMigration.Status.FAILED -> {
+                val err = r.error ?: IOException("?")
+                if (!phone && PcTrashMover.nameInvalid(err)) {
+                    // Der PC lehnt den Namen ab: merken, ab sofort Ausweichname, eine einzige Warnung am Laufende (Review -244 M1)
+                    trashNames.remember(profile); pcTrash.useFallback(); pcTrashFallback.compareAndSet(null, err)
+                } else log("W", Msg.of(if (phone) R.string.eng_trash_migrate_failed_phone else R.string.eng_trash_migrate_failed_pc,
+                    TRASH_DIR, com.sync2pc.app.sync.shortError(err)))
+            }
+            TrashMigration.Status.UNSUPPORTED, TrashMigration.Status.INCOMPLETE ->
+                // Kein Fehler: der Altname bleibt les- und wiederherstellbar, der nächste Lauf versucht es erneut
+                android.util.Log.i("MirrorEngine", "Papierkorb-Übernahme ${if (phone) "Handy" else "PC"}: ${r.status}, ${r.moved} verschoben")
+            TrashMigration.Status.NOTHING -> {}
+        }
     }
 
     private fun countDone(sh: Shared, size: Long) {
@@ -892,6 +933,9 @@ class MirrorEngine(
     } catch (e: Exception) { Long.MAX_VALUE / 2 }
 
     private suspend fun finish(status: String, message: Msg): SyncRun {
+        pcTrashFallback.getAndSet(null)?.let {
+            log("W", Msg.of(R.string.eng_trash_pc_fallback, TRASH_DIR, DOT_TRASH_DIR, com.sync2pc.app.sync.shortError(it)))
+        }
         val text = message.text()
         run = run.copy(
             finishedAt = System.currentTimeMillis(), status = status, message = text, messageCode = message.toCode(),

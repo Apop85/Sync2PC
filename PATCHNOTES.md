@@ -2,6 +2,37 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.25 (2026-11-11)
+
+### Behoben
+- **Handy-Papierkorb bei Download-Ordnern:** Bei Handy-Ordnern des Download-Anbieters mit Nummern-Kennung (`msd:`) heisst der Papierkorb «@LeoSync-Bin» statt «.LeoSync-Bin». Android indexiert Ordner mit Punkt am Anfang nicht; sie fehlten in der Ordnerliste, der Papierkorb war nicht auflistbar und zersplitterte in «(1)», «(2)». Der PC-Papierkorb bleibt unverändert.
+
+## 0.16.24 (2026-11-11)
+
+### Geändert
+- **Konfliktkarte:** Die Knöpfe stehen untereinander und sind gleich breit.
+
+## 0.16.23 (2026-11-11)
+
+### Geändert
+- **Info-Symbol:** Die Überschrift «Noch nichts eingerichtet» zeigt ein eigenes Info-Icon (Kreis mit i, blaue Fläche) statt des Material-Symbols.
+
+## 0.16.20 (2026-11-11)
+
+### Geändert
+- **Profilkachel, Verschlüsselung:** Oben rechts erscheint ein Schild-mit-Schloss-Symbol, wenn die letzte Anmeldung des Profils tatsächlich SMB-verschlüsselt war (nicht bei der blossen Einstellung «Wenn möglich»). Nach Änderung von Einstellung, Freigabe oder Unterordner gibt es bis zur nächsten Verbindung kein Symbol. Der Zustand liegt in den SharedPreferences «enc_status» (kein DB-Schema).
+
+## 0.16.19 (2026-11-11)
+
+### Geändert
+- **Begriff:** «Synchronisierungsstand» heisst deutsch «Abgleichstand», englisch «sync state» neu «sync status» (Ordnerwechsel-Dialog, Schutzbremsen-Text).
+- **Profilkarte:** Symbol und Pfadanfang bleiben zusammen; Zeilenumbruch nur nach «\».
+
+## 0.16.22 (2026-11-11)
+
+### Geändert
+- **Warn-Icon:** Die Überschrift der Statuskachel (z. B. «Keine Verbindung»), die Schutzbremsen-Karte und die Karte «Berechtigungen unvollständig» zeigen das eigene Warn-Icon statt des Material-Warndreiecks. Emojis kommen in den Texten nicht mehr vor; als Text bleiben bewusst → und ⏭.
+
 ## 0.16.17 (2026-11-11)
 
 ### Geändert

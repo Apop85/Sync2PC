@@ -2,7 +2,7 @@ package com.sync2pc.app.mirror
 
 /**
  * Eine Datei im Papierkorb eines Ordner-Profils (0.5.0).
- * [trashPath]: Pfad relativ zum Profilordner, z. B. ".LeoSync-Papierkorb/2026-11-03/Docs/a_2.txt".
+ * [trashPath]: Pfad relativ zum Profilordner, z. B. "@LeoSync-Bin/2026-11-03/Docs/a (14-32-05).txt" (oder mit einem der Altnamen, siehe MirrorEngine.TRASH_DIRS).
  * [origPath]: ursprünglicher Pfad, z. B. "Docs/a.txt". [date]: Datumsordner "yyyy-MM-dd".
  */
 data class TrashEntry(

@@ -13,10 +13,10 @@ class FileFilterTest {
         assertTrue(f.accepts("a/b/c.pdf"))
         assertFalse(f.accepts("a/b/c.pdf.s2ptmp"))
         assertFalse(f.accepts("a/b/c.pdf.s2pold")) // alte Version beim Ersetzen (0.4.1)
-        assertFalse(f.accepts(".LeoSync-Bin/2026-11-01/x.txt")) // seit 0.8.0
+        assertFalse(f.accepts(".LeoSync-Bin/2026-11-01/x.txt")) // 0.8.0 bis 0.16.x (Altname, wird von der Papierkorb-Übernahme umbenannt)
         assertFalse(f.accepts(".LeoSync-Papierkorb/2026-11-01/x.txt")) // 0.0.12 bis 0.7.x
         assertFalse(f.accepts(".Sync2PC-Papierkorb/2026-11-01/x.txt")) // alter Name bis 0.0.11
-        assertFalse(f.accepts("@LeoSync-Bin/2026-11-01/x.txt")) // Handy-Papierkorb bei msd:-Ordnern (SYNC-20261111-229)
+        assertFalse(f.accepts("@LeoSync-Bin/2026-11-01/x.txt")) // aktueller Papierkorb auf Handy und PC (SYNC-20261111-244)
     }
 
     @Test fun whitelist() {

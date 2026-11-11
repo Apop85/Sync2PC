@@ -129,6 +129,40 @@ class FakeShare(private val base: String = "") : RemoteStore {
         ops += "deleteDir $path"
     }
 
+    /** Wie SMB: Quelle muss ein Ordner sein, das Ziel darf nicht existieren, der Zielelternordner muss es */
+    override fun renameDir(from: String, to: String) {
+        onOp?.invoke("renameDir", from)
+        if (key(from) !in dirs) throw java.io.IOException("Ordner fehlt: $from")
+        if (key(to) in dirs || key(to) in files) throw java.io.IOException("Ziel existiert: $to")
+        val parent = to.substringBeforeLast('\\', "")
+        if (!dirExists(parent)) throw java.io.IOException("Zielordner fehlt: $parent")
+        val fromPrefix = key(from) + "\\"
+        val moved = dirs.entries.filter { it.key == key(from) || it.key.startsWith(fromPrefix) }.map { it.key to it.value }
+        for ((k, _) in moved) dirs.remove(k)
+        for ((_, full) in moved) {
+            val nf = to + full.substring(from.length)
+            dirs[key(nf)] = nf
+        }
+        val movedFiles = files.entries.filter { it.key.startsWith(fromPrefix) }.map { it.key to it.value }
+        for ((k, f) in movedFiles) {
+            files.remove(k)
+            val tail = k.substring(key(from).length)
+            files[key(to) + tail] = f
+        }
+        ops += "renameDir $from -> $to"
+    }
+
+    /** Wie SMB: nur ein leerer Ordner (keine Dateien, keine Unterordner) wird gelöscht, sonst Fehler */
+    override fun deleteEmptyDir(path: String) {
+        onOp?.invoke("deleteEmptyDir", path)
+        if (path.isEmpty() || key(path) !in dirs) return
+        val prefix = key(path) + "\\"
+        if (files.keys.any { it.startsWith(prefix) } || dirs.keys.any { it.startsWith(prefix) })
+            throw java.io.IOException("Ordner nicht leer: $path")
+        dirs.remove(key(path))
+        ops += "deleteEmptyDir $path"
+    }
+
     override fun contentHash(path: String, size: Long, check: () -> Unit, onBytes: (Long) -> Unit): String {
         hashReads++
         check()

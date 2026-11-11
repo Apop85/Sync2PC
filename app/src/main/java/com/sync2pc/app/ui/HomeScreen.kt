@@ -168,6 +168,7 @@ fun HomeScreen(
     val conflicts = allConflicts.filter { it.profileId != pendingDelete?.id }
     val deleteCount by remember { dao.queuedDeleteCount() }.collectAsState(initial = 0)
     val lastRun by remember { dao.lastRunFlow() }.collectAsState(initial = null)
+    val lastSuccess by remember { dao.lastCleanRunFlow() }.collectAsState(initial = null)
     // -173/-177: Dateien, die beim nächsten Sync folgen (jeweils letzter echter Lauf je aktivem Profil)
     val pendingFiles by remember { dao.pendingDeferredFlow() }.collectAsState(initial = 0)
     val pendingRestores by remember { dao.pendingRestoreCount() }.collectAsState(initial = 0)
@@ -214,7 +215,7 @@ fun HomeScreen(
     val skipInfo = remember(tick, workKey) {
         val s = settings
         if (s.lastSkipInfo.isNotBlank() && System.currentTimeMillis() - s.lastSkipAt < 24 * 3600_000L)
-            "${formatTime(s.lastSkipAt).substringAfter(' ')}: ${s.lastSkipInfo}"
+            "${formatClock(s.lastSkipAt)}: ${s.lastSkipInfo}"
         else null
     }
     // B1: stammt der Grund von einem manuellen Start, heisst die Zeile nicht «Automatischer Start übersprungen»
@@ -284,7 +285,7 @@ fun HomeScreen(
         if (s.shareRetryAt > System.currentTimeMillis()) {
             // R7: Nennt die Zeile «Nächste Prüfung um …» (nextPlanned) den Zeitpunkt schon, steht er nicht doppelt im Fehlertext
             if (nextPlanned != null) str(R.string.home_pc_unreachable_short, s.shareUnreachable)
-            else str(R.string.home_pc_unreachable, s.shareUnreachable, formatTime(s.shareRetryAt).substringAfter(' '))
+            else str(R.string.home_pc_unreachable, s.shareUnreachable, formatClock(s.shareRetryAt))
         } else null
     }
 
@@ -453,6 +454,7 @@ fun HomeScreen(
                     nextPlanned = nextPlanned,
                     progress = progress,
                     lastRun = lastRun,
+                    lastSuccess = lastSuccess,
                     shareWait = shareWait,
                     skipInfo = skipInfo,
                     skipManual = skipManual,

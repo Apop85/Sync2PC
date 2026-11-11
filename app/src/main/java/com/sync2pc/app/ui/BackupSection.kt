@@ -5,6 +5,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -138,9 +141,10 @@ fun BackupSection() {
     // --- Anzeige ---------------------------------------------------------------------
     SectionCard(str(R.string.backup_title)) {
         Hint(str(R.string.backup_hint))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(enabled = busy == null, onClick = { exportDialog = true }) { Text(str(R.string.backup_export)) }
-            OutlinedButton(enabled = busy == null, onClick = { openDoc.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) {
+        // Knöpfe untereinander, gleich breit (bei grosser Schrift nie im Wort umgebrochen)
+        Column(androidx.compose.ui.Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(modifier = androidx.compose.ui.Modifier.fillMaxWidth(), enabled = busy == null, onClick = { exportDialog = true }) { Text(str(R.string.backup_export)) }
+            OutlinedButton(modifier = androidx.compose.ui.Modifier.fillMaxWidth(), enabled = busy == null, onClick = { openDoc.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) {
                 Text(str(R.string.backup_import))
             }
         }
@@ -200,16 +204,21 @@ fun BackupSection() {
             onDismissRequest = { parsed = null; importJson = null },
             title = { Text(str(R.string.backup_import_title)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(str(R.string.backup_created, formatTime(c.createdAt), c.appVersion))
-                    Text(str(R.string.backup_profiles, c.profiles.joinToString(", ") { it.name }.ifEmpty { str(R.string.home_profile_none) }))
-                    if (c.synced.size + c.mirrorStates.size > 0) Text(plural(R.plurals.backup_sync_status, c.synced.size + c.mirrorStates.size))
-                    Text(str(when (b.passwordOk) {
-                        true -> R.string.backup_pw_taken
-                        false -> R.string.backup_pw_wrong
-                        null -> R.string.backup_pw_none
-                    }))
-                    Hint(str(R.string.backup_replace_hint))
+                // SYNC-20261111-239 Punkt 1: Die Warnung zu «Ersetzen» steht oben, fest und nie wegscrollend, in der Fehlerfarbe;
+                // die Angaben zum Backup scrollen darunter (sonst liegt sie bei Schrift 2,0 ausserhalb des sichtbaren Bereichs)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(str(R.string.backup_replace_hint), color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(str(R.string.backup_created, formatTime(c.createdAt), c.appVersion))
+                        Text(str(R.string.backup_profiles, c.profiles.joinToString(", ") { it.name }.ifEmpty { str(R.string.home_profile_none) }))
+                        if (c.synced.size + c.mirrorStates.size > 0) Text(plural(R.plurals.backup_sync_status, c.synced.size + c.mirrorStates.size))
+                        Text(str(when (b.passwordOk) {
+                            true -> R.string.backup_pw_taken
+                            false -> R.string.backup_pw_wrong
+                            null -> R.string.backup_pw_none
+                        }))
+                    }
                 }
             },
             // Reihenfolge unverändert (Abbrechen, Hinzufügen, Ersetzen); «Ersetzen» löscht alle bisherigen Profile und steht

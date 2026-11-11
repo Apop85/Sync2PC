@@ -21,7 +21,6 @@
         <item quantity="other">%1$s min</item>
     </plurals>
     <string name="eta_hours">%1$s h %2$s min</string>
-    <string name="fmt_day_month">MM-dd</string>
 
     <!-- Startseite (HomeScreen) -->
     <string name="home_wait_wifi">Waiting for the home Wi-Fi.</string>
@@ -129,6 +128,7 @@
     <string name="home_location_missing">⚠ Location permission missing – the Wi-Fi name cannot be read.</string>
     <string name="home_profile_access_lost">⚠ Phone folder: access lost – tap to choose again</string>
     <string name="home_no_sync_yet">No sync yet.</string>
+    <string name="home_no_success_yet">No successful sync yet.</string>
     <string name="home_next_check">Next check at %1$s</string>
     <string name="home_skipped">⚠ Automatic start skipped – %1$s</string>
     <string name="home_skipped_manual">⚠ Start not possible – %1$s</string>

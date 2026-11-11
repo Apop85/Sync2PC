@@ -46,7 +46,7 @@
     <string name="profile_domain_hint">Usually leave empty for a local Windows account. Microsoft account: use the e-mail address as user.</string>
     <string name="profile_test">Test connection</string>
     <string name="profile_wifi">Wi-Fi (automatic sync)</string>
-    <string name="profile_wifi_hint">Optional. When the phone is connected to one of these Wi-Fi networks, LeoSync syncs automatically in the background. Without a Wi-Fi name this profile only syncs when you tap “Sync” (e.g. when you reach the PC via VPN).</string>
+    <string name="profile_wifi_hint">When the phone is connected to one of these Wi-Fi networks, LeoSync syncs automatically in the background. At least one Wi-Fi name is required for “Wi-Fi name only” and “Both”. To sync without a Wi-Fi name (e.g. via VPN), choose “PC ID only”.</string>
     <string name="profile_wifi_add_current">Add current Wi-Fi “%1$s”</string>
     <string name="profile_wifi_name">Wi-Fi name</string>
     <string name="profile_add">Add</string>

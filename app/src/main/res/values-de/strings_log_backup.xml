@@ -81,7 +81,7 @@
     <string name="backup_import_done">Import abgeschlossen</string>
     <string name="backup_err_replace_rejected">Ersetzen abgebrochen, nichts wurde gelöscht: Die Sicherung enthält Profile, die nicht importiert werden können (unbekannte Ordnerstruktur, Sicherung aus einer neueren Version?): %1$s</string>
     <string name="log_clear_title">Gesamten Verlauf löschen?</string>
-    <string name="log_clear_text">%1$d Einträge werden gelöscht und lassen sich danach nicht wiederherstellen. Mit «Verlauf teilen» kannst du sie vorher sichern.</string>
+    <string name="log_clear_text">%1$d Einträge werden gelöscht. Direkt danach kannst du das mit «Rückgängig» zurücknehmen. Mit «Verlauf teilen» kannst du sie vorher sichern.</string>
     <string name="log_cleared">Verlauf gelöscht</string>
     <string name="log_undo">Rückgängig</string>
     <string name="log_advice_missing">Die Datei existiert auf dem Handy nicht mehr. Synchronisiere erneut; bleibt der Fehler, die Dateiliste im Profil prüfen.</string>

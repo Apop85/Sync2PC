@@ -1,6 +1,6 @@
 package com.sync2pc.app
 
-import com.sync2pc.app.ui.ConflictUi
+import com.sync2pc.app.l10n.TimeFormat
 import com.sync2pc.app.ui.DecisionChoice
 import com.sync2pc.app.ui.PreviewGroupLabel
 import org.junit.Assert.assertEquals
@@ -39,8 +39,20 @@ class ScreenLogicTest {
         assertEquals("12 B", DecisionChoice.effective(listOf("12 A", "12 B"), "12", null, "12 B"))
     }
 
-    @Test fun secondsAreAddedOnce() {
-        assertEquals("dd.MM.yyyy HH:mm:ss", ConflictUi.patternWithSeconds("dd.MM.yyyy HH:mm"))
-        assertEquals("yyyy-MM-dd HH:mm:ss", ConflictUi.patternWithSeconds("yyyy-MM-dd HH:mm:ss"))
+    /** SYNC-20261111-233: Skelett folgt 12 h/24 h und Sekunden; ohne Android gilt das feste Ersatzformat */
+    @Test fun timeSkeletonFollowsSystemSettings() {
+        assertEquals("yMdHm", TimeFormat.skeleton(withDate = true, is24h = true, seconds = false))
+        assertEquals("yMdhms", TimeFormat.skeleton(withDate = true, is24h = false, seconds = true))
+        assertEquals("Hm", TimeFormat.skeleton(withDate = false, is24h = true, seconds = false))
+        assertEquals("hm", TimeFormat.skeleton(withDate = false, is24h = false, seconds = false))
+    }
+
+    @Test fun timeFallbackWithoutAndroid() {
+        val ms = java.util.GregorianCalendar(2026, 10, 11, 14, 30, 5).timeInMillis
+        assertEquals("2026-11-11 14:30", TimeFormat.dateTime(ms))
+        assertEquals("2026-11-11 14:30:05", TimeFormat.dateTime(ms, seconds = true))
+        assertEquals("14:30", TimeFormat.clock(ms))
+        assertEquals("2026-11-11", TimeFormat.date(ms))
+        assertEquals("11-11", TimeFormat.dayMonth(ms))
     }
 }

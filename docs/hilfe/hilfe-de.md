@@ -38,7 +38,7 @@ Beim Speichern warnt LeoSync, wenn sich Profile überschneiden, auch zwischen ei
 
 ### Verschlüsselung einschalten
 
-Auf der Karte **Verschlüsselung** im Profil (standardmässig eingeklappt) legst du pro Profil fest, ob die Übertragung zum PC verschlüsselt wird, damit niemand im Netz mitlesen kann:
+Auf der Karte **Verschlüsselung** im Profil (standardmässig eingeklappt) legst du pro Profil fest, ob die Übertragung zum PC verschlüsselt wird, damit niemand im Netz mitlesen kann. Auf der Profilkarte erscheint oben rechts ein Schild-mit-Schloss-Symbol, wenn die letzte Anmeldung des Profils tatsächlich verschlüsselt war (nicht schon bei der blossen Einstellung «Wenn möglich»). Nach einer Änderung der Einstellung, der Freigabe oder des Unterordners zeigt die Karte bis zur nächsten Verbindung kein Symbol:
 
 - **Aus:** keine Verschlüsselung, wie bisher. Nur in einem Netz empfohlen, dem du vertraust.
 - **Wenn möglich (empfohlen):** verschlüsselt, sobald der PC es kann. Sonst läuft die Verbindung unverschlüsselt weiter. Das ist der Standard, auch für bestehende Profile.
@@ -76,7 +76,7 @@ Neue Profile starten erst, wenn du einmal **Synchronisieren** tippst. Du kannst 
 ## 4. Sicherheit deiner Dateien
 
 - **Prüfung nach dem Hochladen:** LeoSync liest die Datei auf dem PC zurück und vergleicht sie mit dem Original. Die Stufen reichen von *Aus* bis *Komplett*, Standard ist *Mittel*. Wer Fotos vom Handy entfernen lässt, prüft immer.
-- **Papierkorb:** Bei Ordner-Profilen landen gelöschte und überschriebene Dateien im Ordner `.LeoSync-Bin` (auf Handy und PC) und lassen sich über **Tools → Papierkorb** zurückholen: Profil wählen, Einträge markieren und **Wiederherstellen** tippen (oder **Endgültig löschen**). Nach 30 Tagen (einstellbar) wird er geleert. Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie.
+- **Papierkorb:** Bei Ordner-Profilen landen gelöschte und überschriebene Dateien im Ordner `.LeoSync-Bin` (auf Handy und PC; bei Handy-Ordnern der Download-App heisst er auf dem Handy `@LeoSync-Bin`, damit Android ihn anzeigt) und lassen sich über **Tools → Papierkorb** zurückholen: Profil wählen, Einträge markieren und **Wiederherstellen** tippen (oder **Endgültig löschen**). Nach 30 Tagen (einstellbar) wird er geleert. Fotos-Profile haben keinen eigenen Papierkorb: Entfernte Fotos liegen im Papierkorb der Galerie.
 - **Schutzbremse:** Würden auf einmal viele Dateien gelöscht (Standard: mehr als 20 %) oder fehlt ein ganzer Ordner, hält LeoSync an und fragt dich zuerst. Du entscheidest dann zwischen **Nicht löschen** und **Trotzdem in den Papierkorb**; bis dahin ruht das Profil.
 - **Änderung bestätigen:** Änderst du bei einem bestehenden Ordner-Profil die Richtung oder schaltest **Löschungen übernehmen** ein, zeigt LeoSync vor dem Speichern, was sich ändert, und du bestätigst mit **Speichern** oder brichst mit **Abbrechen** ab. Bei einer Richtung nur in eine Richtung werden abweichende Dateien auf der Zielseite ersetzt; die ersetzte Version kann in den Papierkorb kommen.
 - **Entfernen nach der Sicherung:** Bevor LeoSync ein gesichertes Foto vom Handy entfernt, prüft es die Kopie auf dem PC erneut. Ist der PC nicht erreichbar, wird nichts gelöscht («PC nicht erreichbar – nichts gelöscht»). Fehlt die Kopie oder weicht sie ab, bleibt das Original auf dem Handy und wird beim nächsten Lauf erneut gesichert. **Speicher freigeben** prüft zusätzlich Grösse, Teil-Prüfsumme und Änderungsdatum.

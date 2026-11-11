@@ -46,7 +46,7 @@
     <string name="profile_domain_hint">Bei einem lokalen Windows-Konto meist leer lassen. Microsoft-Konto: E-Mail-Adresse als Benutzer.</string>
     <string name="profile_test">Verbindung testen</string>
     <string name="profile_wifi">WLAN (automatische Synchronisierung)</string>
-    <string name="profile_wifi_hint">Optional. Ist das Handy mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Ohne WLAN-Namen synchronisiert dieses Profil nur, wenn du „Synchronisieren“ tippst (z. B. wenn du den PC über VPN erreichst).</string>
+    <string name="profile_wifi_hint">Ist das Handy mit einem dieser WLANs verbunden, synchronisiert LeoSync automatisch im Hintergrund. Bei «Nur WLAN-Name» und «Beides» ist mindestens ein WLAN-Name nötig. Ohne WLAN-Namen (z. B. über VPN) wähle «Nur PC-Kennung».</string>
     <string name="profile_wifi_add_current">Aktuelles WLAN „%1$s“ hinzufügen</string>
     <string name="profile_wifi_name">WLAN-Name</string>
     <string name="profile_add">Hinzufügen</string>

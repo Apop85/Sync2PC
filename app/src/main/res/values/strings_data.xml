@@ -23,6 +23,9 @@
     <string name="wizard_step_filter">Filter</string>
     <string name="wizard_step_guard">Safety brake</string>
     <string name="wizard_missing_name">Please give the profile a name.</string>
+    <string name="wizard_missing_wifi">Please add at least one Wi-Fi name (needed for “Wi-Fi name only” and “Both”).</string>
+    <string name="profile_name_taken">This name is already used by another profile. Choose a different name.</string>
+    <string name="profile_name_taken_existing">Another profile has the same name. Please rename this profile.</string>
     <string name="wizard_missing_local">Please choose the folder on the phone.</string>
     <string name="wizard_missing_sources">Please choose at least one folder on the phone.</string>
     <string name="wizard_missing_media">Please turn on photos, videos or both.</string>

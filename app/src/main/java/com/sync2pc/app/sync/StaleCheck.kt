@@ -49,7 +49,6 @@ object StaleCheck {
         val days = s.staleWarnDays
         val limit = now - days * DAY
         val baseline = s.staleBaseline()
-        val date = SimpleDateFormat(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.fmt_date_time).substringBefore(' '), com.sync2pc.app.l10n.Texts.locale)
         val lines = ArrayList<String>()
 
         for (p in dao.profiles().filter { it.enabled && it.isConfigured() }) {
@@ -58,9 +57,9 @@ object StaleCheck {
             if (p.type() == ProfileType.PHOTOS) {
                 val pending = PendingCheck.readyFiles(context, p, s.minFileAgeMinutes)
                 if (pending == 0) continue
-                lines += com.sync2pc.app.l10n.plural(com.sync2pc.app.R.plurals.stale_pending, pending, p.name, pending, date.format(Date(last)))
+                lines += com.sync2pc.app.l10n.plural(com.sync2pc.app.R.plurals.stale_pending, pending, p.name, pending, com.sync2pc.app.l10n.TimeFormat.date(last))
             } else {
-                lines += com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.stale_last, p.name, date.format(Date(last)))
+                lines += com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.stale_last, p.name, com.sync2pc.app.l10n.TimeFormat.date(last))
             }
         }
 

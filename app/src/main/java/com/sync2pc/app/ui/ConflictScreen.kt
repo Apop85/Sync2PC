@@ -49,9 +49,6 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 
-/** Zeit mit Sekunden (HH:mm:ss), damit Versionen derselben Minute unterscheidbar sind (SYNC-20261110-136 K1) */
-private fun formatTimeSec(ms: Long): String =
-    SimpleDateFormat(ConflictUi.patternWithSeconds(str(R.string.fmt_date_time)), Texts.locale).format(Date(ms))
 
 /** Dateiname ohne Ordner für Meldungen */
 private fun fileName(c: MirrorConflict): String = c.relPath.substringAfterLast('/').substringAfterLast('\\')

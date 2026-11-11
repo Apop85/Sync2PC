@@ -85,7 +85,6 @@
     <string name="delete_log_pc_missing">Nicht vom Handy entfernt: Die Kopie auf dem PC fehlt oder weicht ab, die Datei wird erneut gesichert: %1$s</string>
     <string name="delete_log_phone_unreadable">Nicht vom Handy entfernt: Die Datei ist für die Prüfung nicht lesbar: %1$s</string>
     <string name="delete_pc_unreachable">PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt.</string>
-    <string name="delete_pc_unreachable_retry">PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt. Prüfe die Verbindung und versuche es erneut.</string>
     <string name="delete_pc_rejected">PC nicht erkannt – nichts gelöscht. %1$s</string>
     <string name="delete_pc_reset">%1$d Dateien nicht entfernt: Die Kopie auf dem PC fehlt oder weicht ab. Sie werden erneut gesichert.</string>
     <string name="update_err_404">Kein Release gefunden (Repository „%1$s“ privat, falsch geschrieben oder noch ohne Release)</string>
@@ -101,6 +100,7 @@
     <string name="err_friendly_share_missing">Diese Freigabe gibt es auf dem PC nicht. Prüfe die Schreibweise oder wähle sie mit „Ordner auf dem PC wählen…“.</string>
     <string name="err_friendly_folder_missing">Der Ordner wurde auf dem PC nicht gefunden. Wurde er umbenannt oder verschoben?</string>
     <string name="err_friendly_access">Kein Zugriff auf diesen Ordner. Erlaube dem Benutzer auf dem PC Lesen und Schreiben (Eigenschaften → Freigabe).</string>
+    <string name="err_friendly_access_unencrypted">Kein Zugriff auf diesen Ordner. Erlaube dem Benutzer auf dem PC Lesen und Schreiben (Eigenschaften → Freigabe). Verlangt die Freigabe Verschlüsselung, stelle die Verschlüsselung dieses Profils auf «Wenn möglich» oder «Erforderlich».</string>
     <string name="err_friendly_pc_full">Auf dem PC ist kein Speicherplatz mehr frei.</string>
     <string name="err_friendly_phone_full">Auf dem Handy ist kein Speicherplatz mehr frei.</string>
     <string name="err_friendly_unknown_host">Der PC-Name wurde nicht gefunden. Trage am besten die IP-Adresse ein, z. B. \\\\192.168.1.20.</string>
@@ -138,6 +138,7 @@
     <string name="tree_err_rename">Umbenennen von „%1$s“ fehlgeschlagen</string>
     <string name="tree_err_name_taken">„%1$s“ gibt es auf dem Handy unter diesem Namen schon, sie wird aber nicht aufgelistet (nicht indiziert); die Kopie wurde nicht behalten, um Duplikate zu vermeiden</string>
     <string name="tree_err_size">Grösse nach Download stimmt nicht (%1$s statt %2$s Bytes)</string>
+    <string name="smb_err_download_cut">Download unterbrochen (%1$s von %2$s Bytes)</string>
     <string name="tree_err_move">Verschieben nicht unterstützt</string>
     <string name="tree_err_changed">Datei wurde während des Laufs geändert</string>
     <string name="tree_err_create">Datei „%1$s“ konnte nicht angelegt werden</string>
@@ -253,6 +254,12 @@
     <string name="eng_err_verify_cleanup">Die fehlerhafte Kopie auf dem PC konnte nicht entfernt werden (%1$s): %2$s</string>
     <string name="eng_present_unverified">Bereits auf dem PC, aber Gleichheit nicht bestätigt – bleibt auf dem Handy: %1$s</string>
     <string name="tree_sd_card">SD-Karte</string>
+    <string name="tree_unknown_folder">Handy-Ordner</string>
+    <string name="eng_trash_migrated_phone">🗑 Papierkorb auf dem Handy nach «%1$s» übernommen</string>
+    <string name="eng_trash_migrated_pc">🗑 Papierkorb auf dem PC nach «%1$s» übernommen</string>
+    <string name="eng_trash_migrate_failed_phone">Papierkorb auf dem Handy nicht nach «%1$s» übernommen (%2$s) – nächster Versuch bei der nächsten Synchronisierung, nichts geht verloren</string>
+    <string name="eng_trash_migrate_failed_pc">Papierkorb auf dem PC nicht nach «%1$s» übernommen (%2$s) – nächster Versuch bei der nächsten Synchronisierung, nichts geht verloren</string>
+    <string name="eng_trash_pc_fallback">Der PC nimmt den Papierkorb-Ordner «%1$s» nicht an (%3$s); ersatzweise wird «%2$s» verwendet, nichts geht verloren</string>
     <string name="tree_err_rename_short">Umbenennen fehlgeschlagen</string>
     <string name="update_err_no_tag">Release ohne Versions-Tag</string>
     <string name="update_err_download">Download fehlgeschlagen (HTTP %1$s)</string>

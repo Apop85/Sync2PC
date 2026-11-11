@@ -20,7 +20,7 @@
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
 > - Versionen 0.16.0 bis 0.16.3 (2026-11-11): DEC-231 bis DEC-248 (Sync-Sperre und Folgelauf, «Beide behalten», Konflikt-Rückgängig, Verschlüsselungswert, Startseite und Dialoge, Teststruktur); Status Implemented laut Development, DEC-240 Accepted; QA- und UX-Prüfung offen.
-> - Versionen 0.16.8 bis 0.16.17 (2026-11-11): DEC-249 bis DEC-253 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien, EN «Phone»); Status Implemented laut Development; QA-Prüfung offen.
+> - Versionen 0.16.8 bis 0.16.25 (2026-11-11): DEC-249 bis DEC-255 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien, EN «Phone»); Status Implemented laut Development; QA-Prüfung offen.
 > - Version 0.15.1 (2026-11-11): DEC-226 bis DEC-230 (Verlauf löschen, Papierkorb, Import «Ersetzen», Update-Hinweis, Sprache ausserhalb der Sicherung), Status Implemented laut Development.
 > - Version 0.15.0 (2026-11-11): DEC-221 bis DEC-225 (Nachlauf, SMB-Verschlüsselung, Gleichheit vor Löschen, UX Nachlauf-Hinweis und Karte «Verschlüsselung»), Status Implemented laut Development; Aktualisierungen an DEC-021, DEC-052, DEC-092, DEC-134, DEC-217, DEC-219.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
@@ -266,6 +266,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-251: Geänderte Handy-Datei beim Upload wird zurückgestellt statt als Fehler gezählt
 - DEC-252: Englisch nennt das Gerät «Phone» statt «Mobile»
 - DEC-253: Deutscher Begriff «Abgleichstand» statt «Synchronisierungsstatus»
+- DEC-254: Handy-Papierkorb heisst bei `msd:`-Ordnern «@LeoSync-Bin»
+- DEC-255: Verschlüsselungs-Icon zeigt den tatsächlichen Zustand der letzten Anmeldung
 
 **11. Lokalisierung und Sprache**
 
@@ -625,6 +627,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-251 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-252 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-253 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-254 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-255 | Implemented | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -2755,6 +2759,39 @@ Pausiert angezeigt.
 - **Konsequenzen:** `CLAUDE.md` §1 und die Memory «LeoSync UI-Begriffe» nennen für EN noch «Mobile»; eine Änderung am Regelwerk braucht den ausdrücklichen Auftrag des Benutzers.
 - **Betroffene Komponenten:** `res/values/strings_*.xml`, `docs/hilfe/help-en.md`
 - **Abhängigkeiten:** DEC-155
+
+### DEC-253: Deutscher Begriff «Abgleichstand» statt «Synchronisierungsstatus»
+- **Status:** Implemented (0.16.17 laut Development, SYNC-20261111-218)
+- **Datum:** 2026-11-11
+- **Kategorie:** UI / Lokalisierung
+- **Entscheidung:** Der deutsche UI-Begriff «Synchronisierungsstatus» heisst «Abgleichstand» (Profil-Wartung, Profil löschen, Sicherung/Import). Englisch bleibt «sync status». Die App bleibt zudem bei Konfigurationsänderungen (Schriftgrösse, Hell/Dunkel) auf dem aktuellen Bildschirm; der Assistent «Neues Profil» behält Eingaben ausser dem Passwort.
+- **Begründung:** — (in der Quelle nicht genannt).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Ergänzt DEC-155 (Wortwahl «Synchronisierung»); ältere Einträge nennen weiter «Synchronisierungsstatus».
+- **Betroffene Komponenten:** `res/values-de/strings_*.xml`, Profil-Assistent
+- **Abhängigkeiten:** DEC-155
+
+### DEC-254: Handy-Papierkorb heisst bei `msd:`-Ordnern «@LeoSync-Bin»
+- **Status:** Implemented (0.16.25 laut Development, SYNC-20261111-229)
+- **Datum:** 2026-11-11
+- **Kategorie:** Sync / Papierkorb
+- **Entscheidung:** Bei Handy-Ordnern des Download-Anbieters mit Nummern-Kennung (`msd:`) heisst der Papierkorb «@LeoSync-Bin» statt «.LeoSync-Bin». Der PC-Papierkorb bleibt «.LeoSync-Bin».
+- **Begründung:** MediaStore indexiert Ordner mit Punkt am Anfang nicht, sie fehlen in der Ordnerliste. Folge: Der Papierkorb liess sich nicht auflisten und zersplitterte in «(1)», «(2)».
+- **Alternativen:** Name ohne Sonderzeichen («LeoSync-Bin»): verworfen; «@» sortiert oben und wird nicht gefiltert.
+- **Konsequenzen:** Der Papierkorbname hängt von der Ordnerart ab; sichtbar in der Download-App. Siehe SYNC-ENGINE 7.5.
+- **Betroffene Komponenten:** `mirror/MirrorEngine.kt`, `mirror/FileFilter.kt`, `mirror/LocalTree.kt`
+- **Abhängigkeiten:** DEC-094
+
+### DEC-255: Verschlüsselungs-Icon zeigt den tatsächlichen Zustand der letzten Anmeldung
+- **Status:** Implemented (0.16.20 laut Development, SYNC-20261111-225)
+- **Datum:** 2026-11-11
+- **Kategorie:** UI / Sicherheit
+- **Entscheidung:** Die Profilkachel zeigt oben rechts ein Schild-mit-Schloss-Icon, wenn die letzte Anmeldung tatsächlich SMB-verschlüsselt war, nicht bei der blossen Einstellung «Wenn möglich». Der Zustand wird in den SharedPreferences «enc_status» gespeichert (`smb/EncryptionStatus.kt`), ohne DB-Schema. Nach Änderung von Einstellung, Freigabe oder Unterordner gibt es bis zur nächsten Verbindung kein Icon.
+- **Begründung:** — (in der Quelle nicht genannt).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** `enc_status` gehört nicht zum Datenmodell der Datenbank und ist hier, nicht in `DATA-MODEL.md`, festgehalten.
+- **Betroffene Komponenten:** `smb/EncryptionStatus.kt`, `smb/SmbSession.kt`, `ui/HomeParts.kt`, `ui/Common.kt`
+- **Abhängigkeiten:** DEC-222
 
 ---
 

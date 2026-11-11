@@ -368,7 +368,7 @@ private fun FreeView(profile: Profile, eligible: List<Profile>, onSwitch: (Long)
                         Checkbox(checked = on, onCheckedChange = { deselected = if (it) deselected - f.key else deselected + f.key })
                         Column {
                             Text(f.name, style = MaterialTheme.typography.bodyMedium)
-                            Hint(formatTime(f.time).substringBefore(' ') + " · " + Notifications.formatBytes(f.size))
+                            Hint(formatDate(f.time) + " · " + Notifications.formatBytes(f.size))
                         }
                     }
                 }

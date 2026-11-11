@@ -269,7 +269,8 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                                         Checkbox(checked = isSel(v), onCheckedChange = { toggle(v) }, enabled = !reserved)
                                         Column {
                                             Text(
-                                                (if (v.modified > 0) formatTime(v.modified) else dayLabel(v.date)) + " · " + str(if (v.side == Side.LOCAL) R.string.side_phone else R.string.side_pc) +
+                                                // -239 Punkt 3: die Zeit ist die Änderungszeit der Datei, nicht die Löschzeit (bekannt ist nur der Tag)
+                                                (if (v.modified > 0) str(R.string.trash_modified_at, formatTime(v.modified)) else str(R.string.trash_deleted_on, dayLabel(v.date))) + " · " + str(if (v.side == Side.LOCAL) R.string.side_phone else R.string.side_pc) +
                                                     " · " + Notifications.formatBytes(v.size),
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
@@ -563,8 +564,10 @@ private fun DayPickerDialog(
     )
 }
 
-/** "2026-11-03" -> Deutsch "03.11.2026", Englisch unverändert (ISO, eindeutig) */
+/** "2026-11-03" (Tagesordner) -> Datum nach Systemeinstellung (SYNC-20261111-233); nicht lesbar: unverändert */
 fun dayLabel(d: String): String {
-    val p = d.split('-')
-    return if (p.size == 3 && Texts.isGerman) "${p[2]}.${p[1]}.${p[0]}" else d
+    val ms = try {
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).apply { isLenient = false }.parse(d)?.time
+    } catch (e: java.text.ParseException) { null }
+    return if (ms != null) formatDate(ms) else d
 }

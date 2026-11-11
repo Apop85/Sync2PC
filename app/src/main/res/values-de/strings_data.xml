@@ -23,6 +23,9 @@
     <string name="wizard_step_filter">Filter</string>
     <string name="wizard_step_guard">Schutzbremse</string>
     <string name="wizard_missing_name">Bitte gib dem Profil einen Namen.</string>
+    <string name="wizard_missing_wifi">Bitte gib mindestens einen WLAN-Namen an (nötig bei «Nur WLAN-Name» und «Beides»).</string>
+    <string name="profile_name_taken">Dieser Name wird schon von einem anderen Profil verwendet. Wähle einen anderen Namen.</string>
+    <string name="profile_name_taken_existing">Ein anderes Profil hat denselben Namen. Benenne dieses Profil bitte um.</string>
     <string name="wizard_missing_local">Bitte wähle den Ordner auf dem Handy.</string>
     <string name="wizard_missing_sources">Bitte wähle mindestens einen Ordner auf dem Handy.</string>
     <string name="wizard_missing_media">Bitte schalte Fotos, Videos oder beides ein.</string>

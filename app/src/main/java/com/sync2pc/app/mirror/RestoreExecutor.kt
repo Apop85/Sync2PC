@@ -77,8 +77,11 @@ class RestoreExecutor(
         if (list.isEmpty()) return false
         host.log("I", Msg.plural(R.plurals.eng_restoring, list.size))
         val oldStates = host.mirrorStates().associateBy { it.relPath }
-        for (r in list) {
+        for (r0 in list) {
             currentCoroutineContext().ensureActive()
+            // SYNC-20261111-244 (Review M3): Eine Vormerkung kann einen Papierkorb-Pfad mit dem Altnamen tragen, wenn die
+            // Migration inzwischen gelaufen ist (oder umgekehrt): die Datei zuerst unter dem anderen Namen suchen
+            val r = withExistingTrashPath(r0)
             val key = r.origPath.lowercase()
             val fromPc = r.side == Side.REMOTE.name
             val trashFull = s.path(r.trashPath.replace('/', '\\'))
@@ -137,6 +140,28 @@ class RestoreExecutor(
             }
         }
         return true
+    }
+
+    /**
+     * Liegt die Datei nicht unter dem gespeicherten Papierkorb-Namen, aber unter einem anderen aus [MirrorEngine.TRASH_DIRS]
+     * (Migration `.LeoSync-Bin` → `@LeoSync-Bin`), liefert dies die Vormerkung mit dem gefundenen Pfad. Sonst unverändert
+     * (Fehler beim Prüfen zählen als «nicht gefunden»; der eigentliche Lauf behandelt sie wie bisher).
+     */
+    private fun withExistingTrashPath(r: PendingRestore): PendingRestore {
+        val first = r.trashPath.substringBefore('/')
+        val rest = r.trashPath.substringAfter('/', "")
+        if (rest.isEmpty() || MirrorEngine.TRASH_DIRS.none { it.equals(first, ignoreCase = true) }) return r
+        val fromPc = r.side == Side.REMOTE.name
+        fun exists(path: String): Boolean = try {
+            if (fromPc) s.stat(s.path(path.replace('/', '\\'))) != null else tree.find(path) != null
+        } catch (e: CancellationException) { throw e } catch (e: Exception) { false }
+        if (exists(r.trashPath)) return r
+        for (name in MirrorEngine.TRASH_DIRS) {
+            if (name.equals(first, ignoreCase = true)) continue
+            val alt = "$name/$rest"
+            if (exists(alt)) return r.copy(trashPath = alt)
+        }
+        return r
     }
 
     /** Ein fehlgeschlagenes Wiederherstellen rückgängig machen. true = alles wieder wie vorher */

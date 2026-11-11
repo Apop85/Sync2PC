@@ -31,7 +31,7 @@ object ProfileWizard {
 
     /** Was fehlt in diesem Schritt noch? null = vollständig, weiter möglich */
     fun missing(p: Profile, step: Step): String? = when (step) {
-        Step.NAME -> if (p.name.isBlank()) str(R.string.wizard_missing_name) else null
+        Step.NAME -> if (ProfileNames.key(p.name).isEmpty()) str(R.string.wizard_missing_name) else null
         Step.SOURCE -> when {
             p.type() == ProfileType.MIRROR && p.localTreeUri.isBlank() -> str(R.string.wizard_missing_local)
             p.type() == ProfileType.PHOTOS && p.folders().isEmpty() -> str(R.string.wizard_missing_sources)

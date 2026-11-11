@@ -250,6 +250,10 @@ interface SyncDao {
     @Query("SELECT * FROM sync_runs WHERE dryRun = 0 AND finishedAt IS NOT NULL ORDER BY id DESC LIMIT 1")
     fun lastRunFlow(): Flow<SyncRun?>
 
+    /** Letzte tatsächliche Synchronisierung (SYNC-20261111-234): Lauf eines Profils, fehlerfrei beendet (OK, keine Fehler); Pausen, Fehler, Teilerfolge und Abbrüche zählen nicht */
+    @Query("SELECT * FROM sync_runs WHERE dryRun = 0 AND finishedAt IS NOT NULL AND status = 'OK' AND failed = 0 ORDER BY id DESC LIMIT 1")
+    fun lastCleanRunFlow(): Flow<SyncRun?>
+
     /** Offene echte Läufe (Vorschau-Läufe nicht – die können gerade parallel in der Oberfläche laufen) */
     @Query("SELECT * FROM sync_runs WHERE status = 'RUNNING' AND dryRun = 0")
     suspend fun runningRuns(): List<SyncRun>

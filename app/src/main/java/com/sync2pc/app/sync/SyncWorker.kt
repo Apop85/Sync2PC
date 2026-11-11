@@ -160,7 +160,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (!manual && settings.isPaused()) {
             settings.noteSkip(
                 if (settings.manualOnly) str(R.string.skip_manual_only)
-                else str(R.string.skip_paused_until, java.text.SimpleDateFormat(str(R.string.fmt_day_month) + " HH:mm", Texts.locale).format(java.util.Date(settings.pausedUntil)))
+                else str(R.string.skip_paused_until, com.sync2pc.app.l10n.TimeFormat.dayMonth(settings.pausedUntil) + " " + com.sync2pc.app.l10n.TimeFormat.clock(settings.pausedUntil))
             )
             return Result.success()
         }

@@ -31,19 +31,8 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     /** relativer Ordnerpfad (Kleinbuchstaben) -> Dokument-ID (parallele Übertragungen -> threadsicher) */
     private val dirIds = java.util.concurrent.ConcurrentHashMap<String, String>().apply { put("", rootDocId) }
 
-    /**
-     * Name des Papierkorb-Ordners auf dem Handy: Beim Download-Anbieter mit Nummern-Kennung (msd:) ohne Punkt, weil MediaStore
-     * Punkt-Ordner nicht anzeigt und der Papierkorb sonst nie auflistbar wäre (SYNC-20261111-229). Sonst [MirrorEngine.TRASH_DIR].
-     */
-    val trashDirName: String = if (usesMediaStoreIndex(treeUri, rootDocId)) MirrorEngine.MEDIASTORE_TRASH_DIR else MirrorEngine.TRASH_DIR
-
     companion object {
         const val FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-
-        /** Ordner des Download-Anbieters mit Nummern-Kennung (nicht raw:, kein Pfad): die Liste kommt aus MediaStore */
-        fun usesMediaStoreIndex(treeUri: Uri, rootDocId: String): Boolean =
-            treeUri.authority == "com.android.providers.downloads.documents" &&
-                !rootDocId.startsWith("raw:") && !rootDocId.startsWith("/storage/")
 
         /** Ist die dauerhafte Lese-/Schreibberechtigung für den Ordner noch vorhanden? */
         fun hasPermission(context: Context, uri: Uri): Boolean =
@@ -88,6 +77,12 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
                     }
                 }
             } catch (e: Exception) { /* Anzeige-Fallback unten */ }
+            // SYNC-20261111-239 Punkt 6: nie eine reine Kennung zeigen («Download/690»); Pfad des Profils wird nicht gespeichert
+            if (uri.authority == "com.android.providers.downloads.documents") {
+                val id = try { DocumentsContract.getTreeDocumentId(uri) } catch (e: Exception) { "" }
+                if (id.isNotEmpty() && !id.startsWith("raw:") && !id.startsWith("/storage/"))
+                    return com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_unknown_folder)
+            }
             return label(uri)
         }
 
@@ -431,7 +426,13 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
             out = resolver.openOutputStream(tmpUri, "w") ?: throw IOException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_write))
         }
         val uri = tmpUri
-        out!!.use { write(it, offset) }
+        try {
+            out!!.use { write(it, offset) }
+        } catch (e: com.sync2pc.app.smb.DownloadSizeException) {
+            // Grösse stimmt nicht (Datei geändert, kein Fortschritt): Temp-Datei verwerfen, nächstes Mal neu (wie der Grössencheck unten)
+            try { DocumentsContract.deleteDocument(resolver, uri) } catch (ignored: Exception) {}
+            throw e
+        }
         // Grösse prüfen: Hat der Anbieter "anhängen" ignoriert, stimmt sie nicht -> verwerfen, nächstes Mal neu
         val written = stat(DocumentsContract.getDocumentId(uri))?.size ?: -1
         if (written != expectedSize) {
@@ -452,13 +453,30 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     }
 
     /**
-     * Verschiebt eine Datei in "<Ordner>/.LeoSync-Papierkorb/<Datum>/<relPath>". Gibt es den Namen dort schon,
+     * Wie [rename], liefert aber null statt einer Ausnahme, wenn der Anbieter nicht umbenennen kann (nur für die
+     * [TrashMigration]: dort heisst "geht nicht" = nichts tun, Altname bleibt lesbar).
+     */
+    fun renameOrNull(docId: String, newName: String): String? = try {
+        DocumentsContract.renameDocument(resolver, docUri(docId), newName)?.let { DocumentsContract.getDocumentId(it) }
+    } catch (e: UnsupportedOperationException) { null }
+
+    /**
+     * Verschiebt ein Dokument von einem Ordner in einen anderen, **ohne Rückfall auf Kopieren und Löschen**; null, wenn der
+     * Anbieter nicht verschieben kann (nur für die [TrashMigration]).
+     */
+    fun moveOrNull(docId: String, fromParentId: String, toParentId: String): String? = try {
+        DocumentsContract.moveDocument(resolver, docUri(docId), docUri(fromParentId), docUri(toParentId))
+            ?.let { DocumentsContract.getDocumentId(it) }
+    } catch (e: UnsupportedOperationException) { null }
+
+    /**
+     * Verschiebt eine Datei in "<Ordner>/@LeoSync-Bin/<Datum>/<relPath>". Gibt es den Namen dort schon,
      * bekommt sie die Uhrzeit angehängt ("a (14-32-05).txt", 0.7.0). Liefert den Pfad im Papierkorb.
      */
     override fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String {
         val parentRel = relPath.substringBeforeLast('/', "")
         val sourceParent = ensureDir(parentRel)
-        val trashDir = listOf(trashDirName, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
+        val trashDir = listOf(MirrorEngine.TRASH_DIR, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
         val targetParent = ensureDir(trashDir)
         val existing = children(targetParent).map { it.name.lowercase() }.toSet()
         val name = TrashIndex.uniqueTrashName(entry.name, TrashIndex.timeNow()) { it.lowercase() in existing }
@@ -594,7 +612,7 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     }
 
     /** Gemerkte Ordner-IDs unterhalb von [relDir] verwerfen (nach dem Löschen sonst veraltet) */
-    private fun forgetDirs(relDir: String) {
+    internal fun forgetDirs(relDir: String) {
         val k = relDir.lowercase()
         dirIds.keys.removeIf { it == k || it.startsWith("$k/") }
     }

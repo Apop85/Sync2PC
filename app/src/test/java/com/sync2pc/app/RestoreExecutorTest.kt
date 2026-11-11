@@ -128,6 +128,38 @@ class RestoreExecutorTest {
         assertEquals(10L, env.local.find("docs/a.txt")?.size)
     }
 
+    /** SYNC-20261111-244 (Review M3): Vormerkung mit dem Altnamen, Datei liegt nach der Migration unter dem neuen Namen */
+    @Test
+    fun restoreFindsTheFileUnderTheOtherTrashName_pcSide() {
+        val env = RestoreEnv()
+        env.restores += PendingRestore(1, 1, "REMOTE", "${MirrorEngine.DOT_TRASH_DIR}/2026-11-03/docs/a.txt", "docs/a.txt", 0)
+        env.share.add("$bin\\2026-11-03\\docs\\a.txt", 10, "old")
+        assertTrue(env.attempt().getOrThrow())
+        assertEquals(listOf("eng_restoring", "eng_restored"), env.logKeys())
+        assertEquals(0, env.failedCount)
+        assertEquals(10L, env.local.find("docs/a.txt")?.size)
+        assertNull(env.share.stat(oldTrashPc))
+    }
+
+    @Test
+    fun restoreFindsTheFileUnderTheOtherTrashName_phoneSide() {
+        val env = RestoreEnv()
+        env.restores += PendingRestore(1, 1, "LOCAL", "${MirrorEngine.DOT_TRASH_DIR}/2026-11-03/docs/a.txt", "docs/a.txt", 0)
+        env.local.put(oldTrash, 10)
+        assertTrue(env.attempt().getOrThrow())
+        assertEquals(listOf("eng_restoring", "eng_restored"), env.logKeys())
+        assertEquals(10L, env.local.find("docs/a.txt")?.size)
+        assertNull(env.local.find(oldTrash))
+    }
+
+    @Test
+    fun restoreStillReportsGoneWhenTheFileIsUnderNoTrashName() {
+        val env = RestoreEnv()
+        env.restores += PendingRestore(1, 1, "REMOTE", "${MirrorEngine.DOT_TRASH_DIR}/2026-11-03/docs/a.txt", "docs/a.txt", 0)
+        assertTrue(env.attempt().getOrThrow())
+        assertTrue(env.logKeys().contains("eng_restore_gone"))
+    }
+
     // ---- (b) Fehler (IOException) in jedem Schritt -> Zurückrollen ---------------------
 
     @Test

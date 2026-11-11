@@ -739,7 +739,7 @@ Verlass auf vollständige Listen: Ist eine Seitenliste unvollständig, sähe die
 | Wiederherstellung (Löschung rückgängig, `UPLOAD`/`DOWNLOAD` aus Tabelle B) | normale Übertragung; S fehlt → entsteht neu durch `record` |
 
 Namenskollision im Papierkorb am selben Tag: `TrashIndex.uniqueTrashName` → `a (14-32-05).txt`, bei gleicher Sekunde `a (14-32-05-2).txt`. Bis 0.6.x hiessen Duplikate `a_2.txt`; `TrashIndex.originalName` erkennt beide Schemata.
-Papierkorbnamen: aktuell `.LeoSync-Bin`; ältere `.LeoSync-Papierkorb` (0.0.12–0.7.x) und `.Sync2PC-Papierkorb` (≤ 0.0.11) werden weiter erkannt, gelistet und geleert (`MirrorEngine.TRASH_DIRS`) und sind per `FileFilter.ALWAYS_EXCLUDED` sowie `skipTrash` von der Synchronisation ausgeschlossen.
+Papierkorbnamen: aktuell `.LeoSync-Bin`; auf dem **Handy** bei Ordnern des Download-Anbieters mit Nummern-Kennung (`msd:`) seit 0.16.25 `@LeoSync-Bin` (DEC-254: MediaStore indexiert Ordner mit Punkt am Anfang nicht, sie fehlen in der Ordnerliste; Folge war ein nicht auflistbarer, in «(1)», «(2)» zersplitterter Papierkorb; Bausteine `mirror/MirrorEngine.kt`, `mirror/FileFilter.kt`, `mirror/LocalTree.kt`; PC unverändert); ältere `.LeoSync-Papierkorb` (0.0.12–0.7.x) und `.Sync2PC-Papierkorb` (≤ 0.0.11) werden weiter erkannt, gelistet und geleert (`MirrorEngine.TRASH_DIRS`) und sind per `FileFilter.ALWAYS_EXCLUDED` sowie `skipTrash` von der Synchronisation ausgeschlossen.
 
 ### 7.3 Löschen gegen Ändern
 

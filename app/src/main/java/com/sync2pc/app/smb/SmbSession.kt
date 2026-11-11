@@ -136,6 +136,10 @@ interface RemoteStore : RemoteFiles, Closeable {
     fun move(from: String, to: String)
     fun delete(path: String)
     fun deleteDir(path: String)
+    /** Ordner (samt Inhalt) umbenennen; das Ziel darf nicht existieren, der Zielelternordner muss es (Papierkorb-Übernahme) */
+    fun renameDir(from: String, to: String)
+    /** Ordner löschen, **nur wenn er leer ist** (nie rekursiv); wirft, wenn er Inhalt hat oder nicht gelöscht werden kann */
+    fun deleteEmptyDir(path: String)
     fun contentHash(path: String, size: Long, check: () -> Unit = {}, onBytes: (Long) -> Unit = {}): String
 }
 
@@ -206,6 +210,20 @@ class SmbSession private constructor(
 
         }
 
+        /**
+         * SYNC-20261111-232 (6): Verlangt die Freigabe Verschlüsselung (EncryptData), die Sitzung ist aber unverschlüsselt
+         * (Stufe «Aus»), meldet der Server beim Verbinden mit der Freigabe «Zugriff verweigert». Das sieht aus wie ein
+         * Rechteproblem. Deshalb wird dieser Fall bei Stufe «Aus» mit einem Hinweis auf die Verschlüsselung markiert
+         * ([SmbShareAccessDeniedException]); der Server unterscheidet beide Ursachen nicht.
+         */
+        private fun connectShareHinted(session: Session, share: String, enc: SmbEncryption) = try {
+            session.connectShare(share)
+        } catch (e: SMBApiException) {
+            if (enc == SmbEncryption.OFF && e.statusCode == NtStatus.STATUS_ACCESS_DENIED.value)
+                throw SmbShareAccessDeniedException(e)
+            throw e
+        }
+
         /** Lehnt der Server die Dialekt-Aushandlung ab (STATUS_NOT_SUPPORTED, nur SMB 2.x)? Auch als Ursache in der Kette. */
         internal fun isDialectRejected(e: Throwable): Boolean =
             generateSequence(e) { t -> t.cause?.takeIf { it !== t } }.take(9)
@@ -248,7 +266,7 @@ class SmbSession private constructor(
             try {
                 val link = c.link as SmbLink
                 val session = c.session!!
-                val share = session.connectShare(target.share) as? DiskShare
+                val share = connectShareHinted(session, target.share, profile.encryption()) as? DiskShare
                     ?: throw IllegalStateException(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_not_disk, target.share))
                 PcLogin.commit(c, pcStore)
                 EncryptionStatus.record(profile, smbSessionEncrypted(session))
@@ -409,6 +427,8 @@ class SmbSession private constructor(
     fun download(
         path: String, out: java.io.OutputStream, onProgress: (Long) -> Unit, checkCancel: () -> Unit,
         startOffset: Long = 0,
+        /** Erwartete Grösse laut Einlesen; -1 = unbekannt (kein Abschlusscheck). Siehe [DownloadEnd]. */
+        expectedSize: Long = -1,
     ) {
         share.openFile(
             path, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
@@ -425,6 +445,19 @@ class SmbSession private constructor(
                 offset += n
                 onProgress(offset)
             }
+            // SYNC-20261111-232 (2): Ein vorzeitiges Ende (Lesen liefert «Dateiende», obwohl noch Bytes fehlen, z. B. nach einem
+            // Verbindungsabbruch mit Wiederverbinden) darf nicht als fertiger Download gelten. Die Temp-Datei bleibt dann liegen
+            // und der Download setzt beim nächsten Lauf fort.
+            if (expectedSize >= 0 && offset != expectedSize) {
+                val current = try { f.fileInformation.standardInformation.endOfFile } catch (e: Exception) { null }
+                when (DownloadEnd.classify(offset, expectedSize, current, progressed = offset > startOffset)) {
+                    DownloadEnd.Kind.COMPLETE -> {}
+                    DownloadEnd.Kind.CHANGED -> throw DownloadSizeException(
+                        com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.tree_err_size, offset, expectedSize))
+                    DownloadEnd.Kind.INTERRUPTED -> throw java.io.EOFException(
+                        com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.smb_err_download_cut, offset, expectedSize))
+                }
+            }
         }
     }
 
@@ -434,6 +467,19 @@ class SmbSession private constructor(
             from, EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
             SMB2CreateDisposition.FILE_OPEN, EnumSet.of(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE)
         ).use { it.rename(to, false) }
+    }
+
+    /** Benennt einen Ordner um (Ziel darf nicht existieren; kein Überschreiben). [move] taugt nur für Dateien. */
+    override fun renameDir(from: String, to: String) {
+        share.openDirectory(
+            from, EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
+            SMB2CreateDisposition.FILE_OPEN, null
+        ).use { it.rename(to, false) }
+    }
+
+    /** Löscht einen Ordner nur, wenn er leer ist (nicht rekursiv: der Server lehnt einen gefüllten Ordner ab) */
+    override fun deleteEmptyDir(path: String) {
+        if (path.isNotEmpty() && share.folderExists(path)) share.rmdir(path, false)
     }
 
     /** Legt alle Ebenen an, falls nötig (verträgt parallele Aufrufe aus mehreren Verbindungen) */

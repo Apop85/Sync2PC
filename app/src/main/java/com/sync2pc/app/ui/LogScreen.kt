@@ -237,7 +237,7 @@ private fun RunCard(r: SyncRun, expanded: Boolean, onClick: () -> Unit) {
                 val firstError = entries.takeLast(300).firstOrNull { it.level == "E" }
                 entries.takeLast(300).forEach { e ->
                     Text(
-                        "${formatTime(e.time).substringAfter(' ')}  ${e.text()}",
+                        "${formatClock(e.time)}  ${e.text()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = when (e.level) {
                             "E" -> MaterialTheme.colorScheme.error

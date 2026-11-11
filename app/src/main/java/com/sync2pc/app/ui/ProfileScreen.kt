@@ -71,6 +71,7 @@ import com.sync2pc.app.data.ChangeConfirm
 import com.sync2pc.app.data.NumberInput
 import com.sync2pc.app.data.Profile
 import com.sync2pc.app.mirror.FileFilter
+import com.sync2pc.app.data.ProfileNames
 import com.sync2pc.app.data.ProfileOverlap
 import com.sync2pc.app.data.ProfileWizard
 import com.sync2pc.app.data.ProfileWizard.Step
@@ -132,6 +133,12 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     // Assistent (0.5.0): aktueller Schritt; «Hinweis fehlt» nach einem blockierten «Weiter» (-120: auch bei ungültigem Zahlenfeld)
     var step by rememberSaveable { mutableStateOf(Step.NAME) }
     var showMissing by remember { mutableStateOf(false) }
+    // SYNC-20261111-235: Namen der anderen Profile (Einmaligkeit); Fehlertext erst nach «Weiter»/«Speichern»
+    var otherNames by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showNameError by remember { mutableStateOf(false) }
+    LaunchedEffect(profileId) {
+        otherNames = withContext(Dispatchers.IO) { dao.profiles().filter { it.id != profileId }.map { it.name } }
+    }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -236,7 +243,14 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     fun pcModeNow(): PcCheckMode =
         if (profileId == 0L && !pcTouched) (if (p.ssids().isNotEmpty()) PcCheckMode.BOTH else PcCheckMode.GUID) else p.pcMode()
 
-    fun withPassword(): Profile = p.copy(smbPasswordEnc = CredentialCrypto.encrypt(password), pcCheck = pcModeNow().name)
+    /** SYNC-20261111-232 (5): Bei PC-Erkennung «WLAN» oder «Beides» ist mindestens ein WLAN-Name Pflicht */
+    fun wifiNameMissing(): Boolean = com.sync2pc.app.sync.NetworkRules.needsWifiName(pcModeNow()) && p.ssids().isEmpty()
+
+    /** Was fehlt im Schritt noch? Wie [ProfileWizard.missing], zusätzlich der WLAN-Name im Schritt «Optionen» */
+    fun missingFor(s: Step): String? = ProfileWizard.missing(p, s)
+        ?: if (s == Step.OPTIONS && wifiNameMissing()) str(R.string.wizard_missing_wifi) else null
+
+    fun withPassword(): Profile =p.copy(smbPasswordEnc = CredentialCrypto.encrypt(password), pcCheck = pcModeNow().name)
 
     /** Rückfrage VOR dem Anmelden (blockiert den IO-Thread, bis der Benutzer antwortet; ohne Antwort = nicht vertrauen) */
     fun askTrust(host: String): Boolean {
@@ -320,8 +334,19 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
 
     fun saveNow(force: Boolean, folderChoice: FolderChoice?) {
         scope.launch {
-            // Leerzeichen am Rand des Namens entfernen (sonst "(Fotos )" im Verlauf); verifyUpload spiegelt die Stufe
-            val toSave = withPassword().let { it.copy(name = it.name.trim(), verifyUpload = it.mustVerify()) }
+            // Leer- und Steuerzeichen am Rand des Namens entfernen (sonst "(Fotos )" im Verlauf); verifyUpload spiegelt die Stufe
+            val toSave = withPassword().let { it.copy(name = ProfileNames.normalize(it.name), verifyUpload = it.mustVerify()) }
+            // SYNC-20261111-235: Name einmalig (Stand aus der Datenbank, nicht aus dem Editor); bestehende Doppelnamen nur melden
+            val nameVerdict = withContext(Dispatchers.IO) {
+                val names = dao.profiles().filter { it.id != toSave.id }.map { it.name }
+                otherNames = names
+                ProfileNames.verdict(toSave.name, if (toSave.id == 0L) null else baseline?.name, names)
+            }
+            if (nameVerdict == ProfileNames.Verdict.TAKEN || nameVerdict == ProfileNames.Verdict.EMPTY) {
+                showNameError = true
+                if (profileId == 0L) { showMissing = nameVerdict == ProfileNames.Verdict.EMPTY; step = Step.NAME }
+                return@launch
+            }
             // Doppelte Profile verhindern bzw. bei Überschneidung warnen
             val hit = withContext(Dispatchers.IO) {
                 val cache = HashMap<String, String?>()
@@ -388,8 +413,22 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     fun save(force: Boolean = false, folderChoice: FolderChoice? = null) {
         // SYNC-20261111-218 B7: nie mit fehlender Pflichtangabe eines früheren Schritts speichern (z. B. «kein Handy-Ordner»);
         // der Assistent springt zum ersten unvollständigen Schritt und zeigt den Hinweis
-        if (profileId == 0L) ProfileWizard.steps(p).firstOrNull { ProfileWizard.missing(p, it) != null }?.let { bad ->
+        if (profileId == 0L) ProfileWizard.steps(p).firstOrNull { missingFor(it) != null }?.let { bad ->
             step = bad; showMissing = true
+            return
+        }
+        // SYNC-20261111-235: Name leer oder von einem anderen Profil belegt: vor allen Rückfragen stoppen (saveNow prüft nochmals gegen die Datenbank)
+        ProfileNames.verdict(p.name, if (profileId == 0L) null else baseline?.name, otherNames).let { v ->
+            if (v == ProfileNames.Verdict.TAKEN || v == ProfileNames.Verdict.EMPTY) {
+                showNameError = true
+                if (profileId == 0L) { showMissing = v == ProfileNames.Verdict.EMPTY; step = Step.NAME }
+                else Toast.makeText(ctx, str(if (v == ProfileNames.Verdict.EMPTY) R.string.wizard_missing_name else R.string.profile_name_taken), Toast.LENGTH_LONG).show()
+                return
+            }
+        }
+        // -232 (5): Bearbeiten: «WLAN»/«Beides» ohne WLAN-Namen nicht speichern (der Fehlertext steht in der Karte «WLAN»)
+        if (profileId != 0L && wifiNameMissing()) {
+            Toast.makeText(ctx, str(R.string.wizard_missing_wifi), Toast.LENGTH_LONG).show()
             return
         }
         // P7/P8: nie mit leerem oder ungültigem Zahlenfeld speichern (sonst stiller Zwischenwert)
@@ -519,8 +558,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             if (show(Step.NAME)) item {
                 // Im Assistenten ohne Überschrift und ohne "Profil aktiv" (ein neues Profil ist immer aktiv)
                 SectionCard(if (wizard) null else str(R.string.profile_general)) {
-                    OutlinedTextField(p.name, { p = p.copy(name = it) }, label = { Text(str(R.string.profile_name)) },
-                        singleLine = true, modifier = Modifier.fillMaxWidth())
+                    // SYNC-20261111-235: bestehender Doppelname wird beim Bearbeiten immer gemeldet (nicht blockiert),
+                    // ein neuer Doppelname erst nach «Weiter»/«Speichern» (dann gesperrt)
+                    val nameVerdict = ProfileNames.verdict(p.name, if (wizard) null else baseline?.name, otherNames)
+                    val nameNote = when {
+                        nameVerdict == ProfileNames.Verdict.TAKEN && showNameError -> str(R.string.profile_name_taken)
+                        nameVerdict == ProfileNames.Verdict.TAKEN_UNCHANGED -> str(R.string.profile_name_taken_existing)
+                        else -> null
+                    }
+                    OutlinedTextField(p.name, { p = p.copy(name = it); showNameError = false }, label = { Text(str(R.string.profile_name)) },
+                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        isError = nameNote != null, supportingText = nameNote?.let { { Text(it) } })
                     if (!wizard) SwitchRow(str(R.string.profile_active), p.enabled) { p = p.copy(enabled = it) }
                     Hint(str(if (isMirror) R.string.profile_type_mirror else R.string.profile_type_photos, p.type().label))
                 }
@@ -691,6 +739,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     // Standort nur, wenn ein WLAN eingetragen ist bzw. werden soll (Android braucht ihn für den WLAN-Namen)
                     PermissionRows(perms, showDone = false, needs = PermNeeds(media = false, wifi = true, base = false))
                     HintMore(str(R.string.profile_wifi_hint))
+                    if (p.ssids().isEmpty()) Text(str(R.string.wizard_missing_wifi), color = MaterialTheme.colorScheme.error)
                     p.ssids().forEach { s ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(s, Modifier.weight(1f))
@@ -790,7 +839,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             // Assistent: Zurück / Weiter, ab dem ersten optionalen Schritt direkt "Speichern"
             if (wizard) item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val missingText = ProfileWizard.missing(p, step)
+                    val missingText = missingFor(step)
                     if (showMissing && missingText != null) Text(missingText, color = MaterialTheme.colorScheme.error)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (stepIndex > 0) OutlinedButton(onClick = { showMissing = false; step = steps[stepIndex - 1] }) {
@@ -800,6 +849,10 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                         if (stepIndex < steps.lastIndex) {
                             val next: () -> Unit = {
                                 if (missingText != null) { showMissing = true }
+                                else if (step == Step.NAME && ProfileNames.verdict(p.name, null, otherNames) == ProfileNames.Verdict.TAKEN) {
+                                    // SYNC-20261111-235: Prüfung direkt bei «Weiter»; Fehlertext steht am Namensfeld
+                                    showNameError = true
+                                }
                                 else if (ProfileWizard.numberBlocksStep(p, step, trashText, pollText, guardText)) {
                                     // -120: Fehlertext steht schon unter dem Feld; zusätzlich Hinweis, kein stilles Korrigieren
                                     showMissing = false
@@ -807,7 +860,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                                 }
                                 else {
                                     // B7: ein früherer Schritt darf nicht unvollständig sein (z. B. nach einem Neuaufbau der Activity)
-                                    val bad = steps.take(stepIndex).firstOrNull { ProfileWizard.missing(p, it) != null }
+                                    val bad = steps.take(stepIndex).firstOrNull { missingFor(it) != null }
                                     showMissing = bad != null
                                     step = bad ?: steps[stepIndex + 1]
                                 }

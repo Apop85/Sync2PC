@@ -34,6 +34,8 @@
     <string name="trash_whole_folder">Select newest version of each file</string>
     <string name="trash_older_version">older version</string>
     <string name="trash_deleted">deleted</string>
+    <string name="trash_modified_at">modified %1$s</string>
+    <string name="trash_deleted_on">deleted on %1$s</string>
     <string name="trash_reserved">scheduled for restore</string>
     <string name="trash_selected">%1$s selected · %2$s</string>
     <string name="trash_clear_selection">Clear selection</string>
