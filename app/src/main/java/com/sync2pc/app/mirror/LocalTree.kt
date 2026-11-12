@@ -640,6 +640,17 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     }
 
     /** Eine einzelne Datei im Papierkorb endgültig löschen. false = nicht (mehr) vorhanden */
+    /**
+     * Nur lesend: Dokument-Adresse und MIME-Typ einer Datei im Papierkorb zum Öffnen mit einer anderen App
+     * (SYNC-20261112-292). Ändert nichts; null = Datei nicht (mehr) vorhanden. Typ aus der Endung, sonst allgemein.
+     */
+    fun trashFileForOpen(trashPath: String): Pair<Uri, String>? {
+        val e = find(trashPath) ?: return null
+        val ext = e.name.substringAfterLast('.', "").lowercase()
+        val mime = if (ext.isEmpty()) null else MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+        return DocumentsContract.buildDocumentUriUsingTree(treeUri, e.docId) to (mime ?: "*/*")
+    }
+
     fun deleteTrashFile(trashPath: String): Boolean {
         val e = find(trashPath) ?: return false
         delete(e.docId)

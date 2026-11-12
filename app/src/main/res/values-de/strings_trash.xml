@@ -27,6 +27,7 @@
     <string name="trash_cleanup_button">Papierkorb aufräumen…</string>
     <string name="trash_reload">Neu einlesen</string>
     <string name="trash_empty">Der Papierkorb ist leer.</string>
+    <string name="trash_empty_phone_only">Auf dem Handy ist der Papierkorb leer.</string>
     <string name="trash_intro">Hier liegen gelöschte Dateien und ältere Versionen. Markiere Einträge, um sie wiederherzustellen oder endgültig zu löschen.</string>
     <string name="trash_day">Tag</string>
     <string name="trash_all_days">Alle Tage</string>
@@ -120,4 +121,8 @@
         <item quantity="other">Laut Synchronisierungsstand nicht vorhanden: %1$s Dateien. Sie werden neu angelegt.</item>
     </plurals>
     <string name="trash_restore_names">Dateien: %1$s</string>
+    <!-- Datei aus dem Handy-Papierkorb öffnen (SYNC-20261112-292) -->
+    <string name="trash_open">Öffnen</string>
+    <string name="trash_open_gone">Die Datei lässt sich nicht mehr öffnen: Sie liegt nicht mehr im Papierkorb oder LeoSync hat den Zugriff auf den Ordner verloren.</string>
+    <string name="trash_open_no_app">Auf diesem Handy gibt es keine App, die diesen Dateityp öffnen kann.</string>
 </resources>

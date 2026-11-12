@@ -282,6 +282,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-267: Dublettenprüfung bei `erstellen` bricht vor dem Schreiben ab
 - DEC-268: Ablaufregeln zur Token-Einsparung und Regelwerk-Klarstellungen
 - DEC-269: Papierkorb-Ansicht: Seitenfilter «Anzeigen» und erweiterter Wiederherstellen-Dialog
+- DEC-270: Statussymbole WLAN und PC auf der Profilkachel
+- DEC-271: Papierkorb: «Öffnen» für Dateien auf dem Handy
 
 **11. Lokalisierung und Sprache**
 
@@ -657,6 +659,8 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-267 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-268 | Accepted | 10. Benutzeroberfläche und UX |
 | DEC-269 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-270 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-271 | Implemented | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -2906,7 +2910,7 @@ Pausiert angezeigt.
 - **Begründung:** Seit dem einheitlichen Namen `@LeoSync-Bin` (DEC-260) indexiert der MediaProvider den Handy-Papierkorb (nur Punkt-Ordner und Ordner mit `.nomedia` gelten als versteckt). Gelöschte oder ersetzte Bilder erschienen in der Galerie, und ein Fotoprofil mit überlappendem Quellordner hätte sie als neue Fotos hochgeladen. Fotoprofil und «Speicher freigeben» lesen nur den MediaStore mit Pfaden relativ zum Speicher, daher griff der bisherige Ausschluss nur an der Wurzel.
 - **Alternativen:** (a) nur `.nomedia`: deckt `msd:` nicht ab. (b) Ausschluss auf jeder Ebene auch für Ordnerprofile: kritische Sync-Änderung an bestehendem Zustand. (d) auf den Gerätetest warten: Der Ausschluss ist unabhängig davon richtig. `.LeoSync-Bin` für `msd:` (Benutzeridee): würde DEC-254 rückgängig machen. Zentraler Handy-Papierkorb im App-Speicher (Benutzeridee): Kopieren + Löschen statt Verschieben über Anbietergrenzen, Verlust bei Deinstallation oder «Speicher löschen», im Dateimanager nicht sichtbar, neue Ablage und zweite Migration.
 - **Konsequenzen:** Restrisiko: Bei `msd:`-Ordnern bleiben Papierkorb-Bilder in der Galerie sichtbar (dort ist nur auflistbar, was im MediaStore steht). Der Papierkorb-Ordner bleibt nach dem Leeren mit der `.nomedia` stehen. Ergänzt DEC-254.
-  **Umsetzung 0.16.36 (laut Development, SYNC-20261112-272):** (1) Segment-Filter `MirrorEngine.isInTrash` (ganze Segmente, alle `TRASH_DIRS`, Gross-/Kleinschreibung egal) direkt in `MediaScanner.scan` und `SpaceFreer.query`, damit auch `PendingCheck` erfasst ist. (2) `.nomedia` nur auf dem Handy, nicht bei `msd:` und zusätzlich nicht bei `msf:` (`TrashNoMedia.applies`); angelegt vor der ersten Datei (`LocalTree.moveToTrash`, `PhoneTrashSide.makeDir`), einmal je Lauf (`MirrorEngine` nach `migrateTrash`, nie im Vorschau-Lauf) und nach der Migration. (3) «Alles löschen» entfernt weiter den ganzen Papierkorb-Ordner samt `.nomedia`; sie wird vor dem nächsten Verschieben neu angelegt. (4) Fehlschlag: nur `Log.i`, ein Versuch je Lauf, kein App-Log-Eintrag. (5) `TrashMigration`: Eine `.nomedia` direkt im Altnamen-Ordner wird über `TrashSide.deleteNoMedia` entfernt (Handy und PC), nicht verschoben.
+  **Umsetzung 0.16.36 (laut Development, SYNC-20261112-272):** (1) Segment-Filter `MirrorEngine.isInTrash` (ganze Segmente, alle `TRASH_DIRS`, Gross-/Kleinschreibung egal) direkt in `MediaScanner.scan` und `SpaceFreer.query`, damit auch `PendingCheck` erfasst ist. (2) `.nomedia` nur auf dem Handy, nicht bei `msd:` und zusätzlich nicht bei `msf:` (`TrashNoMedia.applies`); angelegt vor der ersten Datei (`LocalTree.moveToTrash`, `PhoneTrashSide.makeDir`), einmal je Lauf (`MirrorEngine` nach `migrateTrash`, nie im Vorschau-Lauf) und nach der Migration. (3) Das Leeren «Alles» im Lauf entfernt weiter den ganzen Papierkorb-Ordner samt `.nomedia` (neu angelegt vor dem nächsten Verschieben); das Aufräumen in der Ansicht löscht nur Datumsordner, Ordner und `.nomedia` bleiben (Klarstellung SYNC-20261112-283). Seit 0.16.40 löst das Anlegen der `.nomedia` einen gezielten Galerie-Scan aus (nur `primary:`), nötig unter Android 10. (4) Fehlschlag: nur `Log.i`, ein Versuch je Lauf, kein App-Log-Eintrag. (5) `TrashMigration`: Eine `.nomedia` direkt im Altnamen-Ordner wird über `TrashSide.deleteNoMedia` entfernt (Handy und PC), nicht verschoben.
 - **Betroffene Komponenten:** `media/MediaScanner.kt`/`sync/SyncEngine.kt`, `sync/SpaceFreer.kt`, `mirror/MirrorEngine.kt`, `mirror/LocalTree.kt`, `mirror/TrashMigration.kt`
 - **Abhängigkeiten:** DEC-254, DEC-260
 
@@ -2976,6 +2980,28 @@ Pausiert angezeigt.
 - **Konsequenzen:** Umsetzung `ui/TrashScreen.kt`, `mirror/TrashViewRules.kt`, `strings_trash.xml`, `TrashViewRulesTest.kt`. EN-Seitenbegriff ist «Phone»: Der Benutzer hat das am 2026-11-12 bestätigt, `CLAUDE.md` wurde entsprechend geändert (vgl. DEC-249 bis DEC-264, EN «Phone»).
 - **Betroffene Komponenten:** `ui/TrashScreen.kt`, `mirror/TrashViewRules.kt`, `RestoreManager`
 - **Abhängigkeiten:** DEC-215, DEC-263
+
+### DEC-270: Statussymbole WLAN und PC auf der Profilkachel
+- **Status:** Implemented *(0.16.41, laut Development SYNC-20261112-285: 637 Tests ohne Fehler; Darstellung am Gerät nicht geprüft, UX-Review offen; von Documentation nicht im Code nachgeprüft)*
+- **Datum:** 2026-11-12
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Benutzerentscheidung 2026-11-12 (Chat UX): Die Kopfzeile der Profilkachel zeigt oben rechts eine Symbolgruppe: **WLAN** (drei Bögen mit Punkt, Bedingung: aktuell im hinterlegten WLAN), **PC** (Monitor mit grünem Rahmen, Bedingung: PC-Kennung bekannt, nur bei Erkennung per Kennung) und **Verschlüsselt** (Schild, unverändert, DEC aus der Verschlüsselungsanzeige). Reihenfolge von links nach rechts: WLAN, PC, Schild; rechtsbündig ohne Lücke (nicht erfüllte Zustände ohne Symbol), je 22 dp, Abstand 6 dp, oben ausgerichtet, auch bei Schrift 2,0 nicht kleiner. Der Zustand steht zusätzlich in den Textzeilen unter dem Namen und in den Bedienhilfen («Im WLAN» / «On Wi-Fi», «PC erkannt» / «PC recognised»). Der Text «im WLAN ✓» entfällt; das Etikett «Deaktiviert» bleibt als Text links der Gruppe. Die Anzeigelogik ist die reine Funktion `ProfileStatusIcons.visible` mit Test.
+- **Begründung:** Zustand auf einen Blick ohne Text in der Kopfzeile; Zustand nicht nur über Farbe erkennbar (Bedienhilfen, Textzeilen).
+- **Alternativen:** Andere Symbolformen und Reihenfolgen aus den Vorlagen unter `.claude/ux/icons/vorschlag/`: verworfen zugunsten WLAN «A» und PC «A».
+- **Konsequenzen:** Überholt «im WLAN ✓» als Etikett (Profilkarte, siehe Eintrag zu den Profilkarten in §10). Zeichenkette `home_profile_on_wifi` entfernt, `icon_on_wifi` neu (DE/EN).
+- **Betroffene Komponenten:** `ui/HomeParts.kt`, `res/drawable(-night)/ic_wifi.xml`, `ic_pc_known.xml`, `res/values(-de)/strings_home.xml`
+- **Abhängigkeiten:** DEC-215
+
+### DEC-271: Papierkorb: «Öffnen» für Dateien auf dem Handy
+- **Status:** Implemented *(0.16.44, laut Development SYNC-20261112-296; Gerätetest nicht ausgeführt, Öffnen ist Android-Intent-Logik und nicht JVM-testbar)*
+- **Datum:** 2026-11-12
+- **Kategorie:** UI / Papierkorb
+- **Entscheidung:** In der Papierkorb-Liste steht bei jeder Version einer Datei auf dem Handy «Öffnen» (EN «Open»). Es öffnet die Datei nur lesend mit der Android-Standard-App bzw. der App-Auswahl; ohne passende App oder bei fehlender Datei erscheint eine Meldung. Bei Dateien nur auf dem PC ist «Öffnen» ausgeblendet (Entscheidung bei der Umsetzung, Vorschlag des Auftrags).
+- **Begründung:** Inhalt prüfen, bevor man wiederherstellt oder endgültig löscht (Begründung aus dem Auftrag nicht ausdrücklich genannt).
+- **Alternativen:** In den Quellen nicht genannt.
+- **Konsequenzen:** Technik laut Development: SAF-Dokument-Adresse des Freigabeordners mit einmaliger Leseberechtigung (`FLAG_GRANT_READ_URI_PERMISSION`), keine neue Berechtigung, kein `FileProvider`; `LocalTree.trashFileForOpen` nur lesend. «Neueste Version je Datei wählen» und übrige Funktionen unverändert.
+- **Betroffene Komponenten:** `ui/TrashScreen.kt` (`openTrashFile`), `mirror/LocalTree.kt`, `strings_trash.xml` (`trash_open`, `trash_open_gone`, `trash_open_no_app`)
+- **Abhängigkeiten:** DEC-269
 
 ---
 

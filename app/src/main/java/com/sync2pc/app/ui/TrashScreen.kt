@@ -262,7 +262,8 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                 }
             }
             if (data.entries.isEmpty()) {
-                item { Hint(str(R.string.trash_empty)) }
+                // Bei nicht erreichbarem PC ist nur der Handy-Papierkorb bekannt leer (die rote Karte erklärt den PC-Zustand)
+                item { Hint(str(if (TrashViewRules.emptyIsPhoneOnly(data.entries, data.pcAvailable)) R.string.trash_empty_phone_only else R.string.trash_empty)) }
                 item { PhotosHint(hasPhotos) }
                 return@LazyColumn
             }
@@ -333,7 +334,7 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Checkbox(checked = isSel(v), onCheckedChange = { toggle(v) }, enabled = !reserved)
-                                        Column {
+                                        Column(Modifier.weight(1f)) {
                                             Text(
                                                 // -239 Punkt 3: die Zeit ist die Änderungszeit der Datei, nicht die Löschzeit (bekannt ist nur der Tag)
                                                 (if (v.modified > 0) str(R.string.trash_modified_at, formatTime(v.modified)) else str(R.string.trash_deleted_on, dayLabel(v.date))) + " · " + str(if (v.side == Side.LOCAL) R.string.side_phone else R.string.side_pc) +
@@ -342,6 +343,10 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                                             )
                                             if (reserved) Hint(str(R.string.trash_reserved))
                                         }
+                                        // SYNC-20261112-292: «Öffnen» nur bei Dateien auf dem Handy (nur lesend, Standard-App bzw. Auswahl)
+                                        if (v.side == Side.LOCAL) TextButton(onClick = {
+                                            scope.launch { openTrashFile(ctx, profile, v) }
+                                        }) { Text(str(R.string.trash_open)) }
                                     }
                                 }
                             }
@@ -463,6 +468,33 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         },
         dismissButton = { TextButton(onClick = { confirmRestore = false }) { Text(str(R.string.common_cancel)) } },
     )
+}
+
+/**
+ * Papierkorb-Datei vom Handy nur lesend mit einer anderen App öffnen (SYNC-20261112-292): Standard-App bzw. Android-Auswahl,
+ * lesende Berechtigung nur für diese eine Datei. Nichts wird verändert, verschoben oder gelöscht.
+ * Keine passende App, Datei nicht mehr da oder Zugriff weg: verständliche Meldung statt Absturz.
+ */
+private suspend fun openTrashFile(ctx: android.content.Context, profile: Profile, entry: com.sync2pc.app.mirror.TrashEntry) {
+    val target = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val uri = android.net.Uri.parse(profile.localTreeUri)
+            if (!com.sync2pc.app.mirror.LocalTree.hasPermission(ctx, uri)) null
+            else com.sync2pc.app.mirror.LocalTree(ctx, uri).trashFileForOpen(entry.trashPath)
+        } catch (e: Exception) { null }
+    }
+    if (target == null) {
+        Toast.makeText(ctx, str(R.string.trash_open_gone), Toast.LENGTH_LONG).show()
+        return
+    }
+    val view = android.content.Intent(android.content.Intent.ACTION_VIEW).setDataAndType(target.first, target.second)
+        .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        // Kein eigener Chooser: Android nimmt die Standard-App oder zeigt selbst die App-Auswahl
+        ctx.startActivity(view)
+    } catch (e: Exception) {
+        Toast.makeText(ctx, str(R.string.trash_open_no_app), Toast.LENGTH_LONG).show()
+    }
 }
 
 /** "Aufräumen…": Regeln wie früher "Papierkorb leeren" (0.6.0); onPurge erst nach der Rückfrage */

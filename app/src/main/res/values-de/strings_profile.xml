@@ -151,7 +151,7 @@
     <string name="profile_pc_check">PC-Kennung</string>
     <string name="profile_pc_check_hint">Woran LeoSync deinen PC erkennt, bevor es die Anmeldedaten sendet.</string>
     <string name="profile_pc_opt_wifi">Nur WLAN-Name</string>
-    <string name="profile_pc_opt_wifi_sub">Wie bisher. Schwächer: Ein fremdes Netz mit gleichem WLAN-Namen und gleicher Adresse könnte die Anmeldedaten erhalten.</string>
+    <string name="profile_pc_opt_wifi_sub">Schwächer: Ein fremdes Netz mit gleichem WLAN-Namen und gleicher Adresse könnte die Anmeldedaten erhalten.</string>
     <string name="profile_pc_opt_guid">Nur PC-Kennung</string>
     <string name="profile_pc_opt_guid_sub">Funktioniert in jedem WLAN. Der PC muss erkannt sein, bevor die Anmeldedaten gesendet werden.</string>
     <string name="profile_pc_opt_both">Beides</string>
@@ -205,7 +205,7 @@
     <string name="enc_value_preferred">Wenn möglich</string>
     <string name="enc_value_required">Erforderlich</string>
     <string name="enc_off">Aus</string>
-    <string name="enc_off_sub">Keine Verschlüsselung, wie bisher. Nur in einem Netz empfohlen, dem du vertraust.</string>
+    <string name="enc_off_sub">Keine Verschlüsselung. Nur in einem Netz empfohlen, dem du vertraust.</string>
     <string name="enc_preferred">Wenn möglich (empfohlen)</string>
     <string name="enc_preferred_sub">Verschlüsselt, sobald der PC es kann. Sonst läuft die Verbindung unverschlüsselt weiter.</string>
     <string name="enc_required">Erforderlich</string>

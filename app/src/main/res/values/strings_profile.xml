@@ -151,7 +151,7 @@
     <string name="profile_pc_check">PC ID</string>
     <string name="profile_pc_check_hint">How LeoSync recognises your PC before it sends the sign-in data.</string>
     <string name="profile_pc_opt_wifi">Wi-Fi name only</string>
-    <string name="profile_pc_opt_wifi_sub">As before. Weaker: a foreign network with the same Wi-Fi name and the same address could receive the sign-in data.</string>
+    <string name="profile_pc_opt_wifi_sub">Weaker: a foreign network with the same Wi-Fi name and the same address could receive the sign-in data.</string>
     <string name="profile_pc_opt_guid">PC ID only</string>
     <string name="profile_pc_opt_guid_sub">Works in any Wi-Fi. The PC must be recognised before the sign-in data is sent.</string>
     <string name="profile_pc_opt_both">Both</string>
@@ -205,7 +205,7 @@
     <string name="enc_value_preferred">If possible</string>
     <string name="enc_value_required">Required</string>
     <string name="enc_off">Off</string>
-    <string name="enc_off_sub">No encryption, as before. Only recommended on a network you trust.</string>
+    <string name="enc_off_sub">No encryption. Only recommended on a network you trust.</string>
     <string name="enc_preferred">If possible (recommended)</string>
     <string name="enc_preferred_sub">Encrypted as soon as the PC supports it. Otherwise the connection stays unencrypted.</string>
     <string name="enc_required">Required</string>

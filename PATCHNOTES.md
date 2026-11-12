@@ -2,6 +2,43 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.45 (2026-11-12)
+
+### Geändert
+- **Texte:** Die Beschreibungen der Optionen «Unverschlüsselt» (SMB-Verschlüsselung) und «Nur WLAN-Name» (PC-Erkennung) erklären nur noch, was die Option ist, ohne Bezug auf frühere Versionen.
+
+## 0.16.44 (2026-11-12)
+
+### Neu
+- **Papierkorb:** Bei jeder Datei auf dem Handy gibt es «Öffnen». Die Datei wird nur zum Ansehen mit der Standard-App geöffnet, im Papierkorb ändert sich nichts.
+
+## 0.16.43 (2026-11-12)
+
+### Behoben
+- **Papierkorb:** Bei leerem Handy-Papierkorb und nicht erreichbarem PC lautet der Leertext «Auf dem Handy ist der Papierkorb leer.», sonst unverändert «Der Papierkorb ist leer.» (der PC-Papierkorb kann Einträge haben).
+
+## 0.16.42 (2026-11-12)
+
+### Behoben
+- **Papierkorb:** In der Ordnerzeile stehen Name und Button «Neueste Version je Datei wählen» je in eigener Zeile; «(Hauptordner)» bricht nicht mehr mitten im Wort um, Ordnernamen brechen nur an Wortgrenzen um.
+
+## 0.16.41 (2026-11-12)
+
+### Geändert
+- **Profilkachel:** Oben rechts zeigt die Kachel Symbole für WLAN (im hinterlegten WLAN), PC (Kennung bekannt, grüner Monitor) und Verschlüsselt, nur die zutreffenden, ohne Lücke und gleich gross. Der Text «im WLAN ✓» entfällt; die Textzeilen unter dem Namen bleiben.
+
+## 0.16.40 (2026-11-12)
+
+### Behoben
+- **Papierkorb in der Galerie (Android 10):** Nach dem Anlegen der `.nomedia` löst die App einen gezielten Galerie-Scan aus (nur interner Speicher), damit bereits indexierte Papierkorb-Bilder wirklich aus der Galerie verschwinden.
+- **Papierkorb:** Nach «Neu einlesen» lautet der Hinweis «Auswahl aufgehoben (Einträge nicht mehr vorhanden oder nicht erreichbar).»; nach einem Filterwechsel bleibt «… (Filter geändert).».
+
+## 0.16.39 (2026-11-12)
+
+### Behoben
+- **Papierkorb:** Die Ordnerzeile ordnet Name und Button «Neueste Version je Datei wählen» untereinander an; der Filter-Zusatz im Button («Nur PC» usw.) entfällt, auch bei «Alles vom … auswählen».
+- **Papierkorb:** Der Hinweis «Auswahl aufgehoben» steht als Zeile in der Liste statt als Toast, bis wieder etwas gewählt wird. Die Auswahlleiste ist kompakter.
+
 ## 0.16.38 (2026-11-12)
 
 ### Neu

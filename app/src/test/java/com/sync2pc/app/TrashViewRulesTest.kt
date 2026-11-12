@@ -109,6 +109,14 @@ class TrashViewRulesTest {
     }
 
     @Test
+    fun emptyTextIsPhoneOnlyWhenPcIsNotReachable() {
+        assertTrue(TrashViewRules.emptyIsPhoneOnly(emptyList(), false))
+        assertFalse("PC erreichbar: wirklich alles leer", TrashViewRules.emptyIsPhoneOnly(emptyList(), true))
+        assertFalse("Einträge vorhanden", TrashViewRules.emptyIsPhoneOnly(listOf(p1), false))
+        assertFalse(TrashViewRules.emptyIsPhoneOnly(listOf(p1), true))
+    }
+
+    @Test
     fun emptyKindWithEntriesOrBothIsNone() {
         assertEquals(Empty.NONE, TrashViewRules.emptyKind(listOf(c1), PurgeSides.REMOTE, false))
         assertEquals(Empty.NONE, TrashViewRules.emptyKind(emptyList(), PurgeSides.BOTH, false))

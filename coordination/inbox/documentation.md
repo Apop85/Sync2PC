@@ -4,4 +4,4 @@ Nur Verweise auf aktive, an Documentation adressierte Aufträge (Details in der 
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261112-286 | UX-Specialist | Dokumentation: Statussymbole WLAN und PC auf der Profilkachel (aus -285) | LOW | OPEN | ../tasks/OPEN/SYNC-20261112-286.md |
+| SYNC-20261113-297 | UX-Specialist | Web-Developer-Auftrag Website-Screenshots in tasks.md erfassen | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261113-297.md |

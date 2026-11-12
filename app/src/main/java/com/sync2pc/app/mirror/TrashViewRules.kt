@@ -32,6 +32,12 @@ object TrashViewRules {
             if (c.pc > 0) "$pcLabel ${c.pc}" else null,
         ).joinToString(", ")
 
+    /**
+     * Ganz leerer Papierkorb bei nicht erreichbarem PC (SYNC-20261112-291): nur der Handy-Papierkorb ist bekannt leer; der PC-Papierkorb
+     * kann Einträge haben. Dann sagt der Text «Auf dem Handy ist der Papierkorb leer.» statt «Der Papierkorb ist leer.».
+     */
+    fun emptyIsPhoneOnly(entries: List<TrashEntry>, pcAvailable: Boolean): Boolean = entries.isEmpty() && !pcAvailable
+
     /** Was die Liste statt der Einträge zeigt, wenn der Filter nichts übrig lässt */
     enum class Empty { NONE, PHONE, PC, PC_UNREACHABLE }
 

@@ -27,6 +27,7 @@
     <string name="trash_cleanup_button">Clean up trash…</string>
     <string name="trash_reload">Reload</string>
     <string name="trash_empty">The trash is empty.</string>
+    <string name="trash_empty_phone_only">The trash on the phone is empty.</string>
     <string name="trash_intro">Deleted files and older versions are kept here. Mark entries to restore them or delete them permanently.</string>
     <string name="trash_day">Day</string>
     <string name="trash_all_days">All days</string>
@@ -120,4 +121,8 @@
         <item quantity="other">Not present according to the sync state: %1$s files. They will be created.</item>
     </plurals>
     <string name="trash_restore_names">Files: %1$s</string>
+    <!-- Open a file from the phone trash (SYNC-20261112-292) -->
+    <string name="trash_open">Open</string>
+    <string name="trash_open_gone">The file can no longer be opened: it is no longer in the trash or LeoSync has lost access to the folder.</string>
+    <string name="trash_open_no_app">No app on this phone can open this file type.</string>
 </resources>
