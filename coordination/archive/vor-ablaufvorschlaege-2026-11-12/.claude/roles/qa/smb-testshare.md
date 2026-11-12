@@ -1,0 +1,9 @@
+# QA-Modul: lokale SMB-Testfreigabe für den Emulator
+
+Zum Masterprompt `.claude/roles/QA-Specialist.md`. Lesen, sobald eine Prüfung einen eigenen PC/Server braucht (Hostwechsel-Dialog DEC-208, PC-Kennung, Verbindungstest, Synchronisierung gegen eine Freigabe). Rechte stehen im Masterprompt §3 und in `CLAUDE.md` §1; Emulatorablauf im Modul `qa/emulator.md`.
+
+Werkzeug: `tools\qa-smb-testshare.ps1` (+ `qa-smb-testshare.py`, Python/impacket; erstellt im Auftrag des Inhabers am 2026-11-10 durch QA, Änderungen daran macht künftig Development).
+- **Start:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools\qa-smb-testshare.ps1` · `-Status` · `-Stop` (Stop nach der Prüfung). Beim ersten Start richtet es das venv ein (`%LOCALAPPDATA%\LeoSyncTestShare`, impacket aus PyPI), legt den Freigabeordner `.build\qa-smb-share` an, startet den Server auf `127.0.0.1:4445` und setzt `adb reverse tcp:445 tcp:4445` (nötigenfalls `adb root`; danach ggf. `adb unroot`). Optional `-Guid` (16 Zeichen) für eine andere PC-Kennung, `-Serial` bei mehreren Geräten.
+- **In der App:** Freigabe-Pfad `\\127.0.0.1\QA`, Benutzer `qa`, Passwort `qa-test-1` (bewusst **öffentliches Testpasswort**, kein Geheimnis, nur für diese lokale Testumgebung; darf in Rollenprompts und Testdokumentation stehen, nie für produktive Konten oder externe Systeme, `CLAUDE.md` §1). Ein zweiter Hostname auf denselben Server (`\\localhost\QA`) dient dem Hostwechsel-Test. Hostwechsel-Dialog erscheint nur bei gespeichertem Profil im Modus «Nur PC-Kennung» oder «Beides».
+- **Grenzen:** Die App verbindet fest auf Port 445 (kein Port im Pfad), Windows belegt 445, daher Server auf 4445 plus Umleitung. Der Server meldet immer dieselbe Server-GUID (ausser `-Guid`).
+- Testprofile für die Freigabe nach der Prüfung löschen und den Ursprungszustand per Import wiederherstellen (Modul `qa/emulator.md`).

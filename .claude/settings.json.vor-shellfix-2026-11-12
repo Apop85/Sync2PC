@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(/coordination/tasks/**)",
+      "Edit(/coordination/inbox/**)",
+      "Edit(/coordination/TASK-INDEX.md)",
+      "Edit(/coordination/.history/**)",
+      "Edit(/coordination/.audit.log)",
+      "Edit(/coordination/.lock)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|PowerShell|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/rbald/Documents/Sync2PC/tools/Auftrag-guard.ps1\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

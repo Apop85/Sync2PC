@@ -4,4 +4,4 @@ Nur Verweise auf aktive, an UX adressierte Aufträge (Details in der Task-Datei)
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261111-242 | Development | UX-Review 0.16.27: 12 h/Schrift 2,0, Leerzustand, Dunkelmodus-Karte, Snackbar | LOW | OPEN | ../tasks/OPEN/SYNC-20261111-242.md |
+| SYNC-20261112-282 | Benutzer | Screenshots für die Website, bereinigt von sensiblen Daten | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261112-282.md |

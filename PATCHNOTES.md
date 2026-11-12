@@ -2,6 +2,89 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.38 (2026-11-12)
+
+### Neu
+- **Papierkorb:** Seitenfilter «Anzeigen» (Handy und PC / Nur Handy / Nur PC) über dem Tag. Die Auswahl wird bei Wechsel von Seitenfilter oder Tag aufgehoben, wenn sie ausgeblendete Einträge enthält. Auswahlleiste und Löschdialog nennen die betroffenen Seiten. Der Wiederherstellen-Dialog nennt das Ziel (Handy und PC), ersetzte und neue Dateien (nach Synchronisierungsstand) und bei aktivem Filter, dass immer auf beide Seiten geschrieben wird. «Wo?» beim Aufräumen ist passend zum Filter vorbelegt.
+
+### Behoben
+- **Papierkorb:** Die Schaltflächen «Papierkorb aufräumen…» und «Neu einlesen» stehen je in einer Zeile (bei Schrift 1,5/2,0 entstanden grosse Leerflächen).
+
+## 0.16.37 (2026-11-12)
+
+### Behoben
+- **Update-Version:** Die installierte Version im Update-Vergleich wird zur Laufzeit aus dem Paket gelesen (kein veralteter Wert mehr nach inkrementellem Build).
+- **Startseite:** Bei Pause und offenem Konflikt steht das Pausenende weiterhin sichtbar.
+- **Konflikte:** «Alle: neuere» steht in der Inhaltsfläche statt in der Kopfzeile, der Titel bleibt bei grosser Schrift sichtbar.
+- **Verlauf:** Filterchips brechen bei grosser Schrift nicht mehr mitten im Wort; «Alle» und «Fehler» teilen die Breite, «Übertragungen» steht in eigener Zeile.
+- **Profil:** Der Name eines zum Löschen vorgemerkten Profils (Rückgängig-Frist) ist sofort wieder frei. Beim Speichern ohne WLAN-Namen steht der Hinweis fest über «Speichern». Verbindungstest bei Verschlüsselung «Aus»: ohne SMB-Version («Nicht verschlüsselt, wie eingestellt.»). Der Dialog «Zugangsdaten übernehmen» scrollt, der Titel «Erste Synchronisierung» wird bei sehr grosser Schrift nicht mehr getrennt, der Import-Dialog zeigt einen Scrollbalken.
+
+## 0.16.36 (2026-11-12)
+
+### Behoben
+- **Handy-Papierkorb in der Galerie:** Bilder im Papierkorb `@LeoSync-Bin` eines Ordnerprofils erscheinen nicht mehr in der Galerie: Die App legt im Papierkorb eine leere Datei `.nomedia` an (nicht bei Download-Ordnern mit Nummern-Kennung, nie auf dem PC; Fehlschläge sind kein Fehler des Laufs).
+- **Fotoprofil und Speicher freigeben:** Dateien in einem Papierkorb-Ordner (`@LeoSync-Bin` und Altnamen, an beliebiger Stelle des Pfads) werden nicht mehr gesichert und nicht mehr zum Freigeben angeboten.
+- **Papierkorb-Übernahme:** Eine `.nomedia` im alten Papierkorb-Ordner gilt nicht als Inhalt und wird entfernt statt verschoben.
+
+## 0.16.35 (2026-11-11)
+
+### Behoben
+- **Papierkorb-Merker:** Der Merker «PC lehnt `@LeoSync-Bin` ab» wird nach einer fehlgeschlagenen Übernahme nur noch bei «Name ungültig» gesetzt, nicht bei Kollision oder NOT_SUPPORTED eines einzelnen Verschiebens. Bekannte Einschränkungen: siehe `docs/SYNC-ENGINE.md` (Papierkorb).
+
+## 0.16.34 (2026-11-11)
+
+### Behoben
+- **Papierkorb auf dem PC:** Lehnt der PC den Namen `@LeoSync-Bin` dauerhaft ab, merkt sich die App das je Profil und PC-Ziel (7 Tage): gleich der Ausweichname, eine einzige Warnung statt zwei je Lauf.
+
+## 0.16.33 (2026-11-11)
+
+### Geändert
+- **Papierkorb heisst überall `@LeoSync-Bin`** (Handy und PC/NAS, alle Ordnertypen). Auf QNAP/Samba war `.LeoSync-Bin` ein versteckter Ordner, jetzt ist er sichtbar. Die Altnamen `.LeoSync-Bin`, `.LeoSync-Papierkorb` und `.Sync2PC-Papierkorb` werden weiter gelesen, aber nie synchronisiert.
+- **Automatische Migration** beim nächsten Lauf: Umbenennen bzw. Datei für Datei verschieben (nie kopieren oder überschreiben, bei gleichem Namen wird die Uhrzeit angehängt, der alte Ordner nur gelöscht, wenn leer); wartet bei offener Wiederherstellung oder Leeren-Vormerkung. Eine Verlaufszeile je Seite.
+- **PC-Rückfall:** Lehnt der Server den Namen ab, wird `.LeoSync-Bin` benutzt (Verlaufswarnung).
+- **Wiederherstellen** findet eine Vormerkung mit Altnamen auch unter dem neuen Namen.
+
+## 0.16.32 (2026-11-11)
+
+### Geändert
+- Gehört laut Development mit 0.16.33 zusammen (Papierkorb `@LeoSync-Bin` überall); Einzelheiten siehe 0.16.33.
+
+## 0.16.31 (2026-11-11)
+
+### Behoben
+- **Download-Abbruch:** Ohne Fortschritt im Aufruf gilt ein zu kurzes Dateiende als Einzelfehler (Temp-Datei verworfen, der nächste Lauf beginnt neu) statt als Unterbrechung, damit nichts dauerhaft blockiert.
+
+## 0.16.30 (2026-11-11)
+
+### Behoben
+- **Download-Abbruch:** Endet ein Download vor der erwarteten Grösse (z. B. Verbindungsabbruch mit Wiederverbinden), gilt das als Unterbrechung («Verbindung unterbrochen … Rest folgt»; die Temp-Datei bleibt, das Fortsetzen folgt im nächsten Lauf) statt als Fehler «Grösse nach Download stimmt nicht». Ändert sich die PC-Datei in der Zwischenzeit, bleibt es beim Fehler. (Der Fix steht laut Development erst in 0.16.31 vollständig.)
+
+## 0.16.29 (2026-11-11)
+
+### Geändert
+- **WLAN-Name ist Pflicht** bei der PC-Erkennung «Nur WLAN-Name» und «Beides» (roter Hinweis in der Karte «WLAN», «Weiter» und «Speichern» gesperrt). Bestehende Profile ohne Namen in diesen Modi brauchen beim nächsten Speichern einen Namen. Entscheidung des Benutzers.
+
+## 0.16.28 (2026-11-11)
+
+### Geändert
+- **Profilnamen einmalig:** Gross-/Kleinschreibung und Leerzeichen am Rand zählen nicht; Prüfung bei «Weiter», beim Speichern und beim Bearbeiten. Bestehende Doppelnamen werden nur gemeldet. Der Import «Hinzufügen» prüft Namen bewusst nicht.
+- **Verbindungstest:** Bei Verschlüsselung «Aus» nennt «Zugriff verweigert» die Verschlüsselung als mögliche Ursache.
+- **Import-Dialog:** Die Warnung zu «Ersetzen» steht oben, fest, in Fehlerfarbe.
+- **«Verlauf löschen»:** Der Text nennt «Rückgängig».
+
+## 0.16.27 (2026-11-11)
+
+### Geändert
+- **Datum und Uhrzeit** folgen den Systemeinstellungen des Handys (Region, 12 h/24 h), nicht der App-Sprache. Feste Formate bleiben bei Dateinamen, Sicherung/Export, Diagnose, Logs und Papierkorb-Tagesordnern.
+- **Startseite:** «Letzte Synchronisierung» zeigt den letzten fehlerfreien Lauf (nicht den letzten Versuch); Leerzustand «Noch keine erfolgreiche Synchronisierung.».
+- **Papierkorb:** Die Zeile zeigt «geändert …» (Änderungszeit der Datei) statt einer scheinbaren Löschzeit.
+- **Dunkelmodus:** Aktionskarten der Startseite abgedunkelt lila.
+- **Meldung «PC nicht erreichbar»** beim Entfernen gekürzt: «PC nicht erreichbar – nichts gelöscht. Die Dateien bleiben vorgemerkt.».
+- **Handy-Ordner** mit nicht auflösbarer Kennung (`msd:`/`msf:`) zeigt «Handy-Ordner» statt «Download/690».
+
+### Intern
+- Stand bis 0.16.35: 600 Unit-Tests grün (Angabe Development), nichts am Gerät geprüft; QA-Prüfung (-241) und UX-Review (-242) waren offen.
+
 ## 0.16.25 (2026-11-11)
 
 ### Behoben

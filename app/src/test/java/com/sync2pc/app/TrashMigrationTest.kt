@@ -537,6 +537,46 @@ class TrashMigrationTest {
         .add("$old\\2026-11-02\\c.txt", 12, "alt-c").add("$new\\2026-11-01\\a.txt", 20, "neu-a")
         .add("live\\k.txt", 5, "k")
 
+    // ---- `.nomedia` (SYNC-20261112-249) ----------------------------------------------------
+
+    @Test
+    fun nomediaInOldFolderIsNotMovedAndTheMigrationCompletes() {
+        val side = MemSide().file("$old/2026-11-01/a.txt", "alt-a").file("$old/.nomedia", "").file("$new/2026-11-02/b.txt", "neu-b")
+            .file("$new/.nomedia", "")
+        val r = run(side)
+        assertEquals(Status.MIGRATED, r.status)
+        assertFalse(side.hasDir(old))
+        // keine ".nomedia (12-00-00)" im Ziel, die Ziel-Marker-Datei bleibt, nichts doppelt
+        assertEquals(setOf("$new/2026-11-01/a.txt=alt-a", "$new/2026-11-02/b.txt=neu-b", "$new/.nomedia="), side.contents())
+        assertEquals(1, r.moved)
+    }
+
+    @Test
+    fun nomediaInOldFolderIsRemovedEvenWhenTargetHasNone() {
+        val side = MemSide().file("$old/2026-11-01/a.txt", "alt-a").file("$old/.nomedia", "").file("$new/2026-11-02/b.txt", "neu-b")
+        assertEquals(Status.MIGRATED, run(side).status)
+        assertFalse(side.hasDir(old))
+        assertEquals(setOf("$new/2026-11-01/a.txt=alt-a", "$new/2026-11-02/b.txt=neu-b"), side.contents())
+    }
+
+    @Test
+    fun nomediaDeeperInTheTreeIsNormalContent() {
+        // nur direkt im Altnamen-Ordner ist sie ein Marker; tiefer liegt sie wie jede Datei (hier: Name belegt -> Uhrzeit-Anhang)
+        val side = MemSide().file("$old/2026-11-01/.nomedia", "alt-n").file("$new/2026-11-01/.nomedia", "neu-n")
+        assertEquals(Status.MIGRATED, run(side).status)
+        assertEquals(2, side.contentValues().size)
+    }
+
+    @Test
+    fun pcNomediaInOldFolderIsRemovedAndNeverMoved() {
+        val share = FakeShare("Base").add("$old\\2026-11-01\\a.txt", 10, "alt").add("$old\\.nomedia", 0, "")
+            .add("$new\\2026-11-02\\b.txt", 20, "b")
+        assertEquals(Status.MIGRATED, run(PcTrashSide(share)).status)
+        assertFalse(share.dirExists(share.path(old)))
+        assertTrue(share.fileAt(share.path("$new\\2026-11-01\\a.txt")))
+        assertFalse("nie eine .nomedia auf dem PC", share.allFiles().any { it.contains(".nomedia") })
+    }
+
     private class ProcessDeath : Error("simulierter Prozessabbruch")
 }
 
@@ -644,5 +684,10 @@ private class MemSide : TrashSide {
         dirs.remove(k(rel))
         ops += "deleteDir $rel"
         return true
+    }
+
+    override fun deleteNoMedia(rel: String) {
+        val key = k(if (rel.isEmpty()) ".nomedia" else "$rel/.nomedia")
+        if (files.remove(key) != null) ops += "deleteNoMedia $rel"
     }
 }

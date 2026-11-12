@@ -4,4 +4,4 @@ Nur Verweise auf aktive, an QA adressierte Aufträge (Details in der Task-Datei)
 
 | ID | Von | Kurzbeschreibung | Prio | Status | Datei |
 |---|---|---|---|---|---|
-| SYNC-20261111-241 | Development | QA 0.16.27: Zeitformat nach System, Statuskachel, Papierkorb-Zeit, Ordnername | MEDIUM | OPEN | ../tasks/OPEN/SYNC-20261111-241.md |
+| SYNC-20261112-289 | UX-Specialist | Papierkorb-Filter bei nicht erreichbarem PC prüfen (Testserver abschalten) | LOW | OPEN | ../tasks/OPEN/SYNC-20261112-289.md |

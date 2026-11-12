@@ -212,7 +212,7 @@
     <string name="enc_required_sub">Verbindet nur verschlüsselt. Kann der PC das nicht, kommt keine Verbindung zustande und es wird kein Passwort gesendet. Am sichersten.</string>
     <string name="enc_test_ok">✓ Verschlüsselt (SMB %1$s)</string>
     <string name="enc_test_warn">⚠ Nicht verschlüsselt (%1$s). Dein PC oder NAS kann nicht verschlüsseln oder es ist ausgeschaltet.</string>
-    <string name="enc_test_off">Nicht verschlüsselt (%1$s), wie eingestellt.</string>
+    <string name="enc_test_off">Nicht verschlüsselt, wie eingestellt.</string>
     <string name="enc_help">Hilfe: Verschlüsselung einschalten</string>
     <string name="enc_test_required_fail">✗ Verbindung nicht möglich: Dein PC oder NAS kann keine verschlüsselte Verbindung herstellen. Es wurden keine Anmeldedaten gesendet. Schalte die Verschlüsselung am PC oder NAS ein (siehe Hilfe) oder wähle «Wenn möglich».</string>
     <string name="icon_encrypted">Verschlüsselt</string>

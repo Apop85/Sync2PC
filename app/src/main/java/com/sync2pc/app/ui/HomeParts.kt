@@ -294,6 +294,8 @@ internal fun StatusCard(
             // Offene Entscheidung: nie «alles aktuell» (A1); Zeitpunkt des letzten Laufs bleibt als kleine Zeile
             headline == HomeHeadline.ATTENTION -> {
                 Text(attentionText)
+                // Pause mit Ende bleibt sichtbar (SYNC-20261112-248): die Überschrift «Pausiert» nennt kein Ende
+                if (userPaused && userPausedUntil != Long.MAX_VALUE) Hint(str(R.string.home_paused_until, pauseEndText(userPausedUntil)))
                 lastSuccess?.let { Hint(str(R.string.home_last_sync, formatTime(it.finishedAt ?: it.startedAt), it.profileName.trim())) }
             }
             headline == HomeHeadline.NO_ACTIVE_PROFILE -> Text(str(R.string.home_no_active_detail))
@@ -545,6 +547,9 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
     // SYNC-20261111-225: tatsächlicher Zustand der letzten Anmeldung, nicht die Einstellung (siehe EncryptionStatus)
     val encTick by com.sync2pc.app.smb.EncryptionStatus.changes.collectAsState()
     val encrypted = remember(p, encTick, resumeTick) { com.sync2pc.app.smb.EncryptionStatus.lastKnown(p) == true }
+    // PC-Kennung erkannt (Bedingung der Zeile «PC erkannt»): Symbol in der Kopfzeile und Textzeile unten
+    val pcKnownIcon = p.pcMode().checksGuid && com.sync2pc.app.sync.PcIdentity.storedFor(
+        p.pcGuid, p.pcGuidHost, com.sync2pc.app.smb.SmbTarget.hostOf(p.smbPath).orEmpty()) != null
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -552,15 +557,14 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
                 // Zustand als neutrales Etikett (nicht in Akzentfarbe, sonst wirkt es wie ein Link)
                 if (!p.enabled) Text(str(R.string.home_profile_disabled), color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelLarge)
-                else if (ssid != null && p.ssids().contains(ssid)) Text(str(R.string.home_profile_on_wifi),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
-                // SYNC-20261111-225: Icon «Verschlüsselt» (22 dp fest, optisch 12 dp vom Rand) als letztes Element der Kopfzeile:
-                // Der Text endet davor (weight(1f)), so ragt er nie über das Icon.
-                if (encrypted) {
-                    Spacer(Modifier.width(8.dp))
+                // SYNC-20261111-225 / SYNC-20261112-285: Statussymbole WLAN, PC, Verschlüsselt (je 22 dp fest, optisch 12 dp vom Rand)
+                // als letzte Elemente der Kopfzeile, nur die zutreffenden, ohne Lücke, unabhängig von «Deaktiviert». Der Name endet
+                // davor (weight(1f)), so ragt er nie über die Symbole und sie bleiben oben rechts.
+                ProfileStatusIcons.visible(ssid != null && p.ssids().contains(ssid), pcKnownIcon, encrypted).forEachIndexed { i, icon ->
+                    Spacer(Modifier.width(if (i == 0) 8.dp else 6.dp))
                     androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_encrypted),
-                        contentDescription = str(R.string.icon_encrypted),
+                        painter = androidx.compose.ui.res.painterResource(icon.drawable),
+                        contentDescription = str(icon.description),
                         modifier = Modifier.size(22.dp).offset(x = 4.dp, y = (-4).dp).align(Alignment.Top),
                     )
                 }
@@ -588,11 +592,7 @@ internal fun ProfileCard(p: Profile, ssid: String?, awaitingFirstStart: Boolean,
             val pcMode = p.pcMode()
             if (com.sync2pc.app.sync.NetworkRules.needsWifiName(pcMode))
                 Hint(str(R.string.home_wifi, p.ssids().joinToString(", ").ifBlank { str(R.string.home_profile_no_wifi) }))
-            if (pcMode.checksGuid) {
-                val known = com.sync2pc.app.sync.PcIdentity.storedFor(
-                    p.pcGuid, p.pcGuidHost, com.sync2pc.app.smb.SmbTarget.hostOf(p.smbPath).orEmpty()) != null
-                Hint(str(if (known) R.string.home_profile_pc_known else R.string.home_profile_pc_unknown))
-            }
+            if (pcMode.checksGuid) Hint(str(if (pcKnownIcon) R.string.home_profile_pc_known else R.string.home_profile_pc_unknown))
             val sc = synced; val oc = open
             if (isPhotos && sc != null && oc != null) Hint(str(R.string.home_profile_counts, sc, oc))
             if (!isPhotos && sc != null) Hint(

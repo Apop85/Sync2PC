@@ -49,6 +49,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +74,7 @@ import com.sync2pc.app.mirror.TrashCleaner
 import com.sync2pc.app.mirror.TrashEntry
 import com.sync2pc.app.mirror.TrashIndex
 import com.sync2pc.app.mirror.TrashPurge
+import com.sync2pc.app.mirror.TrashViewRules
 import com.sync2pc.app.sync.Notifications
 import kotlinx.coroutines.launch
 
@@ -161,6 +163,11 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     var confirmDelete by remember { mutableStateOf(false) }
     var showCleanup by remember { mutableStateOf(false) }
     var pickDay by remember { mutableStateOf(false) }
+    // Seitenfilter «Anzeigen» (SYNC-20261112-277): nur für die offene Ansicht, bleibt beim Drehen, wird bei Profilwechsel/Verlassen zurückgesetzt
+    var sidesName by rememberSaveable(profile.id) { mutableStateOf(PurgeSides.BOTH.name) }
+    var pickSides by remember { mutableStateOf(false) }
+    var clearedNotice by remember { mutableIntStateOf(0) } // Text-ID des Hinweises «Auswahl aufgehoben», 0 = keiner
+    val sides = PurgeSides.entries.firstOrNull { it.name == sidesName } ?: PurgeSides.BOTH
     LaunchedEffect(profile.id, reload) { loaded = null; loaded = RestoreManager.load(ctx, profile) }
 
     // Eingriffe warten auf einen laufenden Ordner-Sync und überleben das Verlassen der Ansicht (0.11.10, DEC-144)
@@ -183,12 +190,41 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     }
     // Gewählter Tag nach "Neu einlesen" nicht mehr vorhanden -> wieder alle Tage
     val day = date?.takeIf { d -> data.entries.any { it.date == d } }
+    val visible = TrashViewRules.visible(data.entries, sides, day)
+    // Nach «Neu einlesen»: Auswahl mit Einträgen, die es nicht mehr gibt, wird aufgehoben (Review -277)
+    LaunchedEffect(data) {
+        val p = TrashViewRules.pruneSelection(selected, data.entries)
+        if (p.cleared) {
+            selected = p.selection
+            clearedNotice = R.string.trash_selection_gone
+        }
+    }
+    // Der Hinweis «Auswahl aufgehoben» bleibt in der Liste stehen, bis wieder etwas gewählt wird (kein flüchtiger Toast)
+    LaunchedEffect(selected) { if (selected.isNotEmpty()) clearedNotice = 0 }
+    /** Seitenfilter oder Tag wechseln; enthielte die Auswahl danach ausgeblendete Einträge, wird sie aufgehoben (mit Hinweis) */
+    fun applyFilter(newSides: PurgeSides, newDay: String?) {
+        sidesName = newSides.name
+        date = newDay
+        val pruned = TrashViewRules.pruneSelection(selected, TrashViewRules.visible(data.entries, newSides, newDay))
+        selected = pruned.selection
+        if (pruned.cleared) clearedNotice = R.string.trash_selection_cleared
+    }
     if (pickDay) DayPickerDialog(
         entries = data.entries, initial = setOfNotNull(day), multi = false,
         onDismiss = { pickDay = false },
-        onDone = { date = it.firstOrNull(); pickDay = false },
+        onDone = { applyFilter(sides, it.firstOrNull()); pickDay = false },
     )
-    val visible = if (day == null) data.entries else data.entries.filter { it.date == day }
+    if (pickSides) AlertDialog(
+        onDismissRequest = { pickSides = false },
+        title = { Text(str(R.string.trash_view_label)) },
+        text = {
+            Column {
+                PurgeSides.entries.forEach { s -> ModeRow(s.label, sides == s) { applyFilter(s, day); pickSides = false } }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = { pickSides = false }) { Text(str(R.string.common_cancel)) } },
+    )
     fun isSel(e: TrashEntry) = selected.any { it.side == e.side && it.trashPath == e.trashPath }
     /** Ohne vorgemerkte Einträge (die sind schon unterwegs) */
     fun free(list: List<TrashEntry>) = list.filter { TrashPurge.key(it) !in data.reserved }
@@ -215,13 +251,14 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
                         str(R.string.trash_pc_unreachable_hint),
                         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(
-                            onClick = { showCleanup = true },
-                            enabled = data.entries.isNotEmpty() || !data.pcAvailable,
-                        ) { Text(str(R.string.trash_cleanup_button)) }
-                        TextButton(onClick = { reload++ }) { Text(str(R.string.trash_reload)) }
-                    }
+                    // SYNC-20261112-275: je Schaltfläche eine Zeile mit voller Breite (wie die Auswahlleiste seit 0.7.1): nebeneinander
+                    // wurde «Neu einlesen» bei Schrift 1,5/2,0 auf ein schmales Band gedrückt
+                    OutlinedButton(
+                        onClick = { showCleanup = true },
+                        enabled = data.entries.isNotEmpty() || !data.pcAvailable,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(str(R.string.trash_cleanup_button)) }
+                    TextButton(onClick = { reload++ }, modifier = Modifier.fillMaxWidth()) { Text(str(R.string.trash_reload)) }
                 }
             }
             if (data.entries.isEmpty()) {
@@ -231,12 +268,35 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
             }
             item { Hint(str(R.string.trash_intro)) }
             // Filter nach Datum (0.6.4: ein Wertfeld statt einer Chip-Reihe pro Tag)
+            item { ValueField(str(R.string.trash_view_label), sides.label) { pickSides = true } }
             item {
                 ValueField(str(R.string.trash_day), day?.let(::dayLabel) ?: str(R.string.trash_all_days)) { pickDay = true }
             }
+            if (clearedNotice != 0 && selected.isEmpty()) item {
+                Text(str(clearedNotice), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+            }
+            // Liste leer durch den Filter (nicht der Papierkorb): passender Text, nie «leer» bei nicht erreichbarem PC
+            val emptyKind = TrashViewRules.emptyKind(visible, sides, data.pcAvailable)
+            if (emptyKind != TrashViewRules.Empty.NONE) {
+                item {
+                    when (emptyKind) {
+                        TrashViewRules.Empty.PC_UNREACHABLE -> ErrorText(str(R.string.trash_filter_pc_unreachable))
+                        TrashViewRules.Empty.PHONE -> Text(str(if (day != null) R.string.trash_filter_empty_phone_day else R.string.trash_filter_empty_phone))
+                        else -> Text(str(if (day != null) R.string.trash_filter_empty_pc_day else R.string.trash_filter_empty_pc))
+                    }
+                }
+                item {
+                    OutlinedButton(onClick = { applyFilter(PurgeSides.BOTH, day) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(str(R.string.trash_filter_reset))
+                    }
+                }
+                item { PhotosHint(hasPhotos) }
+                return@LazyColumn
+            }
             day?.let { d ->
                 item {
-                    OutlinedButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.ofDate(data.entries, d))) },
+                    // Nur sichtbare Einträge (der aktive Seitenfilter steht im Feld «Anzeigen»)
+                    OutlinedButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.ofDate(visible, d))) },
                         modifier = Modifier.fillMaxWidth()) { Text(str(R.string.trash_select_day, dayLabel(d))) }
                 }
             }
@@ -244,12 +304,18 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
             val byFolder = visible.groupBy { it.folder }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
             for ((folder, inFolder) in byFolder) {
                 item(key = "folder-$folder") {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-                        Text("📁 " + folder.ifEmpty { str(R.string.free_main_folder) }, style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { selected = TrashIndex.select(selected, free(TrashIndex.inFolder(visible, folder))) }) {
-                            Text(str(R.string.trash_whole_folder))
-                        }
+                    // SYNC-20261112-281: Ordnername in eigener Zeile (bricht nur an Wortgrenzen um), der Knopf darunter über die volle
+                    // Breite; der aktive Seitenfilter steht oben im Feld «Anzeigen», nicht mehr in der Beschriftung
+                    Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                        // Symbol und Name bleiben zusammen (geschütztes Leerzeichen); «(Hauptordner)» steht immer vollständig in einer
+                        // Zeile (kein Umbruch), ein Ordnername bricht nur an Wortgrenzen um
+                        Text("📁 " + folder.ifEmpty { str(R.string.free_main_folder) }, style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold, softWrap = folder.isNotEmpty(), maxLines = if (folder.isEmpty()) 1 else Int.MAX_VALUE,
+                            modifier = Modifier.fillMaxWidth())
+                        TextButton(
+                            onClick = { selected = TrashIndex.select(selected, free(TrashIndex.inFolder(visible, folder))) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(str(R.string.trash_whole_folder)) }
                     }
                 }
                 for ((_, versions) in inFolder.groupBy { it.origPath.lowercase() }) {
@@ -288,10 +354,14 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
 
         // Auswahlleiste: erscheint, sobald etwas markiert ist
         if (selected.isNotEmpty()) Surface(tonalElevation = 3.dp, shadowElevation = 6.dp) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // SYNC-20261112-281: kompakter (weniger Abstand), damit bei grosser Schrift mehr Liste sichtbar bleibt
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(str(R.string.trash_selected, selected.size, Notifications.formatBytes(TrashPurge.bytes(selected))),
+                    // Betroffene Seiten aus der Auswahl: «3 ausgewählt (Handy 2, PC 1) · 45 B»
+                    Text(str(R.string.trash_selected_sides, selected.size,
+                        TrashViewRules.sidesText(TrashViewRules.sideCounts(selected), str(R.string.side_phone), str(R.string.side_pc)),
+                        Notifications.formatBytes(TrashPurge.bytes(selected))),
                         style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     TextButton(onClick = { selected = emptyList() }) { Text(str(R.string.trash_clear_selection)) }
                 }
@@ -309,13 +379,14 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
     if (showCleanup) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = { showCleanup = false }, sheetState = sheetState) {
-            CleanupSheet(data) { rule, sides ->
+            // «Wo?» passend zum Seitenfilter vorausgewählt (SYNC-20261112-277); die Wahl bleibt änderbar, die Bestätigung unverändert
+            CleanupSheet(data, sides) { rule, purgeSides ->
                 showCleanup = false
                 // Nur der hier bestätigte Stand wird ausgeführt, auch wenn der Eingriff auf einen Sync warten muss
-                val confirmed = TrashPurge.affected(data.entries, rule, sides, data.reserved)
+                val confirmed = TrashPurge.affected(data.entries, rule, purgeSides, data.reserved)
                 val pcKnown = data.pcAvailable
                 val started = PendingIntervention.start(app, profile.id) { onStart, _ ->
-                    val r = TrashCleaner.purgeConfirmed(app, profile, rule, sides, confirmed, pcKnown, onStart)
+                    val r = TrashCleaner.purgeConfirmed(app, profile, rule, purgeSides, confirmed, pcKnown, onStart)
                     str(when {
                         r.remotePending -> R.string.trash_purged_pc_pending
                         r.local + r.remote == 0 -> R.string.trash_nothing_deleted // nichts mehr da/geändert/vorgemerkt
@@ -335,8 +406,14 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
             else Text(plural(R.plurals.trash_delete_title, selected.size))
         },
         text = {
-            Text(str(R.string.trash_delete_text) + if (!data.pcAvailable && selected.any { it.side == Side.REMOTE })
-                " " + str(R.string.trash_delete_pc_later) else "")
+            DialogScroll(spacing = Arrangement.spacedBy(8.dp)) {
+                Text(str(R.string.trash_delete_text) + if (!data.pcAvailable && selected.any { it.side == Side.REMOTE })
+                    " " + str(R.string.trash_delete_pc_later) else "")
+                // Betroffene Seiten der Auswahl («Betrifft: Handy 2, PC 1»)
+                Text(str(R.string.trash_affects_sides,
+                    TrashViewRules.sidesText(TrashViewRules.sideCounts(selected), str(R.string.side_phone), str(R.string.side_pc))),
+                    fontWeight = FontWeight.SemiBold)
+            }
         },
         confirmButton = {
             TextButton(onClick = {
@@ -360,8 +437,19 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
         onDismissRequest = { confirmRestore = false },
         title = { Text(plural(R.plurals.trash_restore_title, selected.size)) },
         text = {
-            Text(str(R.string.trash_restore_text) + " " +
-                str(if (data.pcAvailable) R.string.trash_restore_now else R.string.trash_restore_later))
+            // Variante 4A (SYNC-20261112-277): wohin zurückgeschrieben wird, was ersetzt wird, was neu entsteht. Die Zähler stammen aus
+            // dem Sync-Stand (data.existing): er kennt «vorhanden», nicht die Seite, deshalb gelten sie für Handy und PC gleich.
+            val plan = TrashViewRules.restorePlan(selected, data.existing)
+            DialogScroll(spacing = Arrangement.spacedBy(8.dp)) {
+                Text(str(R.string.trash_restore_text) + " " +
+                    str(if (data.pcAvailable) R.string.trash_restore_now else R.string.trash_restore_later))
+                Text(str(R.string.trash_restore_writes, plan.files), fontWeight = FontWeight.SemiBold)
+                if (plan.replaces > 0) Text(plural(R.plurals.trash_restore_replaces, plan.replaces, plan.replaces))
+                if (plan.missing > 0) Text(plural(R.plurals.trash_restore_missing, plan.missing, plan.missing))
+                if (plan.names.isNotEmpty()) Hint(str(R.string.trash_restore_names, plan.names.joinToString(", ")))
+                if (sides != PurgeSides.BOTH) Text(str(R.string.trash_restore_filter_hint, sides.label),
+                    color = MaterialTheme.colorScheme.error)
+            }
         },
         confirmButton = {
             TextButton(onClick = {
@@ -379,11 +467,11 @@ private fun TrashView(profile: Profile, hasPhotos: Boolean, modifier: Modifier, 
 
 /** "Aufräumen…": Regeln wie früher "Papierkorb leeren" (0.6.0); onPurge erst nach der Rückfrage */
 @Composable
-private fun CleanupSheet(data: RestoreManager.Loaded, onPurge: (PurgeRule, PurgeSides) -> Unit) {
+private fun CleanupSheet(data: RestoreManager.Loaded, initialSides: PurgeSides, onPurge: (PurgeRule, PurgeSides) -> Unit) {
     var mode by remember { mutableStateOf(PurgeRule.Mode.OLDER) }
     var daysText by remember { mutableStateOf("7") }
     var dates by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var sides by remember { mutableStateOf(PurgeSides.BOTH) }
+    var sides by remember { mutableStateOf(initialSides) }
     var confirm by remember { mutableStateOf(false) }
     var pickDays by remember { mutableStateOf(false) }
 

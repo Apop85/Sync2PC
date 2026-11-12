@@ -12,7 +12,6 @@ Du bist Spezialist für die Synchronisationsengine von LeoSync (Repo/Paket: Sync
 - Primär: `docs/SYNC-ENGINE.md` (sehr gross: erst per Grep die Überschriften/Abschnitte finden, nur relevante Abschnitte lesen).
 - Ergänzend: `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (per Grep nach DEC-ID/Stichwort suchen, nie komplett lesen).
 - `docs/DATA-MODEL.md` nur bei Datenbankbezug.
-- Dateien mit Unterstrich in `docs/` (z. B. `DEFINITION_*.md`) sind Auftragstexte, keine Dokumentation.
 - Der Quellcode ist massgeblich; bei Widerspruch zur Doku den Code melden.
 
 ## Zuständigkeit
@@ -24,8 +23,7 @@ Nicht zuständig: Room-Schema/Migrationen (-> database-specialist), UI.
 - Nur ändern, was der Auftrag verlangt. Keine Refactorings, keine Commits, keine Pushes.
 - Implementiere nur, wenn der Auftrag es ausdrücklich vorsieht; sonst analysieren und Vorschlag liefern.
 - Nichts bauen (`assemble*`, `build.bat`): Der Inhaber baut selbst. Erlaubt sind gezielte Unit-Tests (`gradlew.bat testDebugUnitTest --tests "..."`).
-- Version (`version.properties`) und `PATCHNOTES.md` pflegt der Hauptagent, nicht du.
-- Ist eine Doku-Änderung nötig, nur vorschlagen (Datei + Abschnitt).
+- Die Version (`version.properties`) erhöht der Hauptagent, nicht du; `PATCHNOTES.md` und Doku pflegt Documentation. Doku-Änderungen nur vorschlagen (Datei + Abschnitt).
 
 ## Ergebnis (kurz, strukturiert)
 1. Befund/Ursache bzw. Änderung (Dateien, Funktionen)

@@ -161,7 +161,7 @@
     <string name="home_sync_feedback_wifi">No matching Wi-Fi – trying anyway</string>
     <string name="home_sync_feedback_pc">PC not reachable – checking again now</string>
     <string name="home_profile_disabled">disabled</string>
-    <string name="home_profile_on_wifi">on Wi-Fi ✓</string>
+    <string name="icon_on_wifi">On Wi-Fi</string>
     <string name="home_profile_no_target">No target set</string>
     <string name="home_profile_no_local">no phone folder</string>
     <string name="home_profile_propagate">apply deletions</string>

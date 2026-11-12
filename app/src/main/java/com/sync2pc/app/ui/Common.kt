@@ -252,6 +252,18 @@ fun ColumnScope.StackedButton(text: String, color: Color = Color.Unspecified, on
     }
 }
 
+/**
+ * Dialogtitel, dessen Schriftgrösse bei sehr grosser Systemschrift (über 1,7) nicht weiter wächst: sonst passt ein langes Wort wie
+ * «Synchronisierung» nicht mehr in eine Zeile und das letzte Zeichen steht allein in der nächsten (SYNC-20261112-252).
+ */
+@Composable
+fun DialogTitleText(text: String) {
+    val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val cap = if (scale > 1.7f) 1.7f / scale else 1f
+    val base = MaterialTheme.typography.headlineSmall
+    Text(text, style = base.copy(fontSize = base.fontSize * cap, lineHeight = base.lineHeight * cap))
+}
+
 @Composable
 fun Hint(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

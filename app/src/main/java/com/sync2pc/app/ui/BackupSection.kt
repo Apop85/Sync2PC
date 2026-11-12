@@ -209,7 +209,8 @@ fun BackupSection() {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(str(R.string.backup_replace_hint), color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // SYNC-20261112-252 P5: DialogScroll zeigt Scrollbalken und Verlauf, damit «Erstellt: …» bei Schrift 2,0 nicht halb verdeckt wirkt
+                    DialogScroll(spacing = Arrangement.spacedBy(6.dp)) {
                         Text(str(R.string.backup_created, formatTime(c.createdAt), c.appVersion))
                         Text(str(R.string.backup_profiles, c.profiles.joinToString(", ") { it.name }.ifEmpty { str(R.string.home_profile_none) }))
                         if (c.synced.size + c.mirrorStates.size > 0) Text(plural(R.plurals.backup_sync_status, c.synced.size + c.mirrorStates.size))

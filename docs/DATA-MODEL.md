@@ -35,6 +35,8 @@ Quellen (alle relativ zum Repository):
 | SharedPreferences `purge` (`PurgeStore`) | vorgemerktes Leeren des PC-Papierkorbs | 11 |
 | SharedPreferences `restore` (`RestoreFailures`) | fehlgeschlagene Wiederherstellungen; seit 0.11.8 zusätzlich Schlüssel `attempts` (Fehlversuche, Format `restoreId:n`, nicht in der Sicherung) | 11 |
 | SharedPreferences `lang` (`AppLanguage`) | Sprachwahl | 11 |
+| SharedPreferences `enc_status` (`smb/EncryptionStatus.kt`) | tatsächlicher Verschlüsselungszustand der letzten Anmeldung je Profil (Symbol auf der Profilkarte, 0.16.20) | – |
+| SharedPreferences `trashname` (`mirror/PcTrashNameMemory.kt`) | Merker «PC lehnt `@LeoSync-Bin` ab» je Profil und PC-Ziel, 7 Tage (0.16.34); rein lokal, wird beim Löschen eines Profils oder beim Import nicht bereinigt | – |
 | Android-Keystore (`CredentialCrypto`) | Schlüssel für `profiles.smbPasswordEnc` | 3.1 |
 | Dateisystem (Handy via SAF, PC via SMB) | Papierkorb `.LeoSync-Bin/<Datum>/…`, Temp-Dateien `.s2ptmp`, `.s2pold` | 12 |
 

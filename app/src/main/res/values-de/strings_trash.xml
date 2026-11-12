@@ -97,4 +97,27 @@
     </plurals>
     <string name="trash_days_invalid">Bitte Anzahl Tage eingeben (1 oder mehr).</string>
     <string name="trash_delete_title_one">«%1$s» endgültig löschen?</string>
+    <!-- Seitenfilter und Wiederherstellen-Dialog (SYNC-20261112-277) -->
+    <string name="trash_view_label">Anzeigen</string>
+    <string name="trash_filter_empty_phone">Keine Einträge auf dem Handy.</string>
+    <string name="trash_filter_empty_pc">Keine Einträge auf dem PC.</string>
+    <string name="trash_filter_empty_phone_day">Keine Einträge auf dem Handy an diesem Tag.</string>
+    <string name="trash_filter_empty_pc_day">Keine Einträge auf dem PC an diesem Tag.</string>
+    <string name="trash_filter_pc_unreachable">PC nicht erreichbar: Einträge aus dem PC-Papierkorb können nicht angezeigt werden.</string>
+    <string name="trash_filter_reset">Filter zurücksetzen</string>
+    <string name="trash_selection_cleared">Auswahl aufgehoben (Filter geändert).</string>
+    <string name="trash_selection_gone">Auswahl aufgehoben (Einträge nicht mehr vorhanden oder nicht erreichbar).</string>
+    <string name="trash_restore_filter_hint">Wiederherstellen schreibt immer auf Handy und PC, auch bei Filter «%1$s».</string>
+    <string name="trash_selected_sides">%1$s ausgewählt (%2$s) · %3$s</string>
+    <string name="trash_affects_sides">Betrifft: %1$s</string>
+    <string name="trash_restore_writes">Wird zurückgeschrieben auf: Handy (%1$s) und PC (%1$s).</string>
+    <plurals name="trash_restore_replaces">
+        <item quantity="one">Laut Synchronisierungsstand vorhanden: %1$s Datei. Sie wird ersetzt und kommt vorher in den Papierkorb.</item>
+        <item quantity="other">Laut Synchronisierungsstand vorhanden: %1$s Dateien. Sie werden ersetzt und kommen vorher in den Papierkorb.</item>
+    </plurals>
+    <plurals name="trash_restore_missing">
+        <item quantity="one">Laut Synchronisierungsstand nicht vorhanden: %1$s Datei. Sie wird neu angelegt.</item>
+        <item quantity="other">Laut Synchronisierungsstand nicht vorhanden: %1$s Dateien. Sie werden neu angelegt.</item>
+    </plurals>
+    <string name="trash_restore_names">Dateien: %1$s</string>
 </resources>

@@ -131,16 +131,32 @@ fun LogScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // SYNC-20261112-252 P2: Chip-Text einzeilig (kein Wortbruch). Bei grosser Schrift teilen «Alle» und «Fehler» die Breite,
+                // «Übertragungen» steht in einer eigenen Zeile mit voller Breite.
+                val big = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.4f
+                val chipText: @Composable (String) -> Unit = { Text(it, maxLines = 1, softWrap = false) }
+                val chipAll: @Composable (Modifier) -> Unit = { m ->
                     // "Alle" = kein Filter (setzt beide zurück); "Fehler"/"Übertragungen" einzeln oder zusammen
                     FilterChip(selected = !onlyErrors && !onlyTransfers, onClick = {
                         onlyErrors = false; onlyTransfers = false
                         settings.logFilterErrors = false; settings.logFilterTransfers = false
-                    }, label = { Text(str(R.string.free_all)) }, leadingIcon = checkIcon(!onlyErrors && !onlyTransfers))
+                    }, label = { chipText(str(R.string.free_all)) }, leadingIcon = checkIcon(!onlyErrors && !onlyTransfers), modifier = m)
+                }
+                val chipErrors: @Composable (Modifier) -> Unit = { m ->
                     FilterChip(selected = onlyErrors, onClick = { onlyErrors = !onlyErrors; settings.logFilterErrors = onlyErrors },
-                        label = { Text(str(R.string.log_filter_errors)) }, leadingIcon = checkIcon(onlyErrors))
+                        label = { chipText(str(R.string.log_filter_errors)) }, leadingIcon = checkIcon(onlyErrors), modifier = m)
+                }
+                val chipTransfers: @Composable (Modifier) -> Unit = { m ->
                     FilterChip(selected = onlyTransfers, onClick = { onlyTransfers = !onlyTransfers; settings.logFilterTransfers = onlyTransfers },
-                        label = { Text(str(R.string.log_filter_transfers)) }, leadingIcon = checkIcon(onlyTransfers))
+                        label = { chipText(str(R.string.log_filter_transfers)) }, leadingIcon = checkIcon(onlyTransfers), modifier = m)
+                }
+                if (big) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        chipAll(Modifier.weight(1f)); chipErrors(Modifier.weight(1f))
+                    }
+                    chipTransfers(Modifier.fillMaxWidth())
+                } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    chipAll(Modifier); chipErrors(Modifier); chipTransfers(Modifier)
                 }
             }
             if (shown.isEmpty()) item {

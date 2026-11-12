@@ -33,6 +33,12 @@ interface TrashSide {
 
     /** Ordner löschen, nur wenn er (inkl. Unterordnern) keine Datei mehr enthält; true = danach weg */
     fun deleteDirIfEmpty(rel: String): Boolean
+
+    /**
+     * Die Marker-Datei `.nomedia` direkt im Ordner [rel] löschen (0 Byte, kein Papierkorb-Inhalt; SYNC-20261112-249); nichts tun,
+     * wenn sie fehlt. Die einzige Löschung einer Datei der Übernahme.
+     */
+    fun deleteNoMedia(rel: String)
 }
 
 /**
@@ -143,6 +149,10 @@ object TrashMigration {
             ctx.check()
             val from = "$src/${node.name}"
             try {
+                // `.nomedia` direkt im Altnamen-Ordner ist kein Inhalt: nicht ins Ziel verschieben (kein Uhrzeit-Anhang), sondern
+                // entfernen, sonst bliebe der Altname-Ordner dauerhaft nicht leer (INCOMPLETE). Das Ziel bekommt seine eigene
+                // (nur Handy, siehe LocalTree.ensureTrashNoMedia).
+                if (!node.isDir && '/' !in src && TrashNoMedia.isMarker(node.name)) { side.deleteNoMedia(src); continue }
                 val existing = taken[node.name.lowercase()]
                 if (node.isDir) {
                     if (existing != null && !existing.isDir) { ctx.incomplete = true; continue } // Datei im Weg: nicht anfassen

@@ -9,7 +9,7 @@ Fokus (optional): $ARGUMENTS
 
 Dieser Skill ändert **keinen** Code.
 
-1. **Änderungen ermitteln**: `git status` und `git diff` (bzw. `git diff --stat`). Das Projektverzeichnis ist unter Umständen **kein** Git-Repository oder `git` ist nicht im PATH; dann die geänderten Dateien aus dem Gespräch/Auftrag nehmen oder per `LastWriteTime` eingrenzen und das im Ergebnis nennen.
+1. **Änderungen ermitteln**: geänderte Dateien aus Gespräch/Auftrag nehmen oder per `LastWriteTime` eingrenzen (Git ist nicht vorhanden, daher können keine Git-Befehle ausgeführt werden); Vorher-Stand bei Bedarf aus einer genannten Sicherung.
 2. **Komponenten bestimmen**: Sync-Engine, Datenbank, ViewModel/Repository, UI, Netzwerk/SMB, Worker.
 3. **Prüfumfang festlegen**: nur relevante Doku-Abschnitte benennen (`docs/ARCHITECTURE.md`, `docs/SYNC-ENGINE.md`, `docs/DATA-MODEL.md`, `docs/DECISIONS.md`); vorhandene Tests der Komponenten in `docs/TESTING.md` nachschlagen.
 4. **Agent `code-reviewer`** per Agent-Tool einsetzen mit: Dateiliste bzw. Diff-Befehl, Komponenten, relevante Doku-Abschnitte, Hinweis auf Datenverlust-Fokus. Nicht die Zusammenfassung des Implementierers als Wahrheit mitgeben. Nur ein Aufruf, ausser der Umfang ist sehr gross (dann nach Komponenten teilen, lesend, daher parallel zulässig).

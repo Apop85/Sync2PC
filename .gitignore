@@ -37,6 +37,8 @@ keystore.properties
 
 # Vom Inhaber abgelegte Verlauf-Exporte / Diagnosen (persoenliche Daten, IPs, Dateinamen)
 LeoSync-Verlauf_*.txt
+# Profilexporte der App (Profile mit Servern, Pfaden und Zugangsdaten-Bezug)
+LeoSync-Sicherung_*.json
 
 # PC-Import-Werkzeug: nicht weiterentwickelt, nicht an Benutzer verteilen (DEC-068)
 tools/LeoSync-Import.bat
@@ -45,3 +47,7 @@ tools/LeoSyncImport.cs
 
 # Hinweis: gradle/wrapper/gradle-wrapper.jar und app/src/main/assets/geo/countries.geojson
 # duerfen committet werden (reproduzierbarer Build).
+
+# Auftragsverwaltung (tools/Auftrag.ps1): lokale Betriebsdaten (Sperrdatei, Sicherungen der Altfassungen; .audit.log ist durch *.log schon ausgeschlossen)
+coordination/.lock
+coordination/.history/

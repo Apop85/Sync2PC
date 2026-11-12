@@ -91,6 +91,14 @@ class MirrorEngine(
         /** Alle Papierkorb-Namen: der aktuelle zuerst (dorthin wird neu verschoben) */
         val TRASH_DIRS = listOf(TRASH_DIR, DOT_TRASH_DIR, LEGACY_TRASH_DIR, OLD_TRASH_DIR)
         fun isTrashDir(name: String): Boolean = TRASH_DIRS.any { it.equals(name, ignoreCase = true) }
+        /**
+         * Liegt [path] (Trenner "/", z. B. MediaStore-RELATIVE_PATH "DCIM/@LeoSync-Bin/2026-11-03/") an beliebiger Stelle in
+         * einem Papierkorb? Nur ganze Segmente zählen ("x@LeoSync-Bin" oder "@LeoSync-Bin-notes" sind keine Treffer).
+         * Für Fotoprofil und «Speicher freigeben» (SYNC-20261112-249): sie lesen den MediaStore, nicht den Ordner.
+         */
+        fun isInTrash(path: String): Boolean = path.split('/').any { it.isNotEmpty() && isTrashDir(it) }
+        /** Marker-Datei (0 Byte), die den Handy-Papierkorb vor der Galerie versteckt (SYNC-20261112-249); kein Papierkorb-Inhalt */
+        const val NOMEDIA = ".nomedia"
         /** Zusatz beim Behalten beider Versionen (bis 0.7.x "_Konflikt-Handy") */
         const val CONFLICT_SUFFIX = ConflictName.SUFFIX
         /** Mindestens so viel Speicher frei lassen */
@@ -212,6 +220,9 @@ class MirrorEngine(
             val trashMigrationAllowed = !dryRun && TrashMigration.mayRun(
                 dao.pendingRestores(profile.id).size, PurgeStore(context).hasPending(profile.id), guards.pendingCheck(profile.id).isNotEmpty())
             if (trashMigrationAllowed) migrateTrash(PhoneTrashSide(tree), phone = true)
+            // `.nomedia` im bestehenden Handy-Papierkorb sicherstellen (SYNC-20261112-249: repariert ältere Papierkörbe und deckt die
+            // Übernahme ab); nie in der Simulation, nie ein Fehler des Laufs, höchstens einmal je Lauf
+            if (!dryRun) tree.ensureTrashNoMedia(create = false)
             smb = try {
                 SmbSession.open(profile)
             } catch (e: Exception) {

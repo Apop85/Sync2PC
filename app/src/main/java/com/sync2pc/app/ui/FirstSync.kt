@@ -35,7 +35,7 @@ object FirstSync {
 fun ChargeWarningDialog(onStart: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.first_sync_title)) },
+        title = { DialogTitleText(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.first_sync_title)) },
         text = {
             Text(com.sync2pc.app.l10n.str(com.sync2pc.app.R.string.first_sync_text))
         },

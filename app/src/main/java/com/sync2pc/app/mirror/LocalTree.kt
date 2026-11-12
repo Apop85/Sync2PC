@@ -476,6 +476,8 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     override fun moveToTrash(relPath: String, entry: LocalEntry, dateFolder: String): String {
         val parentRel = relPath.substringBeforeLast('/', "")
         val sourceParent = ensureDir(parentRel)
+        // `.nomedia` vor der ersten Datei im Papierkorb (nie ein Fehler, höchstens kein Marker)
+        ensureTrashNoMedia(create = true)
         val trashDir = listOf(MirrorEngine.TRASH_DIR, dateFolder, parentRel).filter { it.isNotEmpty() }.joinToString("/")
         val targetParent = ensureDir(trashDir)
         val existing = children(targetParent).map { it.name.lowercase() }.toSet()
@@ -492,6 +494,59 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
             delete(docId)
         }
         return "$trashDir/$name"
+    }
+
+    private val noMediaDone = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Legt im Handy-Papierkorb `@LeoSync-Bin` die Marker-Datei `.nomedia` (0 Byte) an, damit die Galerie die Papierkorb-Bilder
+     * nicht zeigt (SYNC-20261112-249). Höchstens einmal je [LocalTree] (= je Lauf). [create]: den Papierkorb-Ordner anlegen, falls
+     * er fehlt (vor dem ersten Verschieben); sonst nur, wenn er existiert (Reparatur älterer Papierkörbe). Nicht bei Ordnern des
+     * Download-Anbieters ([TrashNoMedia.applies]). **Wirft nie** (Anbieter lehnt ab, Cloud-/SD-Anbieter): kein Fehler des Laufs.
+     */
+    @Synchronized
+    fun ensureTrashNoMedia(create: Boolean) {
+        if (noMediaDone.get() || !TrashNoMedia.applies(rootDocId)) return
+        try {
+            val trashId = if (create) ensureDir(MirrorEngine.TRASH_DIR) else findDir(MirrorEngine.TRASH_DIR) ?: return
+            if (children(trashId).any { TrashNoMedia.isMarker(it.name) }) { noMediaDone.set(true); return }
+            val uri = DocumentsContract.createDocument(resolver, docUri(trashId), "application/octet-stream", MirrorEngine.NOMEDIA)
+            if (uri != null) {
+                // Hat der Anbieter den Namen geändert («.nomedia (1)», «.nomedia.bin»): wieder entfernen, kein Marker
+                val actual = try { stat(DocumentsContract.getDocumentId(uri))?.name } catch (e: Exception) { null }
+                if (actual != null && !TrashNoMedia.isMarker(actual)) {
+                    try { DocumentsContract.deleteDocument(resolver, uri) } catch (ignored: Exception) {}
+                } else scanTrashForGallery()
+            }
+            noMediaDone.set(true)
+        } catch (e: Exception) {
+            noMediaDone.set(true) // nur ein Versuch je Lauf
+            android.util.Log.i("LocalTree", "Papierkorb: .nomedia nicht angelegt: ${e.javaClass.simpleName}")
+        }
+    }
+
+    /**
+     * Nach dem (nachträglichen) Anlegen der `.nomedia` den Papierkorb gezielt scannen lassen: Android 10 behielt bereits
+     * indexierte Papierkorb-Bilder im MediaStore, bis das System neu scannte (SYNC-20261112-283). Nur für den internen
+     * Speicher («primary:»); sonst gibt es keinen Dateipfad. Nie ein Fehler, höchstens bleiben die Bilder bis zum Systemscan sichtbar.
+     */
+    private fun scanTrashForGallery() {
+        try {
+            if (!rootDocId.startsWith("primary:")) return
+            @Suppress("DEPRECATION")
+            val base = android.os.Environment.getExternalStorageDirectory().path
+            val sub = rootDocId.substringAfter(':').trim('/')
+            val dir = listOf(base, sub, MirrorEngine.TRASH_DIR).filter { it.isNotEmpty() }.joinToString("/")
+            android.media.MediaScannerConnection.scanFile(context, arrayOf("$dir/${MirrorEngine.NOMEDIA}", dir), null, null)
+        } catch (e: Exception) {
+            android.util.Log.i("LocalTree", "Papierkorb: Galerie-Scan nicht ausgelöst: ${e.javaClass.simpleName}")
+        }
+    }
+
+    /** Löscht die Marker-Datei `.nomedia` direkt im Ordner [rel], falls vorhanden (nur für die [TrashMigration]) */
+    fun deleteNoMedia(rel: String) {
+        val id = findDir(rel) ?: return
+        children(id).firstOrNull { !it.isDir && TrashNoMedia.isMarker(it.name) }?.let { delete(it.docId) }
     }
 
     /** Alle Dateien im Papierkorb (neuer und alter Name) als Einträge für die Wiederherstellung (0.5.0) */
@@ -534,8 +589,10 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
     }
 
     /**
-     * "Papierkorb leeren" (0.6.0): Datumsordner löschen, die [rule] trifft; ALL löscht die ganzen Papierkorb-Ordner.
-     * Liefert die Anzahl gelöschter Ordner.
+     * Vorgemerktes "Papierkorb leeren" im Lauf (0.6.0): Datumsordner löschen, die [rule] trifft; ALL löscht die ganzen
+     * Papierkorb-Ordner (samt `.nomedia`, die vor dem nächsten Verschieben neu angelegt wird). Das «Aufräumen» der Papierkorb-Ansicht
+     * ([TrashCleaner]) löscht dagegen nur Datumsordner und Dateien über [deleteTrashDir]/[deleteTrashFile]: der Papierkorb-Ordner
+     * bleibt mit seiner `.nomedia` bestehen. Liefert die Anzahl gelöschter Ordner.
      */
     fun purgeTrash(rule: PurgeRule, keep: Set<String> = emptySet()): Int {
         var n = 0
@@ -544,7 +601,11 @@ class LocalTree(private val context: Context, val treeUri: Uri) : LocalFiles {
         }
         for (t in trashDirs) {
             val keepHere = keep.filter { it.startsWith(t.name.lowercase() + "/") }
-            if (rule.mode == PurgeRule.Mode.ALL && keepHere.isEmpty()) { delete(t.docId); n++ }
+            if (rule.mode == PurgeRule.Mode.ALL && keepHere.isEmpty()) {
+                delete(t.docId); n++
+                // Ordner samt `.nomedia` weg: das nächste Verschieben im selben Lauf legt beides neu an (SYNC-20261112-249)
+                if (t.name.equals(MirrorEngine.TRASH_DIR, ignoreCase = true)) noMediaDone.set(false)
+            }
             else for (d in children(t.docId)) {
                 if (!d.isDir || !rule.matches(d.name)) continue
                 val prefix = "${t.name}/${d.name}/".lowercase()

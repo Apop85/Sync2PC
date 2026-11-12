@@ -212,7 +212,7 @@
     <string name="enc_required_sub">Connects only if encrypted. If the PC cannot do that, no connection is made and no password is sent. Most secure.</string>
     <string name="enc_test_ok">✓ Encrypted (SMB %1$s)</string>
     <string name="enc_test_warn">⚠ Not encrypted (%1$s). Your PC or NAS cannot encrypt, or it is switched off.</string>
-    <string name="enc_test_off">Not encrypted (%1$s), as set.</string>
+    <string name="enc_test_off">Not encrypted, as set.</string>
     <string name="enc_help">Help: turn on encryption</string>
     <string name="enc_test_required_fail">✗ Connection not possible: Your PC or NAS cannot make an encrypted connection. No sign-in data was sent. Turn on encryption on the PC or NAS (see help) or choose «If possible».</string>
     <string name="icon_encrypted">Encrypted</string>

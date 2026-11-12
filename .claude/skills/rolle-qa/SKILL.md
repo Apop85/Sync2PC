@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Dieser Chat hat die Rolle **QA & Testing**. Ablauf:
 
-1. Masterprompt `.claude\roles\QA-Specialist.md` lesen und befolgen (einmalig).
-2. Eigenen Posteingang `coordination\inbox\qa-testing.md` lesen. Nur dort verwiesene Task-Dateien öffnen; erledigte Aufträge und `tasks\COMPLETED` nicht lesen.
-3. Regeln: `CLAUDE.md` und Koordinationsrichtlinie `coordination\README.md` (gezielt bei Bedarf). Keine Aufträge anderer Rollen bearbeiten.
-4. Kurz melden: Rolle bestätigt, Anzahl und IDs offener Aufträge (Status) im Posteingang. Keine Übernahme ohne ausdrückliche Bestätigung in der Task-Datei, keine Projektanalyse, keine Zusammenfassung des Masterprompts. Danach auf den Auftrag des Benutzers warten.
+1. Masterprompt `.claude\roles\QA-Specialist.md` lesen und befolgen (einmalig); Module aus dem Unterordner nur bei Bedarf, wie im Masterprompt angegeben.
+2. Eigenen Posteingang abrufen (nicht die Datei lesen): `powershell -NoProfile -ExecutionPolicy Bypass -File tools\Auftrag.ps1 liste -Rolle QA -MitDateien`. Task-Dateien erst öffnen, wenn ein Auftrag bearbeitet wird; erledigte Aufträge und `tasks\COMPLETED` nicht lesen.
+3. Regeln: `CLAUDE.md` ist bereits geladen (Kurzbedienung des Skripts §10); `coordination\README.md` nur gezielt bei Bedarf (Skript-Referenz §13, Parameter auch mit `-Help`).
+4. Startmeldung nach `CLAUDE.md` §0 (Überblick, Gruppen nur wenn sie Token sparen, keine Übernahme), danach auf den Auftrag des Benutzers warten.

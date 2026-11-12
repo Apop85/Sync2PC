@@ -97,4 +97,27 @@
     </plurals>
     <string name="trash_days_invalid">Enter a number of days (1 or more).</string>
     <string name="trash_delete_title_one">Delete “%1$s” permanently?</string>
+    <!-- Side filter and restore dialog (SYNC-20261112-277) -->
+    <string name="trash_view_label">Show</string>
+    <string name="trash_filter_empty_phone">No entries on the phone.</string>
+    <string name="trash_filter_empty_pc">No entries on the PC.</string>
+    <string name="trash_filter_empty_phone_day">No entries on the phone on this day.</string>
+    <string name="trash_filter_empty_pc_day">No entries on the PC on this day.</string>
+    <string name="trash_filter_pc_unreachable">PC not reachable: PC trash entries cannot be shown.</string>
+    <string name="trash_filter_reset">Reset filter</string>
+    <string name="trash_selection_cleared">Selection cleared (filter changed).</string>
+    <string name="trash_selection_gone">Selection cleared (entries no longer there or not reachable).</string>
+    <string name="trash_restore_filter_hint">Restoring always writes to phone and PC, even with the filter “%1$s”.</string>
+    <string name="trash_selected_sides">%1$s selected (%2$s) · %3$s</string>
+    <string name="trash_affects_sides">Affects: %1$s</string>
+    <string name="trash_restore_writes">Will be written back to: phone (%1$s) and PC (%1$s).</string>
+    <plurals name="trash_restore_replaces">
+        <item quantity="one">Present according to the sync state: %1$s file. It will be replaced and goes to the trash first.</item>
+        <item quantity="other">Present according to the sync state: %1$s files. They will be replaced and go to the trash first.</item>
+    </plurals>
+    <plurals name="trash_restore_missing">
+        <item quantity="one">Not present according to the sync state: %1$s file. It will be created.</item>
+        <item quantity="other">Not present according to the sync state: %1$s files. They will be created.</item>
+    </plurals>
+    <string name="trash_restore_names">Files: %1$s</string>
 </resources>

@@ -1,0 +1,4 @@
+- [PowerShell-Alias-Falle](powershell-alias-falle.md) — OBERSTE REGEL: nie function rd/ri/del/r/gc …; Hook blockt; Array-Abflachung bei Einzelpaaren
+- [LeoSync UI-Begriffe](leosync-ui-terms.md) — DE Handy/Freigabe, EN Mobile/Share, keine Whitelist/Blacklist
+- [LeoSync Sicherheitsprüfung](leosync-next-run-review.md) — Design-Prüfung erledigt (0.11.0); claude-security-Scan startet der Inhaber selbst, nicht von sich aus anbieten
+- [LeoSync App-Screenshots](leosync-app-screenshots.md) — Ablage unter .claude\AppScreenshots, für UX-Prüfungen

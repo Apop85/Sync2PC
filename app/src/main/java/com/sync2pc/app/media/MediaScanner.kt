@@ -93,6 +93,8 @@ object MediaScanner {
                 val name = c.getString(iName) ?: continue
                 val size = c.getLong(iSize)
                 if (size <= 0) continue
+                // Dateien im Papierkorb (@LeoSync-Bin usw.) an beliebiger Stelle des Pfads nie sichern (SYNC-20261112-249)
+                if (com.sync2pc.app.mirror.MirrorEngine.isInTrash(c.getString(iPath) ?: "")) continue
                 val id = c.getLong(iId)
                 val isVideo = c.getInt(iType) == TYPE_VIDEO
                 val volume = c.getString(iVol) ?: MediaStore.VOLUME_EXTERNAL_PRIMARY

@@ -19,7 +19,11 @@ class PhoneTrashSide(private val tree: LocalTree) : TrashSide {
         return tree.children(id).map { TrashNode(it.name, it.isDir) }
     }
 
-    override fun makeDir(rel: String) { tree.ensureDir(rel) }
+    override fun makeDir(rel: String) {
+        tree.ensureDir(rel)
+        // Neuer Papierkorb-Ordner (Zusammenführen): `.nomedia` bevor die erste Datei hineinkommt (nie ein Fehler)
+        if (rel.equals(MirrorEngine.TRASH_DIR, ignoreCase = true)) tree.ensureTrashNoMedia(create = false)
+    }
 
     override fun renameDir(rel: String, newName: String) {
         val id = docIdOfDir(rel)
@@ -51,6 +55,8 @@ class PhoneTrashSide(private val tree: LocalTree) : TrashSide {
     }
 
     override fun deleteDirIfEmpty(rel: String): Boolean = tree.deleteDirIfEmpty(rel)
+
+    override fun deleteNoMedia(rel: String) = tree.deleteNoMedia(rel)
 }
 
 /** [TrashSide] für die Freigabe auf dem PC ([RemoteStore], SMB) – SYNC-20261111-244 */
@@ -84,5 +90,10 @@ class PcTrashSide(private val s: RemoteStore) : TrashSide {
             throw e
         }
         return true
+    }
+
+    override fun deleteNoMedia(rel: String) {
+        val file = full(if (rel.isEmpty()) MirrorEngine.NOMEDIA else "$rel/${MirrorEngine.NOMEDIA}")
+        if (s.listDir(full(rel)).any { !it.isDirectory && TrashNoMedia.isMarker(it.name) }) s.delete(file)
     }
 }

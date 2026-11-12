@@ -133,11 +133,17 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
     // Assistent (0.5.0): aktueller Schritt; «Hinweis fehlt» nach einem blockierten «Weiter» (-120: auch bei ungültigem Zahlenfeld)
     var step by rememberSaveable { mutableStateOf(Step.NAME) }
     var showMissing by remember { mutableStateOf(false) }
+    // SYNC-20261112-252 P4: Speichern ohne WLAN-Namen blockiert: Hinweis fest über «Speichern» statt eines Toasts, der die Schaltfläche überdeckt
+    var wifiBlockedOnSave by remember { mutableStateOf(false) }
     // SYNC-20261111-235: Namen der anderen Profile (Einmaligkeit); Fehlertext erst nach «Weiter»/«Speichern»
     var otherNames by remember { mutableStateOf<List<String>>(emptyList()) }
     var showNameError by remember { mutableStateOf(false) }
     LaunchedEffect(profileId) {
-        otherNames = withContext(Dispatchers.IO) { dao.profiles().filter { it.id != profileId }.map { it.name } }
+        // Ein zum Löschen vorgemerktes Profil (Rückgängig-Frist, bis 15 s) zählt nicht: sein Name ist sofort wieder frei (SYNC-20261112-252)
+        otherNames = withContext(Dispatchers.IO) {
+            val gone = PendingProfileDelete.pending.value?.id
+            dao.profiles().filter { it.id != profileId && it.id != gone }.map { it.name }
+        }
     }
     // Android-Systemdialog zur Ordnerauswahl. Die Auswahl wird in einen MediaStore-Pfad
     // umgerechnet (z. B. "DCIM/Camera/"); gelesen wird weiterhin schnell über den MediaStore.
@@ -289,7 +295,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
                     // Zeile zur Verschlüsselung: Symbol plus Text, die SMB-Version steht immer in Klammern
                     when {
                         r.encrypted -> encLine = str(R.string.enc_test_ok, r.dialect)
-                        r.setting == SmbEncryption.OFF -> encLine = str(R.string.enc_test_off, r.dialect)
+                        r.setting == SmbEncryption.OFF -> encLine = str(R.string.enc_test_off)
                         else -> { encLine = str(R.string.enc_test_warn, r.dialect); encHelp = true }
                     }
                     // Gelernte/übernommene Kennung in die Ansicht holen (übrige Eingaben bleiben unangetastet)
@@ -338,7 +344,8 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             val toSave = withPassword().let { it.copy(name = ProfileNames.normalize(it.name), verifyUpload = it.mustVerify()) }
             // SYNC-20261111-235: Name einmalig (Stand aus der Datenbank, nicht aus dem Editor); bestehende Doppelnamen nur melden
             val nameVerdict = withContext(Dispatchers.IO) {
-                val names = dao.profiles().filter { it.id != toSave.id }.map { it.name }
+                val gone = PendingProfileDelete.pending.value?.id // vorgemerktes Löschen: Name frei
+                val names = dao.profiles().filter { it.id != toSave.id && it.id != gone }.map { it.name }
                 otherNames = names
                 ProfileNames.verdict(toSave.name, if (toSave.id == 0L) null else baseline?.name, names)
             }
@@ -428,7 +435,7 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         }
         // -232 (5): Bearbeiten: «WLAN»/«Beides» ohne WLAN-Namen nicht speichern (der Fehlertext steht in der Karte «WLAN»)
         if (profileId != 0L && wifiNameMissing()) {
-            Toast.makeText(ctx, str(R.string.wizard_missing_wifi), Toast.LENGTH_LONG).show()
+            wifiBlockedOnSave = true
             return
         }
         // P7/P8: nie mit leerem oder ungültigem Zahlenfeld speichern (sonst stiller Zwischenwert)
@@ -500,13 +507,15 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
         // Beim Bearbeiten: Speichern/Abbrechen fest unten (0.9.0), statt mitten auf der langen Seite
         bottomBar = {
             if (loaded && typeChosen && !wizard) Surface(tonalElevation = 3.dp) {
-                Row(
-                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedButton(onClick = { leave() }, modifier = Modifier.weight(1f)) { Text(str(R.string.common_cancel)) }
-                    Button(onClick = { save() }, enabled = p.name.isNotBlank(), modifier = Modifier.weight(1f)) {
-                        Text(str(R.string.common_save))
+                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (wifiBlockedOnSave && wifiNameMissing())
+                        Text(str(R.string.wizard_missing_wifi), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { leave() }, modifier = Modifier.weight(1f)) { Text(str(R.string.common_cancel)) }
+                        Button(onClick = { save() }, enabled = p.name.isNotBlank(), modifier = Modifier.weight(1f)) {
+                            Text(str(R.string.common_save))
+                        }
                     }
                 }
             }
@@ -1067,7 +1076,9 @@ fun ProfileScreen(profileId: Long, onBack: () -> Unit, onSimulate: (Long) -> Uni
             onDismissRequest = { showCredentialPicker = false },
             title = { Text(str(R.string.profile_copy_credentials_title)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // SYNC-20261112-252: DialogScroll (wie die übrigen Dialoge) statt eigenem verticalScroll: Liste bis zum letzten Eintrag erreichbar,
+                // Titel und «Abbrechen» bleiben fest
+                DialogScroll(spacing = Arrangement.spacedBy(4.dp)) {
                     HintMore(str(R.string.profile_copy_credentials_hint))
                     groups.forEach { g ->
                         Column(

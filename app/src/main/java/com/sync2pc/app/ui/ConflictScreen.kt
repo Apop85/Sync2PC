@@ -124,12 +124,6 @@ fun ConflictScreen(onBack: () -> Unit) {
         title = str(R.string.conflict_title),
         onBack = onBack,
         snackbarHost = { LeoSnackbarHost(snackbar) },
-        actions = {
-            if (conflicts.isNotEmpty()) TextButton(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                onClick = { confirmAllNewer = true },
-            ) { Text(str(R.string.conflict_all_newer)) }
-        },
     ) { pad ->
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
@@ -137,7 +131,17 @@ fun ConflictScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (conflicts.isEmpty()) item { Text(str(R.string.conflict_none)) }
-            else item { Hint(str(R.string.conflict_hint, MirrorEngine.TRASH_DIR)) }
+            else item {
+                // SYNC-20261112-252 P1: «Alle: neuere» in der Inhaltsfläche statt in der Kopfzeile: bei grosser Schrift verdrängte
+                // die Schaltfläche den Titel «Konflikte»
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Hint(str(R.string.conflict_hint, MirrorEngine.TRASH_DIR))
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        onClick = { confirmAllNewer = true },
+                    ) { Text(str(R.string.conflict_all_newer)) }
+                }
+            }
             items(conflicts, key = { "${it.profileId}|${it.relPath}" }) { c ->
                 val profileName = profiles.firstOrNull { it.id == c.profileId }?.name ?: ""
                 // R11: «(neuer)» nur bei echtem Zeitunterschied (auf die Sekunde); sonst «(gleich alt)» auf beiden Seiten

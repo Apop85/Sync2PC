@@ -273,6 +273,8 @@ object SpaceFreer {
                 val name = c.getString(iName) ?: continue
                 val size = c.getLong(iSize)
                 if (size <= 0) continue
+                // Papierkorb-Dateien nie anbieten (SYNC-20261112-249)
+                if (com.sync2pc.app.mirror.MirrorEngine.isInTrash(c.getString(iPath) ?: "")) continue
                 val id = c.getLong(iId)
                 val video = c.getInt(iType) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
                 val volume = c.getString(iVol) ?: MediaStore.VOLUME_EXTERNAL_PRIMARY

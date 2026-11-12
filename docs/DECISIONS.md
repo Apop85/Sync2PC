@@ -20,7 +20,7 @@
 > - Session 5: 0.9.0 bis 0.9.3 vom Inhaber gebaut (0.9.0 und 0.9.1 auf GitHub veröffentlicht); 0.9.4 bis 0.11.0 mit ausdrücklicher Erlaubnis vom Agent gebaut, Unit-Tests grün, `MigrationTest` im Emulator grün. Im Emulator (Android 10 und 17) mit einer Testfreigabe des Inhabers geprüft; die Statuskachel hat der Inhaber auf dem Gerät bestätigt (0.9.3).
 > - Regelwerk-Refactoring (2026-11-10, kein Code): DEC-210 bis DEC-215 (Rollen, Koordination, Emulator, Doku, QA, UX-Navigation), alle Accepted; DEC-184 und DEC-185 durch DEC-212 ergänzt.
 > - Versionen 0.16.0 bis 0.16.3 (2026-11-11): DEC-231 bis DEC-248 (Sync-Sperre und Folgelauf, «Beide behalten», Konflikt-Rückgängig, Verschlüsselungswert, Startseite und Dialoge, Teststruktur); Status Implemented laut Development, DEC-240 Accepted; QA- und UX-Prüfung offen.
-> - Versionen 0.16.8 bis 0.16.25 (2026-11-11): DEC-249 bis DEC-255 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien, EN «Phone»); Status Implemented laut Development; QA-Prüfung offen.
+> - Versionen 0.16.8 bis 0.16.35 (2026-11-11): DEC-249 bis DEC-264 (wartende Dateien, Icon-Stil, Zurückstellen geänderter Handy-Dateien, EN «Phone»); Status Implemented laut Development; QA-Prüfung offen.
 > - Version 0.15.1 (2026-11-11): DEC-226 bis DEC-230 (Verlauf löschen, Papierkorb, Import «Ersetzen», Update-Hinweis, Sprache ausserhalb der Sicherung), Status Implemented laut Development.
 > - Version 0.15.0 (2026-11-11): DEC-221 bis DEC-225 (Nachlauf, SMB-Verschlüsselung, Gleichheit vor Löschen, UX Nachlauf-Hinweis und Karte «Verschlüsselung»), Status Implemented laut Development; Aktualisierungen an DEC-021, DEC-052, DEC-092, DEC-134, DEC-217, DEC-219.
 > - Version 0.14.7 (2026-11-10): DEC-216 bis DEC-218 (Profilformular), Status Implemented laut Development; DEC-219 (Überschneidung, 2026-11-10).
@@ -268,6 +268,20 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 - DEC-253: Deutscher Begriff «Abgleichstand» statt «Synchronisierungsstatus»
 - DEC-254: Handy-Papierkorb heisst bei `msd:`-Ordnern «@LeoSync-Bin»
 - DEC-255: Verschlüsselungs-Icon zeigt den tatsächlichen Zustand der letzten Anmeldung
+- DEC-256: Datum und Uhrzeit folgen dem Systemformat des Handys
+- DEC-257: «Letzte Synchronisierung» ist der letzte fehlerfreie Lauf
+- DEC-258: Profilnamen sind einmalig; Import «Hinzufügen» prüft sie bewusst nicht
+- DEC-259: WLAN-Name ist Pflicht bei «Nur WLAN-Name» und «Beides»
+- DEC-260: Papierkorb heisst überall `@LeoSync-Bin`; Migration und PC-Rückfall
+- DEC-261: Zu kurzes Dateiende beim Download ist eine Unterbrechung, nur mit Fortschritt
+- DEC-262: SMB-Zeitlimits bleiben bei 60 s und 90 s
+- DEC-263: Handy-Papierkorb und Galerie: Ausschluss und `.nomedia`
+- DEC-264: Auftragsverwaltung über ein zentrales Skript
+- DEC-265: Doppelte Felder in Altdateien werden toleriert
+- DEC-266: Technische Schreibsperre für `coordination/` und Alias-Sperre
+- DEC-267: Dublettenprüfung bei `erstellen` bricht vor dem Schreiben ab
+- DEC-268: Ablaufregeln zur Token-Einsparung und Regelwerk-Klarstellungen
+- DEC-269: Papierkorb-Ansicht: Seitenfilter «Anzeigen» und erweiterter Wiederherstellen-Dialog
 
 **11. Lokalisierung und Sprache**
 
@@ -629,6 +643,20 @@ Anhänge: [A. Offene Entscheidungen](#a-offene-entscheidungen) · [B. Änderungs
 | DEC-253 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-254 | Implemented | 10. Benutzeroberfläche und UX |
 | DEC-255 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-256 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-257 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-258 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-259 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-260 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-261 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-262 | Accepted | 10. Benutzeroberfläche und UX |
+| DEC-263 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-264 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-265 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-266 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-267 | Implemented | 10. Benutzeroberfläche und UX |
+| DEC-268 | Accepted | 10. Benutzeroberfläche und UX |
+| DEC-269 | Implemented | 10. Benutzeroberfläche und UX |
 
 ---
 
@@ -2778,7 +2806,7 @@ Pausiert angezeigt.
 - **Entscheidung:** Bei Handy-Ordnern des Download-Anbieters mit Nummern-Kennung (`msd:`) heisst der Papierkorb «@LeoSync-Bin» statt «.LeoSync-Bin». Der PC-Papierkorb bleibt «.LeoSync-Bin».
 - **Begründung:** MediaStore indexiert Ordner mit Punkt am Anfang nicht, sie fehlen in der Ordnerliste. Folge: Der Papierkorb liess sich nicht auflisten und zersplitterte in «(1)», «(2)».
 - **Alternativen:** Name ohne Sonderzeichen («LeoSync-Bin»): verworfen; «@» sortiert oben und wird nicht gefiltert.
-- **Konsequenzen:** Der Papierkorbname hängt von der Ordnerart ab; sichtbar in der Download-App. Siehe SYNC-ENGINE 7.5.
+- **Konsequenzen:** Der Papierkorbname hängt von der Ordnerart ab; sichtbar in der Download-App. Siehe SYNC-ENGINE 7.5. **Teilweise überholt durch DEC-260** (Papierkorb heisst seit 0.16.33 überall `@LeoSync-Bin`); Galerie-Wirkung: DEC-263.
 - **Betroffene Komponenten:** `mirror/MirrorEngine.kt`, `mirror/FileFilter.kt`, `mirror/LocalTree.kt`
 - **Abhängigkeiten:** DEC-094
 
@@ -2792,6 +2820,162 @@ Pausiert angezeigt.
 - **Konsequenzen:** `enc_status` gehört nicht zum Datenmodell der Datenbank und ist hier, nicht in `DATA-MODEL.md`, festgehalten.
 - **Betroffene Komponenten:** `smb/EncryptionStatus.kt`, `smb/SmbSession.kt`, `ui/HomeParts.kt`, `ui/Common.kt`
 - **Abhängigkeiten:** DEC-222
+
+### DEC-256: Datum und Uhrzeit folgen dem Systemformat des Handys
+- **Status:** Implemented (0.16.27 laut Development, SYNC-20261111-233)
+- **Datum:** 2026-11-11 (Entscheidung des Benutzers im Chat Development)
+- **Kategorie:** UI / Lokalisierung
+- **Entscheidung:** Alle Anzeigen von Datum und Uhrzeit folgen den Systemeinstellungen des Handys (Region/Sprache des Systems, 12 h/24 h), nicht der App-Sprache; zentrale Hilfe `l10n/TimeFormat.kt`. Weicht die App-Sprache vom System ab, kann das Datum nach System und der Text nach App-Sprache erscheinen; das ist gewollt und kein Fehler. Bewusst feste Formate: Backup-Dateiname, Diagnose/Logs/Crash, Papierkorb-Tagesordner und Uhrzeit-Anhang, EXIF-Parsing. Ohne Android (Unit-Tests) gilt `yyyy-MM-dd HH:mm`. Die Texte `fmt_date_time`/`fmt_day_month` entfallen.
+- **Begründung:** Der Benutzer soll Zeit und Datum in dem Format sehen, das er gewohnt ist (Beispiel: System mit US-Format und AM/PM, App auf Deutsch).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Mischung aus System-Datumsformat und App-Sprache ist möglich.
+- **Betroffene Komponenten:** `l10n/TimeFormat.kt`, `ui/Common.kt`
+- **Abhängigkeiten:** DEC-155
+
+### DEC-257: «Letzte Synchronisierung» ist der letzte fehlerfreie Lauf
+- **Status:** Implemented (0.16.27 laut Development, SYNC-20261111-234)
+- **Datum:** 2026-11-11 (Entscheidung des Benutzers, PM-Annahme bestätigt)
+- **Kategorie:** UI / Startseite
+- **Entscheidung:** Die Startseite zeigt «Letzte Synchronisierung: Zeit (Profil)» für den letzten Lauf mit Status OK und 0 Fehlern (kein Vorschau-Lauf, `SyncDao.lastCleanRunFlow`), nicht den letzten Versuch. Läufe mit Fehlern, Teilerfolg oder Abbruch ändern die Zeit nicht. Ein fehlerfreier Lauf, bei dem nichts zu übertragen war, zählt. Leerzustand: «Noch keine erfolgreiche Synchronisierung.» (Vorschlag Development, UX prüft).
+- **Begründung:** Die Zeit soll sagen, wann zuletzt wirklich gesichert wurde, nicht wann zuletzt etwas versucht wurde.
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Quelle ist die Datenbank, kein Schema geändert; «Alles aktuell» unverändert.
+- **Betroffene Komponenten:** `data/SyncDao.kt`, `ui/HomeParts.kt`, `ui/HomeScreen.kt`
+- **Abhängigkeiten:** DEC-241
+
+### DEC-258: Profilnamen sind einmalig; Import «Hinzufügen» prüft sie bewusst nicht
+- **Status:** Implemented (0.16.28 laut Development, SYNC-20261111-235)
+- **Datum:** 2026-11-11 (Entscheidung des Benutzers)
+- **Kategorie:** Profile / Eingabe
+- **Entscheidung:** Profilnamen sind einmalig: Gross-/Kleinschreibung wird ignoriert, Leer-, Steuer- und unsichtbare Zeichen am Rand werden entfernt. Geprüft wird im Assistenten bei «Weiter» (Namensschritt), beim Speichern und beim Bearbeiten (das eigene Profil ausgenommen). Bestehende Doppelnamen werden nicht umbenannt, beim Bearbeiten am Namensfeld gemeldet; Speichern anderer Änderungen bleibt möglich, das Umbenennen auf einen belegten Namen ist gesperrt. Kein Unique-Index, kein Schema. Der Import «Hinzufügen» prüft Namen bewusst nicht (Doppelnamen möglich, Meldung erst beim Bearbeiten).
+- **Begründung:** — (in der Quelle nicht genannt).
+- **Alternativen:** Unique-Index: nicht gewählt (kein Schema).
+- **Konsequenzen:** Erweitert DEC-173. Logik in `data/ProfileNames.kt`, Test `ProfileNamesTest`.
+- **Betroffene Komponenten:** `data/ProfileNames.kt`, `data/ProfileWizard.kt`, `ui/ProfileScreen.kt`
+- **Abhängigkeiten:** DEC-173
+
+### DEC-259: WLAN-Name ist Pflicht bei «Nur WLAN-Name» und «Beides»
+- **Status:** Implemented (0.16.29 laut Development, SYNC-20261111-232 Punkt 5)
+- **Datum:** 2026-11-11 (Entscheidung des Benutzers im Chat)
+- **Kategorie:** Profile / Eingabe
+- **Entscheidung:** Bei der PC-Erkennung «Nur WLAN-Name» und «Beides» ist der WLAN-Name Pflicht: Das Formular blockiert «Weiter» und «Speichern», in der Karte «WLAN» steht ein roter Hinweis; `profile_wifi_hint` heisst nicht mehr «Optional».
+- **Begründung:** — (in der Quelle nicht genannt).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** Bestehende Profile ohne Namen in diesen Modi brauchen beim nächsten Speichern einen Namen.
+- **Betroffene Komponenten:** `ui/ProfileScreen.kt`, `strings_data.xml`, `strings_profile.xml`
+- **Abhängigkeiten:** DEC-219
+
+### DEC-260: Papierkorb heisst überall `@LeoSync-Bin`; Migration und PC-Rückfall
+- **Status:** Implemented (0.16.33 laut Development, SYNC-20261111-244; ergänzt 0.16.34/0.16.35; QA und UX offen)
+- **Datum:** 2026-11-11 (Entscheidung des Benutzers im UX- und im Development-Chat, Konzept freigegeben: Stufe A und B zusammen, Migration automatisch ohne Rückfrage)
+- **Kategorie:** Sync / Papierkorb
+- **Entscheidung:** Der Papierkorb heisst auf Handy und PC/NAS in allen Ordnertypen `@LeoSync-Bin` (`TRASH_DIR`). Altnamen (`.LeoSync-Bin`, `.LeoSync-Papierkorb`, `.Sync2PC-Papierkorb`) werden weiter gelesen und nie synchronisiert. Eine automatische Migration (`mirror/TrashMigration.kt`) benennt den Altordner um bzw. verschiebt Datei für Datei (nie kopieren, nie überschreiben, Uhrzeit-Anhang bei Namensgleichheit, alter Ordner nur löschen, wenn leer; wiederholbar; wartet bei offener Wiederherstellung, Leeren-Vormerkung oder unbestätigtem Ordner; nie im Vorschau-Lauf). Lehnt der PC den Namen mit einem Namens-Statuscode ab, gilt der Rückfall `.LeoSync-Bin` (`mirror/PcTrashMover.kt`, Verlaufswarnung); die Ablehnung merkt sich `PcTrashNameMemory` 7 Tage (nur bei «Name ungültig»).
+- **Begründung:** MediaStore indexiert Punkt-Ordner nicht (DEC-254); auf QNAP/Samba war `.LeoSync-Bin` ein versteckter Ordner. Ein einheitlicher, sichtbarer Name vermeidet zwei Namen je Seite.
+- **Alternativen:** `.LeoSync-Bin` auf dem PC behalten: verworfen (zwei Namen).
+- **Konsequenzen:** Überholt DEC-254 teilweise (Handy-Name nur bei `msd:`). Bekannte Einschränkungen und Restpunkte: `SYNC-ENGINE.md` (Papierkorbnamen). Die Galerie-Wirkung regelt DEC-263.
+- **Betroffene Komponenten:** `mirror/TrashMigration.kt`, `mirror/TrashMigrationSides.kt`, `mirror/PcTrashMover.kt`, `mirror/PcTrashNameMemory.kt`, `mirror/MirrorEngine.kt`
+- **Abhängigkeiten:** DEC-254, DEC-094
+
+### DEC-261: Zu kurzes Dateiende beim Download ist eine Unterbrechung, nur mit Fortschritt
+- **Status:** Implemented (0.16.30/0.16.31 laut Development, SYNC-20261111-232 Punkt 2)
+- **Datum:** 2026-11-11
+- **Kategorie:** Sync / Übertragung
+- **Entscheidung:** Endet ein Download vor der erwarteten Grösse, gilt das als unterbrochen («Verbindung unterbrochen … Rest folgt»), die `.s2ptmp` bleibt und das Fortsetzen folgt im nächsten Lauf. Nur wenn im Aufruf Bytes gelesen wurden; ohne Fortschritt gilt es als Einzelfehler (Temp-Datei verworfen, nächster Lauf beginnt neu). Ändert sich die PC-Datei in der Zwischenzeit, bleibt es beim Fehler «Grösse nach Download stimmt nicht».
+- **Begründung:** QA-Befund -232: Ein Verbindungsabbruch mit Wiederverbinden endete fälschlich als Fehler. Ohne Fortschritt würde Unterbrechung dauerhaft blockieren (Review).
+- **Alternativen:** — (in der Quelle nicht genannt).
+- **Konsequenzen:** `smb/DownloadEnd.kt` (`classify`), `DownloadSizeException`, Test `DownloadEndTest`.
+- **Betroffene Komponenten:** `smb/DownloadEnd.kt`, `smb/SmbSession.kt`
+- **Abhängigkeiten:** DEC-131
+
+### DEC-262: SMB-Zeitlimits bleiben bei 60 s und 90 s
+- **Status:** Accepted (Architecture, SYNC-20261111-243)
+- **Datum:** 2026-11-11
+- **Kategorie:** Architektur / SMB
+- **Entscheidung:** Die SMB-Zeitlimits bleiben unverändert: `SmbSession.open` mit `smbConfigFor(enc, 60, 90)`, also smbj-Zeitlimit 60 s (Lese-, Schreib- und Transaktionsanfragen) und Socket-Zeitlimit 90 s. Schnellmodus (Lernen nach dem Speichern) 30/30 s, `checkPc`/`listShares` 30 s. Kein Fortschrittswächter, keine Änderung der Oberfläche.
+- **Begründung:** Ein vom PC geschlossener oder zurückgesetzter TCP-Kanal (FIN/RST) wird von smbj sofort erkannt (geprüft im Bytecode von smbj 0.13.0, `PacketReader.run` → `Connection.handleError`). Das Zeitlimit greift nur bei stummer Gegenstelle (PC ohne Strom, WLAN ausser Reichweite): Erkennung nach etwa 60 s, höchstens etwa 90 s. Seit 0.16.30 endet so ein Abbruch korrekt als «Verbindung unterbrochen … Rest folgt»; es kostet nur Zeit, keine Daten.
+- **Alternativen:** (a) Zeitlimit auf 30 s senken: smbj zählt die Zeit je Anfrage bis 1 MB, damit scheitert jede Verbindung unter etwa 35 KB/s; dazu anlaufende NAS-Platten und lange Close-/Rename-Vorgänge mit Virenprüfung: Fehlalarme mit Neuverbinden für nur etwa 30 s Gewinn. (b) Fortschrittswächter: smbj meldet innerhalb einer Anfrage keinen Fortschritt; der Wächter müsste aus einem zweiten Thread schliessen (auch beim Umbenennen und bei «Beide behalten»): neuer Nebenläufigkeitspfad, zweiter Zeitlimit-Mechanismus. Das Socket-Zeitlimit (90 s) nicht senken, weil smbj jede Funkstille darüber als Verbindungsfehler behandelt.
+- **Konsequenzen:** Harter Verbindungsabbruch kostet etwa 63 s plus Neuversuch (QA-Messung).
+- **Betroffene Komponenten:** `smb/SmbSession.kt` (`smbConfigFor`, `open`), `sync/Errors.kt` (`isNetworkError`)
+- **Abhängigkeiten:** DEC-261
+
+### DEC-263: Handy-Papierkorb und Galerie: Ausschluss und `.nomedia`
+- **Status:** Implemented *(0.16.36, laut Development SYNC-20261112-272, 611 Tests grün; von Documentation nur per Stichprobe geprüft)* (Architecture, SYNC-20261111-247, Benutzerfreigabe 2026-11-12)
+- **Datum:** 2026-11-12
+- **Kategorie:** Sync / Papierkorb
+- **Entscheidung:** (1) Fotoprofil und «Speicher freigeben» schliessen Dateien aus, deren `RELATIVE_PATH` an beliebiger Stelle ein Papierkorb-Segment (`MirrorEngine.TRASH_DIRS`) enthält. (2) Der Handy-Papierkorb `@LeoSync-Bin` eines Ordnerprofils erhält eine leere `.nomedia` (bestmöglich, Fehlschlag ist kein Fehler), ausser bei `msd:`-Ordnern; nie auf dem PC, nie in Altnamen-Ordnern; die Datei ist kein Papierkorb-Inhalt. (3) Der Filter der Ordnerprofile bleibt unverändert.
+- **Begründung:** Seit dem einheitlichen Namen `@LeoSync-Bin` (DEC-260) indexiert der MediaProvider den Handy-Papierkorb (nur Punkt-Ordner und Ordner mit `.nomedia` gelten als versteckt). Gelöschte oder ersetzte Bilder erschienen in der Galerie, und ein Fotoprofil mit überlappendem Quellordner hätte sie als neue Fotos hochgeladen. Fotoprofil und «Speicher freigeben» lesen nur den MediaStore mit Pfaden relativ zum Speicher, daher griff der bisherige Ausschluss nur an der Wurzel.
+- **Alternativen:** (a) nur `.nomedia`: deckt `msd:` nicht ab. (b) Ausschluss auf jeder Ebene auch für Ordnerprofile: kritische Sync-Änderung an bestehendem Zustand. (d) auf den Gerätetest warten: Der Ausschluss ist unabhängig davon richtig. `.LeoSync-Bin` für `msd:` (Benutzeridee): würde DEC-254 rückgängig machen. Zentraler Handy-Papierkorb im App-Speicher (Benutzeridee): Kopieren + Löschen statt Verschieben über Anbietergrenzen, Verlust bei Deinstallation oder «Speicher löschen», im Dateimanager nicht sichtbar, neue Ablage und zweite Migration.
+- **Konsequenzen:** Restrisiko: Bei `msd:`-Ordnern bleiben Papierkorb-Bilder in der Galerie sichtbar (dort ist nur auflistbar, was im MediaStore steht). Der Papierkorb-Ordner bleibt nach dem Leeren mit der `.nomedia` stehen. Ergänzt DEC-254.
+  **Umsetzung 0.16.36 (laut Development, SYNC-20261112-272):** (1) Segment-Filter `MirrorEngine.isInTrash` (ganze Segmente, alle `TRASH_DIRS`, Gross-/Kleinschreibung egal) direkt in `MediaScanner.scan` und `SpaceFreer.query`, damit auch `PendingCheck` erfasst ist. (2) `.nomedia` nur auf dem Handy, nicht bei `msd:` und zusätzlich nicht bei `msf:` (`TrashNoMedia.applies`); angelegt vor der ersten Datei (`LocalTree.moveToTrash`, `PhoneTrashSide.makeDir`), einmal je Lauf (`MirrorEngine` nach `migrateTrash`, nie im Vorschau-Lauf) und nach der Migration. (3) «Alles löschen» entfernt weiter den ganzen Papierkorb-Ordner samt `.nomedia`; sie wird vor dem nächsten Verschieben neu angelegt. (4) Fehlschlag: nur `Log.i`, ein Versuch je Lauf, kein App-Log-Eintrag. (5) `TrashMigration`: Eine `.nomedia` direkt im Altnamen-Ordner wird über `TrashSide.deleteNoMedia` entfernt (Handy und PC), nicht verschoben.
+- **Betroffene Komponenten:** `media/MediaScanner.kt`/`sync/SyncEngine.kt`, `sync/SpaceFreer.kt`, `mirror/MirrorEngine.kt`, `mirror/LocalTree.kt`, `mirror/TrashMigration.kt`
+- **Abhängigkeiten:** DEC-254, DEC-260
+
+### DEC-264: Auftragsverwaltung über ein zentrales Skript
+- **Status:** Implemented *(Skript umgesetzt SYNC-20261112-254; Regelwerk umgestellt SYNC-20261112-259; Hook `tools/Auftrag-guard.ps1` umgesetzt, siehe DEC-266; Quelle: Auftrag SYNC-20261112-260, Architecture)* (Entscheidung: Architecture, SYNC-20261112-253, Benutzerfreigabe 2026-11-12)
+- **Datum:** 2026-11-12
+- **Kategorie:** Koordination / Werkzeuge
+- **Entscheidung:** Alle Schreibzugriffe auf `coordination/tasks`, `TASK-INDEX.md` und `inbox/` laufen über ein zentrales PowerShell-5.1-Skript in `tools/` mit `erstellen`, `status`, `aendern`, `abschliessen`, `liste`, `check [-Fix]`. Task-Dateien sind die einzige Quelle; Index und Posteingänge werden daraus erzeugt. Globale Sperre über einen offen gehaltenen Datei-Handle (`coordination/.lock`, `FileShare.None`), Nummernvergabe mit `FileMode.CreateNew` (Maximum aus Dateinamen und `.history`-Ordnernamen), atomares Schreiben über Temp-Datei und `File.Replace` mit Hash-Vergleich, Sicherung jeder Altfassung in `.history/<ID>/` (höchstens 20), Audit-Log `.audit.log` (nur anhängen), keine Löschfunktion (Ausnahme: älteste Sicherung in `.history`), abgeschlossene Aufträge schreibgeschützt und nur durch Anhängen ergänzbar. Hook gegen Edit/Write auf diese Dateien erst nach bestandenem Test, zuerst nur für Edit/Write.
+- **Begründung:** Wiederholte Datenverluste und Beschädigungen durch manuelle Bearbeitung (überschriebene Task-Datei -245, fehlende Index-Zeilen, defekte Tabelle). Ein offen gehaltener Handle kann nach einem Absturz nicht verwaist zurückbleiben; erzeugte Übersichten können nicht auseinanderlaufen.
+- **Alternativen:** Sperrdatei, deren blosse Existenz die Sperre bedeutet (verwaist nach Absturz); zeilenweises Bearbeiten von Index und Posteingängen (Drift); Wiedereröffnen und Weiterleiten (vom Inhaber gestrichen); Hook auch für Shell-Befehle in Stufe 1 (heuristisch, Fehlalarme).
+- **Konsequenzen:** Grenzen: `-Rolle` und `-Benutzerfreigabe` sind Konvention und Protokoll, keine Authentifizierung; Schreibschutz und Hook verhindern nur Versehen. Die Umstellung von `coordination/README.md` und Regelwerk hat Architecture auf Benutzerauftrag vom 2026-11-12 vorgenommen (Freigabe in SYNC-20261112-259); die frühere Vorgabe «ändert der Project Manager» ist überholt. Die verbindliche Bedienung steht in `coordination/README.md` §13 (Kurzfassung `CLAUDE.md` §10, Hilfe im Skript mit `-Help`); hier nicht dupliziert.
+- **Betroffene Komponenten:** `tools/Auftrag.ps1`, `coordination/` (`.lock`, `.history/`, `.audit.log`, erzeugte Index-/Posteingangsdateien), `.gitignore`
+- **Abhängigkeiten:** DEC-210
+- **Skripterweiterungen 2026-11-12** (Architecture mit einmaliger Development-Befugnis, SYNC-20261112-259): `-Help`/`-Hilfe`/`hilfe`; `-Eingabe` bei `erstellen`/`status`/`abschliessen` lehnt unbekannte Schlüssel, `#`-Überschriften und Vorlauftext mit Exit 1 ab (vorher still verworfen = Datenverlust); Dublettenprüfung erkennt Pfade mit `*` und entfernt Markdown-Sternchen; `aendern -Feld` akzeptiert Kurznamen und nennt bei Fehler die gültigen Namen; `check` fasst Hinweise zusammen (`-Details` für Einzelzeilen); `liste -Rolle` zeigt standardmässig auch BLOCKED, neu `-MitDateien` (SYNC-20261112-262).
+
+### DEC-265: Doppelte Felder in Altdateien werden toleriert
+- **Status:** Implemented *(laut Auftrag SYNC-20261112-260, Architecture; im Skript nicht von Documentation nachgeprüft)*
+- **Datum:** 2026-11-12
+- **Kategorie:** Koordination / Werkzeuge
+- **Entscheidung:** In Task-Dateien im Altformat (22 Dateien) mit mehrfach vorkommenden Feldern gilt bei `Bearbeitungsverlauf`, `Übernahmebestätigung` und `Abgeschlossen am` das letzte Vorkommen, bei den übrigen das erste. Exit 3 gibt es nur bei doppeltem `Status`, `Absender`, `Empfänger`, `Priorität` oder `Erstellt am`; `check` meldet einen Hinweis.
+- **Begründung:** Sonst wären Ergänzungen an diesen abgeschlossenen Dateien unmöglich; die Kernfelder bleiben eindeutig.
+- **Alternativen:** Exit 3 für jedes doppelte Feld (Konzept SYNC-20261112-253, Abschnitt 3): verworfen.
+- **Konsequenzen:** Abweichung vom Konzept -253. Quelle: Architecture, SYNC-20261112-259.
+- **Betroffene Komponenten:** `tools/Auftrag.ps1`
+- **Abhängigkeiten:** DEC-264
+
+### DEC-266: Technische Schreibsperre für `coordination/` und Alias-Sperre
+- **Status:** Implemented *(laut Auftrag SYNC-20261112-260; Architecture meldet «live geprüft»: Edit gesperrt, `Remove-Item` auf Auftragspfad hart gesperrt, .NET-Schreibweg löst Rückfrage aus)*
+- **Datum:** 2026-11-12
+- **Kategorie:** Koordination / Werkzeuge
+- **Entscheidung:** Benutzerfreigabe 2026-11-12 (Chat Architecture, Stufe 1+2): `.claude/settings.json` mit `permissions.deny` für Edit auf `coordination/tasks/**`, `inbox/**`, `TASK-INDEX.md`, `.history/**`, `.audit.log`, `.lock` und PreToolUse-Hook `tools/Auftrag-guard.ps1`: Edit/Write/NotebookEdit auf diese Pfade Exit 2; PowerShell/Bash mit Schreibverb auf diese Pfade: Rückfrage (ask); `Auftrag.ps1`-Aufrufe frei; Lesen frei. Zusätzlich (Benutzerauftrag, SYNC-20261112-263): Die Alias-Falle ist oberste Regel (`CLAUDE.md` §1) und technisch gesperrt: der Hook lehnt PowerShell-Befehle und `.ps1`-Dateien mit `function`/`filter` unter Alias- oder Cmdlet-Namen mit Exit 2 ab.
+- **Begründung:** Wiederholter Datenverlust trotz Regel (u. a. gelöschte Task-Dateien durch `function rd`).
+- **Alternativen:** Harte Sperre auch für die Shell-Heuristik (Fehlalarme); kein Hook, nur Regelwerk: beide verworfen.
+- **Konsequenzen:** Grenze: hält Versehen auf, keine Absicht. Ausnahme Documentation: `apop85.github.io/.claude/tasks.md` für Aufträge an den Web Developer, von Hand.
+- **Betroffene Komponenten:** `.claude/settings.json`, `tools/Auftrag-guard.ps1`
+- **Abhängigkeiten:** DEC-264
+
+### DEC-267: Dublettenprüfung bei `erstellen` bricht vor dem Schreiben ab
+- **Status:** Implemented *(laut Auftrag SYNC-20261112-260, aus SYNC-20261112-262; im Skript nicht nachgeprüft)*
+- **Datum:** 2026-11-12
+- **Kategorie:** Koordination / Werkzeuge
+- **Entscheidung:** Ein ähnlicher Titel mit mindestens zwei gemeinsamen Wörtern bricht vor dem Schreiben ab (Exit 3); `-Trotzdem` legt bewusst an; Vorgänger unter `-Abhängigkeiten` sind ausgenommen, sonst nur Warnung.
+- **Begründung:** Die Warnung kam bisher erst nach dem Anlegen.
+- **Alternativen:** Abbruch schon bei einem gemeinsamen Wort (Fehlalarme bei kurzen Titeln): verworfen.
+- **Konsequenzen:** Ersetzt «Dublettenwarnung, keine Sperre» aus Konzept SYNC-20261112-253.
+- **Betroffene Komponenten:** `tools/Auftrag.ps1`
+- **Abhängigkeiten:** DEC-264
+
+### DEC-268: Ablaufregeln zur Token-Einsparung und Regelwerk-Klarstellungen
+- **Status:** Accepted *(laut Auftrag SYNC-20261112-260, Benutzerentscheide 2026-11-12 laut -263/-264; Regeltexte stehen in `CLAUDE.md`)*
+- **Datum:** 2026-11-12
+- **Kategorie:** Koordination / Regelwerk
+- **Entscheidung:** (1) Posteingang/Überblick nur über `liste`; Task-Datei nur des bearbeiteten Auftrags einmal lesen; nach Exit 0 nichts nachlesen. (2) `CLAUDE.md` §1 verschlankt (Rechte unverändert, Details in QA-/UX-Prompt); UX-Testordner nur `D:\testsync`, `X:\testsync`. (3) Folgeaufträge in sich vollständig; Chat-Abschlussbericht kurz mit Verweis auf die Task-Datei. (4) Git ist nicht vorhanden, keine Git-Befehle. (5) Änderungen an `tools/` und am Regelwerk ändern die Version nicht. (6) Rückfragen und Vorschläge an den Benutzer immer nummeriert. (7) Gebündelt arbeiten, Umgebungsprüfung und Build einmal je Sitzung, Ausgaben gefiltert, Folgeaufträge an eigenen OPEN-Auftrag anhängen; QA/UX prüfen seitenweise gebündelt. (8) `PATCHNOTES.md` pflegt Documentation, nicht die Agents. (9) Ergänzung 2026-11-12 (Benutzerauftrag, SYNC-20261112-276; `CLAUDE.md` §11): Doku-Aufträge erstellt oder ergänzt jede Rolle direkt ohne Rückfrage beim Benutzer; bestehende OPEN-Aufträge an Documentation zum selben Stand werden ergänzt statt neu angelegt.
+- **Begründung:** Token-Einsparung und Vermeidung von Widersprüchen im Regelwerk.
+- **Alternativen:** In den Quellen nicht genannt.
+- **Konsequenzen:** Verbindlich ist der Wortlaut in `CLAUDE.md` und `coordination/README.md`.
+- **Betroffene Komponenten:** `CLAUDE.md`, `coordination/README.md`, `.claude/`
+- **Abhängigkeiten:** DEC-264
+
+### DEC-269: Papierkorb-Ansicht: Seitenfilter «Anzeigen» und erweiterter Wiederherstellen-Dialog
+- **Status:** Implemented *(0.16.38, laut Auftrag SYNC-20261112-278 und Development, -277; Quelle der Wahrheit: `.claude/ux/papierkorb-filter.md`; Review/QA/UX-Review-Freigabe von Documentation nicht geprüft)*
+- **Datum:** 2026-11-12
+- **Kategorie:** UI / Papierkorb
+- **Entscheidung:** Benutzerfreigabe 2026-11-12 (Chat UX), Variante A, Punkte 1, 2, 3, 5, 6 und 4A. (1) Wertfeld **«Anzeigen»** (Handy und PC / Nur Handy / Nur PC) über «Tag»; Standard beides; gilt nur für die offene Ansicht. (2) Die Karte oben bleibt ungefiltert. (3) Massenauswahl wirkt nur auf sichtbare Einträge. (4) Wechselt Seitenfilter oder Tag, wird die Auswahl aufgehoben, wenn sie ausgeblendete Einträge enthält (auch nach «Neu einlesen» bereinigt). (5) Auswahlleiste und Löschdialog nennen die betroffenen Seiten. (6) Der Wiederherstellen-Dialog nennt, dass immer auf Handy und PC zurückgeschrieben wird, die Zahl ersetzter und neu anzulegender Dateien (neutral nach Synchronisierungsstand: «Laut Synchronisierungsstand vorhanden/nicht vorhanden: n Dateien», nicht je Seite) und bei aktivem Filter einen Hinweis. (7) «Wo?» im Aufräumen-Sheet ist passend zum Filter vorbelegt, die Bestätigung bleibt unverändert. (8) Die Schaltflächen «Papierkorb aufräumen…» und «Neu einlesen» stehen je in einer Zeile (SYNC-20261112-275).
+- **Begründung:** Handy- und PC-Einträge standen gemischt; Wiederherstellen wirkt immer auf beide Seiten, was der Filter sonst verschleiern würde; die Auswahl blieb beim Tag-Wechsel erhalten, sodass ausgeblendete Einträge mitverarbeitet werden konnten (Datenverlustrisiko).
+- **Alternativen:** Variante B (Chips in der Karte): schlecht auffindbar, bei Schrift 2,0 umbrechend. Wiederherstellen-Dialog 4B (Einzelaufstellung je Datei) und 4C (nur Filterhinweis): verworfen zugunsten 4A. Dauerhaftes Merken des Filters: verworfen (scheinbar leerer Papierkorb).
+- **Konsequenzen:** Umsetzung `ui/TrashScreen.kt`, `mirror/TrashViewRules.kt`, `strings_trash.xml`, `TrashViewRulesTest.kt`. EN-Seitenbegriff ist «Phone»: Der Benutzer hat das am 2026-11-12 bestätigt, `CLAUDE.md` wurde entsprechend geändert (vgl. DEC-249 bis DEC-264, EN «Phone»).
+- **Betroffene Komponenten:** `ui/TrashScreen.kt`, `mirror/TrashViewRules.kt`, `RestoreManager`
+- **Abhängigkeiten:** DEC-215, DEC-263
 
 ---
 
@@ -3285,8 +3469,8 @@ Pausiert angezeigt.
 - **Entscheidung:** Scheitert der erste Build einer neuen Version, wird der Fehler ohne PATCH-Erhöhung und ohne eigenen Patchnotes-Eintrag behoben (Fall 0.7.0). Ist eine Version schon gebaut, erhöht jede weitere Änderung PATCH (Fall 0.7.1).
 - **Begründung:** Anweisung des Inhabers: „die version soll 0.7.0 bleiben“.
 - **Alternativen:** Jede Korrektur als neue Version (bisherige Regel; bei 0.6.1 → 0.6.2 noch so gehandhabt).
-- **Konsequenzen:** Der Agent muss wissen, ob die Version schon erfolgreich gebaut wurde.
-- **Betroffene Komponenten:** `version.properties`, `PATCHNOTES.md`
+- **Konsequenzen:** Der Agent muss wissen, ob die Version schon erfolgreich gebaut wurde. **Ergänzung 2026-11-12 (SYNC-20261112-276):** Die Regel steht seit der Freigabe des Inhabers vom 2026-11-12 in der PATCH-Regel von `CLAUDE.md` §1 (bisher nur als Claude-Erinnerung, Inhaber 2026-11-03 bei 0.7.0): Die Behebung eines Build-Fehlers der aktuellen, noch nicht erfolgreich gebauten Version erhöht PATCH nicht und erhält keinen eigenen Patchnotes-Eintrag.
+- **Betroffene Komponenten:** `version.properties`, `PATCHNOTES.md`, `CLAUDE.md` §1
 - **Abhängigkeiten:** DEC-077
 
 ### DEC-154: KSP-Release wartet auf KSP-Debug
@@ -3422,6 +3606,7 @@ Pausiert angezeigt.
 - **Konsequenzen:** UX darf im Verzeichnis `.claude/ux/` schreiben (`CLAUDE.md` §1). Fehlt ein Weg, ergänzt UX die Datei eigenständig, sobald feststeht, wie man zum Zielfenster navigiert. Ändert sich ein Weg, passt UX nur den betroffenen Abschnitt an.
 - **Betroffene Komponenten:** `.claude/ux/navigation.md`, `CLAUDE.md` §1, `.claude/roles/UX-Specialist.md`
 - **Abhängigkeiten:** DEC-212
+- **Ergänzung 2026-11-12 (Benutzerfreigabe, SYNC-20261112-276): Emulatorprüfungen UX und QA bündeln primär nach Schriftgrösse, dann nach App-Seite.** Zuerst alles in 1,0, danach aufsteigend 1,5 und 2,0; jede Schriftgrösse nur einmal einstellen, am Ende die Ausgangsgrösse wiederherstellen; innerhalb einer Schriftgrösse wie bisher seitenweise (bei UX darin Hell/Dunkel je Seite). Grund: Jeder Schriftgrössenwechsel startet die App neu, die Navigation beginnt wieder auf der Startseite. Ersetzt die bisherige Regel «Seitenweise bündeln». **Ausnahme:** Prüfungen, deren Zustand erst reproduziert werden muss (Fehlermeldungen, Toasts, Warnungen, Konflikte, Abbrüche), erledigen UX und QA direkt nach dem Herstellen in allen Schriftgrössen, solange der Zustand besteht (nur das Auslösen wiederholen, nicht die Vorbereitung); danach weiter in der bisherigen Schriftgrösse. Nebenpunkte (laut Auftrag, Wortlaut in den Rollenmodulen): QA-Screenshots wie bei UX (Orientierungsscreenshots löschen, geprüfte Elemente unter `.claude/AppScreenshots/archive` mit sprechendem Namen); Dunkelmodus auf `LeoSync_API29` über die Display-Einstellungen, `cmd uimode night` wirkt dort nicht. Verbindlicher Wortlaut: `.claude/roles/ux/pruefung.md`, `.claude/roles/qa/emulator.md`, `.claude/ux/navigation.md`.
 
 ### DEC-240: Teststruktur für Engine-Abläufe: `RemoteStore`, `LocalFiles`, ausgelagertes Wiederherstellen
 - **Status:** Accepted (Benutzerfreigabe erteilt 2026-11-11; Umsetzung durch Development in SYNC-20261111-163 Stufe 2, Stand der Umsetzung nicht bestätigt)

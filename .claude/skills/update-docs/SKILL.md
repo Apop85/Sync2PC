@@ -1,4 +1,3 @@
-
 ---
 name: update-docs
 description: Aktualisiert die technische Dokumentation von LeoSync (docs/DECISIONS, ARCHITECTURE, SYNC-ENGINE, DATA-MODEL, TESTING, PATCHNOTES) minimal und strukturerhaltend nach einer Änderung. Verwenden, wenn dokumentiertes Verhalten, Schema, Tests oder Entscheidungen sich geändert haben.
@@ -8,24 +7,11 @@ description: Aktualisiert die technische Dokumentation von LeoSync (docs/DECISIO
 
 Anlass: $ARGUMENTS
 
-Zuordnung (Dateien mit Unterstrich in `docs/` sind Auftragstexte, nicht anfassen):
-
-| Inhalt | Datei |
-|---|---|
-| Entscheidungen | `docs/DECISIONS.md` |
-| Architektur | `docs/ARCHITECTURE.md` |
-| Synchronisation | `docs/SYNC-ENGINE.md` |
-| Datenbank | `docs/DATA-MODEL.md` |
-| Tests/Build | `docs/TESTING.md` |
-| Releases | `PATCHNOTES.md` (Projektwurzel) |
+Zuordnung Inhalt → Datei: `CLAUDE.md` §11 (Dateien mit Unterstrich: §4).
 
 Vorgehen:
 
-0. **Rollenberechtigung prüfen**:
-   - Änderungen an Dokumentationsdateien darf ausschliesslich die Rolle Documentation durchführen.
-   - Dieser Skill ist ausschliesslich für die Rolle Documentation vorgesehen.
-   - Andere Rollen ermitteln Dokumentationsbedarf im Rahmen ihrer eigenen Aufgaben und übergeben diesen gemäss `coordination/README.md` direkt an Documentation.
-   - Die Rolle Documentation führt die eigentliche Dokumentationsänderung durch.
+0. **Nur Rolle Documentation.** Andere Rollen ändern keine Doku, sondern übergeben den Bedarf per Folgeauftrag (`tools\Auftrag.ps1 erstellen -An Documentation`, `CLAUDE.md` §10).
 
 1. Prüfen, ob die Änderung dokumentiertes Verhalten tatsächlich berührt. Wenn nein: nichts ändern und das sagen.
 2. Zieldatei per Grep nach dem betroffenen Abschnitt durchsuchen; nur diesen Abschnitt lesen und ändern (Dateien sind sehr gross).

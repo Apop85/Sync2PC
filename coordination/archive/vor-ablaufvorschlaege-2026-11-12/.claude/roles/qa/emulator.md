@@ -1,0 +1,18 @@
+# QA-Modul: Emulatorprüfung
+
+Zum Masterprompt `.claude/roles/QA-Specialist.md`. Lesen, sobald ein Auftrag eine Prüfung im Emulator oder auf einem Testgerät verlangt. Rechte stehen im Masterprompt §3 und in `CLAUDE.md` §1.
+
+## Ablauf im Emulator
+- Emulator selbstständig starten, in der App alle nötigen Einstellungen vornehmen/entfernen. Vor jeder Bearbeitung oder Entfernung eines Profils zuerst exportieren, nach den Tests den ursprünglichen Zustand per Import wiederherstellen. Dateioperationen (erstellen, ändern, verschieben, löschen usw.) nur in `.build\qa-smb-share`, `%LOCALAPPDATA%\LeoSyncTestShare`, `D:\testsync` und `X:\testsync`.
+- **Seitenweise bündeln (Pflicht, sobald du mehrere Aufträge oder Prüfpunkte hast):** Plane die Emulatorprüfung nach App-Seiten, nicht nach Aufträgen. (1) Vor dem Start für jede Seite sammeln, was alle anstehenden Aufträge dort prüfen müssen. (2) Jede Seite nur einmal ansteuern und dort alle gesammelten Prüfungen nacheinander erledigen, bevor du zur nächsten Seite wechselst. (3) Eine Seite nur dann erneut aufrufen, wenn ein Test es verlangt (z. B. Wiederöffnen nach dem Speichern, nach einem Neustart oder Sync-Lauf). (4) Ergebnisse trotzdem je Auftrag getrennt festhalten. Dasselbe gilt für Testdaten: einmal anlegen und für alle Aufträge nutzen.
+- **Navigation in der App (blind):** Navigiere immer nach `.claude/ux/navigation.md` (Regeln im Kopf der Datei, einmal je Sitzung lesen): Koordinaten für Gerät und aktuelle Schriftgrösse blind antippen, Ankunft per uiautomator-Prüftext bestätigen statt per Screenshot. Fehlende Wege, fehlende Schriftgrössen und veraltete Schritte ergänzt du dort sofort selbst (Pflicht, gemeinsam mit UX; nur Wegbeschreibungen).
+- **Optimierte Vorgehensweise:** Textauszug per uiautomator statt Screenshots; für Übersichten ein verkleinerter Screenshot, Details nur bei Bedarf. Logcat und Testausgaben nur gefiltert lesen (Tag, Zeitraum, Fehlschläge), nie vollständig. Screenshots nach Ende der Session löschen.
+- **Eigene Testprofile** (z. B. «QA-Host») und Ordner-Freigaben im Emulator nach der Prüfung **immer löschen** und den Ursprungszustand über den **vorher angelegten Profilexport** wiederherstellen (Import); im Bericht vermerken, dass dies geschehen ist bzw. warum nicht; das Testprofil «test» nie verändern ohne Export/Rückstellung.
+
+## Emulator-Umgebung (einmal je Sitzung prüfen)
+`adb devices` (`adb.exe` unter `%LOCALAPPDATA%\Android\Sdk\platform-tools`, nicht im PATH) · `emulator -list-avds` (vorhanden: `LeoSync_API29`, `Medium_Phone_API_37.0`) · Android-Version/API-Level des Ziels · bei Bedarf Erreichbarkeit der SMB-Testfreigabe (Modul `qa/smb-testshare.md`). Fehlendes dokumentierst du im Bericht; Konfigurationen änderst du nicht, um Lücken zu umgehen.
+
+**adb-Bedienung:** Koordinaten nur dann per `uiautomator dump` ermitteln, wenn `navigation.md` sie nicht enthält (und dann dort eintragen); Backslashes bei `input text` vervierfachen; Screenshots per `screencap` + `adb pull` (nie per PowerShell-`>`).
+
+## Testdaten
+Nur in `D:\testsync`/`X:\testsync` (Testprofile) und unter `.build\qa-smb-share` (Modul `qa/smb-testshare.md`). Vorhandenes wiederverwenden, keine parallelen Strukturen. Szenarien (Sonderzeichen, lange Namen, gleiche Namen mit anderem Inhalt, verschiedene Änderungszeiten, Konflikte, Löschen/Wiederherstellen, Abbruch) in dieser Umgebung anlegen und danach zurücksetzen. Echte Zugangsdaten und produktive Passwörter nie in Repo, Rollenprompts oder Doku (einzige Ausnahme: das öffentliche Testpasswort `qa-test-1`, `CLAUDE.md` §1).

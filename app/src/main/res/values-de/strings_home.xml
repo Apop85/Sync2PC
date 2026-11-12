@@ -161,7 +161,7 @@
     <string name="home_sync_feedback_wifi">Kein passendes WLAN – versuche es trotzdem</string>
     <string name="home_sync_feedback_pc">PC nicht erreichbar – prüfe erneut</string>
     <string name="home_profile_disabled">deaktiviert</string>
-    <string name="home_profile_on_wifi">im WLAN ✓</string>
+    <string name="icon_on_wifi">Im WLAN</string>
     <string name="home_profile_no_target">Kein Ziel festgelegt</string>
     <string name="home_profile_no_local">kein Handy-Ordner</string>
     <string name="home_profile_propagate">Löschungen übernehmen</string>

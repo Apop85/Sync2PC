@@ -27,7 +27,17 @@ object UpdateChecker {
         return if (repoRegex.matches(s)) s else null
     }
 
-    fun currentVersion(): String = BuildConfig.VERSION_NAME.substringBefore('-')
+    /**
+     * Installierte Version ohne Zusatz ("0.16.35"). Zur Laufzeit aus dem Paket gelesen: `BuildConfig.VERSION_NAME` ist eine
+     * Konstante, die der Compiler in jede Nutzerklasse einsetzt. Bei inkrementellen Builds blieb so ein alter Wert in dieser
+     * Klasse stehen (SYNC-20261112-248: Anzeige 0.16.26 bei 0.16.35). Rückfall auf die Konstante ohne Kontext (Tests).
+     */
+    fun currentVersion(): String = (installedVersionName() ?: BuildConfig.VERSION_NAME).substringBefore('-')
+
+    private fun installedVersionName(): String? = try {
+        val ctx = com.sync2pc.app.l10n.Texts.appContext
+        ctx?.packageManager?.getPackageInfo(ctx.packageName, 0)?.versionName?.takeIf { it.isNotBlank() }
+    } catch (e: Exception) { null }
 
     private fun parts(v: String): List<Int> =
         v.trim().removePrefix("v").removePrefix("V").substringBefore('-')
