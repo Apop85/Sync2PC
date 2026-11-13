@@ -1,7 +1,0 @@
-- [LeoSync/Sync2PC Arbeitsregeln](sync2pc-workflow-rules.md) — App heisst LeoSync (Leo-Tool-Familie); GO-Regel, Kurzfassung nur auf Aufforderung, nie bauen, nummerieren, PATCH erhöhen (Patchnotes: Documentation)
-- [PowerShell-Alias-Falle](powershell-alias-falle.md) — OBERSTE REGEL: nie function rd/ri/del/r/gc …; Hook blockt; Array-Abflachung bei Einzelpaaren
-- [LeoSync UI-Begriffe](leosync-ui-terms.md) — DE Handy/Freigabe, EN Mobile/Share, keine Whitelist/Blacklist
-- [LeoSync Datenverlust-Massnahmen](leosync-dataloss-plan.md) — historisch (Plan 0.4/0.5); Umsetzungsstand und Regeln: docs/DECISIONS.md
-- [LeoSync Sicherheitsprüfung](leosync-next-run-review.md) — Design-Prüfung erledigt (0.11.0); claude-security-Scan startet der Inhaber selbst, nicht von sich aus anbieten
-- [LeoSync App-Screenshots](leosync-app-screenshots.md) — Ablage unter .claude\AppScreenshots, für UX-Prüfungen
-- [QA Emulator-SMB-Testshare](qa-emulator-smb-testshare.md) — tools/qa-smb-testshare.ps1 (Python-SMB + adb reverse 445), adb-Bedienhinweise

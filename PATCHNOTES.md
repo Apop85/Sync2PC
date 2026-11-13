@@ -2,6 +2,16 @@
 
 Versionierung: Beta `0.1.x` (nur Fehlerbehebungen). Neue Funktionen eröffnen `0.2.x`, `0.3.x` usw. bis zur Freigabe von `1.0.0`. Bis 0.0.13: `0.0.x`. Neueste Version oben.
 
+## 0.16.47 (2026-11-13)
+
+### Geändert
+- **Laufanimation:** Die Bilder des Hundes wurden überarbeitet (kein störender Haarbüschel mehr am Kopf, Augen und Fell wirken wie im App-Symbol).
+
+## 0.16.46 (2026-11-13)
+
+### Geändert
+- **Profilkachel:** Die Symbole für WLAN, bekannten PC und Verschlüsselung sind jetzt einfarbig und dezent gestaltet.
+
 ## 0.16.45 (2026-11-12)
 
 ### Geändert

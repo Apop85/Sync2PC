@@ -70,6 +70,13 @@ $env:TMP = $altTmp; $env:TEMP = $altTemp
 & $pruefe 'adb shell input text UNC'         'PowerShell' ('$a = "' + $adb + '"; Remove-Item ''' + $root + '\.claude\AppScreenshots\_d.png'' -ErrorAction SilentlyContinue; & $a shell "i=0; while [ `$i -lt 3 ]; do input keyevent 67; done"; & $a shell ''input text "\\\\server\\Fotos"''') 'frei'
 & $pruefe 'adb shell mit Geraete-Umleitung'  'PowerShell' ('& "' + $adb + '" shell "rm /sdcard/x; echo 1 > /sdcard/y"') 'frei'
 & $pruefe 'adb shell, lokal auf Desktop'     'PowerShell' ('& "' + $adb + '" shell screencap -p > C:\Users\rbald\Desktop\a.png') 'frage'
+# Fehlalarm 2026-11-13: zusammengesetzte Pfade (Join-Path, Verkettung) als Ganzes pruefen
+& $pruefe 'Join-Path adb + pull Scratchpad'  'PowerShell' ('$adb = Join-Path $env:LOCALAPPDATA ''Android\Sdk\platform-tools\adb.exe''; $sp=''C:\Users\rbald\AppData\Local\Temp\claude\x\scratchpad''' + "`n" + '& $adb -s emulator-5556 shell screencap -p /sdcard/s.png; & $adb -s emulator-5556 pull /sdcard/s.png "$sp\s1.png" | Out-Null') 'frei'
+& $pruefe 'Verkettung adb.exe + pull'        'PowerShell' ('$a = $env:LOCALAPPDATA + ''\Android\Sdk\platform-tools\adb.exe''; & $a pull /sdcard/a.png .claude\AppScreenshots\a.png') 'frei'
+& $pruefe 'Join-Path Ziel LeoSyncTestShare'  'PowerShell' 'New-Item -ItemType Directory (Join-Path $env:LOCALAPPDATA ''LeoSyncTestShare\venv'')' 'frei'
+& $pruefe 'Join-Path Ziel ausserhalb'        'PowerShell' 'Copy-Item a.txt (Join-Path $env:LOCALAPPDATA ''Anderes\a.txt'')' 'frage'
+& $pruefe 'Join-Path -Path -ChildPath'       'PowerShell' 'Copy-Item a.txt (Join-Path -Path $env:USERPROFILE -ChildPath ''Desktop\a.txt'')' 'frage'
+& $pruefe 'Verkettung Ziel ausserhalb'       'PowerShell' 'New-Item -ItemType Directory ($env:LOCALAPPDATA + ''\Anderes'')' 'frage'
 & $pruefe 'JAVA_HOME + gradlew'              'PowerShell' '$env:JAVA_HOME = ''C:\Program Files\Android\Android Studio\jbr''; .\gradlew.bat assembleDebug *> $null' 'frei'
 & $pruefe 'WriteAllText $env:TEMP'           'PowerShell' '[IO.File]::WriteAllText("$env:TEMP\x.txt", ''a'', [Text.UTF8Encoding]::new($false))' 'frei'
 & $pruefe 'WriteAllText %USERPROFILE%'       'PowerShell' '[IO.File]::WriteAllText("$env:USERPROFILE\x.txt", ''a'')' 'frage'

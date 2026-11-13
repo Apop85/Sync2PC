@@ -181,6 +181,13 @@ try {
         $t = [regex]::Replace($t, '%([A-Za-z_][\w()]*)%', [Text.RegularExpressions.MatchEvaluator] {
                 param($m) $w = [Environment]::GetEnvironmentVariable($m.Groups[1].Value); if ($w) { $w } else { $m.Value } })
         $t = [regex]::Replace($t, '(?i)(?<![\w$])(\$HOME\b|~(?=[\\/]))', $env:USERPROFILE.Replace('$', '$$'))
+        #    Zusammengesetzte Pfade als Ganzes pruefen (Fehlalarm 2026-11-13: "Join-Path $env:LOCALAPPDATA 'Android\...\adb.exe'"
+        #    meldete C:\Users\rbald\AppData\Local): Join-Path <Basis> <Teil> und "<Basis>" + '<Teil>' werden zu "<Basis>\<Teil>"
+        $teilPat = '("[^"]*"|''[^'']*''|[^\s;|(){}"'']+)'
+        $t = [regex]::Replace($t, '(?i)\bJoin-Path\s+(?:-Path\s+)?' + $teilPat + '\s+(?:-ChildPath\s+)?' + $teilPat, [Text.RegularExpressions.MatchEvaluator] {
+                param($m) '"' + $m.Groups[1].Value.Trim('"', "'").TrimEnd('\', '/') + '\' + $m.Groups[2].Value.Trim('"', "'").TrimStart('\', '/') + '"' })
+        $t = [regex]::Replace($t, '(?i)("[A-Za-z]:[\\/][^"]*"|''[A-Za-z]:[\\/][^'']*''|(?<![\w"''$:])[A-Za-z]:[\\/][^\s"'';|<>(){},`+]*)\s*\+\s*("[^"]*"|''[^'']*'')', [Text.RegularExpressions.MatchEvaluator] {
+                param($m) '"' + $m.Groups[1].Value.Trim('"', "'").TrimEnd('\', '/') + '\' + $m.Groups[2].Value.Trim('"', "'").TrimStart('\', '/') + '"' })
         $start = '(?:[A-Za-z]:[\\/]|\\\\[\w.$-]+\\)'
         $kand = New-Object System.Collections.Generic.List[string]
         $qPat = '(["''])(' + $start + '[^"''\r\n]*)\1'
